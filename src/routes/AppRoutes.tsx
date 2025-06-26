@@ -50,7 +50,7 @@ const AppRoutes: React.FC = () => {
   }, [history]);
   const authRoutes = ["/login", "/register"];
   const authRoutesDontShowTabBar = ["/take-photo"]
-  const ignoreRoutes = ["/forgot-password", "/otp"];
+  const ignoreRoutes = ["/forgot-password", "/otp", "/new-password", "/change-password"];
   const showTabBar = !authRoutes.includes(location.pathname) && !ignoreRoutes.includes(location.pathname) && !authRoutesDontShowTabBar.includes(location.pathname);
   if (isAuthenticated && authRoutes.includes(location.pathname)) {
     return <Redirect to="/home" />;

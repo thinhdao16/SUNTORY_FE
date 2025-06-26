@@ -45,7 +45,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
                             <MenuButton
                                 className={`flex items-center justify-between w-full px-4 py-2 rounded-xl darkk:bg-dark-main border border-gray-400 darkk:border-gray-700 focus:border-main focus:border focus:outline-none darkk:text-white ${menuButtonClassName}`}
                             >
-                                {currentOption ? currentOption.label : placeholder}
+                                {currentOption ? t(currentOption.label) : placeholder}
                                 <IoChevronDownOutline />
                             </MenuButton>
                             <MenuItems
@@ -63,7 +63,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({
                                                         : "text-gray-700"
                                                         }`}
                                                 >
-                                                    {label}
+                                                    {t(label)}
                                                 </button>
                                             )}
                                         </MenuItem>

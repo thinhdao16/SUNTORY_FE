@@ -12,17 +12,16 @@ import useKeyboardManager from "@/hooks/useKeyboardManager";
 import { useKeyboardResize } from "@/pages/Chat/hooks/useKeyboardResize";
 
 const genderOptions = [
-    { label: t("Male"), code: "Nam" },
-    { label: t("Female"), code: "Nữ" },
-    { label: t("Other"), code: "Khác" },
+    { label: "Male", code: "Male" },
+    { label: "Female", code: "Female" },
+    { label: "Other", code: "Other" },
 ];
 
 const AccountEdit: React.FC = () => {
     const { data: userInfo } = useAuthInfo();
     const queryClient = useQueryClient();
     const updateAccountInfo = useUpdateAccountInfo();
-    const { isKeyboardVisible, heightKeyBoard } = useKeyboardManager();
-    const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
+
 
     const {
         control,
@@ -35,7 +34,7 @@ const AccountEdit: React.FC = () => {
             dateOfBirth: userInfo?.dateOfBirth
                 ? dayjs(userInfo.dateOfBirth).format("YYYY-MM-DD")
                 : "",
-            gender: userInfo?.gender === 1 ? "Nam" : userInfo?.gender === 2 ? "Nữ" : "Khác",
+            gender: userInfo?.gender === 1 ? "Male" : userInfo?.gender === 2 ? "Female" : "Other",
             height: userInfo?.height?.toString() || "",
             weight: userInfo?.weight?.toString() || "",
         },
@@ -49,7 +48,7 @@ const AccountEdit: React.FC = () => {
                 firstname: data.firstname,
                 lastname: data.lastname,
                 birthDay: data.dateOfBirth,
-                gender: data.gender === "Nam" ? 1 : data.gender === "Nữ" ? 2 : 0,
+                gender: data.gender === "Male" ? 1 : data.gender === "Female" ? 2 : 0,
                 height: Number(data.height),
                 weight: Number(data.weight),
             },
@@ -144,12 +143,12 @@ const AccountEdit: React.FC = () => {
                 </div>
                 {/* Ẩn nút Save mặc định nếu muốn, hoặc để đây cho desktop */}
                 {/* {!isKeyboardVisible && ( */}
-                {/* <MainButton type="submit" className="w-full mt-4">
+                <MainButton type="submit" className="w-full mt-4">
                     {t("Save")}
-                </MainButton> */}
+                </MainButton>
                 {/* )} */}
             </form>
-            {isKeyboardVisible && (
+            {/* {isKeyboardVisible && (
                 <div
                     style={{
                         position: "fixed",
@@ -168,7 +167,7 @@ const AccountEdit: React.FC = () => {
                         {t("Save")}
                     </MainButton>
                 </div>
-            )}
+            )} */}
         </>
     );
 };

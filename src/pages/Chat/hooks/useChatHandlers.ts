@@ -2,7 +2,7 @@ import { uploadChatFile } from "@/services/file/file-service";
 import { createChatApi } from "@/services/chat/chat-service";
 import dayjs from "dayjs";
 import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
-import React from "react";
+import React, { use } from "react";
 import { UseMutationResult } from "react-query";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
@@ -10,7 +10,7 @@ import { useToastStore } from "@/store/zustand/toast-store";
 interface UseChatHandlersProps {
     addPendingImages: (images: string[]) => void;
     addPendingFiles: (files: { name: string; url: string }[]) => void;
-    setPendingMessages: (fn: (prev: any) => any) => void;
+    setPendingMessages: any;
     setSignalRMessages: (messages: any[]) => void;
     clearAll: () => void;
     history: { replace: (path: string) => void };
@@ -26,6 +26,9 @@ interface UseChatHandlersProps {
     uploadImageMutation: UseMutationResult<any, unknown, File | Blob>;
     messagesEndRef: any;
     setHasFirstSignalRMessage: (value: boolean) => void;
+    deviceInfo: { deviceId: string | null; language: string | null };
+    stopMessages?: boolean;
+    setStopMessages: (value: boolean) => void;
 }
 
 export function useChatHandlers({
@@ -46,7 +49,10 @@ export function useChatHandlers({
     signalRMessages,
     uploadImageMutation,
     messagesEndRef,
-    setHasFirstSignalRMessage
+    setHasFirstSignalRMessage,
+    deviceInfo,
+    stopMessages,
+    setStopMessages
 }: UseChatHandlersProps) {
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -79,6 +85,8 @@ export function useChatHandlers({
 
     const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent, force?: boolean) => {
         e.preventDefault();
+        useChatStore.getState().setStopMessages(false);
+
         if (messageValue.trim() || pendingImages.length > 0 || pendingFiles.length > 0) {
             setMessageValue("");
             addPendingImages([]);
@@ -95,7 +103,7 @@ export function useChatHandlers({
                         3000,
                         "error"
                     );
-                }, 15000);
+                }, 1000 * 60);
 
                 const filesArr = [
                     ...pendingFiles.map(f => ({ name: f.name })),
@@ -107,6 +115,7 @@ export function useChatHandlers({
                     messageText: messageValue.trim(),
                     topic: Number(topicType),
                     files: filesArr.length > 0 ? filesArr : undefined,
+                    language: deviceInfo.language || "en",
                 };
 
                 const now = dayjs.utc();
@@ -139,11 +148,11 @@ export function useChatHandlers({
                 const res = await createChatApi(payload);
 
                 if (timeoutId) clearTimeout(timeoutId);
-
-                if (res?.data?.userChatMessage) {
+                if (res?.data?.userChatMessage && !useChatStore.getState().stopMessages) {
                     if (!sessionId) {
                         history.replace(`/chat/${topicType}/${res.data.userChatMessage.chatInfo.code}`);
                         setHasFirstSignalRMessage(true);
+                        setStopMessages(false);
                     }
                 }
             } catch (err) {

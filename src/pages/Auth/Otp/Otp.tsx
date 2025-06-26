@@ -54,6 +54,14 @@ const Otp: React.FC = () => {
               value={digit}
               onChange={e => handleChange(e.target.value, idx)}
               onKeyDown={e => handleKeyDown(e, idx)}
+              onPaste={e => {
+                const paste = e.clipboardData.getData("text").replace(/\D/g, "");
+                if (paste.length === otp.length) {
+                  setOtp(paste.split(""));
+                  inputs.current[otp.length - 1]?.focus();
+                  e.preventDefault();
+                }
+              }}
               className={`w-12 h-12 rounded-2xl border-2 text-center text-2xl font-semibold outline-none bg-[#f0f0f0]
       ${digit ? "border-main text-main focus:border-blue-200" : " !border-0"}`}
             />

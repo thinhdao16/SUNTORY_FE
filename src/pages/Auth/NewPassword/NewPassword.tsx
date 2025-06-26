@@ -59,6 +59,12 @@ const NewPassword: React.FC = () => {
 
     return (
         <AuthCardLayout title={t("Reset Password")}>
+            <button
+                className="flex items-center gap-2 text-main font-medium fixed top-6 left-6"
+                onClick={() => history.push("/login")}
+            >
+                <img src="logo/close.svg" alt="Back" className="w-6 h-6" />
+            </button>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
                 <InputPasswordField
                     label={t("Enter new password")}

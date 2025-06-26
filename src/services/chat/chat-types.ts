@@ -16,4 +16,5 @@ export interface CreateChatPayload {
     messageText: string;
     topic: number;
     files?: { name: string }[];
+    language: string;
 }

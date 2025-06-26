@@ -68,6 +68,8 @@ const Login: React.FC = () => {
                     value={watch("password") || ""}
                     onChange={(e) => setValue("password", e.target.value)}
                     error={errors.password?.message}
+                    showIcon={false}
+
                     required
                 />
                 <div className="flex items-center justify-between mt-1">

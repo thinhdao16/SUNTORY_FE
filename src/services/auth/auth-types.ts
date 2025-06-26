@@ -38,6 +38,7 @@ export interface RegisterRequest {
     email: string;
     password: string;
     returnUrl?: string;
+    deviceId: string
 }
 
 export interface RegisterResponse {

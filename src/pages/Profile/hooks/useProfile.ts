@@ -8,7 +8,7 @@ export const useUpdateAccountInfo = () => {
 
     return useMutation(updateAccountInfo, {
         onSuccess: () => {
-            showToast(t("Update profile successfully!"), 2000, "success");
+            showToast(t("Update done!"), 2000, "success");
             queryClient.invalidateQueries("authInfo");
         },
         onError: (error: any) => {

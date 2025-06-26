@@ -14,6 +14,8 @@ interface ChatStoreState {
     pendingMessages: { text: string; createdAt: string; timeStamp?: number }[];
     setPendingMessages: (fn: (prev: { text: string; createdAt: string; timeStamp?: number }[]) => { text: string; createdAt: string; timeStamp?: number }[]) => void;
     clearPendingMessages: () => void;
+    stopMessages: boolean
+    setStopMessages: (val: boolean) => void;
 }
 
 export const useChatStore = create<ChatStoreState>((set) => ({
@@ -29,4 +31,6 @@ export const useChatStore = create<ChatStoreState>((set) => ({
     setPendingMessages: (fn) =>
         set((state) => ({ pendingMessages: fn(state.pendingMessages) })),
     clearPendingMessages: () => set({ pendingMessages: [] }),
+    stopMessages: true,
+    setStopMessages: (val) => set({ stopMessages: val })
 }));

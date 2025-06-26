@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useHistory, useParams } from "react-router-dom";
 import "./Chat.module.css";
 import { IoArrowDown } from "react-icons/io5";
@@ -15,13 +15,15 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
 import { useChatHandlers } from "./hooks/useChatHandlers";
-import { ChatMessageList } from "./components/ChatMessageList";
 import ChatInputBar from "./components/ChatInputBar";
 import PendingFiles from "./components/PendingFiles";
 import PendingImages from "./components/PendingImages";
 import { useUpload } from "@/hooks/common/useUpload";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { quickActions } from "./data";
+import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
+import { ChatMessageList } from "./components/ChatMessageList";
+import ChatWelcomePanel from "./components/ChatWelcomePanel";
 dayjs.extend(utc);
 
 const Chat: React.FC = () => {
@@ -38,7 +40,7 @@ const Chat: React.FC = () => {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const prevSessionIdRef = useRef<string | undefined>(sessionId);
     // ===== Device Info =====
-    const deviceInfo: { deviceId: string | null } = useDeviceInfo();
+    const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
 
     // ===== Stores =====
     const {
@@ -55,6 +57,8 @@ const Chat: React.FC = () => {
     const pendingMessages = useChatStore((s) => s.pendingMessages);
     const setPendingMessages = useChatStore((s) => s.setPendingMessages);
     const clearPendingMessages = useChatStore((s) => s.clearPendingMessages);
+    const stopMessages = useChatStore((s) => s.stopMessages);
+    const setStopMessages = useChatStore((s) => s.setStopMessages);
     // ===== Chat & Message Hooks =====
     const {
         messages,
@@ -66,14 +70,24 @@ const Chat: React.FC = () => {
     } = useChatMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, hasFirstSignalRMessage);
 
     // ===== SignalR =====
-    const { messages: signalRMessages, setMessages: setSignalRMessages } = useSignalRChat(
-        deviceInfo?.deviceId ?? ""
-    );
 
+
+    const allSignalRMessages = useSignalRChatStore((s: any) => s.messages);
+
+    const signalRMessages = useMemo(
+        () =>
+            allSignalRMessages.filter(
+                (msg: any) => msg.chatInfo?.code === sessionId || msg.code === sessionId
+            ),
+        [allSignalRMessages, sessionId]
+    );
+    const setSignalRMessages = useSignalRChatStore((s) => s.setMessages);
     // ===== Other Hooks =====
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
     const { showScrollButton, handleScroll } = useScrollButton(messagesContainerRef);
     useAutoResizeTextarea(messageRef, messageValue);
+    useSignalRChat(deviceInfo.deviceId || "");
+
     const uploadImageMutation = useUpload();
 
     // ===== Derived State =====
@@ -96,7 +110,6 @@ const Chat: React.FC = () => {
         if (!isValidTopicType) {
             history.push("/home");
         }
-
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
@@ -121,12 +134,9 @@ const Chat: React.FC = () => {
         }
     }, [signalRMessages]);
 
-
     useEffect(() => {
         if (prevSessionIdRef.current !== sessionId) {
-            clearPendingMessages()
-            setSignalRMessages([]);
-            clearAll();
+            setSignalRMessages?.([]);
             setHasFirstSignalRMessage(false);
         }
         prevSessionIdRef.current = sessionId;
@@ -134,6 +144,7 @@ const Chat: React.FC = () => {
             useChatStore.getState().setIsSending(false);
         };
     }, [sessionId]);
+
     // ===== Handlers =====
     const {
         handleImageChange,
@@ -157,7 +168,10 @@ const Chat: React.FC = () => {
         signalRMessages,
         uploadImageMutation,
         messagesEndRef,
-        setHasFirstSignalRMessage
+        setHasFirstSignalRMessage,
+        deviceInfo,
+        stopMessages,
+        setStopMessages
     });
 
     // ===== Message Mapping (Render Helper) =====
@@ -184,11 +198,20 @@ const Chat: React.FC = () => {
         ...msg,
         isRight: true,
     });
-
-    const allMessages = [
+    const allSignalR = signalRMessages.map(mapSignalRMessage);
+    console.log(allSignalR)
+    const allPending = pendingMessages.map(mapPendingMessage);
+    const mergedMessages = [
         ...messages,
-        ...signalRMessages.map(mapSignalRMessage),
-        ...pendingMessages.map(mapPendingMessage),
+        ...allSignalR.filter(
+            (msg: any) =>
+                !messages.some(
+                    (m) =>
+                        (m.id && msg.id && m.id === msg.id) ||
+                        (m.chatCode && msg.chatCode && m.chatCode === msg.chatCode)
+                )
+        ),
+        ...allPending,
     ].sort((a, b) => a.timeStamp - b.timeStamp);
 
     return (
@@ -224,87 +247,24 @@ const Chat: React.FC = () => {
                 onScroll={handleScroll}
             >
                 {isWelcome ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                        <div className="flex items-center gap-2 mb-4 ">
-                            <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-100">
-                                <img src="/logo/AI.svg" alt="bot" className="" />
-                            </span>
-                            <span className="text-[22px] font-bold text-main">{t("How can I help you?")}</span>
-                        </div>
-                        <div className="w-full  mx-auto bg-white rounded-2xl shadow-[0px_-3px_10px_0px_#00000033] px-6 py-4 flex flex-col gap-2">
-                            <div className="flex  gap-2 flex-wrap">
-                                <PendingImages
-                                    pendingImages={pendingImages}
-                                    imageLoading={uploadImageMutation.isLoading}
-                                    removePendingImage={removePendingImage}
-                                />
-                                <PendingFiles
-                                    pendingFiles={pendingFiles}
-                                    removePendingFile={removePendingFile}
-                                />
-                            </div>
-                            <textarea
-                                placeholder={t("Enter your message...")}
-                                ref={messageRef}
-                                value={messageValue}
-                                onChange={(e) => setMessageValue(e.target.value)}
-                                className="flex-1 focus:outline-none resize-none"
-                                rows={1}
-                            />
-                            <div className="flex justify-between items-center">
-                                <div className="flex gap-6">
-                                    <button onClick={() => history.push("/take-photo")}>
-                                        <img src="/logo/chat/cam.svg" alt={t("camera")} />
-                                    </button>
-                                    <label>
-                                        <img src="logo/chat/image.svg" alt={t("image")} />
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            className="hidden"
-                                            onChange={handleImageChange}
-                                        />
-                                    </label>
-                                    <label>
-                                        <img src="logo/chat/file.svg" alt={t("file")} />
-                                        <input
-                                            type="file"
-                                            multiple
-                                            className="hidden"
-                                            onChange={handleFileChange}
-                                        />
-                                    </label>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={(e) => handleSendMessage(e, true)}
-                                    disabled={isSending || (!messageValue.trim() && pendingImages.length === 0 && pendingFiles.length === 0)}
-                                >
-                                    <img src="logo/chat/send.svg" alt={t("send")} />
-                                </button>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 w-full mt-8">
-                            {quickActions.map((item) => (
-                                <button
-                                    key={item.to}
-                                    className="flex items-center gap-4 p-4 rounded-3xl w-full  bg-white shadow-[0px_2px_2px_2px_#0000001A] transition hover:shadow-md"
-                                    onClick={() => history.push(item.to)}
-                                >
-                                    <span className={`inline-flex items-center justify-center rounded-full `}>
-                                        <img src={item.icon} alt={item.alt} className="w-8 aspect-square " />
-                                    </span>
-                                    <span className="font-semibold text-main text-left leading-none break-words line-clamp-2">
-                                        {item.label}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    <ChatWelcomePanel
+                        pendingImages={pendingImages}
+                        pendingFiles={pendingFiles}
+                        uploadImageMutation={uploadImageMutation}
+                        removePendingImage={removePendingImage}
+                        removePendingFile={removePendingFile}
+                        messageValue={messageValue}
+                        setMessageValue={setMessageValue}
+                        isLoading={isLoading}
+                        isSending={isSending}
+                        handleImageChange={handleImageChange}
+                        handleFileChange={handleFileChange}
+                        handleSendMessage={handleSendMessage}
+                        history={history}
+                    />
                 ) : (
                     <ChatMessageList
-                        allMessages={allMessages}
+                        allMessages={mergedMessages}
                         pendingMessages={pendingMessages}
                         topicType={topicType}
                         title={title}

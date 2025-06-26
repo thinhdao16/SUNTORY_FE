@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/zustand/auth-store";
 import { useToastStore } from "@/store/zustand/toast-store";
 import CustomButton from "@/components/button/CustomButton";
 import { registerSimple } from "@/services/auth/auth-service";
+import useDeviceInfo from "@/hooks/useDeviceInfo";
 
 interface RegisterFormValues {
     firstName: string;
@@ -21,6 +22,8 @@ interface RegisterFormValues {
 const Register: React.FC = () => {
     const history = useHistory();
     const setUserAfterRegister = useAuthStore((s) => s.setUserAfterRegister);
+    const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
+
     const {
         register,
         handleSubmit,
@@ -40,6 +43,7 @@ const Register: React.FC = () => {
                 email: data.emailOrPhone,
                 password: data.password,
                 returnUrl: "",
+                deviceId: deviceInfo.deviceId || "",
             };
             const res = await registerSimple(payload);
             setUserAfterRegister?.(res.data);

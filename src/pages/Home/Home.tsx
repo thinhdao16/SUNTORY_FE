@@ -5,50 +5,50 @@ import { IonContent, IonPage } from '@ionic/react';
 import { useHistory } from "react-router-dom";
 import { useAuthInfo } from '../Auth/hooks/useAuthInfo';
 
-const features = [
-  {
-    image: "logo/home/medical_support.svg",
-    title: t("Medical Support"),
-    link: "/chat/10",
-  },
-  {
-    image: "logo/home/document_translation.svg",
-    title: t("Document Translation"),
-    link: "/chat/20",
-  },
-  {
-    image: "logo/home/product_information.svg",
-    title: t("Product Information"),
-    link: "/chat/30",
-  },
-  {
-    image: "logo/home/food_discovery.svg",
-    title: t("Food Discovery"),
-    link: "/chat/40",
-  },
-];
-const howItWorks = [
-  {
-    step: 1,
-    title: t("Create Your Profile"),
-    desc: t("Set up your health profile with medical history"),
-  },
-  {
-    step: 2,
-    title: t("Scan & Upload"),
-    desc: t("Take photos of prescriptions or medical documents for instant"),
-  },
-  {
-    step: 3,
-    title: t("Get AI Insights"),
-    desc: t("Receive personalized recommendations and health"),
-  },
-];
+
 function Home() {
   const history = useHistory();
   const { data: userInfo } = useAuthInfo();
   const [headerImgLoaded, setHeaderImgLoaded] = useState(false);
-
+  const features = [
+    {
+      image: "logo/home/medical_support.svg",
+      title: t("Medical Support"),
+      link: "/chat/10",
+    },
+    {
+      image: "logo/home/document_translation.svg",
+      title: t("Document Translation"),
+      link: "/chat/20",
+    },
+    {
+      image: "logo/home/product_information.svg",
+      title: t("Product Information"),
+      link: "/chat/30",
+    },
+    {
+      image: "logo/home/food_discovery.svg",
+      title: t("Food Discovery"),
+      link: "/chat/40",
+    },
+  ];
+  const howItWorks = [
+    {
+      step: 1,
+      title: t("Create Your Profile"),
+      desc: t("Set up your health profile with medical history"),
+    },
+    {
+      step: 2,
+      title: t("Scan & Upload"),
+      desc: t("Take photos of prescriptions or medical documents for instant"),
+    },
+    {
+      step: 3,
+      title: t("Get AI Insights"),
+      desc: t("Receive personalized recommendations and health"),
+    },
+  ];
   const user = userInfo;
   const age = user?.dateOfBirth
     ? Math.max(1, new Date().getFullYear() - new Date(user.dateOfBirth).getFullYear())
@@ -142,6 +142,7 @@ function Home() {
                 <div
                   key={f.title}
                   className="bg-white rounded-2xl p-4 flex flex-col items-start justify-start aspect-square w-full"
+                  onClick={() => history.push(f.link)}
                 >
 
                   <div className="flex justify-between gap-4 items-start w-full mb-1">

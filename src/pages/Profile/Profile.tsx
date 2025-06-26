@@ -42,7 +42,7 @@ const Profile: React.FC = () => {
         //     label: t("Update Health Information"),
         //     onClick: () => setShowHealthOptions(true),
         // },
-        { label: t("Reset Password"), onClick: () => history.push("/change-password") },
+        { label: t("Change Password"), onClick: () => history.push("/change-password") },
         { label: t("Language"), onClick: () => handleChangeLanguage(true, "en") },
         // { label: t("Help & Feedback"), onClick: () => { } },
         { label: t("Logout"), onClick: () => { handleLogout() } },
@@ -85,7 +85,7 @@ const Profile: React.FC = () => {
                         {section ? (
                             <button
                                 className="flex items-center gap-2 text-main font-medium"
-                                onClick={() => history.goBack()}
+                                onClick={() => history.push("/profile")}
                             >
                                 <img src="logo/back.svg" alt="Back" className="w-6 h-6" />
                             </button>

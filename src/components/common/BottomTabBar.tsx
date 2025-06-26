@@ -3,6 +3,8 @@ import { useLocation, useHistory } from "react-router-dom";
 import { t } from "@/lib/globalT";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { TopicType } from "@/constants/topicType";
+import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
+
 interface TabItem {
     label: string;
     icon: string;
@@ -13,48 +15,54 @@ interface TabItem {
     classNameIcon?: string;
 }
 
-const tabs: TabItem[] = [
-    {
-        label: t("Home"),
-        icon: "logo/footer/home.svg",
-        iconActive: "logo/footer/home_active.svg",
-        path: "/home",
-        activePath: "/home",
-        classNameIcon: "h-6",
-    },
-    {
-        label: t("Chat"),
-        icon: "logo/footer/chat.svg",
-        iconActive: "logo/footer/chat_active.svg",
-        path: `/chat/${TopicType.Chat}`,
-        activePath: (pathname: string) => pathname.startsWith("/chat"),
-        className: "gap-[5px]",
-        classNameIcon: "h-6",
-    },
-    // {
-    //     label: t("Translation"),
-    //     icon: "logo/footer/translation.svg",
-    //     iconActive: "logo/footer/translation_active.svg",
-    //     path: "/translate",
-    //     activePath: (pathname: string) => pathname.startsWith("/translate"),
-    //     classNameIcon: "h-6",
-    // },
-    {
-        label: t("Profile"),
-        icon: "logo/footer/profile.svg",
-        iconActive: "logo/footer/profile_active.svg",
-        path: "/profile",
-        activePath: "/profile",
-        classNameIcon: "h-6",
-    },
-];
-
 const BottomTabBar: React.FC = () => {
     const location = useLocation();
     const history = useHistory();
-
     const [keyboardOpen, setKeyboardOpen] = useState(false);
-    const clearPendingMessages = useChatStore((s) => s.clearPendingMessages);
+
+    // Đặt tabs bên trong component để label cập nhật khi đổi i18n
+    const tabs: TabItem[] = [
+        {
+            label: "Home",
+            icon: "logo/footer/home.svg",
+            iconActive: "logo/footer/home_active.svg",
+            path: "/home",
+            activePath: "/home",
+            classNameIcon: "h-6",
+        },
+        {
+            label: "JetAI",
+            icon: "logo/footer/chat.svg",
+            iconActive: "logo/footer/chat_active.svg",
+            path: `/chat/${TopicType.Chat}`,
+            activePath: (pathname: string) => pathname.startsWith("/chat"),
+            className: "gap-[5px]",
+            classNameIcon: "h-6",
+        },
+        // {
+        //     label: "Translation",
+        //     icon: "logo/footer/translation.svg",
+        //     iconActive: "logo/footer/translation_active.svg",
+        //     path: "/translate",
+        //     activePath: (pathname: string) => pathname.startsWith("/translate"),
+        //     classNameIcon: "h-6",
+        // },
+        {
+            label: "Profile",
+            icon: "logo/footer/profile.svg",
+            iconActive: "logo/footer/profile_active.svg",
+            path: "/profile",
+            activePath: (pathname: string) => pathname.startsWith("/profile"),
+            classNameIcon: "h-6",
+        },
+    ];
+
+    const clearAll = () => {
+        useChatStore.getState().clearPendingMessages();
+        useChatStore.getState().clearMessages();
+        useChatStore.getState().setStopMessages(true);
+        useSignalRChatStore.getState().setMessages([]);
+    };
 
     useEffect(() => {
         let initialHeight = window.innerHeight;
@@ -110,7 +118,7 @@ const BottomTabBar: React.FC = () => {
                     <button
                         key={tab.label}
                         onClick={() => {
-                            clearPendingMessages();
+                            clearAll();
                             history.push(tab.path);
                             useChatStore.getState().setIsSending(false);
                         }}
@@ -121,7 +129,7 @@ const BottomTabBar: React.FC = () => {
                             src={isActive ? tab.iconActive : tab.icon}
                             className={tab.classNameIcon}
                         />
-                        <span className="text-[8px] font-bold ">{tab.label}</span>
+                        <span className="text-[8px] font-bold ">{t(tab.label)}</span>
                     </button>
                 );
             })}
