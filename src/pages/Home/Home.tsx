@@ -144,8 +144,7 @@ function Home() {
                   className="bg-white rounded-2xl p-4 flex flex-col items-start justify-start aspect-square w-full"
                   onClick={() => history.push(f.link)}
                 >
-
-                  <div className="flex justify-between gap-4 items-start w-full mb-1">
+                  <div className="flex justify-between gap-4 items-center w-full mb-1">
                     <div className="font-semibold leading-none text-[14px] mb-1">{f.title}</div>
                     <button
                       className=" top-3 right-3 bg-main rounded-full aspect-square h-[30px] flex items-center justify-center shadow-md"
@@ -187,7 +186,7 @@ function Home() {
               </div>
             </div>
             <div className=" mt-4">
-              <div className="bg-gradient-to-r from-primary-400 to-main rounded-xl p-4 text-center text-white font-semibold">
+              <div className="bg-gradient-to-r from-primary-400 to-main rounded-xl p-4 text-center text-white font-semibold" onClick={() => history.push("/chat/10")}>
                 {t("Get Started")}
               </div>
             </div>

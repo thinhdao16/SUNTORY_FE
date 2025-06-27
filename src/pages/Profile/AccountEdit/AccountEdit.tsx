@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { t } from "@/lib/globalT";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
@@ -8,8 +8,8 @@ import MainButton from "@/components/common/MainButton";
 import { useQueryClient } from "react-query";
 import { useUpdateAccountInfo } from "../hooks/useProfile";
 import dayjs from "dayjs";
-import useKeyboardManager from "@/hooks/useKeyboardManager";
-import { useKeyboardResize } from "@/pages/Chat/hooks/useKeyboardResize";
+import HealthTextInput from "@/components/input/HealthTextInput";
+import { IoCalendarOutline } from "react-icons/io5";
 
 const genderOptions = [
     { label: "Male", code: "Male" },
@@ -22,11 +22,14 @@ const AccountEdit: React.FC = () => {
     const queryClient = useQueryClient();
     const updateAccountInfo = useUpdateAccountInfo();
 
+    // Add birthdayInputRef for date input
+    const birthdayInputRef = useRef<HTMLInputElement>(null);
 
     const {
         control,
         handleSubmit,
         formState: { errors },
+        register,
     } = useForm({
         defaultValues: {
             firstname: userInfo?.firstname || "",
@@ -90,18 +93,41 @@ const AccountEdit: React.FC = () => {
                         )}
                     />
                 </div>
-                <div className="flex gap-2">
-                    <Controller
-                        name="dateOfBirth"
-                        control={control}
-                        render={({ field }) => (
-                            <InputTextField
-                                label={t("Birthday")}
-                                type="date"
-                                {...field}
-                            />
-                        )}
-                    />
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2">
+                        <Controller
+                            name="dateOfBirth"
+                            control={control}
+                            render={({ field }) => (
+                                <HealthTextInput
+                                    label={t("Birthday")}
+                                    register={register}
+                                    required={false}
+                                    placeholder={t("mm/dd/yyyy")}
+                                    error={errors.dateOfBirth}
+                                    type="date"
+                                    inputRef={birthdayInputRef}
+                                    logo={
+                                        <span
+                                            onClick={() =>
+                                                birthdayInputRef.current?.showPicker
+                                                    ? birthdayInputRef.current.showPicker()
+                                                    : birthdayInputRef.current?.focus()
+                                            }
+                                            className="cursor-pointer"
+                                        >
+                                            <IoCalendarOutline className="text-base" />
+                                        </span>
+                                    }
+                                    className="[&::-webkit-calendar-picker-indicator]:opacity-0 py-3"
+                                    classNameContainer="mb-0"
+                                    classNameLable="!mb-0"
+                                    {...field}
+                                />
+                            )}
+                        />
+                    </div>
+
                     <Controller
                         name="gender"
                         control={control}
@@ -141,33 +167,10 @@ const AccountEdit: React.FC = () => {
                         )}
                     />
                 </div>
-                {/* Ẩn nút Save mặc định nếu muốn, hoặc để đây cho desktop */}
-                {/* {!isKeyboardVisible && ( */}
                 <MainButton type="submit" className="w-full mt-4">
                     {t("Save")}
                 </MainButton>
-                {/* )} */}
             </form>
-            {/* {isKeyboardVisible && (
-                <div
-                    style={{
-                        position: "fixed",
-                        left: 0,
-                        right: 0,
-                        bottom: heightKeyBoard,
-                        zIndex: 1000,
-                        transition: "bottom 0.2s",
-                    }}
-                >
-                    <MainButton
-                        type="submit"
-                        className="w-full"
-                        onClick={handleSubmit(onSubmit)}
-                    >
-                        {t("Save")}
-                    </MainButton>
-                </div>
-            )} */}
         </>
     );
 };

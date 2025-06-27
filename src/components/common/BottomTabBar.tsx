@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useHistory } from "react-router-dom";
-import { t } from "@/lib/globalT";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { TopicType } from "@/constants/topicType";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
+import { useTranslation } from "react-i18next";
 
 interface TabItem {
     label: string;
@@ -16,6 +16,7 @@ interface TabItem {
 }
 
 const BottomTabBar: React.FC = () => {
+    const { t } = useTranslation();
     const location = useLocation();
     const history = useHistory();
     const [keyboardOpen, setKeyboardOpen] = useState(false);

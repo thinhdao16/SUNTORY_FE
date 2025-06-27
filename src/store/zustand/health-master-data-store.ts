@@ -1,35 +1,46 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export interface MasterDataState {
+interface HealthMasterData {
     bloodTypes: any[];
-    healthConditions: any[];
-    allergies: any[];
-    lifestyles: any[];
+    groupedHealthConditions: any[];
+    groupedAllergies: any[];
+    groupedMedications: any[];
+    groupedLifestyles: any[];
     severities: any[];
     medicationTimes: any[];
     medicationFrequencies: any[];
-    setMasterData: (data: Partial<Omit<MasterDataState, "setMasterData">>) => void;
-    reset: () => void;
 }
 
-const defaultState = {
+interface HealthMasterDataState {
+    masterData: Partial<HealthMasterData>;
+    setMasterData: (data: Partial<HealthMasterData>) => void;
+    resetMasterData: () => void;
+}
+
+const defaultState: Partial<HealthMasterData> = {
     bloodTypes: [],
-    healthConditions: [],
-    allergies: [],
-    lifestyles: [],
+    groupedHealthConditions: [],
+    groupedAllergies: [],
+    groupedMedications: [],
+    groupedLifestyles: [],
     severities: [],
     medicationTimes: [],
     medicationFrequencies: [],
 };
 
-export const useHealthMasterDataStore = create<MasterDataState>()(
+export const useHealthMasterDataStore = create<HealthMasterDataState>()(
     persist(
         (set) => ({
-            ...defaultState,
-            setMasterData: (data) => set((state) => ({ ...state, ...data })),
-            reset: () => set(defaultState),
+            masterData: defaultState,
+            setMasterData: (data) =>
+                set((state) => ({
+                    masterData: { ...state.masterData, ...data },
+                })),
+            resetMasterData: () => set({ masterData: defaultState }),
         }),
-        { name: "health-master-data" }
+        {
+            name: "health-master-data-storage",
+        }
     )
 );

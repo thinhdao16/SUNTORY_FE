@@ -10,6 +10,8 @@ interface HealthTextInputProps extends React.InputHTMLAttributes<HTMLInputElemen
     logo?: React.ReactNode;
     classNameContainer?: string;
     inputRef?: React.Ref<HTMLInputElement>;
+    className?: string;
+    classNameLable?: string;
 }
 
 const HealthTextInput: React.FC<HealthTextInputProps> = ({
@@ -22,10 +24,11 @@ const HealthTextInput: React.FC<HealthTextInputProps> = ({
     classNameContainer,
     className = "",
     inputRef,
+    classNameLable,
     ...rest
 }) => (
     <div className={`mb-2 ${classNameContainer} w-full`}>
-        <label className="block font-medium mb-1">
+        <label className={`block font-medium mb-1 ${classNameLable}`} htmlFor={name}>
             {label}
             {required && <span className="text-red-500 ml-1">*</span>}
         </label>
