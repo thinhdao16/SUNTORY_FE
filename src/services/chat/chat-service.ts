@@ -8,10 +8,13 @@ export const USER_SENDER_TYPE = 10;
 export interface UserChatByTopicRequest {
     topicId: number | null;
 }
-export const getUserChatsByTopic = async (topicId?: number | null) => {
+export const getUserChatsByTopic = async (
+    topicId?: number | null,
+    keyword?: string
+) => {
     const res = await httpClient.get<UserChatByTopicResponse>(
         "/api/v1/chat/user-chats-by-topic",
-        { params: { topicId } }
+        { params: { topic: topicId, keyword } }
     );
     return res.data;
 };

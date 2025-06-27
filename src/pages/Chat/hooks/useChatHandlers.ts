@@ -6,6 +6,8 @@ import React, { use } from "react";
 import { UseMutationResult } from "react-query";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
+import i18n from "@/config/i18n";
+import { useScrollToBottom } from "@/hooks/useScrollToBottom";
 
 interface UseChatHandlersProps {
     addPendingImages: (images: string[]) => void;
@@ -54,6 +56,7 @@ export function useChatHandlers({
     stopMessages,
     setStopMessages
 }: UseChatHandlersProps) {
+    const scrollToBottom = useScrollToBottom(messagesEndRef);
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
@@ -98,24 +101,27 @@ export function useChatHandlers({
             try {
                 timeoutId = setTimeout(() => {
                     useChatStore.getState().setIsSending(false);
-                    useToastStore.getState().showToast(
-                        t("Message sending failed, please try again!"),
-                        3000,
-                        "error"
-                    );
+                    setPendingMessages((prev: any) => [
+                        ...prev,
+                        {
+                            text: t("Message sending failed, please try again!"),
+                            createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
+                            timeStamp: generatePreciseTimestampFromDate(new Date()),
+                            isError: true,
+                        }
+                    ]);
                 }, 1000 * 60);
 
                 const filesArr = [
                     ...pendingFiles.map(f => ({ name: f.name })),
                     ...pendingImages.map((img, idx) => ({ name: typeof img === "string" ? img.split("/").pop() || `image_${idx}` : `image_${idx}` }))
                 ];
-
                 const payload = {
                     chatCode: sessionId ?? null,
                     messageText: messageValue.trim(),
                     topic: Number(topicType),
                     files: filesArr.length > 0 ? filesArr : undefined,
-                    language: deviceInfo.language || "en",
+                    language: i18n.language || "en",
                 };
 
                 const now = dayjs.utc();
@@ -145,6 +151,7 @@ export function useChatHandlers({
                     }
                 ]);
 
+                scrollToBottom();
                 const res = await createChatApi(payload);
 
                 if (timeoutId) clearTimeout(timeoutId);
@@ -158,11 +165,15 @@ export function useChatHandlers({
             } catch (err) {
                 if (timeoutId) clearTimeout(timeoutId);
                 useChatStore.getState().setIsSending(false);
-                useToastStore.getState().showToast(
-                    t("Message sending failed, please try again!"),
-                    3000,
-                    "error"
-                );
+                setPendingMessages((prev: any) => [
+                    ...prev,
+                    {
+                        text: t("Message sending failed, please try again!"),
+                        createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
+                        timeStamp: generatePreciseTimestampFromDate(new Date()),
+                        isError: true,
+                    }
+                ]);
             }
         }
     };

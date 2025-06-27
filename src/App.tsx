@@ -17,19 +17,31 @@ import "./config/i18n";
 import "./App.css";
 
 
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
+import { GoogleOAuthProvider } from '@react-oauth/google';
 setupIonicReact();
-
+if (Capacitor.getPlatform && Capacitor.getPlatform() === 'web') {
+  GoogleAuth.initialize({
+    clientId: '544649939857-endt7v6abdo4fpca87ihhoq1qr5ij8jf.apps.googleusercontent.com',
+    scopes: ['profile', 'email'],
+    grantOfflineAccess: true,
+  });
+}
+const GOOGLE_WEB_CLIENT_ID = '544649939857-endt7v6abdo4fpca87ihhoq1qr5ij8jf.apps.googleusercontent.com';
 const App: React.FC = () => {
   useSafeArea();
   return (
-    <IonApp className="ion-light">
-      <IonReactRouter>
-        <IonRouterOutlet>
-          <AppRoutes />
-        </IonRouterOutlet>
-        <Global />
-      </IonReactRouter>
-    </IonApp>
+    <GoogleOAuthProvider clientId={GOOGLE_WEB_CLIENT_ID}>
+      <IonApp className="ion-light">
+        <IonReactRouter>
+          <IonRouterOutlet>
+            <AppRoutes />
+          </IonRouterOutlet>
+          <Global />
+        </IonReactRouter>
+      </IonApp>
+    </GoogleOAuthProvider>
   );
 };
 

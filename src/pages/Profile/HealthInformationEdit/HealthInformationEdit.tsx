@@ -5,15 +5,15 @@ import { t } from "@/lib/globalT";
 
 const healthItems = [
     {
-        label: t("Tình trạng sức khỏe"),
+        label: t("Health status"),
         path: "/health-information/health-info",
     },
     {
-        label: t("Thông tin dị ứng"),
+        label: t("Allergy information"),
         path: "/health-information/allergy-info",
     },
     {
-        label: t("Thuốc đang sử dụng"),
+        label: t("Current medications"),
         path: "/health-information/medicine-info",
     },
     {

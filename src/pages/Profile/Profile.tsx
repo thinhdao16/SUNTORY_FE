@@ -36,6 +36,8 @@ const Profile: React.FC = () => {
     const handleChangeLanguage = (status: boolean, lang?: string) => {
         setShowLanguageOptions(status);
     };
+    const currentLang = languageOptions.find(opt => opt.code === i18n.language)?.label || i18n.language;
+
     const menuItems = [
         { label: t("Account"), onClick: () => history.replace("/profile/account"), },
         // {
@@ -43,7 +45,7 @@ const Profile: React.FC = () => {
         //     onClick: () => history.replace("/profile/health"),
         // },
         { label: t("Change Password"), onClick: () => history.push("/change-password") },
-        { label: t("Language"), onClick: () => handleChangeLanguage(true, "en") },
+        { label: `${t("Language")} (${currentLang})`, onClick: () => handleChangeLanguage(true, "en") },
         // { label: t("Help & Feedback"), onClick: () => { } },
         { label: t("Logout"), onClick: () => { handleLogout() } },
     ];
@@ -85,14 +87,14 @@ const Profile: React.FC = () => {
                                 className="flex items-center gap-2 text-main font-medium"
                                 onClick={() => history.push("/profile")}
                             >
-                                <img src="logo/back.svg" alt="Back" className="w-6 h-6" />
+                                <img src="logo/back.svg" alt="Back" />
                             </button>
                         ) : (
                             <button
                                 className="mr-auto"
                                 onClick={openSidebarWithAuthCheck}
                             >
-                                <img src="logo/nav_bar_home_history.svg" alt="Menu" className="w-6 h-6" />
+                                <img src="logo/nav_bar_home_history.svg" alt="Menu" />
                             </button>
                         )}
                     </div>
@@ -107,7 +109,10 @@ const Profile: React.FC = () => {
                                     {languageOptions.map((opt) => (
                                         <li key={opt.code}>
                                             <button
-                                                className="w-full py-2 text-left hover:bg-gray-100 rounded transition text-gray-700"
+                                                className={`w-full py-2 text-left rounded transition ${i18n.language === opt.code
+                                                    ? " text-main font-semibold"
+                                                    : "text-gray-700 hover:bg-gray-100"
+                                                    }`}
                                                 onClick={async () => {
                                                     setLanguageLoading(true);
                                                     await i18n.changeLanguage(opt.code);

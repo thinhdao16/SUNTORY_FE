@@ -1,20 +1,21 @@
 import ChatSidebar from "@/components/sidebar/ChatSidebar";
 import { useUiStore } from "@/store/zustand/ui-store";
-import React from "react";
+import React, { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useHistory, useLocation, useParams } from "react-router";
+import { useHistory, useLocation } from "react-router";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import { TopicType } from "@/constants/topicType";
+import { useUserChatsByTopicSearch } from "@/pages/Chat/hooks/useChat"; // import hook search
 
 const ChatSidebarLayout: React.FC = () => {
-
-
   const { isChatSidebarOpen, closeChatSidebar } = useUiStore();
   const { data: userInfo } = useAuthInfo();
   const history = useHistory();
   const location = useLocation();
   const match = location.pathname.match(/\/chat\/[^/]+\/([^/]+)/);
   const sessionId = match ? match[1] : undefined;
+  const { data: chatData, isLoading } = useUserChatsByTopicSearch(/* truyền topicId, keyword nếu có */);
+
   const handleNewChat = () => {
     closeChatSidebar();
     history.push(`/chat/${TopicType.Chat}`);

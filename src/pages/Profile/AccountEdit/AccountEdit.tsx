@@ -109,17 +109,21 @@ const AccountEdit: React.FC = () => {
                                     inputRef={birthdayInputRef}
                                     logo={
                                         <span
-                                            onClick={() =>
-                                                birthdayInputRef.current?.showPicker
-                                                    ? birthdayInputRef.current.showPicker()
-                                                    : birthdayInputRef.current?.focus()
-                                            }
+                                            onClick={() => {
+                                                if (birthdayInputRef.current) {
+                                                    if (typeof birthdayInputRef.current.showPicker === "function") {
+                                                        birthdayInputRef.current.showPicker();
+                                                    } else {
+                                                        birthdayInputRef.current.focus();
+                                                    }
+                                                }
+                                            }}
                                             className="cursor-pointer"
                                         >
-                                            <IoCalendarOutline className="text-base" />
+                                            {/* <IoCalendarOutline className="text-base" /> */}
                                         </span>
                                     }
-                                    className="[&::-webkit-calendar-picker-indicator]:opacity-0 py-3"
+                                    className="py-3 !pr-2"
                                     classNameContainer="mb-0"
                                     classNameLable="!mb-0"
                                     {...field}

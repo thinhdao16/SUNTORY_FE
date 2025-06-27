@@ -6,87 +6,125 @@ import { usePhotoGallery, base64FromPath } from "./usePhotoGallery";
 import { useHistory } from "react-router";
 import { useImageStore } from "@/store/zustand/image-store";
 import { uploadChatFile } from "@/services/file/file-service";
+import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
+import { Capacitor } from "@capacitor/core";
 
+const isNative = Capacitor.isNativePlatform();
 const TakePhoto: React.FC = () => {
   const { chooseFromGallery } = usePhotoGallery();
   const [present] = useIonToast();
   const history = useHistory();
   const [showQR, setShowQR] = useState(false);
-  const [facingMode, setFacingMode] = useState<"user" | "environment">(
-    "environment"
-  );
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [flashOn, setFlashOn] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [cameraStarted, setCameraStarted] = useState(false);
+
   const addPendingImage = useImageStore((s) => s.addPendingImages);
 
-  const handleChooseFromGallery = async () => {
-    const imgData = await chooseFromGallery();
-    let base64Img = imgData?.base64;
-    if (!base64Img && imgData?.webPath) {
-      base64Img = await base64FromPath(imgData.webPath);
+  const openDeviceSettings = async () => {
+    const platform = Capacitor.getPlatform();
+    if (platform === "web") {
+      present({
+        message: t("Please open your browser settings and allow camera permission for this site."),
+        duration: 4000,
+        color: "warning",
+      });
+      return;
     }
-    if (base64Img) {
-      // Convert base64 to File
-      const file = base64ToFile(base64Img, "gallery.png");
-      const uploaded = await uploadChatFile(file);
-      if (uploaded && uploaded.length > 0) {
-        addPendingImage([uploaded[0].linkImage]);
-        history.push("/chat");
+    try {
+      if (platform === "android") {
+        console.log('first')
+        await NativeSettings.openAndroid({ option: AndroidSettings.ApplicationDetails });
+      } else if (platform === "ios") {
+        await NativeSettings.openIOS({ option: IOSSettings.App });
       }
+    } catch (error) {
+      console.error("Failed to open device settings:", error);
+      present({
+        message: t("Cannot open device settings on this platform."),
+        duration: 3000,
+        color: "danger",
+      });
     }
   };
 
   const checkPermission = async () => {
     if (window.isSecureContext && navigator.mediaDevices?.getUserMedia) {
-      // Web: hỏi quyền camera
       try {
         await navigator.mediaDevices.getUserMedia({ video: true });
         setShowQR(true);
       } catch {
         present({
-          message: t("Bạn cần cấp quyền camera để sử dụng tính năng này! Nếu đã từ chối, vui lòng vào cài đặt trình duyệt để cấp lại quyền camera cho website."),
+          message: "Please allow camera access in your browser settings.",
           duration: 0,
           color: "danger",
           buttons: [
             {
-              text: t("Thử lại"),
-              handler: () => {
-                checkPermission();
-              },
+              text: "Open Settings",
+              handler: () => openDeviceSettings(),
             },
             {
-              text: t("Đóng"),
+              text: "Close",
               role: "cancel",
             },
           ],
         });
       }
     } else {
-      // App: Capacitor
       const permission = await Camera.checkPermissions();
       if (permission.camera !== "granted") {
         const res = await Camera.requestPermissions({ permissions: ["camera"] });
-        if (res.camera === "granted") setShowQR(true);
+        if (res.camera === "granted") {
+          setShowQR(true);
+        } else if (res.camera === "denied") {
+          present({
+            message: "Camera access denied. Please allow it in system settings.",
+            duration: 0,
+            color: "danger",
+            buttons: [
+              {
+                text: "Open Settings",
+                handler: () => openDeviceSettings(),
+              },
+              {
+                text: "Close",
+                role: "cancel",
+              },
+            ],
+          });
+        }
       } else {
         setShowQR(true);
       }
     }
   };
 
+  const handleChooseFromGallery = async () => {
+    const imgData = await chooseFromGallery();
+    let base64Img = imgData?.base64 || (imgData?.webPath && await base64FromPath(imgData.webPath));
+    if (base64Img) {
+      const file = base64ToFile(base64Img, "gallery.png");
+      const uploaded = await uploadChatFile(file);
+      if (uploaded?.length) {
+        addPendingImage([uploaded[0].linkImage]);
+        history.goBack();
+      }
+    }
+  };
+
   const handleCapture = async () => {
     if (!videoRef.current) return;
-    const video = videoRef.current;
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(videoRef.current, 0, 0);
       const imgData = canvas.toDataURL("image/png");
-      // Convert base64 to File
       const file = base64ToFile(imgData, "captured.png");
       const uploaded = await uploadChatFile(file);
-      if (uploaded && uploaded.length > 0) {
+      if (uploaded?.length) {
         addPendingImage([uploaded[0].linkImage]);
         history.goBack();
       }
@@ -96,29 +134,17 @@ const TakePhoto: React.FC = () => {
   const handleToggleFlash = async () => {
     try {
       const video = videoRef.current;
-      if (video?.srcObject) {
-        const stream = video.srcObject as MediaStream;
-        const track = stream.getVideoTracks()[0];
-        const capabilities = track.getCapabilities?.();
-        if (capabilities && (capabilities as any).torch) {
-          setFlashOn((prev) => !prev);
-          await track.applyConstraints({
-            advanced: [{ torch: !flashOn }] as any,
-          });
-        } else {
-          present({
-            message: t("Your device does not support flash!"),
-            duration: 2000,
-            color: "warning",
-          });
-        }
+      const stream = video?.srcObject as MediaStream;
+      const track = stream?.getVideoTracks?.()[0];
+      const capabilities = track?.getCapabilities?.();
+      if ((capabilities as any)?.torch) {
+        setFlashOn((prev) => !prev);
+        await track.applyConstraints({ advanced: [{ torch: !flashOn }] as any });
+      } else {
+        present({ message: "Your device does not support flash!", duration: 2000, color: "warning" });
       }
     } catch {
-      present({
-        message: t("Cannot turn flash on/off!"),
-        duration: 2000,
-        color: "danger",
-      });
+      present({ message: "Failed to toggle flash!", duration: 2000, color: "danger" });
     }
   };
 
@@ -129,9 +155,7 @@ const TakePhoto: React.FC = () => {
   useEffect(() => {
     if (showQR) {
       const interval = setInterval(() => {
-        const video = document.querySelector(
-          "video#qrScanner__video"
-        ) as HTMLVideoElement;
+        const video = document.querySelector("video#qrScanner__video") as HTMLVideoElement;
         if (video) {
           videoRef.current = video;
           clearInterval(interval);
@@ -140,18 +164,66 @@ const TakePhoto: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [showQR, facingMode]);
+  useEffect(() => {
+    if (!isNative) return;
+    let CameraPreview: any;
+    let started = false;
+    (async () => {
+      const mod = await import("@capacitor-community/camera-preview");
+      CameraPreview = mod.CameraPreview;
+      await CameraPreview.start({
+        parent: "cameraPreview",
+        className: "cameraPreview",
+        position: facingMode === "user" ? "front" : "rear",
+        width: window.innerWidth,
+        height: window.innerHeight,
+        toBack: false,
+      });
+      started = true;
+      setCameraStarted(true);
+    })();
+    return () => {
+      if (CameraPreview && started) CameraPreview.stop();
+    };
+    // eslint-disable-next-line
+  }, [facingMode]);
+  useEffect(() => {
+    return () => {
+      // Ngắt camera khi rời trang (web)
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      // Ngắt camera preview native nếu có
+      if (isNative) {
+        import("@capacitor-community/camera-preview").then(mod => {
+          mod.CameraPreview.stop();
+        });
+      }
+    };
+    // eslint-disable-next-line
+  }, []);
 
-  // Helper function
-  function base64ToFile(base64: string, filename: string): File {
+  const base64ToFile = (base64: string, filename: string): File => {
     const arr = base64.split(",");
     const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
     const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) u8arr[n] = bstr.charCodeAt(n);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
     return new File([u8arr], filename, { type: mime });
-  }
-
+  };
+  const handleNativeCapture = async () => {
+    const { CameraPreview } = await import("@capacitor-community/camera-preview");
+    const result = await CameraPreview.capture({ quality: 90 });
+    const base64Img = "data:image/jpeg;base64," + result.value;
+    const file = base64ToFile(base64Img, "captured.jpg");
+    const uploaded = await uploadChatFile(file);
+    if (uploaded?.length) {
+      addPendingImage([uploaded[0].linkImage]);
+      history.goBack();
+    }
+  };
   return (
     <IonPage>
       <IonContent>
@@ -172,7 +244,9 @@ const TakePhoto: React.FC = () => {
               />
             </button>
           </div>
-
+          {/* {isNative && (
+            <div id="cameraPreview" className="absolute inset-0 z-0" />
+          )} */}
           {showQR && (
             <QrReader
               key={facingMode}
@@ -197,13 +271,19 @@ const TakePhoto: React.FC = () => {
               <img src="logo/take-photo/image.svg" alt={t("Gallery")} />
             </button>
 
+            {/* {isNative ? (
+              <button onClick={handleNativeCapture}>
+                <img
+                  src="logo/take-photo/button_cam.svg"
+                  alt={t("Camera")} />
+              </button>
+            ) : ( */}
             <button onClick={handleCapture}>
               <img
                 src="logo/take-photo/button_cam.svg"
-                alt={t("Camera")}
-                className=""
-              />
+                alt={t("Camera")} />
             </button>
+            {/* )} */}
             <button
               onClick={() =>
                 setFacingMode(

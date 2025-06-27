@@ -119,11 +119,9 @@ export const useScannerStore = create<ScannerState>()(
               headers: { "x-api-key": `${(window as any).ENV.BE_API_KEY}` },
             }
           );
-          console.log(response);
           const data = response.data.data;
           set({ data, isLoading: false });
         } catch (error: any) {
-          console.log("first error", error);
           set({ error: error.message, isLoading: false });
         }
       },

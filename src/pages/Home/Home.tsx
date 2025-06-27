@@ -4,6 +4,7 @@ import { User } from '@/types/user';
 import { IonContent, IonPage } from '@ionic/react';
 import { useHistory } from "react-router-dom";
 import { useAuthInfo } from '../Auth/hooks/useAuthInfo';
+import { TopicType } from "@/constants/topicType";
 
 
 function Home() {
@@ -50,13 +51,24 @@ function Home() {
     },
   ];
   const user = userInfo;
-  const age = user?.dateOfBirth
-    ? Math.max(1, new Date().getFullYear() - new Date(user.dateOfBirth).getFullYear())
-    : "-";
+  const getAge = (dateString: string) => {
+    const today = new Date();
+    const birthDate = new Date(dateString);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return Math.max(1, age);
+  };
+
+  const age = user?.dateOfBirth ? getAge(user.dateOfBirth) : "-";
   const height = user?.height ? `${user.height} cm` : "-";
   const weight = user?.weight ? `${user.weight} kg` : "-";
-  const gender =
-    user?.gender === 1 ? t("Male") : user?.gender === 2 ? t("Female") : "-";
+  const bmi =
+    user?.height && user?.weight
+      ? (user.weight / ((user.height / 100) ** 2)).toFixed(1)
+      : "-";
 
   return (
     <IonPage>
@@ -85,10 +97,15 @@ function Home() {
               </div>
               <div className="flex justify-between items-end">
                 <div className="flex items-start gap-2 mt-6">
-                  <div className="text-white text-2xl font-semibold truncate min-w-0">
-                    {t("Welcome")}
-                  </div>
-
+                  {userInfo?.id ? (
+                    <div className="text-white text-2xl font-semibold truncate min-w-0">
+                      {t("Hi,")} {user?.name || user?.email || t("Guest")}
+                    </div>
+                  ) : (
+                    <div className="text-white text-2xl font-semibold truncate min-w-0">
+                      {t("Welcome")}
+                    </div>
+                  )}
                 </div>
                 {userInfo?.id ? (
                   <a
@@ -115,8 +132,8 @@ function Home() {
               </div>
               <div className="mt-6 bg-white bg-opacity-90 rounded-2xl flex justify-between items-center px-6 py-4 w-full max-w-xl mx-auto">
                 <div className="flex-1 text-center">
-                  <div className="text-main font-medium">{t("Gender")}</div>
-                  <div className="text-sm text-netural-300">{gender}</div>
+                  <div className="text-main font-medium">{t("BMI")}</div>
+                  <div className="text-sm text-netural-300">{bmi}</div>
                 </div>
                 <div className="w-[0.5px] h-9 bg-netural-300 mx-2" />
                 <div className="flex-1 text-center">
@@ -137,7 +154,7 @@ function Home() {
             </div>
           </div>
           <div className='-mt-24 px-6'>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4   relative z-999">
+            <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 gap-4    relative z-999">
               {features.map((f, idx) => (
                 <div
                   key={f.title}
@@ -186,7 +203,7 @@ function Home() {
               </div>
             </div>
             <div className=" mt-4">
-              <div className="bg-gradient-to-r from-primary-400 to-main rounded-xl p-4 text-center text-white font-semibold" onClick={() => history.push("/chat/10")}>
+              <div className="bg-gradient-to-r from-primary-400 to-main rounded-xl p-4 text-center text-white font-semibold" onClick={() => history.push(`/chat/${TopicType.Chat}`)}>
                 {t("Get Started")}
               </div>
             </div>

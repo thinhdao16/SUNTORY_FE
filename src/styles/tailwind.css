@@ -54,6 +54,20 @@ ion-app {
   width: 100%;
   margin: 0 auto;
 }
+ion-app {
+  max-width: 450px !important;
+}
+@media (min-width: 768px) and (max-width: 1024px) {
+  ion-app {
+    max-width: 1024px !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  ion-app {
+    max-width: 450px !important;
+  }
+}
 
 @theme {
   --color-dark-main: #202124;

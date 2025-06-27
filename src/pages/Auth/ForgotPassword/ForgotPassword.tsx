@@ -44,7 +44,7 @@ const ForgotPassword: React.FC = () => {
             <CustomButton
                 imgSrc="/logo/back.svg"
                 imgAlt={t("Back")}
-                className="fixed top-6 left-6"
+                className="fixed top-10 left-6"
                 back
             />
             <form onSubmit={handleSubmit(onSubmit)}>
@@ -79,11 +79,7 @@ const ForgotPassword: React.FC = () => {
                 </div>
             )}
             <SocialLoginActions
-                actions={[
-                    { icon: "logo/social/apple.svg", alt: "Apple", onClick: () => {/* handleApple */ } },
-                    { icon: "logo/social/google.svg", alt: "Google", onClick: () => {/* handleGoogle */ } },
-                    { icon: "logo/social/facebook.svg", alt: "Facebook", onClick: () => {/* handleFacebook */ } },
-                ]}
+
                 dividerText={t("OR")}
                 showActions={false}
                 showDivider={false}

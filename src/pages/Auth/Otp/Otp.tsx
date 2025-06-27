@@ -5,6 +5,7 @@ import AuthCardLayout from "@/components/layout/AuthCardLayout";
 import MainButton from "@/components/common/MainButton";
 import { useOtp } from "./useOtp";
 import CustomButton from "@/components/button/CustomButton";
+import { useToastStore } from "@/store/zustand/toast-store";
 
 const Otp: React.FC = () => {
   const {
@@ -22,12 +23,22 @@ const Otp: React.FC = () => {
 
   const { handleSubmit } = useForm();
   const otpType = localStorage.getItem("otpType") || "register";
+  const showToast = useToastStore((s) => s.showToast);
+
+  const handleResendClick = () => {
+    if (!canResend) {
+      showToast(t("Please wait before resending OTP."), 2000, "warning");
+      return;
+    }
+    handleResend();
+  };
+
   return (
     <AuthCardLayout title={t("OTP Verification")}>
       <CustomButton
         imgSrc="/logo/close.svg"
         imgAlt={t("Close")}
-        className="fixed top-6 left-6"
+        className="fixed top-10 left-6"
         navigateTo={
           otpType === "register"
             ? "/register"
@@ -74,9 +85,9 @@ const Otp: React.FC = () => {
         </div>
         <MainButton
           type="button"
-          onClick={handleResend}
+          onClick={handleResendClick}
           className="bg-success-500 !text-main mb-3 hover:!text-white"
-          disabled={!canResend}
+        // disabled={!canResend}
         >
           {t("Resend")}
         </MainButton>
@@ -86,11 +97,7 @@ const Otp: React.FC = () => {
       </form>
 
       <SocialLoginActions
-        actions={[
-          { icon: "logo/social/apple.svg", alt: "Apple", onClick: () => { } },
-          { icon: "logo/social/google.svg", alt: "Google", onClick: () => { } },
-          { icon: "logo/social/facebook.svg", alt: "Facebook", onClick: () => { } },
-        ]}
+
         dividerText={t("OR")}
         showDivider={false}
         showActions={false}

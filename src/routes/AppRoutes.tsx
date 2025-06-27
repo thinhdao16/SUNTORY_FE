@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy } from "react";
+import React, { Suspense, lazy } from "react";
 import {
   Route,
   Switch,
@@ -26,13 +26,11 @@ const Profile = lazy(() => import("@/pages/Profile/Profile"));
 const ProfileAllergyInfo = lazy(() => import("@/pages/Profile/HealthInformationEdit/AllergyInfo/AllergyInfo"));
 const ProfileHealthInfo = lazy(() => import("@/pages/Profile/HealthInformationEdit/HealthInfo/HealthInfo"));
 const ProfileMedicineInfo = lazy(() => import("@/pages/Profile/HealthInformationEdit/MedicineInfo/MedicineInfo"));
-
 const Rate = lazy(() => import("@/pages/Rate/Rate"));
 const Register = lazy(() => import("@/pages/Auth/Register/Register"));
-const Scanner = lazy(() => import("@/pages/Scanner/Scanner"));
-const ScannerById = lazy(() => import("@/pages/Scanner/ScannerById"));
 const TakePhoto = lazy(() => import("@/pages/TakePhoto/TakePhoto"));
 const Translate = lazy(() => import("@/pages/Translate/Translate"));
+
 const AppRoutes: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
@@ -67,8 +65,6 @@ const AppRoutes: React.FC = () => {
             <PrivateRoute path="/translate" component={Translate} exact />
             <PrivateRoute path="/profile/:section?" component={Profile} exact />
             <PrivateRoute path="/change-password" component={ChangePassword} exact />
-            <PrivateRoute path="/scanner" component={Scanner} exact />
-            <PrivateRoute path="/scanner/:id" component={ScannerById} />
 
             <Route exact path="/" render={() => <Redirect to="/home" />} />
             <Route path="*" component={NotFound} />
@@ -78,7 +74,6 @@ const AppRoutes: React.FC = () => {
           <><BottomTabBar /><ChatSidebarLayout /></>
         )}
       </div>
-
     </>
   );
 };

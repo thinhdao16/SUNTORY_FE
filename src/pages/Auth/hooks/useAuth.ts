@@ -11,6 +11,7 @@ import {
     registerSimple,
     login,
     changePassword,
+    loginAuthGoogle,
 } from "@/services/auth/auth-service";
 import {
     ChangePasswordPayload,
@@ -18,6 +19,9 @@ import {
     RegisterResponse,
     UpdatePasswordOtpPayload,
 } from "@/services/auth/auth-types";
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { useGoogleLogin as useGoogleLoginWeb } from '@react-oauth/google';
+import { Capacitor } from '@capacitor/core';
 
 const showToast = useToastStore.getState().showToast;
 
@@ -181,3 +185,59 @@ export const useVerifyOtp = () => {
     );
 };
 
+export const useGoogleLogin = () => {
+    const setAuthData = useAuthStore((s) => s.setAuthData);
+    const showToast = useToastStore.getState().showToast;
+    const isWeb = Capacitor.getPlatform() === "web";
+
+    // Xử lý login Google cho web
+    const handleGoogleWebLogin = async (credentialResponse: any) => {
+        console.log(credentialResponse)
+        try {
+            const idToken = credentialResponse.credential;
+            const data = await loginAuthGoogle({ token: idToken });
+            const auth = data?.data?.authentication;
+            if (auth?.token && auth?.refreshToken) {
+                setAuthData({
+                    ...data.data,
+                    token: auth.token,
+                    refreshToken: auth.refreshToken,
+                });
+            } else {
+                setAuthData(data.data);
+            }
+            showToast("Login successful!", 2000, "success");
+        } catch (err) {
+            showToast("Login failed. Please try again.", 3000, "error");
+            console.error("Google Web Login Backend Error:", err);
+        }
+    };
+
+    // Xử lý login Google cho native
+    const nativeLogin = async () => {
+        try {
+            const user = await GoogleAuth.signIn();
+            const data = await loginAuthGoogle({
+                token: user.authentication?.idToken,
+            });
+            const auth = data?.data?.authentication;
+            if (auth?.token && auth?.refreshToken) {
+                setAuthData({
+                    ...data.data,
+                    token: auth.token,
+                    refreshToken: auth.refreshToken,
+                });
+            } else {
+                setAuthData(data.data);
+            }
+            showToast("Login successful!", 2000, "success");
+            return user;
+        } catch (err) {
+            showToast("Login failed. Please try again.", 3000, "error");
+            console.error("Google Native Sign-In Error:", err);
+            return null;
+        }
+    };
+
+    return { handleGoogleWebLogin, nativeLogin, isWeb };
+};

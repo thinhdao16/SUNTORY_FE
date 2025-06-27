@@ -20,10 +20,10 @@ import PendingFiles from "./components/PendingFiles";
 import PendingImages from "./components/PendingImages";
 import { useUpload } from "@/hooks/common/useUpload";
 import { useChatStore } from "@/store/zustand/chat-store";
-import { quickActions } from "./data";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { ChatMessageList } from "./components/ChatMessageList";
 import ChatWelcomePanel from "./components/ChatWelcomePanel";
+import { useScrollToBottom } from "@/hooks/useScrollToBottom";
 dayjs.extend(utc);
 
 const Chat: React.FC = () => {
@@ -36,7 +36,7 @@ const Chat: React.FC = () => {
 
     // ===== Refs =====
     const messageRef = useRef<any>(null);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const prevSessionIdRef = useRef<string | undefined>(sessionId);
     // ===== Device Info =====
@@ -89,7 +89,7 @@ const Chat: React.FC = () => {
     useSignalRChat(deviceInfo.deviceId || "");
 
     const uploadImageMutation = useUpload();
-
+    const scrollToBottomMess = useScrollToBottom(messagesEndRef);
     // ===== Derived State =====
     const topicTypeNum = type ? Number(type) : undefined;
     const isValidTopicType = topicTypeNum !== undefined && Object.values(TopicType).includes(topicTypeNum as TopicType);
@@ -111,7 +111,7 @@ const Chat: React.FC = () => {
             history.push("/home");
         }
         if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+            scrollToBottomMess()
         }
     }, [isValidTopicType, history, messages]);
 
@@ -130,7 +130,7 @@ const Chat: React.FC = () => {
 
     useEffect(() => {
         if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+            scrollToBottomMess()
         }
     }, [signalRMessages]);
 
@@ -199,7 +199,6 @@ const Chat: React.FC = () => {
         isRight: true,
     });
     const allSignalR = signalRMessages.map(mapSignalRMessage);
-    console.log(allSignalR)
     const allPending = pendingMessages.map(mapPendingMessage);
     const mergedMessages = [
         ...messages,
@@ -261,6 +260,7 @@ const Chat: React.FC = () => {
                         handleFileChange={handleFileChange}
                         handleSendMessage={handleSendMessage}
                         history={history}
+                        messageRef={messageRef}
                     />
                 ) : (
                     <ChatMessageList
@@ -271,7 +271,7 @@ const Chat: React.FC = () => {
                         loading={isSending}
                     />
                 )}
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} className="mt-4" />
             </div>
             {!isWelcome && (
                 <div className={`bg-white pb-4 bottom-0 w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : "sticky"}`}>

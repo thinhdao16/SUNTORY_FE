@@ -18,6 +18,7 @@ const ChatWelcomePanel: React.FC<{
     handleFileChange: (e: any) => void;
     handleSendMessage: (e: any, force?: boolean) => void;
     history: any;
+    messageRef: React.RefObject<HTMLTextAreaElement>;
 }> = ({
     pendingImages,
     pendingFiles,
@@ -31,7 +32,8 @@ const ChatWelcomePanel: React.FC<{
     handleImageChange,
     handleFileChange,
     handleSendMessage,
-    history
+    history,
+    messageRef,
 }) => (
         <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="flex items-center gap-2 mb-4 ">
@@ -56,9 +58,15 @@ const ChatWelcomePanel: React.FC<{
                     placeholder={t("Enter your message...")}
                     value={messageValue}
                     disabled={isLoading}
+                    ref={messageRef}
                     onChange={(e) => setMessageValue(e.target.value)}
-                    className="focus:outline-none resize-none"
+                    className="focus:outline-none resize-none max-h-[230px] overflow-y-auto"
                     rows={1}
+                    onFocus={() => {
+                        setTimeout(() => {
+                            window.dispatchEvent(new Event("resize"));
+                        }, 200);
+                    }}
                 />
                 <div className="flex justify-between items-center">
                     <div className="flex gap-6">

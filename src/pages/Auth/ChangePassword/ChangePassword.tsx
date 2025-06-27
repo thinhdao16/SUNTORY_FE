@@ -114,11 +114,6 @@ const ChangePassword: React.FC = () => {
             )}
 
             <SocialLoginActions
-                actions={[
-                    { icon: "logo/social/apple.svg", alt: "Apple", onClick: () => {/* handleApple */ } },
-                    { icon: "logo/social/google.svg", alt: "Google", onClick: () => {/* handleGoogle */ } },
-                    { icon: "logo/social/facebook.svg", alt: "Facebook", onClick: () => {/* handleFacebook */ } },
-                ]}
                 dividerText={t("OR")}
                 showActions={false}
                 showDivider={false}

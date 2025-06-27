@@ -45,9 +45,7 @@ ion-toolbar {
 /* Fallback for older browsers or manual mode */
 body.dark {
 }
-ion-app {
-  max-width: 1024px !important;
-}
+
 ion-icon.ion-accordion-toggle-icon {
   color: var(--color-main) !important;
   font-size: 1rem !important;
@@ -56,9 +54,6 @@ ion-icon.ion-accordion-toggle-icon {
 /* ...other styles... */
 
 /* Ensure ion-app has a maximum width */
-ion-app {
-  max-width: 1024px !important;
-}
 
 /* Dark mode styles */
 /* body.dark,
@@ -83,3 +78,18 @@ ion-content.dark {
     color: white !important;
   }
 } */
+ion-app {
+  max-width: 450px !important;
+}
+@media (min-width: 768px) and (max-width: 1024px) {
+  ion-app {
+    max-width: 1024px !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  ion-app {
+    max-width: 450px !important;
+    background: red;
+  }
+}

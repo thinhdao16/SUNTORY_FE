@@ -4,11 +4,11 @@ const config: CapacitorConfig = {
   appId: 'com.wayjet.app',
   appName: 'WayJet',
   webDir: 'dist',
-  // server: {
-  //   // url: "http://192.168.1.32:5173",
-  //   url: "https://4c86-116-110-43-36.ngrok-free.app",
-  //   cleartext: true,
-  // },
+  server: {
+    // url: "http://192.168.1.32:5173",
+    url: "https://app.devwayjet.datadrivendaily.net",
+    cleartext: true,
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
@@ -21,6 +21,11 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: true,
       useDialog: false
+    },
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: '544649939857-endt7v6abdo4fpca87ihhoq1qr5ij8jf.apps.googleusercontent.com',
+      forceCodeForRefreshToken: true,
     },
   },
 };

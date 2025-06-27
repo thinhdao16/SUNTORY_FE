@@ -2,6 +2,7 @@ import httpClient from "@/config/http-client";
 import {
     ChangePasswordPayload,
     LoginRequest,
+    LoginRequestWithDeviceId,
     LoginResponse,
     RegisterRequest,
     RegisterResponse,
@@ -49,3 +50,7 @@ export const updateAccountInfo = async (payload: any) => {
     const res = await httpClient.post("/api/v1/account/update-account-simple", payload);
     return res.data;
 };
+export const loginAuthGoogle = async (payload: LoginRequestWithDeviceId) => {
+    const res = await httpClient.post("/api/v1/auth/google-login", payload);
+    return res.data;
+}

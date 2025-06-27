@@ -4,6 +4,7 @@ import { useChatStore } from "@/store/zustand/chat-store";
 import { TopicType } from "@/constants/topicType";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { useTranslation } from "react-i18next";
+import { App } from "@capacitor/app";
 
 interface TabItem {
     label: string;
@@ -49,7 +50,7 @@ const BottomTabBar: React.FC = () => {
         //     classNameIcon: "h-6",
         // },
         {
-            label: "Profile",
+            label: t("Profile"),
             icon: "logo/footer/profile.svg",
             iconActive: "logo/footer/profile_active.svg",
             path: "/profile",
@@ -68,13 +69,23 @@ const BottomTabBar: React.FC = () => {
     useEffect(() => {
         let initialHeight = window.innerHeight;
 
+        const isDesktop = () => window.innerWidth > 1024; // hoặc tùy breakpoint bạn muốn
+
         const handleResize = () => {
+            if (isDesktop()) {
+                setKeyboardOpen(false);
+                return;
+            }
             const heightDiff = initialHeight - window.innerHeight;
             setKeyboardOpen(heightDiff > 150);
         };
 
-        const handleFocus = () => setKeyboardOpen(true);
-        const handleBlur = () => setKeyboardOpen(false);
+        const handleFocus = () => {
+            if (!isDesktop()) setKeyboardOpen(true);
+        };
+        const handleBlur = () => {
+            if (!isDesktop()) setKeyboardOpen(false);
+        };
 
         window.addEventListener("resize", handleResize);
 

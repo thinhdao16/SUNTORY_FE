@@ -11,6 +11,9 @@ importers:
       '@capacitor-community/barcode-scanner':
         specifier: ^4.0.1
         version: 4.0.1(@capacitor/core@7.3.0)
+      '@capacitor-community/camera-preview':
+        specifier: ^7.0.2
+        version: 7.0.2(@capacitor/core@7.3.0)
       '@capacitor-community/text-to-speech':
         specifier: ^6.0.0
         version: 6.0.0(@capacitor/core@7.3.0)
@@ -56,6 +59,9 @@ importers:
       '@capacitor/status-bar':
         specifier: 7.0.1
         version: 7.0.1(@capacitor/core@7.3.0)
+      '@codetrix-studio/capacitor-google-auth':
+        specifier: 3.4.0-rc.4
+        version: 3.4.0-rc.4(@capacitor/core@7.3.0)
       '@fingerprintjs/fingerprintjs':
         specifier: ^4.6.2
         version: 4.6.2
@@ -77,6 +83,9 @@ importers:
       '@microsoft/signalr':
         specifier: ^8.0.7
         version: 8.0.7
+      '@react-oauth/google':
+        specifier: ^0.12.2
+        version: 0.12.2(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@react-spring/web':
         specifier: ^9.7.5
         version: 9.7.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -95,6 +104,9 @@ importers:
       axios:
         specifier: ^1.8.4
         version: 1.10.0
+      capacitor-native-settings:
+        specifier: ^7.0.1
+        version: 7.0.1(@capacitor/core@7.3.0)
       capacitor-plugin-camera:
         specifier: ^3.0.1
         version: 3.0.1(@capacitor/core@7.3.0)
@@ -785,6 +797,12 @@ packages:
     peerDependencies:
       '@capacitor/core': ^5.0.0
 
+  '@capacitor-community/camera-preview@7.0.2':
+    resolution: {integrity: sha512-F30KQwm1UsFMJEG/A6vEoHLoHngD3CcF7zYzB/BIEDNGn+njbkZNEluHhMHkQqAQdkArD+2O04IntpL/oL3SqA==}
+    engines: {node: '>=18.0.0', npm: '>=9.0.0'}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+
   '@capacitor-community/text-to-speech@6.0.0':
     resolution: {integrity: sha512-aKQ+S8q0T3Kqr2PdJI4xLksN8FFOqJI7vlX9sqWrPXPBWa8DQUSSV9M8tvjUq6B9+63er/KSe42ZKMVrD5usKw==}
     peerDependencies:
@@ -875,6 +893,11 @@ packages:
 
   '@capacitor/synapse@1.0.2':
     resolution: {integrity: sha512-ynq39s4D2rhk+aVLWKfKfMCz9SHPKijL9tq8aFL5dG7ik7/+PvBHmg9cPHbqdvFEUSMmaGzL6cIjzkOruW7vGA==}
+
+  '@codetrix-studio/capacitor-google-auth@3.4.0-rc.4':
+    resolution: {integrity: sha512-d548/xKrbMHHbzMYSWnlgZCLZYo2zzY7Onrh3x8ujojrb7atkNK68I6su5WgmaBt4E+R4gxBsWams4554aOFjA==}
+    peerDependencies:
+      '@capacitor/core': ^6.0.0
 
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
@@ -1600,6 +1623,12 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
       react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
+
+  '@react-oauth/google@0.12.2':
+    resolution: {integrity: sha512-d1GVm2uD4E44EJft2RbKtp8Z1fp/gK8Lb6KHgs3pHlM0PxCXGLaq8LLYQYENnN4xPWO1gkL4apBtlPKzpLvZwg==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
 
   '@react-spring/animated@9.7.5':
     resolution: {integrity: sha512-Tqrwz7pIlsSDITzxoLS3n/v/YCUHQdOIKtOJf4yL6kYVSDTSmVK1LI1Q3M/uu2Sx4X3pIWF3xLUhlsA6SPNTNg==}
@@ -2684,6 +2713,11 @@ packages:
 
   caniuse-lite@1.0.30001723:
     resolution: {integrity: sha512-1R/elMjtehrFejxwmexeXAtae5UO9iSyFn6G/I806CYC/BLyyBk1EPhrKBkWhy6wM6Xnm47dSJQec+tLJ39WHw==}
+
+  capacitor-native-settings@7.0.1:
+    resolution: {integrity: sha512-D+r9PbcOu84nHDhBSbzbKfg/x0LzqkvKSP7fDE3kgdJTvX4TVuYQ81LN5o0Q4wf4XmCnLNTvBEmnfJvYL6RNLQ==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
 
   capacitor-plugin-camera@3.0.1:
     resolution: {integrity: sha512-IMVMN+YgSYHCkEmam25k/f6Bt1Uhm1wZq9nfIltFA0TpJSVct22hwYm3oJ6bmnbAtFaklJzVPc/11SHiPgdvjg==}
@@ -7148,6 +7182,10 @@ snapshots:
       '@zxing/browser': 0.1.5(@zxing/library@0.20.0)
       '@zxing/library': 0.20.0
 
+  '@capacitor-community/camera-preview@7.0.2(@capacitor/core@7.3.0)':
+    dependencies:
+      '@capacitor/core': 7.3.0
+
   '@capacitor-community/text-to-speech@6.0.0(@capacitor/core@7.3.0)':
     dependencies:
       '@capacitor/core': 7.3.0
@@ -7278,6 +7316,10 @@ snapshots:
       '@capacitor/core': 7.3.0
 
   '@capacitor/synapse@1.0.2': {}
+
+  '@codetrix-studio/capacitor-google-auth@3.4.0-rc.4(@capacitor/core@7.3.0)':
+    dependencies:
+      '@capacitor/core': 7.3.0
 
   '@colors/colors@1.5.0':
     optional: true
@@ -7998,6 +8040,11 @@ snapshots:
       '@react-types/shared': 3.30.0(react@19.0.0)
       '@swc/helpers': 0.5.17
       clsx: 2.1.1
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
+
+  '@react-oauth/google@0.12.2(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -9145,6 +9192,10 @@ snapshots:
   camelcase@6.3.0: {}
 
   caniuse-lite@1.0.30001723: {}
+
+  capacitor-native-settings@7.0.1(@capacitor/core@7.3.0):
+    dependencies:
+      '@capacitor/core': 7.3.0
 
   capacitor-plugin-camera@3.0.1(@capacitor/core@7.3.0):
     dependencies:

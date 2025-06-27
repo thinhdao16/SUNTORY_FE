@@ -30,7 +30,6 @@ export function usePhotoGallery() {
       quality: 100,
       allowEditing: false,
     });
-    console.log(photoResult)
     return {
       webPath: photoResult?.webPath,
       base64: photoResult?.base64String,

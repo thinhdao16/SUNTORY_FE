@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
 import { ChatSidebarProps } from "./ChatSidebar-types";
-import { useUserChatsByTopic } from "@/pages/Chat/hooks/useChat";
+import { useUserChatsByTopicSearch } from "@/pages/Chat/hooks/useChat";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { groupChatsByDate } from "@/utils/group-chats-by-date";
 import dayjs from "dayjs";
@@ -24,9 +24,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   isOpen = true,
   onClose,
   sessionId,
+  history
 }) => {
   const [search, setSearch] = React.useState("");
-  useUserChatsByTopic();
+  const { isLoading } = useUserChatsByTopicSearch(undefined, search);
   const chats = useChatStore((s) => s.chats);
   const groupedChats = React.useMemo(
     () => {
@@ -100,30 +101,36 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               </button>
             </div>
             <div className="flex-1 overflow-y-auto pr-6 pl-2">
-              {Object.entries(groupedChats).map(([label, chats]) => (
-                <div className=" py-3" key={label}>
-                  <div className="text-sm text-netural-300 font-semibold py-2 pl-4">{t(label)}</div>
-                  {chats.map((item: any) => (
-                    <div
-                      key={item.fakeId ?? item.id}
-                      className={
-                        "cursor-pointer hover:bg-gray-50 rounded-lg py-2 pl-4" +
-                        (sessionId && item.code === sessionId
-                          ? " bg-netural-50 "
-                          : "")
-                      }
-                      onClick={() => onSelectChat?.(item)}
-                    >
-                      <span
-                        className="font-medium block max-w-[250px] truncate"
-                        title={item.title}
-                      >
-                        {item.title}
-                      </span>
-                    </div>
-                  ))}
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <span className="loader border-2 border-main border-t-transparent rounded-full w-8 h-8 animate-spin"></span>
                 </div>
-              ))}
+              ) : (
+                Object.entries(groupedChats).map(([label, chats]) => (
+                  <div className=" py-3" key={label}>
+                    <div className="text-sm text-netural-300 font-semibold py-2 pl-4">{t(label)}</div>
+                    {chats.map((item: any) => (
+                      <div
+                        key={item.fakeId ?? item.id}
+                        className={
+                          "cursor-pointer hover:bg-gray-50 rounded-lg py-2 pl-4" +
+                          (sessionId && item.code === sessionId
+                            ? " bg-netural-50 "
+                            : "")
+                        }
+                        onClick={() => onSelectChat?.(item)}
+                      >
+                        <span
+                          className="font-medium block max-w-[250px] truncate"
+                          title={item.title}
+                        >
+                          {item.title}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ))
+              )}
             </div>
             <div className="flex items-center gap-2 mt-4 pl-6">
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-main">

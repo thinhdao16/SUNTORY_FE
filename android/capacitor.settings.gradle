@@ -5,6 +5,9 @@ project(':capacitor-android').projectDir = new File('../node_modules/.pnpm/@capa
 include ':capacitor-community-barcode-scanner'
 project(':capacitor-community-barcode-scanner').projectDir = new File('../node_modules/.pnpm/@capacitor-community+barcode-scanner@4.0.1_@capacitor+core@7.3.0/node_modules/@capacitor-community/barcode-scanner/android')
 
+include ':capacitor-community-camera-preview'
+project(':capacitor-community-camera-preview').projectDir = new File('../node_modules/.pnpm/@capacitor-community+camera-preview@7.0.2_@capacitor+core@7.3.0/node_modules/@capacitor-community/camera-preview/android')
+
 include ':capacitor-community-text-to-speech'
 project(':capacitor-community-text-to-speech').projectDir = new File('../node_modules/.pnpm/@capacitor-community+text-to-speech@6.0.0_@capacitor+core@7.3.0/node_modules/@capacitor-community/text-to-speech/android')
 
@@ -40,6 +43,12 @@ project(':capacitor-splash-screen').projectDir = new File('../node_modules/.pnpm
 
 include ':capacitor-status-bar'
 project(':capacitor-status-bar').projectDir = new File('../node_modules/.pnpm/@capacitor+status-bar@7.0.1_@capacitor+core@7.3.0/node_modules/@capacitor/status-bar/android')
+
+include ':codetrix-studio-capacitor-google-auth'
+project(':codetrix-studio-capacitor-google-auth').projectDir = new File('../node_modules/.pnpm/@codetrix-studio+capacitor-google-auth@3.4.0-rc.4_@capacitor+core@7.3.0/node_modules/@codetrix-studio/capacitor-google-auth/android')
+
+include ':capacitor-native-settings'
+project(':capacitor-native-settings').projectDir = new File('../node_modules/.pnpm/capacitor-native-settings@7.0.1_@capacitor+core@7.3.0/node_modules/capacitor-native-settings/android')
 
 include ':capacitor-plugin-camera'
 project(':capacitor-plugin-camera').projectDir = new File('../node_modules/.pnpm/capacitor-plugin-camera@3.0.1_@capacitor+core@7.3.0/node_modules/capacitor-plugin-camera/android')

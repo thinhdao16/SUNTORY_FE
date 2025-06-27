@@ -30,14 +30,19 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                 ref={messageRef}
                 value={messageValue}
                 onChange={(e) => setMessageValue(e.target.value)}
-                disabled={isLoading}
-                className="flex-1 focus:outline-none resize-none"
+                disabled={isLoading || isSpending}
+                className="flex-1 focus:outline-none resize-none max-h-[230px] overflow-y-auto"
                 rows={1}
+                onFocus={() => {
+                    setTimeout(() => {
+                        window.dispatchEvent(new Event("resize"));
+                    }, 200);
+                }}
             />
         </div>
         <div className="flex justify-between items-center px-6">
             <div className="flex gap-6">
-                <button onClick={onTakePhoto}>
+                <button onClick={onTakePhoto} disabled={isSpending}>
                     <img src="logo/chat/cam.svg" alt={t("camera")} />
                 </button>
                 <label>
@@ -48,6 +53,8 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                         multiple
                         className="hidden"
                         onChange={handleImageChange}
+                        disabled={isSpending}
+
                     />
                 </label>
                 <label>
@@ -58,6 +65,8 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                         accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.txt,.zip,.rar,.csv"
                         className="hidden"
                         onChange={handleFileChange}
+                        disabled={isSpending}
+
                     />
                 </label>
             </div>
