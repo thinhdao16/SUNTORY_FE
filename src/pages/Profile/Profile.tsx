@@ -9,6 +9,7 @@ import { useAuthInfo } from "../Auth/hooks/useAuthInfo";
 import i18n from "@/config/i18n";
 import { ProfileHeader } from "./ProfileHeader";
 import AccountEdit from "./AccountEdit/AccountEdit";
+import HealthInformationEdit from "./HealthInformationEdit/HealthInformationEdit";
 
 const healthOptions = [
     { label: t("Basic Info"), path: "/health-information/progress-1" },
@@ -24,10 +25,9 @@ const languageOptions = [
 ];
 
 const Profile: React.FC = () => {
-    const [showHealthOptions, setShowHealthOptions] = useState(false);
     const [showLanguageOptions, setShowLanguageOptions] = useState(false);
     const [languageLoading, setLanguageLoading] = useState(false);
-    const { section } = useParams<{ section?: string }>();
+    const { section, type } = useParams<{ section?: string, type: string }>();
     const history = useHistory();
     const handleLogout = () => {
         useAuthStore.getState().logout();
@@ -40,7 +40,7 @@ const Profile: React.FC = () => {
         { label: t("Account"), onClick: () => history.replace("/profile/account"), },
         // {
         //     label: t("Update Health Information"),
-        //     onClick: () => setShowHealthOptions(true),
+        //     onClick: () => history.replace("/profile/health"),
         // },
         { label: t("Change Password"), onClick: () => history.push("/change-password") },
         { label: t("Language"), onClick: () => handleChangeLanguage(true, "en") },
@@ -49,12 +49,11 @@ const Profile: React.FC = () => {
     ];
     const { data: userInfo } = useAuthInfo();
 
-    // Hàm tách phần render nội dung theo section
     const renderSectionContent = () => {
         switch (section) {
             case "account":
                 return <AccountEdit />;
-            // case "health": return <HealthInfoEdit />;
+            case "health": return <HealthInformationEdit />;
             // case "allergy": return <AllergyInfoEdit />;
             // ...thêm các section khác nếu cần...
             default:
@@ -76,7 +75,6 @@ const Profile: React.FC = () => {
                 );
         }
     };
-
     return (
         <IonPage>
             <IonContent fullscreen>
@@ -101,34 +99,6 @@ const Profile: React.FC = () => {
                     {userInfo && <ProfileHeader userInfo={userInfo} />}
                     <hr className="my-4 border-netural-200" />
                     {renderSectionContent()}
-                    {showHealthOptions && (
-                        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-                            <div className="bg-white rounded-xl shadow-lg p-6 w-72">
-                                <div className="font-semibold mb-3 text-center">{t("Update Health Information")}</div>
-                                <ul>
-                                    {healthOptions.map((opt) => (
-                                        <li key={opt.path}>
-                                            <button
-                                                className="w-full py-2 text-left hover:bg-gray-100 rounded transition text-gray-700"
-                                                onClick={() => {
-                                                    setShowHealthOptions(false);
-                                                    history.push(opt.path);
-                                                }}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <button
-                                    className="mt-4 w-full py-2 rounded bg-gray-100 text-gray-500 hover:bg-gray-200"
-                                    onClick={() => setShowHealthOptions(false)}
-                                >
-                                    {t("Cancel")}
-                                </button>
-                            </div>
-                        </div>
-                    )}
                     {showLanguageOptions && (
                         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
                             <div className="bg-white rounded-xl shadow-lg p-6 w-72">

@@ -18,7 +18,7 @@ const HABITS = [
     { label: t("Sleep less than 8 hours/day"), value: "sleep_bad" },
 ];
 
-function BasicInfo() {
+function AllergyInfo() {
     const {
         steps,
         handleNext,
@@ -164,4 +164,4 @@ function BasicInfo() {
     );
 }
 
-export default BasicInfo;
+export default AllergyInfo;
