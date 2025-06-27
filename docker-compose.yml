@@ -1,7 +1,7 @@
 services:
-  rankmate-user:
+  wayjet-fe:
     build: .
-    container_name: rankmate_user
+    container_name: wayjet_fe
     volumes:
       - .:/app
     restart: unless-stopped
