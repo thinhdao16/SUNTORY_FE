@@ -1,0 +1,81 @@
+import ChatSidebar from "@/components/sidebar/ChatSidebar";
+import { useUiStore } from "@/store/zustand/ui-store";
+import React from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useHistory, useLocation, useParams } from "react-router";
+import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
+import { TopicType } from "@/constants/topicType";
+
+const ChatSidebarLayout: React.FC = () => {
+
+
+  const { isChatSidebarOpen, closeChatSidebar } = useUiStore();
+  const { data: userInfo } = useAuthInfo();
+  const history = useHistory();
+  const location = useLocation();
+  const match = location.pathname.match(/\/chat\/[^/]+\/([^/]+)/);
+  const sessionId = match ? match[1] : undefined;
+  const handleNewChat = () => {
+    closeChatSidebar();
+    history.push(`/chat/${TopicType.Chat}`);
+  }
+  const handleSelectChat = (chat: { type: string; code: string; topic: string }) => {
+    closeChatSidebar();
+    history.push(`/chat/${chat.topic}/${chat.code}`);
+  };
+  useEffect(() => {
+    if (isChatSidebarOpen) {
+      document.body.classList.add("overflow-hidden");
+      document.documentElement.classList.add("overflow-hidden");
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+    } else {
+      document.body.classList.remove("overflow-hidden");
+      document.documentElement.classList.remove("overflow-hidden");
+      document.body.style.position = "";
+      document.body.style.width = "";
+    }
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+      document.documentElement.classList.remove("overflow-hidden");
+      document.body.style.position = "";
+      document.body.style.width = "";
+    };
+  }, [isChatSidebarOpen]);
+
+
+  return (
+    <AnimatePresence>
+      {isChatSidebarOpen && (
+        <motion.div
+          className="fixed inset-0 z-[102] flex"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: { duration: 0.2 } }}
+        >
+          <div className="absolute top-10 right-20 ">
+            <img src="logo/nav_bar_home_history.svg" />
+
+          </div>
+          <div
+            className="absolute inset-0 bg-[#f0f0f0]/85"
+            onClick={closeChatSidebar}
+          />
+          <div className="relative z-10 max-w-full h-full w-[300px]">
+            <ChatSidebar
+              history={[]}
+              onSelectChat={handleSelectChat}
+              onNewChat={handleNewChat}
+              userName={userInfo?.name || "User"}
+              isOpen={true}
+              onClose={closeChatSidebar}
+              sessionId={sessionId}
+            />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export default ChatSidebarLayout;

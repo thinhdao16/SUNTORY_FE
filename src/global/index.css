@@ -1,0 +1,19 @@
+.toast-wrapper {
+  z-index: 9999 !important;
+}
+.toast-success {
+  --background: #22c55e;
+  --color: #fff;
+}
+.toast-error {
+  --background: #ef4444;
+  --color: #fff;
+}
+.toast-warning {
+  --background: #f59e42;
+  --color: #fff;
+}
+.toast-info {
+  --background: #2563eb;
+  --color: #fff;
+}

@@ -1,0 +1,15 @@
+/* styles.css */
+.text-clamp {
+  font-size: clamp(1rem, 2vw, 3rem) !important;
+  max-height: 35%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+ion-textarea.sc-ion-textarea-ios-h,
+ion-textarea.sc-ion-textarea-md-h {
+  --highlight-height: 0;
+  outline: none;
+  box-shadow: none;
+}

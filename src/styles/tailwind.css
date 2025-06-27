@@ -1,0 +1,138 @@
+@font-face {
+  font-family: "Geologica";
+  src: url("/src/assets/fonts/Geologica-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geologica";
+  src: url("/src/assets/fonts/Geologica-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geologica";
+  src: url("/src/assets/fonts/Geologica-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geologica";
+  src: url("/src/assets/fonts/Geologica-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@import "tailwindcss";
+
+html,
+body,
+#root,
+ion-app {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  /* font-size: 14px; */
+  font-family: "Geologica", sans-serif !important;
+}
+html,
+body {
+  font-size: 14px !important;
+}
+html,
+body {
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+
+ion-app {
+  max-width: 1024px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@theme {
+  --color-dark-main: #202124;
+  --color-dark-extra: #35363a;
+  --color-dark-select-main: #024874;
+  --color-dark-select-extra: #a8c9fb;
+  --color-main: #1152f4;
+  --color-main-bold: #1644cb;
+  --color-chat-to: #edf1fc;
+  --color-main-light: #d32f2f;
+  --color-screen-page: #edf1fc;
+  --color-primary-50: #d9e2fd;
+  --color-primary-100: #b3c5fb;
+  --color-primary-200: #8da9fa;
+  --color-primary-300: #668cf8;
+  --color-primary-400: #406ff6;
+  --color-primary-500: #1152f4;
+  --color-primary-600: #1644cb;
+  --color-primary-700: #1137a3;
+  --color-primary-800: #0d297a;
+  --color-primary-900: #091b51;
+  --color-netural-50: #ebecee;
+  --color-netural-100: #c1c4c9;
+  --color-netural-200: #a3a8af;
+  --color-netural-300: #79808a;
+  --color-netural-400: #5f6774;
+  --color-netural-500: #374151;
+  --color-netural-600: #323b4a;
+  --color-netural-700: #272e3a;
+  --color-netural-800: #1e242d;
+  --color-netural-900: #000001;
+  --color-error-50: #fbe6e6;
+  --color-error-100: #f2b0b0;
+  --color-error-200: #ec8a8a;
+  --color-error-300: #e35454;
+  --color-error-400: #dd3333;
+  --color-error-500: #d50000;
+  --color-error-600: #c20000;
+  --color-error-700: #970000;
+  --color-error-800: #750000;
+  --color-error-900: #590000;
+  --color-success-50: #e9f9ef;
+  --color-success-100: #baedcd;
+  --color-success-200: #99e4b5;
+  --color-success-300: #6bd893;
+  --color-success-400: #4ed17e;
+  --color-success-500: #f0f0f0;
+  --color-success-600: #1fb356;
+  --color-success-700: #188c43;
+  --color-success-800: #136c34;
+  --color-success-900: #0e5327;
+  --color-warning-1-50: #fff7ed;
+  --color-warning-1-100: #ffedd5;
+  --color-warning-1-200: #fed7aa;
+  --color-warning-1-300: #fdba74;
+  --color-warning-1-400: #fb923c;
+  --color-warning-1-500: #f97316;
+  --color-warning-1-600: #ea580c;
+  --color-warning-1-700: #c2410c;
+  --color-warning-1-800: #9a3412;
+  --color-warning-1-900: #7c2d12;
+  --color-warning-2-50: #fef5e7;
+  --color-warning-2-100: #fce1b3;
+  --color-warning-2-200: #fad28f;
+  --color-warning-2-300: #f8be5c;
+  --color-warning-2-400: #f7b13c;
+  --color-warning-2-500: #f59e0b;
+  --color-warning-2-600: #df900a;
+  --color-warning-2-700: #ae7008;
+  --color-warning-2-800: #875706;
+  --color-warning-2-900: #674205;
+  --color-information-2-50: #e6effd;
+  --color-information-2-100: #b0ccf8;
+  --color-information-2-200: #8ab4f4;
+  --color-information-2-300: #5492f0;
+  --color-information-2-400: #337ded;
+  --color-information-2-500: #005ce8;
+  --color-information-2-600: #0054d3;
+  --color-information-2-700: #0041a5;
+  --color-information-2-800: #003380;
+  --color-information-2-900: #002761;
+}

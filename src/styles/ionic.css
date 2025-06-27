@@ -1,0 +1,85 @@
+ion-icon.ion-accordion-toggle-icon {
+  color: var(--color-main) !important;
+  font-size: 1rem !important;
+}
+
+ion-item::part(native) {
+  background: white !important;
+  padding: 0 !important;
+}
+
+ion-item::part(native) {
+  --border-width: 0px !important;
+}
+@media (prefers-color-scheme: dark) {
+  ion-item::part(native) {
+    background: var(--dark-main) !important;
+  }
+}
+
+ion-toolbar::part(container) {
+  box-shadow: none !important;
+  max-width: 450px;
+}
+
+ion-toolbar::part(background) {
+  border: none;
+  background: white;
+}
+@media (prefers-color-scheme: dark) {
+  ion-toolbar::part(background) {
+    border: none;
+    background: black;
+  }
+}
+ion-toolbar::part(content) {
+  display: flex;
+  justify-content: center;
+  font-weight: bold;
+}
+ion-toolbar {
+  display: flex;
+  justify-content: center;
+}
+
+/* Fallback for older browsers or manual mode */
+body.dark {
+}
+ion-app {
+  max-width: 1024px !important;
+}
+ion-icon.ion-accordion-toggle-icon {
+  color: var(--color-main) !important;
+  font-size: 1rem !important;
+}
+
+/* ...other styles... */
+
+/* Ensure ion-app has a maximum width */
+ion-app {
+  max-width: 1024px !important;
+}
+
+/* Dark mode styles */
+/* body.dark,
+ion-app.dark,
+ion-content.dark {
+  color: white !important;
+} */
+
+/* Alternatively, using media queries for dark mode */
+/* @media (prefers-color-scheme: dark) {
+  body,
+  ion-app,
+  ion-content,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  span {
+    color: white !important;
+  }
+} */

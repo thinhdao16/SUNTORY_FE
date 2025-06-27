@@ -1,0 +1,106 @@
+import React from "react";
+import { useForm } from "react-hook-form";
+import { useHistory } from "react-router-dom";
+import InputTextField from "@/components/input/InputFieldText";
+import InputPasswordField from "@/components/input/InputPasswordField";
+import SocialLoginActions from "@/components/common/SocialLoginActions";
+import AuthCardLayout from "@/components/layout/AuthCardLayout";
+import MainButton from "@/components/common/MainButton";
+import { useLogin } from "../hooks/useAuth";
+import CustomButton from "@/components/button/CustomButton";
+import useDeviceInfo from "@/hooks/useDeviceInfo";
+
+interface LoginFormValues {
+    emailOrPhone: string;
+    password: string;
+    deviceId: string | null;
+    firebaseToken?: string;
+}
+
+const Login: React.FC = () => {
+    const deviceInfo: { deviceId: string | null } = useDeviceInfo();
+
+    const { mutate: loginMutate, isLoading, error } = useLogin();
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        watch,
+        setValue,
+    } = useForm<LoginFormValues>();
+
+    const onSubmit = (data: LoginFormValues) => {
+        loginMutate(
+            { email: data.emailOrPhone, password: data.password, deviceId: deviceInfo.deviceId, firebaseToken: "" },
+        );
+    };
+
+    const emailOrPhoneValue = watch("emailOrPhone");
+
+    return (
+        <AuthCardLayout title={t("Sign In")}>
+            <CustomButton
+                imgSrc="/logo/close.svg"
+                imgAlt={t("Close")}
+                className="fixed top-10 left-6"
+                navigateTo="/home"
+            />
+            <form onSubmit={handleSubmit(onSubmit)}>
+                <InputTextField
+                    label={t("Email")}
+                    id="emailOrPhone"
+                    {...register("emailOrPhone", {
+                        required: t("Email is required"),
+                        validate: (v) =>
+                            /^\d+$/.test(v)
+                                ? /^(\+84|84|0)?[1-9][0-9]{8,9}$/.test(v.replace(/\s+/g, "")) || t("Invalid phone")
+                                : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || t("Invalid email"),
+                    })}
+                    placeholder={t("Enter your email")}
+                    error={errors.emailOrPhone?.message}
+                    required
+                    validateType={/^\d+$/.test(emailOrPhoneValue || "") ? "phone" : "email"}
+                    className="mb-4"
+                    inputClassName="text-netural-500"
+                />
+                <InputPasswordField
+                    value={watch("password") || ""}
+                    onChange={(e) => setValue("password", e.target.value)}
+                    error={errors.password?.message}
+                    showIcon={false}
+
+                    required
+                />
+                <div className="flex items-center justify-between mt-1">
+                    <a href="/forgot-password" className="text-main font-semibold">
+                        {t("Forgot password?")}
+                    </a>
+                </div>
+                <MainButton type="submit" disabled={isLoading}>
+                    {t("Login")}
+                </MainButton>
+            </form>
+            <div className="mt-6 flex justify-center items-center">
+                <span>{t("Don't have an account?")}</span>
+                <a
+                    href="/register"
+                    className="ml-2 text-main font-semibold hover:underline"
+                >
+                    {t("Sign Up")}
+                </a>
+            </div>
+            <SocialLoginActions
+                actions={[
+                    { icon: "logo/social/apple.svg", alt: "Apple", onClick: () => {/* handleApple */ } },
+                    { icon: "logo/social/google.svg", alt: "Google", onClick: () => {/* handleGoogle */ } },
+                    { icon: "logo/social/facebook.svg", alt: "Facebook", onClick: () => {/* handleFacebook */ } },
+                ]}
+                dividerText={t("OR")}
+                bottomLogo={{ icon: "/logo/logo.svg", textIcon: "/logo/logo_text.svg" }}
+            />
+        </AuthCardLayout>
+    );
+};
+
+export default Login;

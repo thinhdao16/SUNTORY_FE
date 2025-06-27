@@ -1,0 +1,36 @@
+import React from "react";
+import { IonApp, IonRouterOutlet, setupIonicReact } from "@ionic/react";
+import { IonReactRouter } from "@ionic/react-router";
+import "@ionic/react/css/core.css";
+import "@ionic/react/css/padding.css";
+import "@ionic/react/css/float-elements.css";
+import "@ionic/react/css/text-alignment.css";
+import "@ionic/react/css/text-transformation.css";
+import "@ionic/react/css/flex-utils.css";
+import "@ionic/react/css/display.css";
+import "./styles/variables.css";
+import "./styles/tailwind.css";
+import Global from "./global";
+import AppRoutes from "./routes/AppRoutes";
+import useSafeArea from "./hooks/useSafeArea";
+import "./config/i18n";
+import "./App.css";
+
+
+setupIonicReact();
+
+const App: React.FC = () => {
+  useSafeArea();
+  return (
+    <IonApp className="ion-light">
+      <IonReactRouter>
+        <IonRouterOutlet>
+          <AppRoutes />
+        </IonRouterOutlet>
+        <Global />
+      </IonReactRouter>
+    </IonApp>
+  );
+};
+
+export default App;

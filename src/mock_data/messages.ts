@@ -1,0 +1,36 @@
+export const fakeMessages = [
+    { id: 1, text: "Hello! How can I help you?", isRight: false },
+    { id: 2, text: "Hi! I have a question about my order.", isRight: true },
+    { id: 3, text: "Sure! Please provide your order ID.", isRight: false },
+    { id: 4, text: "My order ID is 12345.", isRight: true },
+    { id: 5, text: "Thank you! Let me check that for you.", isRight: false },
+    { id: 6, text: "Sure, take your time.", isRight: true },
+
+    { id: 7, text: "I found your order. It is being processed.", isRight: false },
+
+    { id: 8, text: "Great! When will it be delivered?", isRight: true },
+
+    { id: 9, text: "It should arrive by tomorrow.", isRight: false },
+
+    { id: 10, text: "Thank you for the update!", isRight: true },
+    { id: 11, text: "You're welcome! Let me know if you need anything else.", isRight: false },
+    { id: 12, text: "Actually, I have another question.", isRight: true },
+    { id: 13, text: "Sure, go ahead.", isRight: false },
+    { id: 14, text: "Can I change the delivery address?", isRight: true },
+    { id: 15, text: "Unfortunately, the order is already being processed.", isRight: false },
+    { id: 16, text: "Oh, I see. Thanks for letting me know.", isRight: true },
+    { id: 17, text: "No problem! Anything else I can assist you with?", isRight: false },
+    { id: 18, text: "Not at the moment. Thanks again!", isRight: true },
+    { id: 19, text: "You're welcome! Have a great day!", isRight: false },
+    { id: 20, text: "You too!", isRight: true },
+    { id: 21, text: "By the way, do you offer gift wrapping?", isRight: true },
+    { id: 22, text: "Yes, we do! You can select it during checkout.", isRight: false },
+    { id: 23, text: "That's great. I'll keep that in mind for next time.", isRight: true },
+    { id: 24, text: "Sounds good! Let us know if you need anything else.", isRight: false },
+    { id: 25, text: "Will do. Thanks!", isRight: true },
+    { id: 26, text: "You're welcome!", isRight: false },
+    { id: 27, text: "Can I track my order online?", isRight: true },
+    { id: 28, text: "Yes, you can use the tracking link sent to your email.", isRight: false },
+    { id: 29, text: "Got it. Thanks for the help!", isRight: true },
+    { id: 30, text: "Anytime! Have a great day!", isRight: false },
+];
