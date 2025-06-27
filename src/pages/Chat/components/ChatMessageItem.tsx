@@ -5,6 +5,7 @@ import { getFileIconAndLabel } from "@/utils/fileTypeUtils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { handleImageError } from "@/utils/image-utils";
+import { handleCopyToClipboard } from "@/components/common/HandleCoppy";
 
 const ChatMessageItem: React.FC<{ msg: any; isUser: boolean }> = ({ msg, isUser }) => (
     <motion.div
@@ -52,26 +53,43 @@ const ChatMessageItem: React.FC<{ msg: any; isUser: boolean }> = ({ msg, isUser 
                         })}
                     </div>
                 )}
-                <div>
-                    {(msg.text && String(msg.text).trim() !== "") && (
-                        <div
-                            className={`px-4 py-3 ${isUser
-                                ? "bg-main text-white rounded-br-md rounded-[16px_16px_0px_16px] w-fit ml-auto"
-                                : "bg-screen-page text-gray-900 rounded-[16px_16px_16px_0px] w-fit"
-                                }`}
-                        >
-                            <div className="prose prose-sm max-w-none whitespace-pre-line break-words text-[15px]">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {typeof msg.text === "string"
-                                        ? msg.text
-                                        : msg.text
-                                            ? JSON.stringify(msg.text)
-                                            : ""}
-                                </ReactMarkdown>
-                            </div>
+                {(msg.text && String(msg.text).trim() !== "") && (
+                    <div
+                        className={`relative px-4 py-3 ${isUser
+                            ? "bg-main text-white rounded-br-md rounded-[16px_16px_0px_16px] w-fit ml-auto"
+                            : "bg-screen-page text-gray-900 rounded-[0px_16px_16px_16px] w-fit"
+                            }`}
+                    >
+                        <div className="prose prose-sm max-w-none whitespace-pre-line break-words text-[15px]">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {typeof msg.text === "string"
+                                    ? msg.text
+                                    : msg.text
+                                        ? JSON.stringify(msg.text)
+                                        : ""}
+                            </ReactMarkdown>
                         </div>
-                    )}
-                </div>
+
+                    </div>
+                )}
+                {!isUser && (
+                    <div className=" flex justify-end mt-1">
+                        <button
+                            className=" bottom-2 right-2 p-1 rounded hover:bg-gray-100 transition"
+                            type="button"
+                            onClick={() => handleCopyToClipboard(
+                                typeof msg.text === "string"
+                                    ? msg.text
+                                    : msg.text
+                                        ? JSON.stringify(msg.text)
+                                        : ""
+                            )}
+                            title={t("Copy")}
+                        >
+                            <img src="logo/chat/coppy.svg" />
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     </motion.div>

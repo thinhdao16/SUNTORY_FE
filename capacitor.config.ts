@@ -4,11 +4,11 @@ const config: CapacitorConfig = {
   appId: 'com.wayjet.app',
   appName: 'WayJet',
   webDir: 'dist',
-  server: {
-    // url: "http://192.168.1.32:5173",
-    url: "https://4c86-116-110-43-36.ngrok-free.app",
-    cleartext: true,
-  },
+  // server: {
+  //   // url: "http://192.168.1.32:5173",
+  //   url: "https://4c86-116-110-43-36.ngrok-free.app",
+  //   cleartext: true,
+  // },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
