@@ -37,12 +37,39 @@ const TakePhoto: React.FC = () => {
   };
 
   const checkPermission = async () => {
-    const permission = await Camera.checkPermissions();
-    if (permission.camera !== "granted") {
-      const res = await Camera.requestPermissions({ permissions: ["camera"] });
-      if (res.camera === "granted") setShowQR(true);
+    if (window.isSecureContext && navigator.mediaDevices?.getUserMedia) {
+      // Web: hỏi quyền camera
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        setShowQR(true);
+      } catch {
+        present({
+          message: t("Bạn cần cấp quyền camera để sử dụng tính năng này! Nếu đã từ chối, vui lòng vào cài đặt trình duyệt để cấp lại quyền camera cho website."),
+          duration: 0,
+          color: "danger",
+          buttons: [
+            {
+              text: t("Thử lại"),
+              handler: () => {
+                checkPermission();
+              },
+            },
+            {
+              text: t("Đóng"),
+              role: "cancel",
+            },
+          ],
+        });
+      }
     } else {
-      setShowQR(true);
+      // App: Capacitor
+      const permission = await Camera.checkPermissions();
+      if (permission.camera !== "granted") {
+        const res = await Camera.requestPermissions({ permissions: ["camera"] });
+        if (res.camera === "granted") setShowQR(true);
+      } else {
+        setShowQR(true);
+      }
     }
   };
 
