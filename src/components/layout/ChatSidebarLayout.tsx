@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useHistory, useLocation } from "react-router";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import { TopicType } from "@/constants/topicType";
-import { useUserChatsByTopicSearch } from "@/pages/Chat/hooks/useChat"; // import hook search
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 
 const ChatSidebarLayout: React.FC = () => {
@@ -15,7 +14,6 @@ const ChatSidebarLayout: React.FC = () => {
   const location = useLocation();
   const match = location.pathname.match(/\/chat\/[^/]+\/([^/]+)/);
   const sessionId = match ? match[1] : undefined;
-  const { data: chatData, isLoading } = useUserChatsByTopicSearch(/* truyền topicId, keyword nếu có */);
 
   const handleNewChat = () => {
     closeChatSidebar();
@@ -55,8 +53,8 @@ const ChatSidebarLayout: React.FC = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.2 } }}
         >
-          <div className="absolute top-10 right-20 ">
-            <NavBarHomeHistoryIcon className="w-8 h-8" />
+          <div className="absolute top-13 right-6">
+            <NavBarHomeHistoryIcon />
           </div>
           <div
             className="absolute inset-0 bg-[#f0f0f0]/85"

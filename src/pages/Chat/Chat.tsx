@@ -232,13 +232,13 @@ const Chat: React.FC = () => {
                 paddingLeft: 0,
                 paddingBottom: !isWelcome ? (keyboardHeight > 0 ? (keyboardResizeScreen ? 76 : keyboardHeight) : 76) : 0,
                 height: "100dvh",
-                paddingTop: "var(--safe-area-inset-top)",
+                paddingTop: "var(--safe-area-inset-top, 0px)",
             }}
         >
 
-            <div className="flex items-center justify-between px-6 py-4 ">
+            <div className="flex items-center justify-between px-6 pb-4 pt-6 h-[49px]">
                 <button onClick={() => openSidebarWithAuthCheck()} >
-                    <NavBarHomeHistoryIcon className="w-8 h-8" />
+                    <NavBarHomeHistoryIcon />
                 </button>
                 {(!isWelcome) && (
                     <>
@@ -246,7 +246,7 @@ const Chat: React.FC = () => {
                             {title}
                         </span>
                         <button onClick={() => history.push("/home")}>
-                            <CloseIcon className="w-6 h-6" aria-label={t("close")} />
+                            <CloseIcon aria-label={t("close")} />
                         </button>
                     </>
                 )}

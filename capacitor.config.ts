@@ -4,11 +4,11 @@ const config: CapacitorConfig = {
   appId: 'com.wayjet.app',
   appName: 'WayJet',
   webDir: 'dist',
-  server: {
-    // url: "http://192.168.1.32:5173",
-    url: "https://ment-optimize-anywhere-expert.trycloudflare.com",
-    cleartext: true,
-  },
+  // server: {
+  //   // url: "http://192.168.1.32:5173",
+  //   url: "https://6bb0-116-110-43-38.ngrok-free.app",
+  //   cleartext: true,
+  // },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,

@@ -11,10 +11,13 @@ import MedicalSupportIcon from "@/icons/logo/home/medical_support.svg?react";
 import DocumentTranslationIcon from "@/icons/logo/home/document_translation.svg?react";
 import ProductInformationIcon from "@/icons/logo/home/product_information.svg?react";
 import FoodDiscoveryIcon from "@/icons/logo/home/food_discovery.svg?react";
+import useAppInit from '@/hooks/useAppInit';
 
 function Home() {
   const history = useHistory();
   const { data: userInfo } = useAuthInfo();
+  useAppInit();
+
   const features = [
     {
       image: <MedicalSupportIcon className="w-full h-full object-cover rounded-xl flex-1" />,
@@ -76,7 +79,7 @@ function Home() {
 
   return (
     <IonPage>
-      <IonContent fullscreen className="!p-0 ">
+      <IonContent fullscreen className="!pt-0 safe-area-inset-0">
         <div className="bg-screen-page pb-30">
           <div className="relative rounded-b-3xl overflow-hidden px-6 pt-6 h-[318px]">
             {/* {!headerImgLoaded && (

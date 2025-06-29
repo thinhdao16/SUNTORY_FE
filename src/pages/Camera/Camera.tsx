@@ -43,15 +43,12 @@ const Camera: React.FC = () => {
             }
         })();
         return () => {
-            // Cleanup camera khi rời trang
             if (activeStream) {
                 activeStream.getTracks().forEach(track => track.stop());
             }
         };
-        // eslint-disable-next-line
     }, [facingMode]);
 
-    // Bật/tắt flash nếu hỗ trợ
     const handleToggleFlash = async () => {
         try {
             const video = videoRef.current;

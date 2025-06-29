@@ -12,17 +12,16 @@ import "./styles/variables.css";
 import "./styles/tailwind.css";
 import Global from "./global";
 import AppRoutes from "./routes/AppRoutes";
-import useSafeArea from "./hooks/useSafeArea";
 import "./config/i18n";
 import "./App.css";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { GOOGLE_WEB_CLIENT_ID, initGoogleAuth } from "@/config/google";
-
+import useAppInit from "./hooks/useAppInit";
 setupIonicReact();
 initGoogleAuth();
 
 const App: React.FC = () => {
-  useSafeArea();
+  useAppInit();
   return (
     <GoogleOAuthProvider clientId={GOOGLE_WEB_CLIENT_ID}>
       <IonApp className="ion-light">
