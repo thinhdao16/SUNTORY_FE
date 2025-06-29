@@ -1,4 +1,4 @@
-require_relative '../../node_modules/.pnpm/@capacitor+ios@7.3.0_@capacitor+core@7.3.0/node_modules/@capacitor/ios/scripts/pods_helpers'
+require_relative '../../node_modules/.pnpm/@capacitor+ios@7.4.0_@capacitor+core@7.4.0/node_modules/@capacitor/ios/scripts/pods_helpers'
 
 platform :ios, '14.0'
 use_frameworks!
@@ -9,27 +9,20 @@ use_frameworks!
 install! 'cocoapods', :disable_input_output_paths => true
 
 def capacitor_pods
-  pod 'Capacitor', :path => '../../node_modules/.pnpm/@capacitor+ios@7.3.0_@capacitor+core@7.3.0/node_modules/@capacitor/ios'
-  pod 'CapacitorCordova', :path => '../../node_modules/.pnpm/@capacitor+ios@7.3.0_@capacitor+core@7.3.0/node_modules/@capacitor/ios'
-  pod 'CapacitorCommunityBarcodeScanner', :path => '../../node_modules/.pnpm/@capacitor-community+barcode-scanner@4.0.1_@capacitor+core@7.3.0/node_modules/@capacitor-community/barcode-scanner'
-  pod 'CapacitorCommunityCameraPreview', :path => '../../node_modules/.pnpm/@capacitor-community+camera-preview@7.0.2_@capacitor+core@7.3.0/node_modules/@capacitor-community/camera-preview'
-  pod 'CapacitorCommunityTextToSpeech', :path => '../../node_modules/.pnpm/@capacitor-community+text-to-speech@6.0.0_@capacitor+core@7.3.0/node_modules/@capacitor-community/text-to-speech'
-  pod 'CapacitorMlkitBarcodeScanning', :path => '../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.2.1_@capacitor+core@7.3.0/node_modules/@capacitor-mlkit/barcode-scanning'
-  pod 'CapacitorApp', :path => '../../node_modules/.pnpm/@capacitor+app@7.0.1_@capacitor+core@7.3.0/node_modules/@capacitor/app'
-  pod 'CapacitorBarcodeScanner', :path => '../../node_modules/.pnpm/@capacitor+barcode-scanner@2.0.3_@capacitor+core@7.3.0/node_modules/@capacitor/barcode-scanner'
-  pod 'CapacitorCamera', :path => '../../node_modules/.pnpm/@capacitor+camera@7.0.1_@capacitor+core@7.3.0/node_modules/@capacitor/camera'
-  pod 'CapacitorClipboard', :path => '../../node_modules/.pnpm/@capacitor+clipboard@7.0.1_@capacitor+core@7.3.0/node_modules/@capacitor/clipboard'
-  pod 'CapacitorDevice', :path => '../../node_modules/.pnpm/@capacitor+device@7.0.1_@capacitor+core@7.3.0/node_modules/@capacitor/device'
-  pod 'CapacitorFilesystem', :path => '../../node_modules/.pnpm/@capacitor+filesystem@7.1.1_@capacitor+core@7.3.0/node_modules/@capacitor/filesystem'
-  pod 'CapacitorHaptics', :path => '../../node_modules/.pnpm/@capacitor+haptics@7.0.1_@capacitor+core@7.3.0/node_modules/@capacitor/haptics'
-  pod 'CapacitorKeyboard', :path => '../../node_modules/.pnpm/@capacitor+keyboard@7.0.1_@capacitor+core@7.3.0/node_modules/@capacitor/keyboard'
-  pod 'CapacitorSplashScreen', :path => '../../node_modules/.pnpm/@capacitor+splash-screen@7.0.1_@capacitor+core@7.3.0/node_modules/@capacitor/splash-screen'
-  pod 'CapacitorStatusBar', :path => '../../node_modules/.pnpm/@capacitor+status-bar@7.0.1_@capacitor+core@7.3.0/node_modules/@capacitor/status-bar'
-  pod 'CodetrixStudioCapacitorGoogleAuth', :path => '../../node_modules/.pnpm/@codetrix-studio+capacitor-google-auth@3.4.0-rc.4_@capacitor+core@7.3.0/node_modules/@codetrix-studio/capacitor-google-auth'
-  pod 'CapacitorNativeSettings', :path => '../../node_modules/.pnpm/capacitor-native-settings@7.0.1_@capacitor+core@7.3.0/node_modules/capacitor-native-settings'
-  pod 'CapacitorPluginCamera', :path => '../../node_modules/.pnpm/capacitor-plugin-camera@3.0.1_@capacitor+core@7.3.0/node_modules/capacitor-plugin-camera'
-  pod 'CapacitorPluginDynamsoftBarcodeReader', :path => '../../node_modules/.pnpm/capacitor-plugin-dynamsoft-barcode-reader@3.0.0_@capacitor+core@7.3.0/node_modules/capacitor-plugin-dynamsoft-barcode-reader'
-  pod 'CapacitorPluginSafeArea', :path => '../../node_modules/.pnpm/capacitor-plugin-safe-area@4.0.0_@capacitor+core@7.3.0/node_modules/capacitor-plugin-safe-area'
+  pod 'Capacitor', :path => '../../node_modules/.pnpm/@capacitor+ios@7.4.0_@capacitor+core@7.4.0/node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/.pnpm/@capacitor+ios@7.4.0_@capacitor+core@7.4.0/node_modules/@capacitor/ios'
+  pod 'CapacitorCommunityCameraPreview', :path => '../../node_modules/.pnpm/@capacitor-community+camera-preview@7.0.2_@capacitor+core@7.4.0/node_modules/@capacitor-community/camera-preview'
+  pod 'CapacitorCommunityTextToSpeech', :path => '../../node_modules/.pnpm/@capacitor-community+text-to-speech@6.0.0_@capacitor+core@7.4.0/node_modules/@capacitor-community/text-to-speech'
+  pod 'CapacitorApp', :path => '../../node_modules/.pnpm/@capacitor+app@7.0.1_@capacitor+core@7.4.0/node_modules/@capacitor/app'
+  pod 'CapacitorCamera', :path => '../../node_modules/.pnpm/@capacitor+camera@7.0.1_@capacitor+core@7.4.0/node_modules/@capacitor/camera'
+  pod 'CapacitorClipboard', :path => '../../node_modules/.pnpm/@capacitor+clipboard@7.0.1_@capacitor+core@7.4.0/node_modules/@capacitor/clipboard'
+  pod 'CapacitorDevice', :path => '../../node_modules/.pnpm/@capacitor+device@7.0.1_@capacitor+core@7.4.0/node_modules/@capacitor/device'
+  pod 'CapacitorKeyboard', :path => '../../node_modules/.pnpm/@capacitor+keyboard@7.0.1_@capacitor+core@7.4.0/node_modules/@capacitor/keyboard'
+  pod 'CapacitorSplashScreen', :path => '../../node_modules/.pnpm/@capacitor+splash-screen@7.0.1_@capacitor+core@7.4.0/node_modules/@capacitor/splash-screen'
+  pod 'CapacitorStatusBar', :path => '../../node_modules/.pnpm/@capacitor+status-bar@7.0.1_@capacitor+core@7.4.0/node_modules/@capacitor/status-bar'
+  pod 'CodetrixStudioCapacitorGoogleAuth', :path => '../../node_modules/.pnpm/@codetrix-studio+capacitor-google-auth@3.4.0-rc.4_@capacitor+core@7.4.0/node_modules/@codetrix-studio/capacitor-google-auth'
+  pod 'CapacitorNativeSettings', :path => '../../node_modules/.pnpm/capacitor-native-settings@7.0.1_@capacitor+core@7.4.0/node_modules/capacitor-native-settings'
+  pod 'CapacitorPluginSafeArea', :path => '../../node_modules/.pnpm/capacitor-plugin-safe-area@4.0.0_@capacitor+core@7.4.0/node_modules/capacitor-plugin-safe-area'
 end
 
 target 'App' do
