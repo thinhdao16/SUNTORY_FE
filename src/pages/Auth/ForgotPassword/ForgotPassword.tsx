@@ -8,6 +8,9 @@ import { useHistory } from "react-router";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import CustomButton from "@/components/button/CustomButton";
 import { useResendOtp } from "@/pages/Auth/hooks/useAuth";
+import LogoIcon from "@/icons/logo/logo.svg?react";
+import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
+import BackIcon from "@/icons/logo/back.svg?react";
 
 interface ForgotPasswordForm {
     emailOrPhone: string;
@@ -42,8 +45,7 @@ const ForgotPassword: React.FC = () => {
     return (
         <AuthCardLayout title={t("Reset Password")}>
             <CustomButton
-                imgSrc="/logo/back.svg"
-                imgAlt={t("Back")}
+                icon={<BackIcon className="w-6 h-6" aria-label={t("Back")} />}
                 className="fixed top-10 left-6"
                 back
             />
@@ -79,11 +81,10 @@ const ForgotPassword: React.FC = () => {
                 </div>
             )}
             <SocialLoginActions
-
                 dividerText={t("OR")}
                 showActions={false}
                 showDivider={false}
-                bottomLogo={{ icon: "/logo/logo.svg", textIcon: "/logo/logo_text.svg" }}
+                bottomLogo={{ icon: LogoIcon, textIcon: LogoTextIcon }}
             />
         </AuthCardLayout>
     );

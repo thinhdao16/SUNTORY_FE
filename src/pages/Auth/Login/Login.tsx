@@ -9,6 +9,9 @@ import MainButton from "@/components/common/MainButton";
 import { useGoogleLogin, useLogin } from "../hooks/useAuth";
 import CustomButton from "@/components/button/CustomButton";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
+import LogoIcon from "@/icons/logo/logo.svg?react";
+import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
+import CloseIcon from "@/icons/logo/close.svg?react";
 
 interface LoginFormValues {
     emailOrPhone: string;
@@ -41,8 +44,7 @@ const Login: React.FC = () => {
     return (
         <AuthCardLayout title={t("Sign In")}>
             <CustomButton
-                imgSrc="/logo/close.svg"
-                imgAlt={t("Close")}
+                icon={<CloseIcon className="w-6 h-6" aria-label={t("Close")} />}
                 className="fixed top-10 left-6"
                 navigateTo="/home"
             />
@@ -92,7 +94,7 @@ const Login: React.FC = () => {
             </div>
             <SocialLoginActions
                 dividerText={t("OR")}
-                bottomLogo={{ icon: "/logo/logo.svg", textIcon: "/logo/logo_text.svg" }}
+                bottomLogo={{ icon: LogoIcon, textIcon: LogoTextIcon }}
             />
         </AuthCardLayout>
     );

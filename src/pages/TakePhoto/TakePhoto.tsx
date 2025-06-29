@@ -8,6 +8,12 @@ import { useImageStore } from "@/store/zustand/image-store";
 import { uploadChatFile } from "@/services/file/file-service";
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { Capacitor } from "@capacitor/core";
+import FlashOnIcon from "@/icons/logo/take-photo/flash_on.svg?react";
+import FlashOffIcon from "@/icons/logo/take-photo/flash.svg?react";
+import CloseIcon from "@/icons/logo/take-photo/close.svg?react";
+import GalleryIcon from "@/icons/logo/take-photo/image.svg?react";
+import CaptureIcon from "@/icons/logo/take-photo/button_cam.svg?react";
+import SwitchCameraIcon from "@/icons/logo/take-photo/direction_camera.svg?react";
 
 const isNative = Capacitor.isNativePlatform();
 const TakePhoto: React.FC = () => {
@@ -231,17 +237,13 @@ const TakePhoto: React.FC = () => {
           <div className="fixed top-6 left-0 right-0 z-10 p-6  flex items-center justify-between">
             <button onClick={handleToggleFlash}>
               {flashOn ? (
-                <img src="logo/take-photo/flash_on.svg" alt={t("Flash On")} />
+                <FlashOnIcon aria-label={t("Flash On")} />
               ) : (
-                <img src="logo/take-photo/flash.svg" alt={t("Flash Off")} />
+                <FlashOffIcon aria-label={t("Flash Off")} />
               )}
             </button>
-            <button>
-              <img
-                src="logo/take-photo/close.svg"
-                alt={t("Close")}
-                onClick={() => history.goBack()}
-              />
+            <button onClick={() => history.goBack()}>
+              <CloseIcon aria-label={t("Close")} />
             </button>
           </div>
           {/* {isNative && (
@@ -268,20 +270,16 @@ const TakePhoto: React.FC = () => {
               onClick={handleChooseFromGallery}
               className="rounded-full h-[40px] aspect-square grid justify-center items-center bg-main"
             >
-              <img src="logo/take-photo/image.svg" alt={t("Gallery")} />
+              <GalleryIcon aria-label={t("Gallery")} />
             </button>
 
             {/* {isNative ? (
               <button onClick={handleNativeCapture}>
-                <img
-                  src="logo/take-photo/button_cam.svg"
-                  alt={t("Camera")} />
+                <CaptureIcon aria-label={t("Camera")} />
               </button>
             ) : ( */}
             <button onClick={handleCapture}>
-              <img
-                src="logo/take-photo/button_cam.svg"
-                alt={t("Camera")} />
+              <CaptureIcon aria-label={t("Camera")} />
             </button>
             {/* )} */}
             <button
@@ -292,7 +290,7 @@ const TakePhoto: React.FC = () => {
               }
               className="rounded-full h-[40px] aspect-square grid justify-center items-center bg-main"
             >
-              <img src="logo/take-photo/direction_camera.svg" alt={t("Switch Camera")} />
+              <SwitchCameraIcon aria-label={t("Switch Camera")} />
             </button>
           </div>
         </div>

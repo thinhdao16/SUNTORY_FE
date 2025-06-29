@@ -45,7 +45,10 @@ httpClient.interceptors.response.use(
                 console.error("Refresh token failed:", refreshError);
                 localStorage.removeItem("token");
                 localStorage.removeItem("refreshToken");
-                window.location.href = "/login";
+                const path = window.location.pathname;
+                if (path !== "/home" && path !== "/") {
+                    window.location.href = "/login";
+                }
             }
         }
 

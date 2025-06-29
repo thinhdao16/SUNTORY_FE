@@ -4,11 +4,14 @@ import { useGoogleLogin } from "@/pages/Auth/hooks/useAuth";
 import { GoogleLogin } from "@react-oauth/google";
 import Toast from "@/global/Toast";
 
+// Import SVG as React component
+import GoogleIcon from "@/icons/logo/social/google.svg?react";
+
 interface SocialLoginActionsProps {
     dividerText?: string;
     showDivider?: boolean;
     showActions?: boolean;
-    bottomLogo?: { icon: string; textIcon: string };
+    bottomLogo?: { icon: React.FC<React.SVGProps<SVGSVGElement>>; textIcon: React.FC<React.SVGProps<SVGSVGElement>> };
 }
 
 const SocialLoginActions: React.FC<SocialLoginActionsProps> = ({
@@ -21,9 +24,7 @@ const SocialLoginActions: React.FC<SocialLoginActionsProps> = ({
     const googleBtnRef = useRef<HTMLDivElement>(null);
 
     const handleCustomGoogleClick = () => {
-        // Tìm button thật bên trong GoogleLogin và click
         const btn = googleBtnRef.current?.querySelector("button");
-        console.log(btn)
         if (btn) btn.click();
     };
 
@@ -36,10 +37,11 @@ const SocialLoginActions: React.FC<SocialLoginActionsProps> = ({
                     <div className="relative w-[45px] aspect-square">
                         <button
                             className="w-[45px] aspect-square flex items-center justify-center shadow rounded-full"
+                            onClick={handleCustomGoogleClick}
                         >
-                            <img src="logo/social/google.svg" alt="Google" />
+                            <GoogleIcon className="w-6 h-6" aria-label="Google" />
                         </button>
-                        <div ref={googleBtnRef} className="w-[45px] aspect-square  shadow rounded-full absolute top-0 z-10 opacity-0 ">
+                        <div ref={googleBtnRef} className="w-[45px] aspect-square shadow rounded-full absolute top-0 z-10 opacity-0 ">
                             <GoogleLogin
                                 onSuccess={handleGoogleWebLogin}
                                 onError={() => {
@@ -54,19 +56,11 @@ const SocialLoginActions: React.FC<SocialLoginActionsProps> = ({
                     onClick={nativeLogin}
                     className="w-[45px] aspect-square flex items-center justify-center shadow rounded-full"
                 >
-                    <img src="logo/social/google.svg" alt="Google" />
+                    <GoogleIcon className="w-6 h-6" aria-label="Google" />
                 </button>
             ),
         },
         // Thêm Facebook, Apple ở đây sau này
-        // {
-        //     key: "facebook",
-        //     render: <button>...</button>
-        // },
-        // {
-        //     key: "apple",
-        //     render: <button>...</button>
-        // },
     ];
 
     return (
@@ -87,8 +81,8 @@ const SocialLoginActions: React.FC<SocialLoginActionsProps> = ({
             )}
             {bottomLogo && (
                 <div className="flex justify-center fixed bottom-10 left-1/2 -translate-x-1/2 -translate-y-1/2x gap-1">
-                    <img src={bottomLogo.icon} alt={t("WAYJET")} />
-                    <img src={bottomLogo.textIcon} alt={t("WAYJET")} />
+                    <bottomLogo.icon className="h-6" aria-label={t("WAYJET")} />
+                    <bottomLogo.textIcon className="h-6" aria-label={t("WAYJET")} />
                 </div>
             )}
         </>

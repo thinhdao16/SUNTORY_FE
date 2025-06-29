@@ -24,6 +24,8 @@ import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { ChatMessageList } from "./components/ChatMessageList";
 import ChatWelcomePanel from "./components/ChatWelcomePanel";
 import { useScrollToBottom } from "@/hooks/useScrollToBottom";
+import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
+import CloseIcon from "@/icons/logo/chat/x.svg?react";
 dayjs.extend(utc);
 
 const Chat: React.FC = () => {
@@ -39,6 +41,7 @@ const Chat: React.FC = () => {
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const prevSessionIdRef = useRef<string | undefined>(sessionId);
+    const prevScrollTopRef = useRef<number>(0);
     // ===== Device Info =====
     const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
 
@@ -132,7 +135,7 @@ const Chat: React.FC = () => {
         if (messagesEndRef.current) {
             scrollToBottomMess()
         }
-    }, [signalRMessages]);
+    }, [signalRMessages, type]);
 
     useEffect(() => {
         if (prevSessionIdRef.current !== sessionId) {
@@ -144,6 +147,14 @@ const Chat: React.FC = () => {
             useChatStore.getState().setIsSending(false);
         };
     }, [sessionId]);
+    // useEffect(() => {
+    //     if (keyboardHeight > 0 && messagesContainerRef.current) {
+    //         messagesContainerRef.current.scrollTop -= prevScrollTopRef.current * -1;
+    //     }
+    //     if (keyboardHeight === 0 && messagesContainerRef.current) {
+    //         messagesContainerRef.current.scrollTop = prevScrollTopRef.current;
+    //     }
+    // }, [keyboardHeight]);
 
     // ===== Handlers =====
     const {
@@ -227,7 +238,7 @@ const Chat: React.FC = () => {
 
             <div className="flex items-center justify-between px-6 py-4 ">
                 <button onClick={() => openSidebarWithAuthCheck()} >
-                    <img src="logo/nav_bar_home_history.svg" />
+                    <NavBarHomeHistoryIcon className="w-8 h-8" />
                 </button>
                 {(!isWelcome) && (
                     <>
@@ -235,7 +246,7 @@ const Chat: React.FC = () => {
                             {title}
                         </span>
                         <button onClick={() => history.push("/home")}>
-                            <img src="/logo/chat/x.svg" alt={t("close")} />
+                            <CloseIcon className="w-6 h-6" aria-label={t("close")} />
                         </button>
                     </>
                 )}
@@ -304,7 +315,7 @@ const Chat: React.FC = () => {
                         handleSendMessage={handleSendMessage}
                         handleImageChange={handleImageChange}
                         handleFileChange={handleFileChange}
-                        onTakePhoto={() => history.push("/take-photo")}
+                        onTakePhoto={() => history.push("/camera")}
                         isSpending={isSending}
                     />
                 </div>

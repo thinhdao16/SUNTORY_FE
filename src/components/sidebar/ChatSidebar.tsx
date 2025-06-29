@@ -7,6 +7,11 @@ import { useChatStore } from "@/store/zustand/chat-store";
 import { groupChatsByDate } from "@/utils/group-chats-by-date";
 import dayjs from "dayjs";
 
+// Import SVG as React component
+import SearchIcon from "@/icons/logo/chat/search.svg?react";
+import FilterIcon from "@/icons/logo/chat/filter.svg?react";
+import NewChatIcon from "@/icons/logo/chat/new_chat.svg?react";
+
 const sidebarVariants: Variants = {
   hidden: { x: "-100%", opacity: 0 },
   visible: {
@@ -72,11 +77,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <div className="px-6">
               <div className="flex gap-2 mb-4 ">
                 <div className="flex-1 flex items-center bg-[#EDF1FC] rounded-lg px-3">
-                  <img
-                    src="/logo/chat/search.svg"
-                    alt={t("search")}
-                    className="w-4 h-4 mr-2"
-                  />
+                  <SearchIcon className="w-4 h-4 mr-2" aria-label={t("search")} />
                   <input
                     type="text"
                     placeholder={t("Search")}
@@ -86,17 +87,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   />
                 </div>
                 <button className="bg-main rounded-lg px-3 py-2" onClick={onNewChat}>
-                  <img
-                    src="/logo/chat/filter.svg"
-                    alt={t("new chat")}
-                  />
+                  <FilterIcon className="w-4 h-4" aria-label={t("new chat")} />
                 </button>
               </div>
               <button
                 className="flex items-center gap-2 bg-[#EDF1FC] rounded-lg px-3 py-2 mb-4 w-full "
                 onClick={onNewChat}
               >
-                <img src="/logo/chat/new_chat.svg" alt={t("new chat")} className="w-4 h-4" />
+                <NewChatIcon className="w-4 h-4" aria-label={t("new chat")} />
                 <span className="text-netural-300 font-medium">{t("New Chat")}</span>
               </button>
             </div>

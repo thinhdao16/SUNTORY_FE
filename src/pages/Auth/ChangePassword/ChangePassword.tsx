@@ -7,7 +7,9 @@ import InputPasswordField from "@/components/input/InputPasswordField";
 import MainButton from "@/components/common/MainButton";
 import SocialLoginActions from "@/components/common/SocialLoginActions";
 import { useChangePassword } from "../hooks/useAuth";
-
+import LogoIcon from "@/icons/logo/logo.svg?react";
+import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
+import CloseIcon from "@/icons/logo/close.svg?react";
 interface ChangePasswordForm {
     currentPassword: string;
     password: string;
@@ -55,7 +57,7 @@ const ChangePassword: React.FC = () => {
                 className="flex items-center gap-2 text-main font-medium fixed top-6 left-6"
                 onClick={() => history.push("/profile")}
             >
-                <img src="logo/close.svg" alt="Back" className="w-6 h-6" />
+                <CloseIcon className="w-6 h-6" aria-label="Back" />
             </button>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
                 <InputPasswordField
@@ -117,7 +119,7 @@ const ChangePassword: React.FC = () => {
                 dividerText={t("OR")}
                 showActions={false}
                 showDivider={false}
-                bottomLogo={{ icon: "/logo/logo.svg", textIcon: "/logo/logo_text.svg" }}
+                bottomLogo={{ icon: LogoIcon, textIcon: LogoTextIcon }}
             />
         </AuthCardLayout>
     );

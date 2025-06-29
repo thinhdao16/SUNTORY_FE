@@ -13,6 +13,7 @@ import ChatSidebarLayout from "@/components/layout/ChatSidebarLayout";
 
 const Chat = lazy(() => import("@/pages/Chat/Chat"));
 const ChangePassword = lazy(() => import("@/pages/Auth/ChangePassword/ChangePassword"));
+const Camera = lazy(() => import("@/pages/Camera/Camera"));
 const ForgotPassword = lazy(() => import("@/pages/Auth/ForgotPassword/ForgotPassword"));
 const HealthInformation = lazy(() => import("@/pages/HealthInformation/HealthInformation"));
 const HealthInformationDone = lazy(() => import("@/pages/HealthInformation/HealthInformationDone"));
@@ -35,7 +36,7 @@ const AppRoutes: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
   const authRoutes = ["/login", "/register"];
-  const authRoutesDontShowTabBar = ["/take-photo"]
+  const authRoutesDontShowTabBar = ["/camera"]
   const ignoreRoutes = ["/forgot-password", "/otp", "/new-password", "/change-password"];
   const showTabBar = !authRoutes.includes(location.pathname) && !ignoreRoutes.includes(location.pathname) && !authRoutesDontShowTabBar.includes(location.pathname);
   if (isAuthenticated && authRoutes.includes(location.pathname)) {
@@ -53,7 +54,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/home" component={Home} exact />
             <Route path="/new-password" component={NewPassword} exact />
             <Route path="/take-photo" component={TakePhoto} exact />
-
+            <PrivateRoute path="/camera" component={Camera} exact />
             <PrivateRoute path="/health-information" component={HealthInformation} exact />
             <PrivateRoute path="/health-information/welcome" component={HealthInformationWelcome} exact />
             <PrivateRoute path="/health-information/done" component={HealthInformationDone} exact />

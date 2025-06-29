@@ -1,4 +1,9 @@
 import React from "react";
+import CameraIcon from "@/icons/logo/chat/cam.svg?react";
+import ImageIcon from "@/icons/logo/chat/image.svg?react";
+import FileIcon from "@/icons/logo/chat/file.svg?react";
+import SendIcon from "@/icons/logo/chat/send.svg?react";
+// import MicIcon from "@/icons/logo/chat/mic.svg?react"; // Nếu cần dùng mic
 
 interface ChatInputBarProps {
     messageValue: string;
@@ -36,17 +41,17 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                 onFocus={() => {
                     setTimeout(() => {
                         window.dispatchEvent(new Event("resize"));
-                    }, 200);
+                    }, 100);
                 }}
             />
         </div>
         <div className="flex justify-between items-center px-6">
             <div className="flex gap-6">
                 <button onClick={onTakePhoto} disabled={isSpending}>
-                    <img src="logo/chat/cam.svg" alt={t("camera")} />
+                    <CameraIcon aria-label={t("camera")} />
                 </button>
                 <label>
-                    <img src="logo/chat/image.svg" alt={t("image")} />
+                    <ImageIcon aria-label={t("image")} />
                     <input
                         type="file"
                         accept="image/*"
@@ -54,11 +59,10 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                         className="hidden"
                         onChange={handleImageChange}
                         disabled={isSpending}
-
                     />
                 </label>
                 <label>
-                    <img src="logo/chat/file.svg" alt={t("file")} />
+                    <FileIcon aria-label={t("file")} />
                     <input
                         type="file"
                         multiple
@@ -66,20 +70,19 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                         className="hidden"
                         onChange={handleFileChange}
                         disabled={isSpending}
-
                     />
                 </label>
             </div>
             <div className="flex gap-6">
                 {/* <button onClick={onTakePhoto}>
-                    <img src="logo/chat/mic.svg" alt={t("microphone")} />
+                    <MicIcon aria-label={t("microphone")} />
                 </button> */}
                 <button
                     type="button"
                     onClick={(e) => handleSendMessage(e, true)}
                     disabled={isSpending}
                 >
-                    <img src="logo/chat/send.svg" alt={t("send")} />
+                    <SendIcon aria-label={t("send")} />
                 </button>
             </div>
         </div>

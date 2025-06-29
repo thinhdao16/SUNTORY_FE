@@ -10,6 +10,8 @@ import i18n from "@/config/i18n";
 import { ProfileHeader } from "./ProfileHeader";
 import AccountEdit from "./AccountEdit/AccountEdit";
 import HealthInformationEdit from "./HealthInformationEdit/HealthInformationEdit";
+import BackIcon from "@/icons/logo/back.svg?react";
+import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 
 const healthOptions = [
     { label: t("Basic Info"), path: "/health-information/progress-1" },
@@ -87,14 +89,14 @@ const Profile: React.FC = () => {
                                 className="flex items-center gap-2 text-main font-medium"
                                 onClick={() => history.push("/profile")}
                             >
-                                <img src="logo/back.svg" alt="Back" />
+                                <BackIcon aria-label="Back" />
                             </button>
                         ) : (
                             <button
                                 className="mr-auto"
                                 onClick={openSidebarWithAuthCheck}
                             >
-                                <img src="logo/nav_bar_home_history.svg" alt="Menu" />
+                                <NavBarHomeHistoryIcon aria-label="Menu" />
                             </button>
                         )}
                     </div>

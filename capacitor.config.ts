@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     // url: "http://192.168.1.32:5173",
-    url: "https://app.devwayjet.datadrivendaily.net",
+    url: "https://ment-optimize-anywhere-expert.trycloudflare.com",
     cleartext: true,
   },
   plugins: {

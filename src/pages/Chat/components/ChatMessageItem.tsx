@@ -6,9 +6,11 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { handleImageError } from "@/utils/image-utils";
 import { handleCopyToClipboard } from "@/components/common/HandleCoppy";
+import BotIcon from "@/icons/logo/AI.svg?react";
+import CopyIcon from "@/icons/logo/chat/coppy.svg?react";
 import "../Chat.module.css"
+
 const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean }> = ({ msg, isUser, isError }) => {
-    console.log(msg)
     return (
         <motion.div
             key={typeof msg.id === "string" || typeof msg.id === "number" ? msg.id : String(msg.createdAt)}
@@ -21,7 +23,7 @@ const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean }
             <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : ""} items-start w-full`}>
                 {!isUser && (
                     <div>
-                        <img src="/logo/AI.svg" alt="bot" className="min-w-[30px] aspect-square object-contain" />
+                        <BotIcon className="min-w-[30px] aspect-square object-contain" />
                     </div>
                 )}
                 <div className="flex-1 flex flex-col" >
@@ -65,8 +67,8 @@ const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean }
                                 }`}
                             style={{ maxWidth: "calc(100vw - 80px)" }}
                         >
-                            <div className="overflow-x-auto w-full px-4 py-3">
-                                <div className="prose prose-sm whitespace-pre-line break-words text-[15px] min-w-[200px] ">
+                            <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] ">
+                                <div className="prose prose-sm whitespace-pre-line break-words text-[15px] ">
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                         {typeof msg.text === "string"
                                             ? msg.text
@@ -93,7 +95,7 @@ const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean }
                                 )}
                                 title={t("Copy")}
                             >
-                                <img src="logo/chat/coppy.svg" />
+                                <CopyIcon />
                             </button>
                         </div>
                     )}

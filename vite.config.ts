@@ -12,14 +12,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
+      svgr(),
       legacy(),
       tailwindcss(),
-      svgr({
-        svgrOptions: {
-          icon: true,
-        },
-      }),
-
       AutoImport({
         imports: [
           {

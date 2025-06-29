@@ -6,6 +6,9 @@ import MainButton from "@/components/common/MainButton";
 import { useOtp } from "./useOtp";
 import CustomButton from "@/components/button/CustomButton";
 import { useToastStore } from "@/store/zustand/toast-store";
+import LogoIcon from "@/icons/logo/logo.svg?react";
+import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
+import CloseIcon from "@/icons/logo/close.svg?react";
 
 const Otp: React.FC = () => {
   const {
@@ -36,8 +39,7 @@ const Otp: React.FC = () => {
   return (
     <AuthCardLayout title={t("OTP Verification")}>
       <CustomButton
-        imgSrc="/logo/close.svg"
-        imgAlt={t("Close")}
+        icon={<CloseIcon aria-label={t("Close")} />}
         className="fixed top-10 left-6"
         navigateTo={
           otpType === "register"
@@ -97,11 +99,10 @@ const Otp: React.FC = () => {
       </form>
 
       <SocialLoginActions
-
         dividerText={t("OR")}
         showDivider={false}
         showActions={false}
-        bottomLogo={{ icon: "/logo/logo.svg", textIcon: "/logo/logo_text.svg" }}
+        bottomLogo={{ icon: LogoIcon, textIcon: LogoTextIcon }}
       />
     </AuthCardLayout>
   );
