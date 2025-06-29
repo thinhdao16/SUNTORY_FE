@@ -15,20 +15,11 @@ import AppRoutes from "./routes/AppRoutes";
 import useSafeArea from "./hooks/useSafeArea";
 import "./config/i18n";
 import "./App.css";
-import ENV from "@/config/env";
-import { Capacitor } from '@capacitor/core';
-import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { GoogleOAuthProvider } from '@react-oauth/google';
-setupIonicReact();
-const GOOGLE_WEB_CLIENT_ID = ENV.GOOGLE_API_KEY;
+import { GOOGLE_WEB_CLIENT_ID, initGoogleAuth } from "@/config/google";
 
-if (Capacitor.getPlatform && Capacitor.getPlatform() === 'web') {
-  GoogleAuth.initialize({
-    clientId: GOOGLE_WEB_CLIENT_ID,
-    scopes: ['profile', 'email'],
-    grantOfflineAccess: true,
-  });
-}
+setupIonicReact();
+initGoogleAuth();
 
 const App: React.FC = () => {
   useSafeArea();

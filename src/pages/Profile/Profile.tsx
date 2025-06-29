@@ -1,9 +1,8 @@
 import { useAuthStore } from "@/store/zustand/auth-store";
-import { openSidebarWithAuthCheck, useUiStore } from "@/store/zustand/ui-store";
-import { handleImageError } from "@/utils/image-utils";
+import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
 import { IonContent, IonPage } from "@ionic/react";
 import React, { useState } from "react";
-import { IoMenuOutline, IoChevronForward, IoChevronBack } from "react-icons/io5";
+import { IoChevronForward } from "react-icons/io5";
 import { useHistory, useParams } from "react-router-dom";
 import { useAuthInfo } from "../Auth/hooks/useAuthInfo";
 import i18n from "@/config/i18n";
@@ -13,12 +12,6 @@ import HealthInformationEdit from "./HealthInformationEdit/HealthInformationEdit
 import BackIcon from "@/icons/logo/back.svg?react";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 
-const healthOptions = [
-    { label: t("Basic Info"), path: "/health-information/progress-1" },
-    { label: t("Health Info"), path: "/health-information/progress-2" },
-    { label: t("Allergy Info"), path: "/health-information/progress-3" },
-    { label: t("Medicine Info"), path: "/health-information/progress-4" },
-];
 
 const languageOptions = [
     { label: "English", code: "en" },
