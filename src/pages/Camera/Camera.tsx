@@ -10,44 +10,36 @@ import CloseIcon from "@/icons/logo/take-photo/close.svg?react";
 import GalleryIcon from "@/icons/logo/take-photo/image.svg?react";
 import CaptureIcon from "@/icons/logo/take-photo/button_cam.svg?react";
 import SwitchCameraIcon from "@/icons/logo/take-photo/direction_camera.svg?react";
+import { Capacitor } from "@capacitor/core";
+import { AndroidSettings, IOSSettings, NativeSettings } from "capacitor-native-settings";
+import { Camera } from "@capacitor/camera";
+import { useTranslation } from "react-i18next";
+const isNative = Capacitor.isNativePlatform();
 
-const Camera: React.FC = () => {
+const CameraPage: React.FC = () => {
     const { chooseFromGallery } = usePhotoGallery();
-    const [present] = useIonToast();
+    const [present, dismiss] = useIonToast();
     const history = useHistory();
+    const { t } = useTranslation();
+
     const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
     const [flashOn, setFlashOn] = useState(false);
+    const [toastId, setToastId] = useState<string | undefined>(undefined);
+    const [permissionDenied, setPermissionDenied] = useState(false);
+
     const videoRef = useRef<HTMLVideoElement | null>(null);
-    const [stream, setStream] = useState<MediaStream | null>(null);
 
     const addPendingImage = useImageStore((s) => s.addPendingImages);
+    const platform = Capacitor.getPlatform();
 
-    useEffect(() => {
-        let activeStream: MediaStream | null = null;
-        (async () => {
-            try {
-                const mediaStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode }
-                });
-                setStream(mediaStream);
-                activeStream = mediaStream;
-                if (videoRef.current) {
-                    videoRef.current.srcObject = mediaStream;
-                }
-            } catch (err) {
-                present({
-                    message: "Không thể truy cập camera. Vui lòng kiểm tra quyền.",
-                    duration: 3000,
-                    color: "danger",
-                });
-            }
-        })();
-        return () => {
-            if (activeStream) {
-                activeStream.getTracks().forEach(track => track.stop());
-            }
-        };
-    }, [facingMode]);
+    const base64ToFile = (base64: string, filename: string): File => {
+        const arr = base64.split(",");
+        const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
+        const bstr = atob(arr[1]);
+        const u8arr = new Uint8Array(bstr.length);
+        for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+        return new File([u8arr], filename, { type: mime });
+    };
 
     const handleToggleFlash = async () => {
         try {
@@ -59,10 +51,10 @@ const Camera: React.FC = () => {
                 setFlashOn((prev) => !prev);
                 await track.applyConstraints({ advanced: [{ torch: !flashOn }] as any });
             } else {
-                present({ message: "Thiết bị không hỗ trợ flash!", duration: 2000, color: "warning" });
+                present({ message: t("Device does not support flash!"), duration: 2000, color: "warning" });
             }
         } catch {
-            present({ message: "Bật/tắt flash thất bại!", duration: 2000, color: "danger" });
+            present({ message: t("Failed to toggle flash!"), duration: 2000, color: "danger" });
         }
     };
 
@@ -97,31 +89,160 @@ const Camera: React.FC = () => {
         }
     };
 
-    const base64ToFile = (base64: string, filename: string): File => {
-        const arr = base64.split(",");
-        const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
-        const bstr = atob(arr[1]);
-        const u8arr = new Uint8Array(bstr.length);
-        for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
-        return new File([u8arr], filename, { type: mime });
+    const openDeviceSettings = async () => {
+        if (platform === "web") {
+            present({
+                message: t("Please open your browser settings and allow camera permission for this site."),
+                duration: 4000,
+                color: "warning",
+            });
+            return;
+        }
+        try {
+            if (platform === "android") {
+                await NativeSettings.openAndroid({ option: AndroidSettings.ApplicationDetails });
+            } else if (platform === "ios") {
+                await NativeSettings.openIOS({ option: IOSSettings.App });
+            }
+        } catch (error) {
+            present({
+                message: t("Cannot open device settings on this platform."),
+                duration: 3000,
+                color: "danger",
+            });
+        }
     };
+
+    const checkPermission = async (): Promise<boolean> => {
+        const id = `camera-toast-${Date.now()}`;
+        setToastId(id);
+
+        if (platform === "web") {
+            if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+                console.warn("Browser does not support getUserMedia or not secure context.");
+                return false;
+            }
+
+            try {
+                await navigator.mediaDevices.getUserMedia({ video: true });
+                return true;
+            } catch (err) {
+                present({
+                    id,
+                    message: t("Please allow camera access in your browser settings."),
+                    duration: 0,
+                    color: "danger",
+                    buttons: [
+                        {
+                            text: t("Open Settings"),
+                            handler: () => openDeviceSettings(),
+                        },
+                        { text: t("Close"), role: "cancel" },
+                    ],
+                });
+                return false;
+            }
+        }
+        try {
+            const permission = await Camera.checkPermissions();
+            if (permission.camera !== "granted") {
+                const res = await Camera.requestPermissions({ permissions: ["camera"] });
+                if (res.camera === "denied") {
+                    setPermissionDenied(true);
+                    present({
+                        id,
+                        message: t("Camera access denied. Please allow it in system settings."),
+                        duration: 0,
+                        color: "danger",
+                        buttons: [
+                            {
+                                text: t("Open Settings"),
+                                handler: () => openDeviceSettings(),
+                            },
+                            { text: t("Close"), role: "cancel" },
+                        ],
+                    });
+                    return false;
+                }
+            }
+            return true;
+        } catch (err: any) {
+            setPermissionDenied(true);
+            present({
+                message: t("Error during native camera check."),
+                duration: 3000,
+                color: "danger",
+            });
+            return false;
+        }
+
+
+    };
+
+    useEffect(() => {
+        if (permissionDenied) return;
+        let stream: MediaStream | null = null;
+
+        const init = async () => {
+            checkPermission()
+            try {
+                const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
+                stream = mediaStream;
+                if (videoRef.current) {
+                    videoRef.current.srcObject = mediaStream;
+                }
+            } catch (err) {
+                console.error("❌ Failed to start camera after permission:", err);
+            }
+        };
+        init();
+        return () => {
+            if (stream) stream.getTracks().forEach(track => track.stop());
+        };
+    }, [facingMode, permissionDenied]);
+
+
+
+
+    useEffect(() => {
+        return () => {
+            if (videoRef.current && videoRef.current.srcObject) {
+                const stream = videoRef.current.srcObject as MediaStream;
+                stream.getTracks().forEach(track => track.stop());
+                videoRef.current.srcObject = null;
+            }
+            if (isNative) {
+                import("@capacitor-community/camera-preview").then(mod => {
+                    mod.CameraPreview.stop();
+                });
+            }
+        };
+    }, []);
+    useEffect(() => {
+        return () => {
+            if (toastId) dismiss();
+            if (videoRef.current && videoRef.current.srcObject) {
+                const stream = videoRef.current.srcObject as MediaStream;
+                stream.getTracks().forEach((track) => track.stop());
+                videoRef.current.srcObject = null;
+            }
+        };
+    }, [toastId]);
 
     return (
         <IonPage>
             <IonContent>
                 <div className="h-full relative w-screen bg-black grid items-center px-6">
+                    {/* Top bar */}
                     <div className="fixed top-6 left-0 right-0 z-10 p-6 flex items-center justify-between">
                         <button onClick={handleToggleFlash}>
-                            {flashOn ? (
-                                <FlashOnIcon aria-label="Flash On" />
-                            ) : (
-                                <FlashOffIcon aria-label="Flash Off" />
-                            )}
+                            {flashOn ? <FlashOnIcon aria-label="Flash On" /> : <FlashOffIcon aria-label="Flash Off" />}
                         </button>
                         <button onClick={() => history.goBack()}>
                             <CloseIcon aria-label="Đóng" />
                         </button>
                     </div>
+                    {/* Camera preview */}
                     <div className="flex justify-center items-center w-full h-full">
                         <video
                             ref={videoRef}
@@ -136,6 +257,7 @@ const Camera: React.FC = () => {
                             }}
                         />
                     </div>
+                    {/* Bottom bar */}
                     <div className="fixed bottom-6 left-0 right-0 p-6 z-10 flex justify-between items-center">
                         <button
                             onClick={handleChooseFromGallery}
@@ -163,4 +285,4 @@ const Camera: React.FC = () => {
     );
 };
 
-export default Camera;
+export default CameraPage;
