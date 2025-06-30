@@ -31,8 +31,7 @@ export const ProfileHeader = ({
         if (!file) return;
         uploadAvatarMutation.mutate(file, {
             onSuccess: (data) => {
-                if (data?.linkImage) {
-                    onAvatarUploaded?.(data.linkImage);
+                if (data) {
                     refetchAuthInfo?.();
                 }
             },
@@ -41,6 +40,7 @@ export const ProfileHeader = ({
 
     return (
         <>
+
             <div className="flex flex-col items-center mt-18 mb-2">
                 <div className="relative w-24 h-24">
                     <img
@@ -64,6 +64,11 @@ export const ProfileHeader = ({
                         className="hidden"
                         onChange={handleFileChange}
                     />
+                    {uploadAvatarMutation.isLoading && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full z-10">
+                            <div className="loader border-4 border-white border-t-main rounded-full w-10 h-10 animate-spin"></div>
+                        </div>
+                    )}
                 </div>
                 <div className="mt-3 text-xl font-bold">{userInfo?.name}</div>
                 <div className="text-gray-400 text-sm">{userInfo?.email}</div>

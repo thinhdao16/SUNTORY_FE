@@ -80,6 +80,7 @@ const ChatSidebarLayout: React.FC = () => {
               isOpen={true}
               onClose={closeChatSidebar}
               sessionId={sessionId}
+              userAvatar={userInfo?.avatarLink}
             />
           </div>
         </motion.div>

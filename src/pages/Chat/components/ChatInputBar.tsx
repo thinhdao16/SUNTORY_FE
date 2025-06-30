@@ -61,7 +61,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                         disabled={isSpending}
                     />
                 </label>
-                <label>
+                {/* <label>
                     <FileIcon aria-label={t("file")} />
                     <input
                         type="file"
@@ -71,7 +71,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                         onChange={handleFileChange}
                         disabled={isSpending}
                     />
-                </label>
+                </label> */}
             </div>
             <div className="flex gap-6">
                 {/* <button onClick={onTakePhoto}>

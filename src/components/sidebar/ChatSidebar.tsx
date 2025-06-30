@@ -29,7 +29,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   isOpen = true,
   onClose,
   sessionId,
-  history
+  history,
+  userAvatar = "",
 }) => {
   const [search, setSearch] = React.useState("");
   const { isLoading } = useUserChatsByTopicSearch(undefined, search);
@@ -131,8 +132,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               )}
             </div>
             <div className="flex items-center gap-2 mt-4 pl-6">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-main">
-                {userName?.[0]?.toUpperCase() || "J"}
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-main overflow-hidden">
+                {userAvatar ? (
+                  <img
+                    src={userAvatar}
+                    alt={userName}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  userName?.[0]?.toUpperCase() || "J"
+                )}
               </div>
               <span className="font-medium">{userName}</span>
             </div>

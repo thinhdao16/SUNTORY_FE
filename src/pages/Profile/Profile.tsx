@@ -22,7 +22,7 @@ const languageOptions = [
 const Profile: React.FC = () => {
     const [showLanguageOptions, setShowLanguageOptions] = useState(false);
     const [languageLoading, setLanguageLoading] = useState(false);
-    const { section, type } = useParams<{ section?: string, type: string }>();
+    const { section } = useParams<{ section?: string, type: string }>();
     const history = useHistory();
     const handleLogout = () => {
         useAuthStore.getState().logout();
@@ -44,8 +44,7 @@ const Profile: React.FC = () => {
         // { label: t("Help & Feedback"), onClick: () => { } },
         { label: t("Logout"), onClick: () => { handleLogout() } },
     ];
-    const { data: userInfo, refetch } = useAuthInfo();
-
+    const { data: userInfo, refetch, isLoading } = useAuthInfo();
     const renderSectionContent = () => {
         switch (section) {
             case "account":
@@ -73,6 +72,11 @@ const Profile: React.FC = () => {
     return (
         <IonPage>
             <IonContent fullscreen>
+                {isLoading && (
+                    <div className="fixed inset-0 bg-white/80 flex items-center justify-center z-[9999]">
+                        <div className="loader border-4 border-white border-t-main rounded-full w-12 h-12 animate-spin"></div>
+                    </div>
+                )}
                 <div className="min-h-screen bg-white flex flex-col px-6"
                 // style={{ paddingTop: "var(--safe-area-inset-top)" }}
                 >

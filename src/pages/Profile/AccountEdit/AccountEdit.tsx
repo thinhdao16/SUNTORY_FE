@@ -21,7 +21,6 @@ const AccountEdit: React.FC = () => {
     const queryClient = useQueryClient();
     const updateAccountInfo = useUpdateAccountInfo();
 
-    // Add birthdayInputRef for date input
     const birthdayInputRef = useRef<HTMLInputElement>(null);
 
     const {
@@ -49,10 +48,10 @@ const AccountEdit: React.FC = () => {
                 id: userInfo?.id ?? 0,
                 firstname: data.firstname,
                 lastname: data.lastname,
-                birthDay: data.dateOfBirth,
+                birthDay: data.dateOfBirth ? data.dateOfBirth : null,
                 gender: data.gender === "Male" ? 1 : data.gender === "Female" ? 2 : 0,
-                height: Number(data.height),
-                weight: Number(data.weight),
+                height: data.height !== "" ? Number(data.height) : null,
+                weight: data.weight !== "" ? Number(data.weight) : null,
             },
             {
                 onSuccess: () => {
@@ -152,7 +151,7 @@ const AccountEdit: React.FC = () => {
                         control={control}
                         render={({ field }) => (
                             <InputTextField
-                                label={t("Height") + " (cm)"}
+                                label={`${t("Height")} (${t("cm")})`}
                                 type="number"
                                 {...field}
                             />
@@ -163,7 +162,7 @@ const AccountEdit: React.FC = () => {
                         control={control}
                         render={({ field }) => (
                             <InputTextField
-                                label={t("Weight") + " (kg)"}
+                                label={`${t("Weight")} (${t("kg")})`}
                                 type="number"
                                 {...field}
                             />

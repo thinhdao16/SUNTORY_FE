@@ -26,6 +26,7 @@ const CameraPage: React.FC = () => {
     const [flashOn, setFlashOn] = useState(false);
     const [toastId, setToastId] = useState<string | undefined>(undefined);
     const [permissionDenied, setPermissionDenied] = useState(false);
+    const [isCapturing, setIsCapturing] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -59,23 +60,27 @@ const CameraPage: React.FC = () => {
     };
 
     const handleCapture = async () => {
-        if (!videoRef.current) return;
-        const canvas = document.createElement("canvas");
-        canvas.width = videoRef.current.videoWidth;
-        canvas.height = videoRef.current.videoHeight;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-            ctx.drawImage(videoRef.current, 0, 0);
-            const imgData = canvas.toDataURL("image/png");
-            const file = base64ToFile(imgData, "captured.png");
-            const uploaded = await uploadChatFile(file);
-            if (uploaded?.length) {
-                addPendingImage([uploaded[0].linkImage]);
-                history.goBack();
+        if (isCapturing || !videoRef.current) return;
+        setIsCapturing(true);
+        try {
+            const canvas = document.createElement("canvas");
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+                ctx.drawImage(videoRef.current, 0, 0);
+                const imgData = canvas.toDataURL("image/png");
+                const file = base64ToFile(imgData, "captured.png");
+                const uploaded = await uploadChatFile(file);
+                if (uploaded?.length) {
+                    addPendingImage([uploaded[0].linkImage]);
+                    history.goBack();
+                }
             }
+        } finally {
+            setIsCapturing(false);
         }
     };
-
     const handleChooseFromGallery = async () => {
         const imgData = await chooseFromGallery();
         let base64Img = imgData?.base64 || (imgData?.webPath && await base64FromPath(imgData.webPath));
@@ -265,8 +270,14 @@ const CameraPage: React.FC = () => {
                         >
                             <GalleryIcon aria-label="Gallery" />
                         </button>
-                        <button onClick={handleCapture}>
-                            <CaptureIcon aria-label="Chụp ảnh" />
+                        <button onClick={handleCapture} disabled={isCapturing}>
+                            {isCapturing ? (
+                                <div className="w-12 h-12 flex items-center justify-center">
+                                    <div className="loader border-4 border-white border-t-main rounded-full w-10 h-10 animate-spin"></div>
+                                </div>
+                            ) : (
+                                <CaptureIcon aria-label="Chụp ảnh" />
+                            )}
                         </button>
                         <button
                             onClick={() =>

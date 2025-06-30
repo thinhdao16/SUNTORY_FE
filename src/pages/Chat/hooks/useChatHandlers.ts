@@ -60,6 +60,13 @@ export function useChatHandlers({
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
+        const totalCount = pendingFiles.length + pendingImages.length;
+        const selectedCount = files.length;
+        if (totalCount + selectedCount > 3) {
+            useToastStore.getState().showToast(t("You can only send up to 3 images and files in total!"), 2000, "warning");
+            e.target.value = "";
+            return;
+        }
         for (const file of Array.from(files)) {
             await uploadImageMutation.mutateAsync(file, {
                 onSuccess: (uploaded) => {
@@ -71,10 +78,20 @@ export function useChatHandlers({
         }
         e.target.value = "";
     };
-
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
+        const totalCount = pendingFiles.length + pendingImages.length;
+        const selectedCount = files.length;
+        if (totalCount + selectedCount > 3) {
+            useToastStore.getState().showToast(
+                i18n.t("You can only send up to 3 images and files in total!"),
+                2000,
+                "warning"
+            );
+            e.target.value = "";
+            return;
+        }
         const arr: { name: string; url: string }[] = [];
         for (const file of Array.from(files)) {
             const uploaded = await uploadChatFile(file);

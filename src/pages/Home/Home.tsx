@@ -70,8 +70,8 @@ function Home() {
   };
 
   const age = user?.dateOfBirth ? getAge(user.dateOfBirth) : "-";
-  const height = user?.height ? `${user.height} cm` : "-";
-  const weight = user?.weight ? `${user.weight} kg` : "-";
+  const height = user?.height ? `${user.height} ${t("cm")}` : "-";
+  const weight = user?.weight ? `${user.weight} ${t("kg")}` : "-";
   const bmi =
     user?.height && user?.weight
       ? (user.weight / ((user.height / 100) ** 2)).toFixed(1)
@@ -91,7 +91,7 @@ function Home() {
             <div
               className="absolute inset-0 w-full h-full object-cover"
               style={{
-                backgroundImage: 'url("/src/icons/background/background_radi_home_header.svg")',
+                backgroundImage: 'url("background/background_radi_home_header.svg")',
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
@@ -105,8 +105,8 @@ function Home() {
               <div className="flex justify-between items-end">
                 <div className="flex items-start gap-2 mt-6">
                   {userInfo?.id ? (
-                    <div className="text-white text-2xl font-semibold truncate min-w-0">
-                      {t("Hi,")} {user?.name || user?.email || t("Guest")}
+                    <div className="text-white text-2xl font-semibold truncate max-w-[250px] min-w-0">
+                      {t("Hi,")} {user?.lastname || user?.email || t("Guest")}
                     </div>
                   ) : (
                     <div className="text-white text-2xl font-semibold truncate min-w-0">

@@ -243,7 +243,7 @@ const Chat: React.FC = () => {
                 {(!isWelcome) && (
                     <>
                         <span className="font-semibold text-main uppercase tracking-wide">
-                            {title}
+                            {t(title || "")}
                         </span>
                         <button onClick={() => history.push("/home")}>
                             <CloseIcon aria-label={t("close")} />

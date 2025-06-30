@@ -64,7 +64,8 @@ const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean }
                                 : isUser
                                     ? "bg-main text-white rounded-br-md rounded-[16px_16px_0px_16px] ml-auto"
                                     : "bg-screen-page text-gray-900 rounded-[0px_16px_16px_16px]"
-                                }`}
+                                }
+                                `}
                             style={{ maxWidth: "calc(100vw - 80px)" }}
                         >
                             <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] ">

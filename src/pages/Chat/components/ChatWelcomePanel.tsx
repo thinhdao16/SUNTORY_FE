@@ -90,7 +90,7 @@ const ChatWelcomePanel: React.FC<{
                                 onChange={handleImageChange}
                             />
                         </label>
-                        <label>
+                        {/* <label>
                             <FileIcon aria-label={t("file")} />
                             <input
                                 type="file"
@@ -98,7 +98,7 @@ const ChatWelcomePanel: React.FC<{
                                 className="hidden"
                                 onChange={handleFileChange}
                             />
-                        </label>
+                        </label> */}
                     </div>
                     <button
                         type="button"

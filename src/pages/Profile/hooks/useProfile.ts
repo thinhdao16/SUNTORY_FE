@@ -21,5 +21,17 @@ export const useUpdateAccountInfo = () => {
     });
 };
 export function useUploadAvatar() {
-    return useMutation(uploadAvatar);
+    const showToast = useToastStore.getState().showToast;
+    return useMutation(uploadAvatar, {
+        onSuccess: () => {
+            showToast(t("Upload successful!"), 2000, "success");
+        },
+        onError: (error: any) => {
+            showToast(
+                error?.response?.data?.message || t("Image upload failed!"),
+                3000,
+                "error"
+            );
+        },
+    });
 }
