@@ -23,12 +23,6 @@ const SocialLoginActions: React.FC<SocialLoginActionsProps> = ({
     const { handleGoogleWebLogin, nativeLogin, isWeb } = useGoogleLogin();
     const googleBtnRef = useRef<HTMLDivElement>(null);
 
-    const handleCustomGoogleClick = () => {
-        const btn = googleBtnRef.current?.querySelector("button");
-        if (btn) btn.click();
-    };
-
-    // Mảng các social login actions
     const socialActions = [
         {
             key: "google",
@@ -37,9 +31,8 @@ const SocialLoginActions: React.FC<SocialLoginActionsProps> = ({
                     <div className="relative w-[45px] aspect-square">
                         <button
                             className="w-[45px] aspect-square flex items-center justify-center shadow rounded-full"
-                            onClick={handleCustomGoogleClick}
                         >
-                            <GoogleIcon className="w-6 h-6" aria-label="Google" />
+                            <GoogleIcon aria-label="Google" />
                         </button>
                         <div ref={googleBtnRef} className="w-[45px] aspect-square shadow rounded-full absolute top-0 z-10 opacity-0 ">
                             <GoogleLogin

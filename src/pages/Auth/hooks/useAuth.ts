@@ -20,8 +20,9 @@ import {
     UpdatePasswordOtpPayload,
 } from "@/services/auth/auth-types";
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
-import { useGoogleLogin as useGoogleLoginWeb } from '@react-oauth/google';
 import { Capacitor } from '@capacitor/core';
+import { useUpdateNewDevice } from "@/hooks/device/useDevice";
+import useDeviceInfo from "@/hooks/useDeviceInfo";
 
 const showToast = useToastStore.getState().showToast;
 
@@ -189,19 +190,22 @@ export const useGoogleLogin = () => {
     const setAuthData = useAuthStore((s) => s.setAuthData);
     const showToast = useToastStore.getState().showToast;
     const isWeb = Capacitor.getPlatform() === "web";
+    const updateNewDeviceMutation = useUpdateNewDevice();
+    const deviceInfo: { deviceId: string | null } = useDeviceInfo();
 
-    // Xử lý login Google cho web
     const handleGoogleWebLogin = async (credentialResponse: any) => {
-        console.log(credentialResponse)
         try {
             const idToken = credentialResponse.credential;
             const data = await loginAuthGoogle({ token: idToken });
-            const auth = data?.data?.authentication;
+            const auth = data?.data;
             if (auth?.token && auth?.refreshToken) {
                 setAuthData({
                     ...data.data,
                     token: auth.token,
                     refreshToken: auth.refreshToken,
+                });
+                updateNewDeviceMutation.mutate({
+                    deviceId: deviceInfo.deviceId,
                 });
             } else {
                 setAuthData(data.data);
@@ -213,7 +217,6 @@ export const useGoogleLogin = () => {
         }
     };
 
-    // Xử lý login Google cho native
     const nativeLogin = async () => {
         try {
             const user = await GoogleAuth.signIn();
