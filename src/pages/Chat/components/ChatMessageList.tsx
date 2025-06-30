@@ -2,6 +2,7 @@ import React from "react";
 import { AnimatePresence } from "framer-motion";
 import ChatIntroMessage from "./ChatIntroMessage";
 import ChatMessageItem from "./ChatMessageItem";
+import BotIcon from "@/icons/logo/AI.svg?react";
 
 type Attachment = {
     fileName: string;
@@ -46,14 +47,23 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({ allMessages, p
             {pendingMessages.length > 0 && loading && (
                 <div className="flex w-full mb-4">
                     <div className="flex gap-2 items-start w-fit">
-
+                        <BotIcon className="min-w-[30px] aspect-square object-contain" />
                         <div className="flex-1 flex flex-col">
-                            <div className=" px-4 py-3">
-                                <span className="flex items-center gap-2 rounded-[16px_16px_16px_0px]  bg-chat-to px-4 py-3">
-                                    <span className="inline-flex space-x-1 animate-pulse">
-                                        <span className="w-2 h-2 bg-black rounded-full"></span>
-                                        <span className="w-2 h-2 bg-black rounded-full"></span>
-                                        <span className="w-2 h-2 bg-black rounded-full"></span>
+                            <div className="">
+                                <span className="flex items-center gap-2 rounded-[16px_16px_16px_0px] bg-chat-to px-4 py-3">
+                                    <span className="inline-flex space-x-1">
+                                        <span
+                                            className="w-2 h-2 bg-black rounded-full animate-[wave_1.2s_ease-in-out_infinite]"
+                                            style={{ animationDelay: "0s" }}
+                                        ></span>
+                                        <span
+                                            className="w-2 h-2 bg-black rounded-full animate-[wave_1.2s_ease-in-out_infinite]"
+                                            style={{ animationDelay: "0.15s" }}
+                                        ></span>
+                                        <span
+                                            className="w-2 h-2 bg-black rounded-full animate-[wave_1.2s_ease-in-out_infinite]"
+                                            style={{ animationDelay: "0.3s" }}
+                                        ></span>
                                     </span>
                                 </span>
                             </div>
@@ -61,7 +71,6 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({ allMessages, p
                     </div>
                 </div>
             )}
-
         </div>
     )
 };
