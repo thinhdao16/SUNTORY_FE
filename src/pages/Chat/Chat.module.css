@@ -1,0 +1,18 @@
+/* Thêm vào file css global hoặc module */
+.loader {
+  border-width: 2px;
+  border-style: solid;
+  border-color: #fff #fff #fff transparent;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+:global(.prose) table {
+  width: 150px !important;
+}
