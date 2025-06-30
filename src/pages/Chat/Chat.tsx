@@ -41,7 +41,8 @@ const Chat: React.FC = () => {
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const prevSessionIdRef = useRef<string | undefined>(sessionId);
-    const prevScrollTopRef = useRef<number>(0);
+    const prevTypeRef = useRef<string | undefined>(type);
+
     // ===== Device Info =====
     const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
 
@@ -138,24 +139,22 @@ const Chat: React.FC = () => {
     }, [signalRMessages, type]);
 
     useEffect(() => {
-        if (prevSessionIdRef.current !== sessionId) {
-            setSignalRMessages?.([]);
+        if (
+            prevSessionIdRef.current !== sessionId &&
+            prevSessionIdRef.current &&
+            sessionId &&
+            prevSessionIdRef.current.split("/")[0] !== sessionId.split("/")[0]
+        ) {
             setHasFirstSignalRMessage(false);
+            setSignalRMessages?.([]);
+            clearPendingMessages();
         }
         prevSessionIdRef.current = sessionId;
+        prevTypeRef.current = type;
         return () => {
             useChatStore.getState().setIsSending(false);
         };
-    }, [sessionId]);
-    // useEffect(() => {
-    //     if (keyboardHeight > 0 && messagesContainerRef.current) {
-    //         messagesContainerRef.current.scrollTop -= prevScrollTopRef.current * -1;
-    //     }
-    //     if (keyboardHeight === 0 && messagesContainerRef.current) {
-    //         messagesContainerRef.current.scrollTop = prevScrollTopRef.current;
-    //     }
-    // }, [keyboardHeight]);
-
+    }, [sessionId, type]);
     // ===== Handlers =====
     const {
         handleImageChange,
@@ -185,31 +184,62 @@ const Chat: React.FC = () => {
         setStopMessages
     });
 
-    // ===== Message Mapping (Render Helper) =====
-    const mapSignalRMessage = (msg: any) => ({
-        id: msg.id?.toString(),
-        text: msg.massageText,
-        isRight: msg.senderType === 10,
-        createdAt: msg.createDate,
-        timeStamp: generatePreciseTimestampFromDate(msg.createDate),
-        senderType: msg.senderType,
-        messageType: msg.messageType,
-        userName: msg.userName,
-        botName: msg.botName,
-        userAvatar: msg.userAvatar,
-        botAvatarUrl: msg.botAvatarUrl,
-        attachments: msg.chatAttachments,
-        replyToMessageId: msg.replyToMessageId,
-        status: msg.status,
-        chatInfoId: msg.chatInfoId,
-        chatCode: msg.code,
-    });
+    const mapSignalRMessage = (msg: any) => {
+        const base = {
+            id: msg.id?.toString(),
+            text: msg.massageText,
+            isRight: msg.senderType === 10,
+            createdAt: msg.createDate,
+            timeStamp: generatePreciseTimestampFromDate(msg.createDate),
+            senderType: msg.senderType,
+            messageType: msg.messageType,
+            userName: msg.userName,
+            botName: msg.botName,
+            userAvatar: msg.userAvatar,
+            botAvatarUrl: msg.botAvatarUrl,
+            attachments: msg.chatAttachments,
+            replyToMessageId: msg.replyToMessageId,
+            status: msg.status,
+            chatInfoId: msg.chatInfoId,
+            chatCode: msg.code,
+        };
+
+        if (msg.userChatMessage) {
+            const userMsg = {
+                id: msg.userChatMessage.id?.toString(),
+                text: msg.userChatMessage.massageText,
+                isRight: true,
+                createdAt: msg.userChatMessage.createDate,
+                timeStamp: generatePreciseTimestampFromDate(msg.userChatMessage.createDate),
+                senderType: 10,
+                messageType: msg.userChatMessage.messageType,
+                userName: msg.userChatMessage.userName,
+                botName: null,
+                userAvatar: msg.userChatMessage.userAvatar,
+                botAvatarUrl: null,
+                attachments: msg.userChatMessage.chatAttachments,
+                replyToMessageId: msg.userChatMessage.replyToMessageId,
+                status: msg.userChatMessage.status,
+                chatInfoId: msg.userChatMessage.chatInfoId,
+                chatCode: msg.userChatMessage.code,
+            };
+            const isDuplicate = pendingMessages.some(
+                (pending) =>
+                    (pending.id && userMsg.id && pending.id === userMsg.id) ||
+                    (pending.chatCode && userMsg.chatCode && pending.chatCode === userMsg.chatCode) ||
+                    (pending.text && userMsg.text && pending.text.trim() === userMsg.text.trim())
+            );
+            return isDuplicate ? [base] : [userMsg, base];
+        }
+        return [base];
+    };
 
     const mapPendingMessage = (msg: any) => ({
         ...msg,
         isRight: true,
     });
-    const allSignalR = signalRMessages.map(mapSignalRMessage);
+    console.log(signalRMessages)
+    const allSignalR = signalRMessages.flatMap(mapSignalRMessage);
     const allPending = pendingMessages.map(mapPendingMessage);
     const mergedMessages = [
         ...messages,
