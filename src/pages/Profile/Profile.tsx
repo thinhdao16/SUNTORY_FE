@@ -44,15 +44,13 @@ const Profile: React.FC = () => {
         // { label: t("Help & Feedback"), onClick: () => { } },
         { label: t("Logout"), onClick: () => { handleLogout() } },
     ];
-    const { data: userInfo } = useAuthInfo();
+    const { data: userInfo, refetch } = useAuthInfo();
 
     const renderSectionContent = () => {
         switch (section) {
             case "account":
                 return <AccountEdit />;
             case "health": return <HealthInformationEdit />;
-            // case "allergy": return <AllergyInfoEdit />;
-            // ...thêm các section khác nếu cần...
             default:
                 return (
                     <ul className="space-y-2">
@@ -95,7 +93,7 @@ const Profile: React.FC = () => {
                             </button>
                         )}
                     </div>
-                    {userInfo && <ProfileHeader userInfo={userInfo} />}
+                    {userInfo && <ProfileHeader userInfo={userInfo} refetchAuthInfo={refetch} />}
                     <hr className="my-4 border-netural-200" />
                     {renderSectionContent()}
                     {showLanguageOptions && (

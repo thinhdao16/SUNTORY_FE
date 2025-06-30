@@ -9,7 +9,6 @@ import { useQueryClient } from "react-query";
 import { useUpdateAccountInfo } from "../hooks/useProfile";
 import dayjs from "dayjs";
 import HealthTextInput from "@/components/input/HealthTextInput";
-import { IoCalendarOutline } from "react-icons/io5";
 
 const genderOptions = [
     { label: "Male", code: "Male" },

@@ -54,3 +54,11 @@ export const loginAuthGoogle = async (payload: LoginRequestWithDeviceId) => {
     const res = await httpClient.post("/api/v1/auth/google-login", payload);
     return res.data;
 }
+export const uploadAvatar = async (file: File) => {
+    const formData = new FormData();
+    formData.append("Files", file);
+    const res = await httpClient.post("/api/v1/account/upload-avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+};

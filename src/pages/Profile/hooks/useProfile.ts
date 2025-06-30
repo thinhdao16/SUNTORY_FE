@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "react-query";
-import { updateAccountInfo } from "@/services/auth/auth-service";
+import { updateAccountInfo, uploadAvatar } from "@/services/auth/auth-service";
 import { useToastStore } from "@/store/zustand/toast-store";
 
 export const useUpdateAccountInfo = () => {
@@ -20,3 +20,6 @@ export const useUpdateAccountInfo = () => {
         },
     });
 };
+export function useUploadAvatar() {
+    return useMutation(uploadAvatar);
+}

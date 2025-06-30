@@ -226,7 +226,7 @@ const Chat: React.FC = () => {
 
     return (
         <div
-            className="flex flex-col"
+            className="flex flex-col bg-white"
             style={{
                 paddingRight: 0,
                 paddingLeft: 0,
