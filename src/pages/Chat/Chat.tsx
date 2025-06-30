@@ -232,11 +232,11 @@ const Chat: React.FC = () => {
                 paddingLeft: 0,
                 paddingBottom: !isWelcome ? (keyboardHeight > 0 ? (keyboardResizeScreen ? 76 : keyboardHeight) : 76) : 0,
                 height: "100dvh",
-                paddingTop: "var(--safe-area-inset-top, 0px)",
+                // paddingTop: "var(--safe-area-inset-top, 0px)",
             }}
         >
 
-            <div className="flex items-center justify-between px-6 pb-4 pt-6 h-[49px]">
+            <div className="flex items-center justify-between px-6 pb-4 pt-14 h-[49px]">
                 <button onClick={() => openSidebarWithAuthCheck()} >
                     <NavBarHomeHistoryIcon />
                 </button>

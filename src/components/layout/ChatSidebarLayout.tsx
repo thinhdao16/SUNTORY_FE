@@ -6,6 +6,7 @@ import { useHistory, useLocation } from "react-router";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import { TopicType } from "@/constants/topicType";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
+import NavBarHomeIcon from "@/icons/logo/nav_bar_home.svg?react";
 
 const ChatSidebarLayout: React.FC = () => {
   const { isChatSidebarOpen, closeChatSidebar } = useUiStore();
@@ -53,8 +54,18 @@ const ChatSidebarLayout: React.FC = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.2 } }}
         >
-          <div className="absolute top-13 right-6">
-            <NavBarHomeHistoryIcon />
+          <div className="absolute top-12 right-6">
+            <div
+            // style={{
+            //   paddingTop: "var(--safe-area-inset-top, 0px)",
+            // }}
+            >
+              {location.pathname === "/home" ? (
+                <NavBarHomeIcon />
+              ) : (
+                <NavBarHomeHistoryIcon />
+              )}
+            </div>
           </div>
           <div
             className="absolute inset-0 bg-[#f0f0f0]/85"

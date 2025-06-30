@@ -75,8 +75,10 @@ const Profile: React.FC = () => {
     return (
         <IonPage>
             <IonContent fullscreen>
-                <div className="min-h-screen bg-white flex flex-col px-6" style={{ paddingTop: "var(--safe-area-inset-top)" }}>
-                    <div className="flex items-center h-16 mb-2">
+                <div className="min-h-screen bg-white flex flex-col px-6"
+                // style={{ paddingTop: "var(--safe-area-inset-top)" }}
+                >
+                    <div className="flex items-center h-16 mb-2 pt-12">
                         {section ? (
                             <button
                                 className="flex items-center gap-2 text-main font-medium"
