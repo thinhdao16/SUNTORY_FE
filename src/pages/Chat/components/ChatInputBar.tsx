@@ -1,7 +1,7 @@
 import React from "react";
 import CameraIcon from "@/icons/logo/chat/cam.svg?react";
 import ImageIcon from "@/icons/logo/chat/image.svg?react";
-import FileIcon from "@/icons/logo/chat/file.svg?react";
+// import FileIcon from "@/icons/logo/chat/file.svg?react";
 import SendIcon from "@/icons/logo/chat/send.svg?react";
 // import MicIcon from "@/icons/logo/chat/mic.svg?react"; // Nếu cần dùng mic
 

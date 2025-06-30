@@ -70,7 +70,16 @@ const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean }
                         >
                             <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] ">
                                 <div className="prose prose-sm whitespace-pre-line break-words text-[15px] ">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            table: ({ node, ...props }) => (
+                                                <div className="overflow-x-auto max-w-full my-2">
+                                                    <table {...props} />
+                                                </div>
+                                            ),
+                                        }}
+                                    >
                                         {typeof msg.text === "string"
                                             ? msg.text
                                             : msg.text
