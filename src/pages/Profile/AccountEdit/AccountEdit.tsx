@@ -9,7 +9,6 @@ import { useQueryClient } from "react-query";
 import { useUpdateAccountInfo } from "../hooks/useProfile";
 import dayjs from "dayjs";
 import HealthTextInput from "@/components/input/HealthTextInput";
-import { IoCalendarOutline } from "react-icons/io5";
 
 const genderOptions = [
     { label: "Male", code: "Male" },
@@ -22,7 +21,6 @@ const AccountEdit: React.FC = () => {
     const queryClient = useQueryClient();
     const updateAccountInfo = useUpdateAccountInfo();
 
-    // Add birthdayInputRef for date input
     const birthdayInputRef = useRef<HTMLInputElement>(null);
 
     const {
@@ -50,10 +48,10 @@ const AccountEdit: React.FC = () => {
                 id: userInfo?.id ?? 0,
                 firstname: data.firstname,
                 lastname: data.lastname,
-                birthDay: data.dateOfBirth,
+                birthDay: data.dateOfBirth ? data.dateOfBirth : null,
                 gender: data.gender === "Male" ? 1 : data.gender === "Female" ? 2 : 0,
-                height: Number(data.height),
-                weight: Number(data.weight),
+                height: data.height !== "" ? Number(data.height) : null,
+                weight: data.weight !== "" ? Number(data.weight) : null,
             },
             {
                 onSuccess: () => {
@@ -109,17 +107,21 @@ const AccountEdit: React.FC = () => {
                                     inputRef={birthdayInputRef}
                                     logo={
                                         <span
-                                            onClick={() =>
-                                                birthdayInputRef.current?.showPicker
-                                                    ? birthdayInputRef.current.showPicker()
-                                                    : birthdayInputRef.current?.focus()
-                                            }
+                                            onClick={() => {
+                                                if (birthdayInputRef.current) {
+                                                    if (typeof birthdayInputRef.current.showPicker === "function") {
+                                                        birthdayInputRef.current.showPicker();
+                                                    } else {
+                                                        birthdayInputRef.current.focus();
+                                                    }
+                                                }
+                                            }}
                                             className="cursor-pointer"
                                         >
-                                            <IoCalendarOutline className="text-base" />
+                                            {/* <IoCalendarOutline className="text-base" /> */}
                                         </span>
                                     }
-                                    className="[&::-webkit-calendar-picker-indicator]:opacity-0 py-3"
+                                    className="py-3 !pr-2"
                                     classNameContainer="mb-0"
                                     classNameLable="!mb-0"
                                     {...field}
@@ -149,7 +151,7 @@ const AccountEdit: React.FC = () => {
                         control={control}
                         render={({ field }) => (
                             <InputTextField
-                                label={t("Height") + " (cm)"}
+                                label={`${t("Height")} (${t("cm")})`}
                                 type="number"
                                 {...field}
                             />
@@ -160,7 +162,7 @@ const AccountEdit: React.FC = () => {
                         control={control}
                         render={({ field }) => (
                             <InputTextField
-                                label={t("Weight") + " (kg)"}
+                                label={`${t("Weight")} (${t("kg")})`}
                                 type="number"
                                 {...field}
                             />

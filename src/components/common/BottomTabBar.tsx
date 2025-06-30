@@ -4,11 +4,18 @@ import { useChatStore } from "@/store/zustand/chat-store";
 import { TopicType } from "@/constants/topicType";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { useTranslation } from "react-i18next";
+import { motion, AnimatePresence } from "framer-motion";
+import HomeIcon from "@/icons/logo/footer/home.svg?react";
+import HomeActiveIcon from "@/icons/logo/footer/home_active.svg?react";
+import ChatIcon from "@/icons/logo/footer/chat.svg?react";
+import ChatActiveIcon from "@/icons/logo/footer/chat_active.svg?react";
+import ProfileIcon from "@/icons/logo/footer/profile.svg?react";
+import ProfileActiveIcon from "@/icons/logo/footer/profile_active.svg?react";
 
 interface TabItem {
     label: string;
-    icon: string;
-    iconActive: string;
+    icon: React.FC<React.SVGProps<SVGSVGElement>>;
+    iconActive: React.FC<React.SVGProps<SVGSVGElement>>;
     path: string;
     activePath?: string | ((pathname: string) => boolean);
     className?: string;
@@ -21,20 +28,19 @@ const BottomTabBar: React.FC = () => {
     const history = useHistory();
     const [keyboardOpen, setKeyboardOpen] = useState(false);
 
-    // Đặt tabs bên trong component để label cập nhật khi đổi i18n
     const tabs: TabItem[] = [
         {
             label: "Home",
-            icon: "logo/footer/home.svg",
-            iconActive: "logo/footer/home_active.svg",
+            icon: HomeIcon,
+            iconActive: HomeActiveIcon,
             path: "/home",
             activePath: "/home",
             classNameIcon: "h-6",
         },
         {
             label: "JetAI",
-            icon: "logo/footer/chat.svg",
-            iconActive: "logo/footer/chat_active.svg",
+            icon: ChatIcon,
+            iconActive: ChatActiveIcon,
             path: `/chat/${TopicType.Chat}`,
             activePath: (pathname: string) => pathname.startsWith("/chat"),
             className: "gap-[5px]",
@@ -42,16 +48,16 @@ const BottomTabBar: React.FC = () => {
         },
         // {
         //     label: "Translation",
-        //     icon: "logo/footer/translation.svg",
-        //     iconActive: "logo/footer/translation_active.svg",
+        //     icon: TranslationIcon,
+        //     iconActive: TranslationActiveIcon,
         //     path: "/translate",
         //     activePath: (pathname: string) => pathname.startsWith("/translate"),
         //     classNameIcon: "h-6",
         // },
         {
-            label: "Profile",
-            icon: "logo/footer/profile.svg",
-            iconActive: "logo/footer/profile_active.svg",
+            label: t("Profile"),
+            icon: ProfileIcon,
+            iconActive: ProfileActiveIcon,
             path: "/profile",
             activePath: (pathname: string) => pathname.startsWith("/profile"),
             classNameIcon: "h-6",
@@ -68,13 +74,23 @@ const BottomTabBar: React.FC = () => {
     useEffect(() => {
         let initialHeight = window.innerHeight;
 
+        const isDesktop = () => window.innerWidth > 1024;
+
         const handleResize = () => {
+            if (isDesktop()) {
+                setKeyboardOpen(false);
+                return;
+            }
             const heightDiff = initialHeight - window.innerHeight;
             setKeyboardOpen(heightDiff > 150);
         };
 
-        const handleFocus = () => setKeyboardOpen(true);
-        const handleBlur = () => setKeyboardOpen(false);
+        const handleFocus = () => {
+            if (!isDesktop()) setKeyboardOpen(true);
+        };
+        const handleBlur = () => {
+            if (!isDesktop()) setKeyboardOpen(false);
+        };
 
         window.addEventListener("resize", handleResize);
 
@@ -106,35 +122,42 @@ const BottomTabBar: React.FC = () => {
         };
     }, []);
 
-    if (keyboardOpen) return null;
-
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-white shadow-[0px_-3px_10px_0px_#0000000D] flex justify-between pt-4 pb-6 px-8 z-[101] rounded-t-3xl">
-            {tabs.map((tab) => {
-                const isActive =
-                    typeof tab.activePath === "function"
-                        ? tab.activePath(location.pathname)
-                        : location.pathname === tab.activePath;
-                return (
-                    <button
-                        key={tab.label}
-                        onClick={() => {
-                            clearAll();
-                            history.push(tab.path);
-                            useChatStore.getState().setIsSending(false);
-                        }}
-                        className={`flex flex-col items-center gap-2 justify-end text-sm ${tab.className
-                            } ${isActive ? "text-main" : "text-black"}`}
-                    >
-                        <img
-                            src={isActive ? tab.iconActive : tab.icon}
-                            className={tab.classNameIcon}
-                        />
-                        <span className="text-[8px] font-bold ">{t(tab.label)}</span>
-                    </button>
-                );
-            })}
-        </div>
+        <AnimatePresence>
+            {!keyboardOpen && (
+                <motion.div
+                    key="bottom-tab-bar"
+                    initial={{ y: 80, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 80, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className="fixed bottom-0 left-0 right-0 bg-white shadow-[0px_-3px_10px_0px_#0000000D] flex justify-between pt-4 pb-6 px-8 z-[101] rounded-t-3xl"
+                >
+                    {tabs.map((tab) => {
+                        const isActive =
+                            typeof tab.activePath === "function"
+                                ? tab.activePath(location.pathname)
+                                : location.pathname === tab.activePath;
+                        const Icon = isActive ? tab.iconActive : tab.icon;
+                        return (
+                            <button
+                                key={tab.label}
+                                onClick={() => {
+                                    clearAll();
+                                    history.push(tab.path);
+                                    useChatStore.getState().setIsSending(false);
+                                }}
+                                className={`flex flex-col items-center gap-2 justify-end text-sm ${tab.className
+                                    } ${isActive ? "text-main" : "text-black"}`}
+                            >
+                                <Icon className={tab.classNameIcon} />
+                                <span className="text-[8px] font-bold ">{t(tab.label)}</span>
+                            </button>
+                        );
+                    })}
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 };
 

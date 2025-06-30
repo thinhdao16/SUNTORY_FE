@@ -2,6 +2,7 @@ import httpClient from "@/config/http-client";
 import {
     ChangePasswordPayload,
     LoginRequest,
+    LoginRequestWithDeviceId,
     LoginResponse,
     RegisterRequest,
     RegisterResponse,
@@ -33,7 +34,7 @@ export const updatePasswordOtp = async (payload: UpdatePasswordOtpPayload) => {
     return res.data;
 };
 export const resendOtpResetPassword = async (email: string) => {
-    const res = await httpClient.post("/api/v1/auth/forget-password", { email, type: 20 });
+    const res = await httpClient.post("/api/v1/auth/forget-password", { email, type: 10, isForce: true });
     return res.data;
 };
 
@@ -47,5 +48,17 @@ export const changePassword = async (payload: ChangePasswordPayload) => {
 };
 export const updateAccountInfo = async (payload: any) => {
     const res = await httpClient.post("/api/v1/account/update-account-simple", payload);
+    return res.data;
+};
+export const loginAuthGoogle = async (payload: LoginRequestWithDeviceId) => {
+    const res = await httpClient.post("/api/v1/auth/google-login", payload);
+    return res.data;
+}
+export const uploadAvatar = async (file: File) => {
+    const formData = new FormData();
+    formData.append("Files", file);
+    const res = await httpClient.post("/api/v1/account/upload-avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+    });
     return res.data;
 };

@@ -2,10 +2,15 @@ import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
 import { ChatSidebarProps } from "./ChatSidebar-types";
-import { useUserChatsByTopic } from "@/pages/Chat/hooks/useChat";
+import { useUserChatsByTopicSearch } from "@/pages/Chat/hooks/useChat";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { groupChatsByDate } from "@/utils/group-chats-by-date";
 import dayjs from "dayjs";
+
+// Import SVG as React component
+import SearchIcon from "@/icons/logo/chat/search.svg?react";
+import FilterIcon from "@/icons/logo/chat/filter.svg?react";
+import NewChatIcon from "@/icons/logo/chat/new_chat.svg?react";
 
 const sidebarVariants: Variants = {
   hidden: { x: "-100%", opacity: 0 },
@@ -24,9 +29,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   isOpen = true,
   onClose,
   sessionId,
+  history,
+  userAvatar = "",
 }) => {
   const [search, setSearch] = React.useState("");
-  useUserChatsByTopic();
+  const { isLoading } = useUserChatsByTopicSearch(undefined, search);
   const chats = useChatStore((s) => s.chats);
   const groupedChats = React.useMemo(
     () => {
@@ -71,11 +78,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <div className="px-6">
               <div className="flex gap-2 mb-4 ">
                 <div className="flex-1 flex items-center bg-[#EDF1FC] rounded-lg px-3">
-                  <img
-                    src="/logo/chat/search.svg"
-                    alt={t("search")}
-                    className="w-4 h-4 mr-2"
-                  />
+                  <SearchIcon className="w-4 h-4 mr-2" aria-label={t("search")} />
                   <input
                     type="text"
                     placeholder={t("Search")}
@@ -85,49 +88,60 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   />
                 </div>
                 <button className="bg-main rounded-lg px-3 py-2" onClick={onNewChat}>
-                  <img
-                    src="/logo/chat/filter.svg"
-                    alt={t("new chat")}
-                  />
+                  <FilterIcon className="w-4 h-4" aria-label={t("new chat")} />
                 </button>
               </div>
               <button
                 className="flex items-center gap-2 bg-[#EDF1FC] rounded-lg px-3 py-2 mb-4 w-full "
                 onClick={onNewChat}
               >
-                <img src="/logo/chat/new_chat.svg" alt={t("new chat")} className="w-4 h-4" />
+                <NewChatIcon className="w-4 h-4" aria-label={t("new chat")} />
                 <span className="text-netural-300 font-medium">{t("New Chat")}</span>
               </button>
             </div>
             <div className="flex-1 overflow-y-auto pr-6 pl-2">
-              {Object.entries(groupedChats).map(([label, chats]) => (
-                <div className=" py-3" key={label}>
-                  <div className="text-sm text-netural-300 font-semibold py-2 pl-4">{t(label)}</div>
-                  {chats.map((item: any) => (
-                    <div
-                      key={item.fakeId ?? item.id}
-                      className={
-                        "cursor-pointer hover:bg-gray-50 rounded-lg py-2 pl-4" +
-                        (sessionId && item.code === sessionId
-                          ? " bg-netural-50 "
-                          : "")
-                      }
-                      onClick={() => onSelectChat?.(item)}
-                    >
-                      <span
-                        className="font-medium block max-w-[250px] truncate"
-                        title={item.title}
-                      >
-                        {item.title}
-                      </span>
-                    </div>
-                  ))}
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <span className="loader border-2 border-main border-t-transparent rounded-full w-8 h-8 animate-spin"></span>
                 </div>
-              ))}
+              ) : (
+                Object.entries(groupedChats).map(([label, chats]) => (
+                  <div className=" py-3" key={label}>
+                    <div className="text-sm text-netural-300 font-semibold py-2 pl-4">{t(label)}</div>
+                    {chats.map((item: any) => (
+                      <div
+                        key={item.fakeId ?? item.id}
+                        className={
+                          "cursor-pointer hover:bg-gray-50 rounded-lg py-2 pl-4" +
+                          (sessionId && item.code === sessionId
+                            ? " bg-netural-50 "
+                            : "")
+                        }
+                        onClick={() => onSelectChat?.(item)}
+                      >
+                        <span
+                          className="font-medium block max-w-[250px] truncate"
+                          title={item.title}
+                        >
+                          {item.title}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ))
+              )}
             </div>
             <div className="flex items-center gap-2 mt-4 pl-6">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-main">
-                {userName?.[0]?.toUpperCase() || "J"}
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-main overflow-hidden">
+                {userAvatar ? (
+                  <img
+                    src={userAvatar}
+                    alt={userName}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  userName?.[0]?.toUpperCase() || "J"
+                )}
               </div>
               <span className="font-medium">{userName}</span>
             </div>

@@ -20,10 +20,12 @@ import PendingFiles from "./components/PendingFiles";
 import PendingImages from "./components/PendingImages";
 import { useUpload } from "@/hooks/common/useUpload";
 import { useChatStore } from "@/store/zustand/chat-store";
-import { quickActions } from "./data";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { ChatMessageList } from "./components/ChatMessageList";
 import ChatWelcomePanel from "./components/ChatWelcomePanel";
+import { useScrollToBottom } from "@/hooks/useScrollToBottom";
+import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
+import CloseIcon from "@/icons/logo/chat/x.svg?react";
 dayjs.extend(utc);
 
 const Chat: React.FC = () => {
@@ -36,9 +38,10 @@ const Chat: React.FC = () => {
 
     // ===== Refs =====
     const messageRef = useRef<any>(null);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const prevSessionIdRef = useRef<string | undefined>(sessionId);
+    const prevScrollTopRef = useRef<number>(0);
     // ===== Device Info =====
     const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
 
@@ -89,7 +92,7 @@ const Chat: React.FC = () => {
     useSignalRChat(deviceInfo.deviceId || "");
 
     const uploadImageMutation = useUpload();
-
+    const scrollToBottomMess = useScrollToBottom(messagesEndRef);
     // ===== Derived State =====
     const topicTypeNum = type ? Number(type) : undefined;
     const isValidTopicType = topicTypeNum !== undefined && Object.values(TopicType).includes(topicTypeNum as TopicType);
@@ -111,7 +114,7 @@ const Chat: React.FC = () => {
             history.push("/home");
         }
         if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+            scrollToBottomMess()
         }
     }, [isValidTopicType, history, messages]);
 
@@ -130,9 +133,9 @@ const Chat: React.FC = () => {
 
     useEffect(() => {
         if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+            scrollToBottomMess()
         }
-    }, [signalRMessages]);
+    }, [signalRMessages, type]);
 
     useEffect(() => {
         if (prevSessionIdRef.current !== sessionId) {
@@ -144,6 +147,14 @@ const Chat: React.FC = () => {
             useChatStore.getState().setIsSending(false);
         };
     }, [sessionId]);
+    // useEffect(() => {
+    //     if (keyboardHeight > 0 && messagesContainerRef.current) {
+    //         messagesContainerRef.current.scrollTop -= prevScrollTopRef.current * -1;
+    //     }
+    //     if (keyboardHeight === 0 && messagesContainerRef.current) {
+    //         messagesContainerRef.current.scrollTop = prevScrollTopRef.current;
+    //     }
+    // }, [keyboardHeight]);
 
     // ===== Handlers =====
     const {
@@ -199,7 +210,6 @@ const Chat: React.FC = () => {
         isRight: true,
     });
     const allSignalR = signalRMessages.map(mapSignalRMessage);
-    console.log(allSignalR)
     const allPending = pendingMessages.map(mapPendingMessage);
     const mergedMessages = [
         ...messages,
@@ -216,27 +226,27 @@ const Chat: React.FC = () => {
 
     return (
         <div
-            className="flex flex-col"
+            className="flex flex-col bg-white"
             style={{
                 paddingRight: 0,
                 paddingLeft: 0,
                 paddingBottom: !isWelcome ? (keyboardHeight > 0 ? (keyboardResizeScreen ? 76 : keyboardHeight) : 76) : 0,
                 height: "100dvh",
-                paddingTop: "var(--safe-area-inset-top)",
+                // paddingTop: "var(--safe-area-inset-top, 0px)",
             }}
         >
 
-            <div className="flex items-center justify-between px-6 py-4 ">
+            <div className="flex items-center justify-between px-6 pb-4 pt-14 h-[49px]">
                 <button onClick={() => openSidebarWithAuthCheck()} >
-                    <img src="logo/nav_bar_home_history.svg" />
+                    <NavBarHomeHistoryIcon />
                 </button>
                 {(!isWelcome) && (
                     <>
                         <span className="font-semibold text-main uppercase tracking-wide">
-                            {title}
+                            {t(title || "")}
                         </span>
                         <button onClick={() => history.push("/home")}>
-                            <img src="/logo/chat/x.svg" alt={t("close")} />
+                            <CloseIcon aria-label={t("close")} />
                         </button>
                     </>
                 )}
@@ -261,6 +271,8 @@ const Chat: React.FC = () => {
                         handleFileChange={handleFileChange}
                         handleSendMessage={handleSendMessage}
                         history={history}
+                        messageRef={messageRef}
+                        addPendingImages={addPendingImages}
                     />
                 ) : (
                     <ChatMessageList
@@ -271,7 +283,7 @@ const Chat: React.FC = () => {
                         loading={isSending}
                     />
                 )}
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} className="mt-4" />
             </div>
             {!isWelcome && (
                 <div className={`bg-white pb-4 bottom-0 w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : "sticky"}`}>
@@ -304,8 +316,10 @@ const Chat: React.FC = () => {
                         handleSendMessage={handleSendMessage}
                         handleImageChange={handleImageChange}
                         handleFileChange={handleFileChange}
-                        onTakePhoto={() => history.push("/take-photo")}
+                        onTakePhoto={() => history.push("/camera")}
                         isSpending={isSending}
+                        uploadImageMutation={uploadImageMutation}
+                        addPendingImages={addPendingImages}
                     />
                 </div>
             )}

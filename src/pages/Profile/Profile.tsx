@@ -1,22 +1,17 @@
 import { useAuthStore } from "@/store/zustand/auth-store";
-import { openSidebarWithAuthCheck, useUiStore } from "@/store/zustand/ui-store";
-import { handleImageError } from "@/utils/image-utils";
+import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
 import { IonContent, IonPage } from "@ionic/react";
 import React, { useState } from "react";
-import { IoMenuOutline, IoChevronForward, IoChevronBack } from "react-icons/io5";
+import { IoChevronForward } from "react-icons/io5";
 import { useHistory, useParams } from "react-router-dom";
 import { useAuthInfo } from "../Auth/hooks/useAuthInfo";
 import i18n from "@/config/i18n";
 import { ProfileHeader } from "./ProfileHeader";
 import AccountEdit from "./AccountEdit/AccountEdit";
 import HealthInformationEdit from "./HealthInformationEdit/HealthInformationEdit";
+import BackIcon from "@/icons/logo/back.svg?react";
+import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 
-const healthOptions = [
-    { label: t("Basic Info"), path: "/health-information/progress-1" },
-    { label: t("Health Info"), path: "/health-information/progress-2" },
-    { label: t("Allergy Info"), path: "/health-information/progress-3" },
-    { label: t("Medicine Info"), path: "/health-information/progress-4" },
-];
 
 const languageOptions = [
     { label: "English", code: "en" },
@@ -27,7 +22,7 @@ const languageOptions = [
 const Profile: React.FC = () => {
     const [showLanguageOptions, setShowLanguageOptions] = useState(false);
     const [languageLoading, setLanguageLoading] = useState(false);
-    const { section, type } = useParams<{ section?: string, type: string }>();
+    const { section } = useParams<{ section?: string, type: string }>();
     const history = useHistory();
     const handleLogout = () => {
         useAuthStore.getState().logout();
@@ -36,6 +31,8 @@ const Profile: React.FC = () => {
     const handleChangeLanguage = (status: boolean, lang?: string) => {
         setShowLanguageOptions(status);
     };
+    const currentLang = languageOptions.find(opt => opt.code === i18n.language)?.label || i18n.language;
+
     const menuItems = [
         { label: t("Account"), onClick: () => history.replace("/profile/account"), },
         // {
@@ -43,19 +40,16 @@ const Profile: React.FC = () => {
         //     onClick: () => history.replace("/profile/health"),
         // },
         { label: t("Change Password"), onClick: () => history.push("/change-password") },
-        { label: t("Language"), onClick: () => handleChangeLanguage(true, "en") },
+        { label: `${t("Language")} (${currentLang})`, onClick: () => handleChangeLanguage(true, "en") },
         // { label: t("Help & Feedback"), onClick: () => { } },
         { label: t("Logout"), onClick: () => { handleLogout() } },
     ];
-    const { data: userInfo } = useAuthInfo();
-
+    const { data: userInfo, refetch, isLoading } = useAuthInfo();
     const renderSectionContent = () => {
         switch (section) {
             case "account":
                 return <AccountEdit />;
             case "health": return <HealthInformationEdit />;
-            // case "allergy": return <AllergyInfoEdit />;
-            // ...thêm các section khác nếu cần...
             default:
                 return (
                     <ul className="space-y-2">
@@ -78,25 +72,32 @@ const Profile: React.FC = () => {
     return (
         <IonPage>
             <IonContent fullscreen>
-                <div className="min-h-screen bg-white flex flex-col px-6" style={{ paddingTop: "var(--safe-area-inset-top)" }}>
-                    <div className="flex items-center h-12 mb-2">
+                {isLoading && (
+                    <div className="fixed inset-0 bg-white/80 flex items-center justify-center z-[9999]">
+                        <div className="loader border-4 border-white border-t-main rounded-full w-12 h-12 animate-spin"></div>
+                    </div>
+                )}
+                <div className="min-h-screen bg-white flex flex-col px-6"
+                // style={{ paddingTop: "var(--safe-area-inset-top)" }}
+                >
+                    <div className="flex items-center h-16 mb-2 pt-12">
                         {section ? (
                             <button
                                 className="flex items-center gap-2 text-main font-medium"
                                 onClick={() => history.push("/profile")}
                             >
-                                <img src="logo/back.svg" alt="Back" className="w-6 h-6" />
+                                <BackIcon aria-label="Back" />
                             </button>
                         ) : (
                             <button
                                 className="mr-auto"
                                 onClick={openSidebarWithAuthCheck}
                             >
-                                <img src="logo/nav_bar_home_history.svg" alt="Menu" className="w-6 h-6" />
+                                <NavBarHomeHistoryIcon aria-label="Menu" />
                             </button>
                         )}
                     </div>
-                    {userInfo && <ProfileHeader userInfo={userInfo} />}
+                    {userInfo && <ProfileHeader userInfo={userInfo} refetchAuthInfo={refetch} />}
                     <hr className="my-4 border-netural-200" />
                     {renderSectionContent()}
                     {showLanguageOptions && (
@@ -107,7 +108,10 @@ const Profile: React.FC = () => {
                                     {languageOptions.map((opt) => (
                                         <li key={opt.code}>
                                             <button
-                                                className="w-full py-2 text-left hover:bg-gray-100 rounded transition text-gray-700"
+                                                className={`w-full py-2 text-left rounded transition ${i18n.language === opt.code
+                                                    ? " text-main font-semibold"
+                                                    : "text-gray-700 hover:bg-gray-100"
+                                                    }`}
                                                 onClick={async () => {
                                                     setLanguageLoading(true);
                                                     await i18n.changeLanguage(opt.code);
