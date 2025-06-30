@@ -248,12 +248,12 @@ const CameraPage: React.FC = () => {
                         </button>
                     </div>
                     {/* Camera preview */}
-                    <div className="flex justify-center items-center w-full h-full">
+                    <div className="flex justify-center items-center w-full h-full xl:max-w-[410px]">
                         <video
                             ref={videoRef}
                             autoPlay
                             playsInline
-                            className="rounded-2xl w-full h-auto object-cover"
+                            className="rounded-2xl w-full h-auto object-cover "
                             style={{
                                 width: "100%",
                                 aspectRatio: "1/1",

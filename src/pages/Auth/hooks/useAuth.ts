@@ -210,7 +210,7 @@ export const useGoogleLogin = () => {
             } else {
                 setAuthData(data.data);
             }
-            showToast("Login successful!", 2000, "success");
+            showToast(t("Login successful!"), 2000, "success");
         } catch (err) {
             showToast("Login failed. Please try again.", 3000, "error");
             console.error("Google Web Login Backend Error:", err);
@@ -233,7 +233,7 @@ export const useGoogleLogin = () => {
             } else {
                 setAuthData(data.data);
             }
-            showToast("Login successful!", 2000, "success");
+            showToast(t("Login successful!"), 2000, "success");
             return user;
         } catch (err) {
             showToast("Login failed. Please try again.", 3000, "error");

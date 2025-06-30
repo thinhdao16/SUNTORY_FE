@@ -43,6 +43,12 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                         window.dispatchEvent(new Event("resize"));
                     }, 100);
                 }}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage(e, true);
+                    }
+                }}
             />
         </div>
         <div className="flex justify-between items-center px-6">

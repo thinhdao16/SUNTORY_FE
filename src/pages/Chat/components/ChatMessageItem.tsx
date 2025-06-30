@@ -59,7 +59,7 @@ const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean }
                     )}
                     {(msg.text && String(msg.text).trim() !== "") && (
                         <div
-                            className={`relative ${isError
+                            className={`relative  ${isError
                                 ? "bg-red-50 text-red-700 border border-red-400 rounded-[16px_16px_16px_16px]"
                                 : isUser
                                     ? "bg-main text-white rounded-br-md rounded-[16px_16px_0px_16px] ml-auto"
@@ -68,7 +68,7 @@ const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean }
                                 `}
                             style={{ maxWidth: "calc(100vw - 80px)" }}
                         >
-                            <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] ">
+                            <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] xl:max-w-[350px] ">
                                 <div className="prose prose-sm whitespace-pre-line break-words text-[15px] ">
                                     <ReactMarkdown
                                         remarkPlugins={[remarkGfm]}

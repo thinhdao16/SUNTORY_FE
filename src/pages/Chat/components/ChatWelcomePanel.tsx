@@ -74,6 +74,12 @@ const ChatWelcomePanel: React.FC<{
                             window.dispatchEvent(new Event("resize"));
                         }, 200);
                     }}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage(e, true);
+                        }
+                    }}
                 />
                 <div className="flex justify-between items-center">
                     <div className="flex gap-6">
