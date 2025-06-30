@@ -15,6 +15,8 @@ interface ChatInputBarProps {
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onTakePhoto: () => void;
     isSpending?: boolean;
+    uploadImageMutation: any;
+    addPendingImages: (images: string[]) => void;
 }
 
 const ChatInputBar: React.FC<ChatInputBarProps> = ({
@@ -26,7 +28,9 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     handleImageChange,
     handleFileChange,
     onTakePhoto,
-    isSpending
+    isSpending,
+    uploadImageMutation,
+    addPendingImages
 }) => (
     <>
         <div className="flex items-center px-6 pt-4 pb-6">
@@ -47,6 +51,24 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
                         handleSendMessage(e, true);
+                    }
+                }}
+                onPaste={async (e) => {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+                    for (const item of items) {
+                        if (item.type.startsWith("image/")) {
+                            const file = item.getAsFile();
+                            if (file) {
+                                await uploadImageMutation.mutateAsync(file, {
+                                    onSuccess: (uploaded: any) => {
+                                        if (uploaded && uploaded.length > 0) {
+                                            addPendingImages([uploaded[0].linkImage]);
+                                        }
+                                    },
+                                });
+                            }
+                        }
                     }
                 }}
             />

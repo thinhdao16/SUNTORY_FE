@@ -272,6 +272,7 @@ const Chat: React.FC = () => {
                         handleSendMessage={handleSendMessage}
                         history={history}
                         messageRef={messageRef}
+                        addPendingImages={addPendingImages}
                     />
                 ) : (
                     <ChatMessageList
@@ -317,6 +318,8 @@ const Chat: React.FC = () => {
                         handleFileChange={handleFileChange}
                         onTakePhoto={() => history.push("/camera")}
                         isSpending={isSending}
+                        uploadImageMutation={uploadImageMutation}
+                        addPendingImages={addPendingImages}
                     />
                 </div>
             )}

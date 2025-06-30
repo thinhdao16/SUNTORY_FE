@@ -26,6 +26,7 @@ const ChatWelcomePanel: React.FC<{
     handleSendMessage: (e: any, force?: boolean) => void;
     history: any;
     messageRef: React.RefObject<HTMLTextAreaElement>;
+    addPendingImages: (images: string[]) => void;
 }> = ({
     pendingImages,
     pendingFiles,
@@ -41,6 +42,7 @@ const ChatWelcomePanel: React.FC<{
     handleSendMessage,
     history,
     messageRef,
+    addPendingImages
 }) => (
         <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="flex items-center gap-2 mb-4 ">
@@ -78,6 +80,24 @@ const ChatWelcomePanel: React.FC<{
                         if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
                             handleSendMessage(e, true);
+                        }
+                    }}
+                    onPaste={async (e) => {
+                        const items = e.clipboardData?.items;
+                        if (!items) return;
+                        for (const item of items) {
+                            if (item.type.startsWith("image/")) {
+                                const file = item.getAsFile();
+                                if (file) {
+                                    await uploadImageMutation.mutateAsync(file, {
+                                        onSuccess: (uploaded: any) => {
+                                            if (uploaded && uploaded.length > 0) {
+                                                addPendingImages([uploaded[0].linkImage]);
+                                            }
+                                        },
+                                    });
+                                }
+                            }
                         }
                     }}
                 />
