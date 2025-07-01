@@ -12,10 +12,11 @@ interface ChatStoreState {
     isSending: boolean;
     setIsSending: (val: boolean) => void;
     pendingMessages: {
+        attachments: any;
         chatCode: any;
         id: any; text: string; createdAt: string; timeStamp?: number
     }[];
-    setPendingMessages: (fn: (prev: { chatCode: any; id: any; text: string; createdAt: string; timeStamp?: number }[]) => { chatCode: any; id: any; text: string; createdAt: string; timeStamp?: number }[]) => void;
+    setPendingMessages: (fn: (prev: { attachments: any; chatCode: any; id: any; text: string; createdAt: string; timeStamp?: number }[]) => { attachments: any; chatCode: any; id: any; text: string; createdAt: string; timeStamp?: number }[]) => void;
     clearPendingMessages: () => void;
     stopMessages: boolean
     setStopMessages: (val: boolean) => void;
@@ -32,7 +33,16 @@ export const useChatStore = create<ChatStoreState>((set) => ({
     setIsSending: (val) => set({ isSending: val }),
     pendingMessages: [],
     setPendingMessages: (fn) =>
-        set((state) => ({ pendingMessages: fn(state.pendingMessages) })),
+        set((state) => ({
+            pendingMessages: fn(state.pendingMessages).map(msg => ({
+                attachments: msg.attachments ?? [],
+                chatCode: msg.chatCode,
+                id: msg.id,
+                text: msg.text,
+                createdAt: msg.createdAt,
+                timeStamp: msg.timeStamp
+            }))
+        })),
     clearPendingMessages: () => set({ pendingMessages: [] }),
     stopMessages: true,
     setStopMessages: (val) => set({ stopMessages: val })
