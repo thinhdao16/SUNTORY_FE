@@ -1,7 +1,7 @@
 services:
-  wayjet-fe:
+  wayjet_app:
     build: .
-    container_name: wayjet_fe
+    container_name: wayjet_app
     volumes:
       - .:/app
     restart: unless-stopped
