@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
 import { ChatSidebarProps } from "./ChatSidebar-types";
@@ -33,6 +33,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   userAvatar = "",
 }) => {
   const [search, setSearch] = React.useState("");
+  const [showAvatar, setShowAvatar] = useState(false);
+  const [avatarLoaded, setAvatarLoaded] = useState(false);
   const { isLoading } = useUserChatsByTopicSearch(undefined, search);
   const chats = useChatStore((s) => s.chats);
   const groupedChats = React.useMemo(
@@ -63,6 +65,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   }, [isOpen, onClose]);
 
 
+
   return (
     <>
       {isOpen && (
@@ -73,6 +76,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           animate="visible"
           exit="exit"
           style={{ paddingTop: "var(--safe-area-inset-top)" }}
+          onAnimationComplete={() => setShowAvatar(true)}
         >
           <div className="flex flex-col h-full w-full  py-5">
             <div className="px-6">
@@ -132,18 +136,33 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               )}
             </div>
             <div className="flex items-center gap-2 mt-4 pl-6">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-main overflow-hidden">
-                {userAvatar ? (
-                  <img
-                    src={userAvatar}
-                    alt={userName}
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                ) : (
-                  userName?.[0]?.toUpperCase() || "J"
-                )}
-              </div>
-              <span className="font-medium">{userName}</span>
+              <>
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-main overflow-hidden">
+                  {userAvatar && showAvatar ? (
+                    <>
+                      {!avatarLoaded && (
+                        <img
+                          src="/default-avatar.png" // Đường dẫn avatar mẫu
+                          alt="default"
+                          className="w-full h-full object-cover rounded-full absolute"
+                          style={{ zIndex: 1 }}
+                        />
+                      )}
+                      <img
+                        src={userAvatar}
+                        alt={userName}
+                        className="w-full h-full object-cover rounded-full relative"
+                        style={{ zIndex: 2 }}
+                        onLoad={() => setAvatarLoaded(true)}
+                        onError={() => setAvatarLoaded(false)}
+                      />
+                    </>
+                  ) : (
+                    userName?.[0]?.toUpperCase() || "J"
+                  )}
+                </div>
+                <span className="font-medium">{userName}</span>
+              </>
             </div>
           </div>
         </motion.div>
