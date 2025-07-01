@@ -13,4 +13,5 @@ export interface ChatSidebarProps {
     isOpen?: boolean;
     onClose?: () => void;
     sessionId?: string;
+    userAvatar?: string;
 }

@@ -5,7 +5,7 @@ import { useToastStore } from "@/store/zustand/toast-store";
 import { useCheckValidOtp, useResendOtp, useVerifyOtp } from "../hooks/useAuth";
 
 // ====== CONSTANTS ======
-const RESEND_INTERVAL = 120;
+const RESEND_INTERVAL = 300;
 const OTP_LENGTH = 6;
 
 // ====== HOOK ======

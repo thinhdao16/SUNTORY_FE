@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { TopicType } from "@/constants/topicType";
 import { handleCopyToClipboard } from "@/components/common/HandleCoppy";
 import { motion } from "framer-motion";
+import BotIcon from "@/icons/logo/AI.svg?react";
+import CopyIcon from "@/icons/logo/chat/coppy.svg?react";
 
 const ChatIntroMessage: React.FC<{ topicType: number }> = ({ topicType }) => {
     const { t } = useTranslation();
@@ -87,24 +89,22 @@ const ChatIntroMessage: React.FC<{ topicType: number }> = ({ topicType }) => {
             exit={{ opacity: 0, y: 40 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
         >
-            <div className="flex gap-2 items-start w-fit">
+            <div className="flex gap-2 items-start w-full">
                 <div>
-                    <img src="/logo/AI.svg" alt="bot" className="min-w-[30px] aspect-square object-contain" />
+                    <BotIcon className="min-w-[30px] aspect-square object-contain" />
                 </div>
-                <div className="relative bg-chat-to rounded-[0px_16px_16px_16px] px-4 py-3 text-[15px] text-gray-700 whitespace-pre-line">
+                <div className="w-full relative bg-chat-to rounded-[0px_16px_16px_16px] px-4 py-3 text-[15px] text-gray-700 whitespace-pre-line">
                     {introText}
-
                 </div>
-
             </div>
             <div className="flex justify-end mt-1">
                 <button
-                    className="  transition"
+                    className="transition"
                     type="button"
                     onClick={() => handleCopyToClipboard(introText)}
                     title={t("Copy")}
                 >
-                    <img src="/logo/chat/coppy.svg" alt="copy" />
+                    <CopyIcon />
                 </button>
             </div>
             <motion.hr

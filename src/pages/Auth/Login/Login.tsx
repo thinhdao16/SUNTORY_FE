@@ -6,9 +6,12 @@ import InputPasswordField from "@/components/input/InputPasswordField";
 import SocialLoginActions from "@/components/common/SocialLoginActions";
 import AuthCardLayout from "@/components/layout/AuthCardLayout";
 import MainButton from "@/components/common/MainButton";
-import { useLogin } from "../hooks/useAuth";
+import { useGoogleLogin, useLogin } from "../hooks/useAuth";
 import CustomButton from "@/components/button/CustomButton";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
+import LogoIcon from "@/icons/logo/logo.svg?react";
+import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
+import CloseIcon from "@/icons/logo/close.svg?react";
 
 interface LoginFormValues {
     emailOrPhone: string;
@@ -41,8 +44,7 @@ const Login: React.FC = () => {
     return (
         <AuthCardLayout title={t("Sign In")}>
             <CustomButton
-                imgSrc="/logo/close.svg"
-                imgAlt={t("Close")}
+                icon={<CloseIcon className="w-6 h-6" aria-label={t("Close")} />}
                 className="fixed top-10 left-6"
                 navigateTo="/home"
             />
@@ -91,13 +93,8 @@ const Login: React.FC = () => {
                 </a>
             </div>
             <SocialLoginActions
-                actions={[
-                    { icon: "logo/social/apple.svg", alt: "Apple", onClick: () => {/* handleApple */ } },
-                    { icon: "logo/social/google.svg", alt: "Google", onClick: () => {/* handleGoogle */ } },
-                    { icon: "logo/social/facebook.svg", alt: "Facebook", onClick: () => {/* handleFacebook */ } },
-                ]}
                 dividerText={t("OR")}
-                bottomLogo={{ icon: "/logo/logo.svg", textIcon: "/logo/logo_text.svg" }}
+                bottomLogo={{ icon: LogoIcon, textIcon: LogoTextIcon }}
             />
         </AuthCardLayout>
     );

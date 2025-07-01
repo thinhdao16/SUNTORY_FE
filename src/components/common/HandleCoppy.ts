@@ -5,21 +5,21 @@ import { Clipboard } from "@capacitor/clipboard";
 export const handleCopyToClipboard = async (e: string) => {
   const showToast = useToastStore.getState().showToast;
   if (!e) {
-    showToast("No content to copy!", 1000);
+    showToast(t("No content to copy!"), 1000);
     return;
   }
 
   if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
     try {
       await navigator.clipboard.writeText(e);
-      showToast("Copied to clipboard!");
+      showToast(t("Copied to clipboard!"));
       return;
     } catch { }
   }
 
   try {
     await Clipboard.write({ string: e });
-    showToast("Copied to clipboard!");
+    showToast(t("Copied to clipboard!"));
     return;
   } catch { }
 
@@ -36,9 +36,9 @@ export const handleCopyToClipboard = async (e: string) => {
     setTimeout(() => {
       document.body.removeChild(textarea);
     }, 0);
-    showToast("Copied to clipboard!");
+    showToast(t("Copied to clipboard!"));
   } catch (err) {
-    showToast("Copy error!", 1000);
+    showToast(t("Copy error!"), 1000);
     console.error("Copy error!", err);
   }
 };

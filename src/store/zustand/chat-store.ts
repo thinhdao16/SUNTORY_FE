@@ -11,8 +11,11 @@ interface ChatStoreState {
     clearMessages: () => void;
     isSending: boolean;
     setIsSending: (val: boolean) => void;
-    pendingMessages: { text: string; createdAt: string; timeStamp?: number }[];
-    setPendingMessages: (fn: (prev: { text: string; createdAt: string; timeStamp?: number }[]) => { text: string; createdAt: string; timeStamp?: number }[]) => void;
+    pendingMessages: {
+        chatCode: any;
+        id: any; text: string; createdAt: string; timeStamp?: number
+    }[];
+    setPendingMessages: (fn: (prev: { chatCode: any; id: any; text: string; createdAt: string; timeStamp?: number }[]) => { chatCode: any; id: any; text: string; createdAt: string; timeStamp?: number }[]) => void;
     clearPendingMessages: () => void;
     stopMessages: boolean
     setStopMessages: (val: boolean) => void;

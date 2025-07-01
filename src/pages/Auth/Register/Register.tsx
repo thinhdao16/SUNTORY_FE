@@ -11,6 +11,9 @@ import { useToastStore } from "@/store/zustand/toast-store";
 import CustomButton from "@/components/button/CustomButton";
 import { registerSimple } from "@/services/auth/auth-service";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
+import LogoIcon from "@/icons/logo/logo.svg?react";
+import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
+import CloseIcon from "@/icons/logo/close.svg?react";
 
 interface RegisterFormValues {
     firstName: string;
@@ -66,8 +69,7 @@ const Register: React.FC = () => {
     return (
         <AuthCardLayout title={t("Sign Up")}>
             <CustomButton
-                imgSrc="/logo/close.svg"
-                imgAlt={t("Close")}
+                icon={<CloseIcon className="w-6 h-6" aria-label={t("Close")} />}
                 className="fixed top-10 left-6"
                 navigateTo="/home"
             />
@@ -79,7 +81,7 @@ const Register: React.FC = () => {
                         {...register("firstName", { required: t("First name is required") })}
                         placeholder={t("Enter your first name")}
                         error={errors.firstName?.message}
-                        required
+                        // required
                         className="mb-4"
                         inputClassName="text-netural-500"
                     />
@@ -108,14 +110,15 @@ const Register: React.FC = () => {
                     placeholder={t("Enter your email")}
                     error={errors.emailOrPhone?.message}
                     className="mb-4"
-                    required
+                    // required
                     inputClassName="text-netural-500"
                 />
                 <InputPasswordField
                     value={watch("password") || ""}
                     onChange={(e) => setValue("password", e.target.value)}
                     error={errors.password?.message}
-                    required
+                // {...register("password", { required: t("Last name is required") })}
+                // required
                 />
                 <div className="flex items-center gap-1 mt-1 text-xs text-main" >
                     <span className="text-lg">ⓘ</span>
@@ -135,31 +138,8 @@ const Register: React.FC = () => {
                     </a>
                 </div>
                 <SocialLoginActions
-                    actions={[
-                        {
-                            icon: "logo/social/apple.svg",
-                            alt: "Apple",
-                            onClick: () => {
-                                /* handleApple */
-                            },
-                        },
-                        {
-                            icon: "logo/social/google.svg",
-                            alt: "Google",
-                            onClick: () => {
-                                /* handleGoogle */
-                            },
-                        },
-                        {
-                            icon: "logo/social/facebook.svg",
-                            alt: "Facebook",
-                            onClick: () => {
-                                /* handleFacebook */
-                            },
-                        },
-                    ]}
                     dividerText={t("OR")}
-                    bottomLogo={{ icon: "/logo/logo.svg", textIcon: "/logo/logo_text.svg" }}
+                    bottomLogo={{ icon: LogoIcon, textIcon: LogoTextIcon }}
                 />
             </form>
         </AuthCardLayout>

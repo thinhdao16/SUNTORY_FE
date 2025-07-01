@@ -6,7 +6,8 @@ interface CustomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement
     imgAlt?: string;
     imgClassName?: string;
     navigateTo?: string;
-    back?: boolean; // Thêm prop này
+    back?: boolean;
+    icon?: React.ReactNode; // Thêm prop icon
 }
 
 const CustomButton: React.FC<CustomButtonProps> = ({
@@ -14,10 +15,11 @@ const CustomButton: React.FC<CustomButtonProps> = ({
     imgAlt = "",
     imgClassName = "",
     navigateTo,
-    back = false, // Mặc định không back
+    back = false,
     className = "",
     children,
     onClick,
+    icon, // Nhận prop icon
     ...rest
 }) => {
     const history = useHistory();
@@ -35,7 +37,11 @@ const CustomButton: React.FC<CustomButtonProps> = ({
 
     return (
         <button className={className} onClick={handleClick} {...rest}>
-            {imgSrc && <img src={imgSrc} alt={imgAlt} className={imgClassName} />}
+            {icon
+                ? icon
+                : imgSrc
+                    ? <img src={imgSrc} alt={imgAlt} className={imgClassName} />
+                    : null}
             {children}
         </button>
     );

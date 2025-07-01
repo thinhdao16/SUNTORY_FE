@@ -1,4 +1,5 @@
 import React from "react";
+import RemoveIcon from "@/icons/logo/chat/x.svg?react";
 import "../Chat.module.css"
 
 interface PendingImagesProps {
@@ -22,7 +23,7 @@ const PendingImages: React.FC<PendingImagesProps> = ({
                         onClick={() => removePendingImage(idx)}
                         style={{ lineHeight: 0 }}
                     >
-                        <img src="/logo/chat/x.svg" alt="" />
+                        <RemoveIcon className="" />
                     </button>
                     <img
                         src={img || undefined}

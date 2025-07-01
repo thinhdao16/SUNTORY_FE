@@ -1,6 +1,14 @@
 .prose table {
-  width: 100%;
-  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+}
+
+.prose pre {
+  overflow-x: auto;
+}
+
+.prose code {
+  white-space: pre;
 }
 
 .prose thead th {

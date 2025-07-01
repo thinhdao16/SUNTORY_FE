@@ -1,8 +1,10 @@
 import React from "react";
 
+import RemoveIcon from "@/icons/logo/chat/x.svg?react";
+
 interface PendingFileItemProps {
     file: { name: string; url: string };
-    icon: string;
+    icon: React.FC<React.SVGProps<SVGSVGElement>>;
     label: string;
     onRemove?: () => void;
     showRemove?: boolean;
@@ -10,7 +12,7 @@ interface PendingFileItemProps {
 
 const PendingFileItem: React.FC<PendingFileItemProps> = ({
     file,
-    icon,
+    icon: Icon,
     label,
     onRemove,
     showRemove = true,
@@ -21,14 +23,10 @@ const PendingFileItem: React.FC<PendingFileItemProps> = ({
                 className="absolute top-1 right-1 bg-black rounded-full w-[14px] h-[14px] justify-center items-center flex"
                 onClick={() => onRemove && onRemove()}
             >
-                <img src="/logo/chat/x.svg" alt="remove" />
+                <RemoveIcon className="w-2.5 h-2.5 text-white" />
             </button>
         )}
-        <img
-            src={icon}
-            alt={label}
-            className="w-10 h-10 mr-2"
-        />
+        <Icon className="w-10 h-10 mr-2" aria-label={label} />
         <div className="flex flex-col min-w-0 text-left">
             <a
                 href={file.url}

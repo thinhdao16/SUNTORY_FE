@@ -1,5 +1,6 @@
 import React, { useState, forwardRef } from "react";
 import { IoEyeOffOutline, IoEyeOutline } from "react-icons/io5";
+import LockIcon from "@/icons/logo/lock.svg?react";
 
 interface InputPasswordFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label?: string;
@@ -33,7 +34,7 @@ const InputPasswordField = forwardRef<HTMLInputElement, InputPasswordFieldProps>
                 <div className="relative">
                     {showIcon && (
                         <span className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                            <img src="logo/lock.svg" />
+                            <LockIcon />
                         </span>
                     )}
                     <input

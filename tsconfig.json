@@ -18,9 +18,10 @@
     "paths": {
       "@/*": ["./src/*"] 
     },
-    "types": ["react", "react-dom","react-router-dom",]
+    "types": ["react", "react-dom","react-router-dom",],
+    // "typeRoots": ["./node_modules/@types", "./src/types"],
   },
-  "include": ["src","auto-imports.d.ts"],
+  "include": ["src", "src/types", "vite-plugin-svgr/client","auto-imports.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }],
   "rules": {
     "no-undef": "off"
