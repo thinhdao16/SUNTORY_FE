@@ -3,27 +3,27 @@ import { IoChevronForward } from "react-icons/io5";
 import { useHistory } from "react-router-dom";
 import { t } from "@/lib/globalT";
 
-const healthItems = [
-    {
-        label: t("Health status"),
-        path: "/health-information/health-info",
-    },
-    {
-        label: t("Allergy information"),
-        path: "/health-information/allergy-info",
-    },
-    {
-        label: t("Current medications"),
-        path: "/health-information/medicine-info",
-    },
-    {
-        label: t("Help & Feedback"),
-        path: "/health-information/feedback",
-    },
-];
 
 const HealthInformationEdit: React.FC = () => {
     const history = useHistory();
+    const healthItems = [
+        {
+            label: t("Health status"),
+            path: "/health-information/health-info",
+        },
+        {
+            label: t("Allergy information"),
+            path: "/health-information/allergy-info",
+        },
+        {
+            label: t("Current medications"),
+            path: "/health-information/medicine-info",
+        },
+        {
+            label: t("Help & Feedback"),
+            path: "/health-information/feedback",
+        },
+    ];
 
     return (
         <div className="">

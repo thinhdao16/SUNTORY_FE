@@ -31,9 +31,9 @@ const CameraPage: React.FC = () => {
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
 
-    const addPendingImage = useImageStore((s) => s.addPendingImages);
+    const addPendingImages = useImageStore((s) => s.addPendingImages);
+    const removePendingImageByUrl = useImageStore((s) => s.removePendingImageByUrl);
     const platform = Capacitor.getPlatform();
-
     const base64ToFile = (base64: string, filename: string): File => {
         const arr = base64.split(",");
         const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
@@ -60,6 +60,41 @@ const CameraPage: React.FC = () => {
         }
     };
 
+    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
+    const handleUploadImageFile = async (file: File) => {
+        const localUrl = URL.createObjectURL(file);
+        addPendingImages([localUrl]);
+        try {
+            if (file.size > MAX_IMAGE_SIZE) {
+                present({
+                    message: t("Ảnh phải nhỏ hơn 5MB!"),
+                    duration: 3000,
+                    color: "danger",
+                });
+                removePendingImageByUrl(localUrl);
+                URL.revokeObjectURL(localUrl);
+                return;
+            }
+            const uploaded = await uploadChatFile(file);
+            removePendingImageByUrl(localUrl);
+            URL.revokeObjectURL(localUrl);
+            if (uploaded?.length) {
+                addPendingImages([uploaded[0].linkImage]);
+                history.goBack();
+            }
+        } catch {
+            removePendingImageByUrl(localUrl);
+            URL.revokeObjectURL(localUrl);
+            present({
+                message: t("Image upload failed!"),
+                duration: 3000,
+                color: "danger",
+            });
+        }
+    };
+
+    // --- Sử dụng cho chụp ảnh ---
     const handleCapture = async () => {
         if (isCapturing || !videoRef.current) return;
         setIsCapturing(true);
@@ -72,26 +107,20 @@ const CameraPage: React.FC = () => {
                 ctx.drawImage(videoRef.current, 0, 0);
                 const imgData = canvas.toDataURL("image/png");
                 const file = base64ToFile(imgData, "captured.png");
-                const uploaded = await uploadChatFile(file);
-                if (uploaded?.length) {
-                    addPendingImage([uploaded[0].linkImage]);
-                    history.goBack();
-                }
+                await handleUploadImageFile(file);
             }
         } finally {
             setIsCapturing(false);
         }
     };
+
+    // --- Sử dụng cho chọn từ gallery ---
     const handleChooseFromGallery = async () => {
         const imgData = await chooseFromGallery();
         let base64Img = imgData?.base64 || (imgData?.webPath && await base64FromPath(imgData.webPath));
         if (base64Img) {
             const file = base64ToFile(base64Img, "gallery.png");
-            const uploaded = await uploadChatFile(file);
-            if (uploaded?.length) {
-                addPendingImage([uploaded[0].linkImage]);
-                history.goBack();
-            }
+            await handleUploadImageFile(file);
         }
     };
 

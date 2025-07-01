@@ -81,7 +81,7 @@ function Home() {
   return (
     // <IonPage>
     //   <IonContent fullscreen className="!pt-0 safe-area-inset-0">
-    <PageContainer>
+    <PageContainer className='!bg-screen-page'>
 
       <div className="relative rounded-b-3xl overflow-hidden px-6 pt-6 h-[318px]">
         {/* {!headerImgLoaded && (

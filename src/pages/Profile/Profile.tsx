@@ -36,10 +36,10 @@ const Profile: React.FC = () => {
 
     const menuItems = [
         { label: t("Account"), onClick: () => history.replace("/profile/account"), },
-        {
-            label: t("Update Health Information"),
-            onClick: () => history.replace("/profile/health"),
-        },
+        // {
+        //     label: t("Update Health Information"),
+        //     onClick: () => history.replace("/profile/health"),
+        // },
         { label: t("Change Password"), onClick: () => history.push("/change-password") },
         { label: `${t("Language")} (${currentLang})`, onClick: () => handleChangeLanguage(true, "en") },
         // { label: t("Help & Feedback"), onClick: () => { } },

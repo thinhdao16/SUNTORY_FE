@@ -1,12 +1,12 @@
 import type { CapacitorConfig } from '@capacitor/cli';
-
+import 'dotenv/config';
 const config: CapacitorConfig = {
   appId: 'com.wayjet.app',
   appName: 'WayJet',
   webDir: 'dist',
   // server: {
   //   // url: "http://192.168.1.32:5173",
-  //   url: "https://6bb0-116-110-43-38.ngrok-free.app",
+  //   url: "https://b24f-113-23-110-26.ngrok-free.app",
   //   cleartext: true,
   // },
   plugins: {
@@ -24,7 +24,7 @@ const config: CapacitorConfig = {
     },
     GoogleAuth: {
       scopes: ['profile', 'email'],
-      serverClientId: '544649939857-endt7v6abdo4fpca87ihhoq1qr5ij8jf.apps.googleusercontent.com',
+      serverClientId: process.env.VITE_GOOGLE_API_KEY || "",
       forceCodeForRefreshToken: true,
     },
   },

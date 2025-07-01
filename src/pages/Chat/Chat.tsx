@@ -55,6 +55,7 @@ const Chat: React.FC = () => {
         removePendingImage,
         removePendingFile,
         clearAll,
+        removePendingImageByUrl
     } = useImageStore();
 
     const isSending = useChatStore((s) => s.isSending);
@@ -181,7 +182,8 @@ const Chat: React.FC = () => {
         setHasFirstSignalRMessage,
         deviceInfo,
         stopMessages,
-        setStopMessages
+        setStopMessages,
+        removePendingImageByUrl
     });
 
     const mapSignalRMessage = (msg: any) => {

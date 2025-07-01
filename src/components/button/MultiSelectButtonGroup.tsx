@@ -16,7 +16,7 @@ function MultiSelectButtonGroup<T extends string = string>({
     buttonClassName = "",
 }: MultiSelectButtonGroupProps<T>) {
     return (
-        <div className={`grid grid-cols-2 gap-2 ${className}`}>
+        <div className={`grid grid-cols-2 gap-3 ${className}`}>
             {options.map((option) => {
                 const selected = value.includes(option.value);
                 return (
