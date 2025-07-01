@@ -11,6 +11,7 @@ import AccountEdit from "./AccountEdit/AccountEdit";
 import HealthInformationEdit from "./HealthInformationEdit/HealthInformationEdit";
 import BackIcon from "@/icons/logo/back.svg?react";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
+import PageContainer from "@/components/layout/PageContainer";
 
 
 const languageOptions = [
@@ -35,10 +36,10 @@ const Profile: React.FC = () => {
 
     const menuItems = [
         { label: t("Account"), onClick: () => history.replace("/profile/account"), },
-        // {
-        //     label: t("Update Health Information"),
-        //     onClick: () => history.replace("/profile/health"),
-        // },
+        {
+            label: t("Update Health Information"),
+            onClick: () => history.replace("/profile/health"),
+        },
         { label: t("Change Password"), onClick: () => history.push("/change-password") },
         { label: `${t("Language")} (${currentLang})`, onClick: () => handleChangeLanguage(true, "en") },
         // { label: t("Help & Feedback"), onClick: () => { } },
@@ -70,79 +71,78 @@ const Profile: React.FC = () => {
         }
     };
     return (
-        <IonPage>
-            <IonContent fullscreen>
-                {isLoading && (
-                    <div className="fixed inset-0 bg-white/80 flex items-center justify-center z-[9999]">
+        <PageContainer className="">
+
+            {isLoading && (
+                <div className="fixed inset-0 bg-white/80 flex items-center justify-center z-[9999]">
+                    <div className="loader border-4 border-white border-t-main rounded-full w-12 h-12 animate-spin"></div>
+                </div>
+            )}
+            <div className="min-h-screen bg-white flex flex-col px-6"
+            // style={{ paddingTop: "var(--safe-area-inset-top)" }}
+            >
+                <div className="flex items-center h-16 mb-2 pt-12">
+                    {section ? (
+                        <button
+                            className="flex items-center gap-2 text-main font-medium"
+                            onClick={() => history.push("/profile")}
+                        >
+                            <BackIcon aria-label="Back" />
+                        </button>
+                    ) : (
+                        <button
+                            className="mr-auto"
+                            onClick={openSidebarWithAuthCheck}
+                        >
+                            <NavBarHomeHistoryIcon aria-label="Menu" />
+                        </button>
+                    )}
+                </div>
+                {userInfo && <ProfileHeader userInfo={userInfo} refetchAuthInfo={refetch} />}
+                <hr className="my-4 border-netural-200" />
+                {renderSectionContent()}
+                {showLanguageOptions && (
+                    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl shadow-lg p-6 w-72">
+                            <div className="font-semibold mb-3 text-center">{t("Language")}</div>
+                            <ul>
+                                {languageOptions.map((opt) => (
+                                    <li key={opt.code}>
+                                        <button
+                                            className={`w-full py-2 text-left rounded transition ${i18n.language === opt.code
+                                                ? " text-main font-semibold"
+                                                : "text-gray-700 hover:bg-gray-100"
+                                                }`}
+                                            onClick={async () => {
+                                                setLanguageLoading(true);
+                                                await i18n.changeLanguage(opt.code);
+                                                setLanguageLoading(false);
+                                                setShowLanguageOptions(false);
+                                            }}
+                                            disabled={languageLoading}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                            <button
+                                className="mt-4 w-full py-2 rounded bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                onClick={() => setShowLanguageOptions(false)}
+                                disabled={languageLoading}
+                            >
+                                {t("Cancel")}
+                            </button>
+                        </div>
+                    </div>
+                )}
+                {languageLoading && (
+                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999]">
                         <div className="loader border-4 border-white border-t-main rounded-full w-12 h-12 animate-spin"></div>
                     </div>
                 )}
-                <div className="min-h-screen bg-white flex flex-col px-6"
-                // style={{ paddingTop: "var(--safe-area-inset-top)" }}
-                >
-                    <div className="flex items-center h-16 mb-2 pt-12">
-                        {section ? (
-                            <button
-                                className="flex items-center gap-2 text-main font-medium"
-                                onClick={() => history.push("/profile")}
-                            >
-                                <BackIcon aria-label="Back" />
-                            </button>
-                        ) : (
-                            <button
-                                className="mr-auto"
-                                onClick={openSidebarWithAuthCheck}
-                            >
-                                <NavBarHomeHistoryIcon aria-label="Menu" />
-                            </button>
-                        )}
-                    </div>
-                    {userInfo && <ProfileHeader userInfo={userInfo} refetchAuthInfo={refetch} />}
-                    <hr className="my-4 border-netural-200" />
-                    {renderSectionContent()}
-                    {showLanguageOptions && (
-                        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-                            <div className="bg-white rounded-xl shadow-lg p-6 w-72">
-                                <div className="font-semibold mb-3 text-center">{t("Language")}</div>
-                                <ul>
-                                    {languageOptions.map((opt) => (
-                                        <li key={opt.code}>
-                                            <button
-                                                className={`w-full py-2 text-left rounded transition ${i18n.language === opt.code
-                                                    ? " text-main font-semibold"
-                                                    : "text-gray-700 hover:bg-gray-100"
-                                                    }`}
-                                                onClick={async () => {
-                                                    setLanguageLoading(true);
-                                                    await i18n.changeLanguage(opt.code);
-                                                    setLanguageLoading(false);
-                                                    setShowLanguageOptions(false);
-                                                }}
-                                                disabled={languageLoading}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <button
-                                    className="mt-4 w-full py-2 rounded bg-gray-100 text-gray-500 hover:bg-gray-200"
-                                    onClick={() => setShowLanguageOptions(false)}
-                                    disabled={languageLoading}
-                                >
-                                    {t("Cancel")}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                    {languageLoading && (
-                        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999]">
-                            <div className="loader border-4 border-white border-t-main rounded-full w-12 h-12 animate-spin"></div>
-                        </div>
-                    )}
-                </div>
-            </IonContent>
-        </IonPage>
+            </div>
+        </PageContainer>
     );
 };
 
