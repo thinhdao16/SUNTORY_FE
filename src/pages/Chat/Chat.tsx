@@ -203,7 +203,6 @@ const Chat: React.FC = () => {
             chatInfoId: msg.chatInfoId,
             chatCode: msg.code,
         };
-
         if (msg.userChatMessage) {
             const userMsg = {
                 id: msg.userChatMessage.id?.toString(),
@@ -223,12 +222,31 @@ const Chat: React.FC = () => {
                 chatInfoId: msg.userChatMessage.chatInfoId,
                 chatCode: msg.userChatMessage.code,
             };
-            const isDuplicate = pendingMessages.some(
-                (pending) =>
-                    (pending.id && userMsg.id && pending.id === userMsg.id) ||
-                    (pending.chatCode && userMsg.chatCode && pending.chatCode === userMsg.chatCode) ||
-                    (pending.text && userMsg.text && pending.text.trim() === userMsg.text.trim())
-            );
+
+            const isDuplicate =
+                pendingMessages.some(
+                    (pending) =>
+                        (pending.id && userMsg.id && pending.id === userMsg.id) ||
+                        (pending.chatCode && userMsg.chatCode && pending.chatCode === userMsg.chatCode) ||
+                        (pending.text && userMsg.text && pending.text.trim() === userMsg.text.trim()) ||
+                        // Kiểm tra file/ảnh trong attachments của pendingMessages
+                        (pending.attachments &&
+                            pending.attachments.some(
+                                (att: any) =>
+                                    userMsg.attachments?.[0]?.fileUrl &&
+                                    att.fileUrl === userMsg.attachments[0].fileUrl
+                            ))
+                ) ||
+                pendingImages.some(
+                    (imgUrl) =>
+                        userMsg.attachments?.[0]?.fileUrl &&
+                        imgUrl === userMsg.attachments[0].fileUrl
+                ) ||
+                pendingFiles.some(
+                    (fileUrl) =>
+                        userMsg.attachments?.[0]?.fileUrl &&
+                        fileUrl === userMsg.attachments[0].fileUrl
+                );
             return isDuplicate ? [base] : [userMsg, base];
         }
         return [base];
@@ -238,7 +256,6 @@ const Chat: React.FC = () => {
         ...msg,
         isRight: true,
     });
-    console.log(signalRMessages)
     const allSignalR = signalRMessages.flatMap(mapSignalRMessage);
     const allPending = pendingMessages.map(mapPendingMessage);
     const mergedMessages = [
