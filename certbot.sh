@@ -1,1 +1,1 @@
-certbot certonly --webroot --webroot-path=/var/www/html --email domainname@hongthaix.com --agree-tos --no-eff-email --force-renewal -d app.rankmate.thinkingx.vip
+certbot certonly --webroot --webroot-path=/var/www/html --email domainname@hongthaix.com --agree-tos --no-eff-email --force-renewal -d app.wayjetai.com
