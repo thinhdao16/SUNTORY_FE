@@ -14,6 +14,7 @@ import { Capacitor } from "@capacitor/core";
 import { AndroidSettings, IOSSettings, NativeSettings } from "capacitor-native-settings";
 import { Camera } from "@capacitor/camera";
 import { useTranslation } from "react-i18next";
+import PageContainer from "@/components/layout/PageContainer";
 const isNative = Capacitor.isNativePlatform();
 
 const CameraPage: React.FC = () => {
@@ -235,64 +236,66 @@ const CameraPage: React.FC = () => {
     }, [toastId]);
 
     return (
-        <IonPage>
-            <IonContent>
-                <div className="h-full relative w-screen bg-black grid items-center px-6">
-                    {/* Top bar */}
-                    <div className="fixed top-6 left-0 right-0 z-10 p-6 flex items-center justify-between">
-                        <button onClick={handleToggleFlash}>
-                            {flashOn ? <FlashOnIcon aria-label="Flash On" /> : <FlashOffIcon aria-label="Flash Off" />}
-                        </button>
-                        <button onClick={() => history.goBack()}>
-                            <CloseIcon aria-label="Đóng" />
-                        </button>
-                    </div>
-                    {/* Camera preview */}
-                    <div className="flex justify-center items-center w-full h-full xl:max-w-[410px]">
-                        <video
-                            ref={videoRef}
-                            autoPlay
-                            playsInline
-                            className="rounded-2xl w-full h-auto object-cover "
-                            style={{
-                                width: "100%",
-                                aspectRatio: "1/1",
-                                objectFit: "cover",
-                                borderRadius: "48px",
-                            }}
-                        />
-                    </div>
-                    {/* Bottom bar */}
-                    <div className="fixed bottom-6 left-0 right-0 p-6 z-10 flex justify-between items-center">
-                        <button
-                            onClick={handleChooseFromGallery}
-                            className="rounded-full h-[40px] aspect-square grid justify-center items-center bg-main"
-                        >
-                            <GalleryIcon aria-label="Gallery" />
-                        </button>
-                        <button onClick={handleCapture} disabled={isCapturing}>
-                            {isCapturing ? (
-                                <div className="w-12 h-12 flex items-center justify-center">
-                                    <div className="loader border-4 border-white border-t-main rounded-full w-10 h-10 animate-spin"></div>
-                                </div>
-                            ) : (
-                                <CaptureIcon aria-label="Chụp ảnh" />
-                            )}
-                        </button>
-                        <button
-                            onClick={() =>
-                                setFacingMode(
-                                    facingMode === "environment" ? "user" : "environment"
-                                )
-                            }
-                            className="rounded-full h-[40px] aspect-square grid justify-center items-center bg-main"
-                        >
-                            <SwitchCameraIcon aria-label="Đổi camera" />
-                        </button>
-                    </div>
-                </div>
-            </IonContent>
-        </IonPage>
+
+        // <PageContainer>
+
+        <div className="h-full relative w-screen bg-black grid items-center px-6">
+            {/* Top bar */}
+            <div className="fixed top-6 left-0 right-0 z-10 p-6 flex items-center justify-between">
+                <button onClick={handleToggleFlash}>
+                    {flashOn ? <FlashOnIcon aria-label="Flash On" /> : <FlashOffIcon aria-label="Flash Off" />}
+                </button>
+                <button onClick={() => history.goBack()}>
+                    <CloseIcon aria-label="Đóng" />
+                </button>
+            </div>
+            {/* Camera preview */}
+            <div className="flex justify-center items-center w-full h-full xl:max-w-[410px]">
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    className="rounded-2xl w-full h-auto object-cover "
+                    style={{
+                        width: "100%",
+                        aspectRatio: "1/1",
+                        objectFit: "cover",
+                        borderRadius: "48px",
+                    }}
+                />
+            </div>
+            {/* Bottom bar */}
+            <div className="fixed bottom-6 left-0 right-0 p-6 z-10 flex justify-between items-center">
+                <button
+                    onClick={handleChooseFromGallery}
+                    className="rounded-full h-[40px] aspect-square grid justify-center items-center bg-main"
+                >
+                    <GalleryIcon aria-label="Gallery" />
+                </button>
+                <button onClick={handleCapture} disabled={isCapturing}>
+                    {isCapturing ? (
+                        <div className="w-12 h-12 flex items-center justify-center">
+                            <div className="loader border-4 border-white border-t-main rounded-full w-10 h-10 animate-spin"></div>
+                        </div>
+                    ) : (
+                        <CaptureIcon aria-label="Chụp ảnh" />
+                    )}
+                </button>
+                <button
+                    onClick={() =>
+                        setFacingMode(
+                            facingMode === "environment" ? "user" : "environment"
+                        )
+                    }
+                    className="rounded-full h-[40px] aspect-square grid justify-center items-center bg-main"
+                >
+                    <SwitchCameraIcon aria-label="Đổi camera" />
+                </button>
+            </div>
+        </div>
+        // </PageContainer>
+
+
     );
 };
 
