@@ -106,7 +106,7 @@ export function useChatHandlers({
     const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent, force?: boolean) => {
         e.preventDefault();
         useChatStore.getState().setStopMessages(false);
-
+        setHasFirstSignalRMessage(true);
         if (messageValue.trim() || pendingImages.length > 0 || pendingFiles.length > 0) {
             setMessageValue("");
             addPendingImages([]);
