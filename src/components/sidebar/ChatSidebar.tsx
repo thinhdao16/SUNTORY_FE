@@ -11,7 +11,7 @@ import dayjs from "dayjs";
 import SearchIcon from "@/icons/logo/chat/search.svg?react";
 import FilterIcon from "@/icons/logo/chat/filter.svg?react";
 import NewChatIcon from "@/icons/logo/chat/new_chat.svg?react";
-
+import "./ChatSidebar.module.css"
 const sidebarVariants: Variants = {
   hidden: { x: "-100%", opacity: 0 },
   visible: {
@@ -65,12 +65,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   }, [isOpen, onClose]);
 
 
-
   return (
     <>
       {isOpen && (
         <motion.div
-          className="w-[300px] max-w-full h-full bg-white "
+          className="w-[300px] max-w-full h-full bg-white"
           variants={sidebarVariants}
           initial="hidden"
           animate="visible"

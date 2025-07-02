@@ -81,7 +81,7 @@ const Register: React.FC = () => {
                         {...register("firstName", { required: t("First name is required") })}
                         placeholder={t("Enter your first name")}
                         error={errors.firstName?.message}
-                        // required
+                        required
                         className="mb-4"
                         inputClassName="text-netural-500"
                     />
@@ -94,6 +94,7 @@ const Register: React.FC = () => {
                         error={errors.lastName?.message}
                         className="mb-4"
                         inputClassName="text-netural-500"
+                        required
                     />
                 </div>
                 <InputTextField
@@ -110,15 +111,15 @@ const Register: React.FC = () => {
                     placeholder={t("Enter your email")}
                     error={errors.emailOrPhone?.message}
                     className="mb-4"
-                    // required
+                    required
                     inputClassName="text-netural-500"
                 />
                 <InputPasswordField
                     value={watch("password") || ""}
                     onChange={(e) => setValue("password", e.target.value)}
                     error={errors.password?.message}
-                // {...register("password", { required: t("Last name is required") })}
-                // required
+                    // {...register("password", { required: t("Last name is required") })}
+                    required
                 />
                 <div className="flex items-center gap-1 mt-1 text-xs text-main" >
                     <span className="text-lg">ⓘ</span>

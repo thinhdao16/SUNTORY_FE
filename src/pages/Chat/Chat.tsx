@@ -26,6 +26,7 @@ import ChatWelcomePanel from "./components/ChatWelcomePanel";
 import { useScrollToBottom } from "@/hooks/useScrollToBottom";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 import CloseIcon from "@/icons/logo/chat/x.svg?react";
+import { Capacitor } from "@capacitor/core";
 dayjs.extend(utc);
 
 const Chat: React.FC = () => {
@@ -45,6 +46,7 @@ const Chat: React.FC = () => {
 
     // ===== Device Info =====
     const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
+    const isNative = Capacitor.isNativePlatform();
 
     // ===== Stores =====
     const {
@@ -272,7 +274,6 @@ const Chat: React.FC = () => {
         ),
         ...allPending,
     ].sort((a, b) => a.timeStamp - b.timeStamp);
-
     return (
         <div
             className="flex flex-col bg-white"
@@ -335,7 +336,7 @@ const Chat: React.FC = () => {
                 <div ref={messagesEndRef} className="mt-4" />
             </div>
             {!isWelcome && (
-                <div className={`bg-white pb-4 bottom-0 w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : "sticky"}`}>
+                <div className={` bg-white pb-4  w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"} ${isNative ? "bottom-0" : "bottom-[76px]"} ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""}`}>
                     {showScrollButton && (
                         <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
                             <button

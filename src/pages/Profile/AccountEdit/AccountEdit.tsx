@@ -121,7 +121,7 @@ const AccountEdit: React.FC = () => {
                                             {/* <IoCalendarOutline className="text-base" /> */}
                                         </span>
                                     }
-                                    className="py-3 !pr-2"
+                                    className="py-3 !pr-2 h-[44px]"
                                     classNameContainer="mb-0"
                                     classNameLable="!mb-0"
                                     {...field}

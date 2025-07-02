@@ -28,64 +28,60 @@ const ChatSidebarLayout: React.FC = () => {
     if (isChatSidebarOpen) {
       document.body.classList.add("overflow-hidden");
       document.documentElement.classList.add("overflow-hidden");
-      document.body.style.position = "fixed";
-      document.body.style.width = "100%";
     } else {
       document.body.classList.remove("overflow-hidden");
       document.documentElement.classList.remove("overflow-hidden");
-      document.body.style.position = "";
-      document.body.style.width = "";
     }
     return () => {
       document.body.classList.remove("overflow-hidden");
       document.documentElement.classList.remove("overflow-hidden");
-      document.body.style.position = "";
-      document.body.style.width = "";
     };
   }, [isChatSidebarOpen]);
 
 
   return (
-    <AnimatePresence>
-      {isChatSidebarOpen && (
-        <motion.div
-          className="fixed inset-0 z-[102] flex"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.2 } }}
-        >
-          <div className="absolute top-12 right-6">
-            <div
-            // style={{
-            //   paddingTop: "var(--safe-area-inset-top, 0px)",
-            // }}
-            >
-              {location.pathname === "/home" ? (
-                <NavBarHomeIcon />
-              ) : (
-                <NavBarHomeHistoryIcon />
-              )}
+    <div className="min-h-[100vh] w-[100vw] relative">
+      <AnimatePresence>
+        {isChatSidebarOpen && (
+          <motion.div
+            className="fixed inset-0 z-[102] flex"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.2 } }}
+          >
+            <div className="absolute top-12 right-6">
+              <div
+              // style={{
+              //   paddingTop: "var(--safe-area-inset-top, 0px)",
+              // }}
+              >
+                {location.pathname === "/home" ? (
+                  <NavBarHomeIcon />
+                ) : (
+                  <NavBarHomeHistoryIcon />
+                )}
+              </div>
             </div>
-          </div>
-          <div
-            className="absolute inset-0 bg-[#f0f0f0]/85"
-            onClick={closeChatSidebar}
-          />
-          <div className="relative z-10 max-w-full h-full w-[300px]">
-            <ChatSidebar
-              history={[]}
-              onSelectChat={handleSelectChat}
-              onNewChat={handleNewChat}
-              userName={userInfo?.name || "User"}
-              isOpen={true}
-              onClose={closeChatSidebar}
-              sessionId={sessionId}
-              userAvatar={userInfo?.avatarLink}
+            <div
+              className="absolute inset-0 bg-[#f0f0f0]/85"
+              onClick={closeChatSidebar}
             />
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+            <div className="relative z-10 max-w-full h-full w-[300px]">
+              <ChatSidebar
+                history={[]}
+                onSelectChat={handleSelectChat}
+                onNewChat={handleNewChat}
+                userName={userInfo?.name || "User"}
+                isOpen={true}
+                onClose={closeChatSidebar}
+                sessionId={sessionId}
+                userAvatar={userInfo?.avatarLink}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
