@@ -268,7 +268,7 @@ const CameraPage: React.FC = () => {
 
         // <PageContainer>
 
-        <div className="h-full relative w-screen bg-black grid items-center px-6">
+        <div className="h-full relative  bg-black grid items-center px-6">
             {/* Top bar */}
             <div className="fixed top-6 left-0 right-0 z-10 p-6 flex items-center justify-between">
                 <button onClick={handleToggleFlash}>

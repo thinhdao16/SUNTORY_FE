@@ -302,7 +302,7 @@ const Chat: React.FC = () => {
                 )}
             </div>
             <div
-                className="flex-1 overflow-y-auto p-6"
+                className={`flex-1 overflow-y-auto p-6 ${!isNative && ("pb-26")}`}
                 ref={messagesContainerRef}
                 onScroll={handleScroll}
             >

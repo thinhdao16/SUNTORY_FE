@@ -91,8 +91,8 @@ const AccountEdit: React.FC = () => {
                         )}
                     />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-2">
+                <div className="flex gap-2 w-full">
+                    <div className="w-2/3 min-w-0">
                         <Controller
                             name="dateOfBirth"
                             control={control}
@@ -105,23 +105,7 @@ const AccountEdit: React.FC = () => {
                                     error={errors.dateOfBirth}
                                     type="date"
                                     inputRef={birthdayInputRef}
-                                    logo={
-                                        <span
-                                            onClick={() => {
-                                                if (birthdayInputRef.current) {
-                                                    if (typeof birthdayInputRef.current.showPicker === "function") {
-                                                        birthdayInputRef.current.showPicker();
-                                                    } else {
-                                                        birthdayInputRef.current.focus();
-                                                    }
-                                                }
-                                            }}
-                                            className="cursor-pointer"
-                                        >
-                                            {/* <IoCalendarOutline className="text-base" /> */}
-                                        </span>
-                                    }
-                                    className="py-3 !pr-2 h-[44px]"
+                                    className="py-3 pr-2 h-[44px] ml-0 w-full min-w-0 appearance-none overflow-hidden"
                                     classNameContainer="mb-0"
                                     classNameLable="!mb-0"
                                     {...field}
@@ -129,22 +113,25 @@ const AccountEdit: React.FC = () => {
                             )}
                         />
                     </div>
-
-                    <Controller
-                        name="gender"
-                        control={control}
-                        render={({ field }) => (
-                            <SelectMenu
-                                label={t("Gender")}
-                                options={genderOptions}
-                                control={control}
-                                menuButtonClassName="py-3 !border-netural-200"
-                                labelClassName="!mb-0"
-                                {...field}
-                            />
-                        )}
-                    />
+                    <div className="w-1/3 min-w-0">
+                        <Controller
+                            name="gender"
+                            control={control}
+                            render={({ field }) => (
+                                <SelectMenu
+                                    label={t("Gender")}
+                                    options={genderOptions}
+                                    control={control}
+                                    menuButtonClassName="py-3 !border-netural-200"
+                                    labelClassName="!mb-0"
+                                    {...field}
+                                />
+                            )}
+                        />
+                    </div>
                 </div>
+
+
                 <div className="flex gap-2">
                     <Controller
                         name="height"
