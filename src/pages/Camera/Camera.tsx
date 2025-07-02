@@ -14,6 +14,7 @@ import { Capacitor } from "@capacitor/core";
 import { AndroidSettings, IOSSettings, NativeSettings } from "capacitor-native-settings";
 import { Camera } from "@capacitor/camera";
 import { useTranslation } from "react-i18next";
+import PageContainer from "@/components/layout/PageContainer";
 const isNative = Capacitor.isNativePlatform();
 
 const CameraPage: React.FC = () => {
@@ -30,9 +31,9 @@ const CameraPage: React.FC = () => {
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
 
-    const addPendingImage = useImageStore((s) => s.addPendingImages);
+    const addPendingImages = useImageStore((s) => s.addPendingImages);
+    const removePendingImageByUrl = useImageStore((s) => s.removePendingImageByUrl);
     const platform = Capacitor.getPlatform();
-
     const base64ToFile = (base64: string, filename: string): File => {
         const arr = base64.split(",");
         const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
@@ -59,6 +60,41 @@ const CameraPage: React.FC = () => {
         }
     };
 
+    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
+    const handleUploadImageFile = async (file: File) => {
+        const localUrl = URL.createObjectURL(file);
+        addPendingImages([localUrl]);
+        try {
+            if (file.size > MAX_IMAGE_SIZE) {
+                present({
+                    message: t("Ảnh phải nhỏ hơn 5MB!"),
+                    duration: 3000,
+                    color: "danger",
+                });
+                removePendingImageByUrl(localUrl);
+                URL.revokeObjectURL(localUrl);
+                return;
+            }
+            const uploaded = await uploadChatFile(file);
+            removePendingImageByUrl(localUrl);
+            URL.revokeObjectURL(localUrl);
+            if (uploaded?.length) {
+                addPendingImages([uploaded[0].linkImage]);
+                history.goBack();
+            }
+        } catch {
+            removePendingImageByUrl(localUrl);
+            URL.revokeObjectURL(localUrl);
+            present({
+                message: t("Image upload failed!"),
+                duration: 3000,
+                color: "danger",
+            });
+        }
+    };
+
+    // --- Sử dụng cho chụp ảnh ---
     const handleCapture = async () => {
         if (isCapturing || !videoRef.current) return;
         setIsCapturing(true);
@@ -71,26 +107,20 @@ const CameraPage: React.FC = () => {
                 ctx.drawImage(videoRef.current, 0, 0);
                 const imgData = canvas.toDataURL("image/png");
                 const file = base64ToFile(imgData, "captured.png");
-                const uploaded = await uploadChatFile(file);
-                if (uploaded?.length) {
-                    addPendingImage([uploaded[0].linkImage]);
-                    history.goBack();
-                }
+                await handleUploadImageFile(file);
             }
         } finally {
             setIsCapturing(false);
         }
     };
+
+    // --- Sử dụng cho chọn từ gallery ---
     const handleChooseFromGallery = async () => {
         const imgData = await chooseFromGallery();
         let base64Img = imgData?.base64 || (imgData?.webPath && await base64FromPath(imgData.webPath));
         if (base64Img) {
             const file = base64ToFile(base64Img, "gallery.png");
-            const uploaded = await uploadChatFile(file);
-            if (uploaded?.length) {
-                addPendingImage([uploaded[0].linkImage]);
-                history.goBack();
-            }
+            await handleUploadImageFile(file);
         }
     };
 
@@ -235,64 +265,66 @@ const CameraPage: React.FC = () => {
     }, [toastId]);
 
     return (
-        <IonPage>
-            <IonContent>
-                <div className="h-full relative w-screen bg-black grid items-center px-6">
-                    {/* Top bar */}
-                    <div className="fixed top-6 left-0 right-0 z-10 p-6 flex items-center justify-between">
-                        <button onClick={handleToggleFlash}>
-                            {flashOn ? <FlashOnIcon aria-label="Flash On" /> : <FlashOffIcon aria-label="Flash Off" />}
-                        </button>
-                        <button onClick={() => history.goBack()}>
-                            <CloseIcon aria-label="Đóng" />
-                        </button>
-                    </div>
-                    {/* Camera preview */}
-                    <div className="flex justify-center items-center w-full h-full xl:max-w-[410px]">
-                        <video
-                            ref={videoRef}
-                            autoPlay
-                            playsInline
-                            className="rounded-2xl w-full h-auto object-cover "
-                            style={{
-                                width: "100%",
-                                aspectRatio: "1/1",
-                                objectFit: "cover",
-                                borderRadius: "48px",
-                            }}
-                        />
-                    </div>
-                    {/* Bottom bar */}
-                    <div className="fixed bottom-6 left-0 right-0 p-6 z-10 flex justify-between items-center">
-                        <button
-                            onClick={handleChooseFromGallery}
-                            className="rounded-full h-[40px] aspect-square grid justify-center items-center bg-main"
-                        >
-                            <GalleryIcon aria-label="Gallery" />
-                        </button>
-                        <button onClick={handleCapture} disabled={isCapturing}>
-                            {isCapturing ? (
-                                <div className="w-12 h-12 flex items-center justify-center">
-                                    <div className="loader border-4 border-white border-t-main rounded-full w-10 h-10 animate-spin"></div>
-                                </div>
-                            ) : (
-                                <CaptureIcon aria-label="Chụp ảnh" />
-                            )}
-                        </button>
-                        <button
-                            onClick={() =>
-                                setFacingMode(
-                                    facingMode === "environment" ? "user" : "environment"
-                                )
-                            }
-                            className="rounded-full h-[40px] aspect-square grid justify-center items-center bg-main"
-                        >
-                            <SwitchCameraIcon aria-label="Đổi camera" />
-                        </button>
-                    </div>
-                </div>
-            </IonContent>
-        </IonPage>
+
+        // <PageContainer>
+
+        <div className="h-full relative w-screen bg-black grid items-center px-6">
+            {/* Top bar */}
+            <div className="fixed top-6 left-0 right-0 z-10 p-6 flex items-center justify-between">
+                <button onClick={handleToggleFlash}>
+                    {flashOn ? <FlashOnIcon aria-label="Flash On" /> : <FlashOffIcon aria-label="Flash Off" />}
+                </button>
+                <button onClick={() => history.goBack()}>
+                    <CloseIcon aria-label="Đóng" />
+                </button>
+            </div>
+            {/* Camera preview */}
+            <div className="flex justify-center items-center w-full h-full xl:max-w-[410px]">
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    className="rounded-2xl w-full h-auto object-cover "
+                    style={{
+                        width: "100%",
+                        aspectRatio: "1/1",
+                        objectFit: "cover",
+                        borderRadius: "48px",
+                    }}
+                />
+            </div>
+            {/* Bottom bar */}
+            <div className="fixed bottom-6 left-0 right-0 p-6 z-10 flex justify-between items-center">
+                <button
+                    onClick={handleChooseFromGallery}
+                    className="rounded-full h-[40px] aspect-square grid justify-center items-center bg-main"
+                >
+                    <GalleryIcon aria-label="Gallery" />
+                </button>
+                <button onClick={handleCapture} disabled={isCapturing}>
+                    {isCapturing ? (
+                        <div className="w-12 h-12 flex items-center justify-center">
+                            <div className="loader border-4 border-white border-t-main rounded-full w-10 h-10 animate-spin"></div>
+                        </div>
+                    ) : (
+                        <CaptureIcon aria-label="Chụp ảnh" />
+                    )}
+                </button>
+                <button
+                    onClick={() =>
+                        setFacingMode(
+                            facingMode === "environment" ? "user" : "environment"
+                        )
+                    }
+                    className="rounded-full h-[40px] aspect-square grid justify-center items-center bg-main"
+                >
+                    <SwitchCameraIcon aria-label="Đổi camera" />
+                </button>
+            </div>
+        </div>
+        // </PageContainer>
+
+
     );
 };
 

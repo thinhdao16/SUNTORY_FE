@@ -15,7 +15,7 @@ function RadioButtonGroup<T extends string = string>({
     buttonClassName = "",
 }: RadioButtonGroupProps<T>) {
     return (
-        <div className={`grid grid-cols-2 lg:grid-cols-4 gap-2 ${className}`}>
+        <div className={`grid grid-cols-2 lg:grid-cols-4 gap-3 ${className}`}>
             {options.map((option) => (
                 <button
                     type="button"

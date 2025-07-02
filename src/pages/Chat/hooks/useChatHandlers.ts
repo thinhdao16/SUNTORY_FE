@@ -31,6 +31,7 @@ interface UseChatHandlersProps {
     deviceInfo: { deviceId: string | null; language: string | null };
     stopMessages?: boolean;
     setStopMessages: (value: boolean) => void;
+    removePendingImageByUrl: (url: string) => void;
 }
 
 export function useChatHandlers({
@@ -54,27 +55,58 @@ export function useChatHandlers({
     setHasFirstSignalRMessage,
     deviceInfo,
     stopMessages,
-    setStopMessages
+    setStopMessages,
+    removePendingImageByUrl
 }: UseChatHandlersProps) {
     const scrollToBottom = useScrollToBottom(messagesEndRef);
+    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
         const totalCount = pendingFiles.length + pendingImages.length;
         const selectedCount = files.length;
         if (totalCount + selectedCount > 3) {
-            useToastStore.getState().showToast(t("You can only send up to 3 images and files in total!"), 2000, "warning");
+            useToastStore.getState().showToast(
+                t("You can only send up to 3 images and files in total!"),
+                2000,
+                "warning"
+            );
             e.target.value = "";
             return;
         }
-        for (const file of Array.from(files)) {
-            await uploadImageMutation.mutateAsync(file, {
-                onSuccess: (uploaded) => {
-                    if (uploaded && uploaded.length > 0) {
-                        addPendingImages([uploaded[0].linkImage]);
-                    }
-                },
-            });
+        const localUrls = Array.from(files).map(file => URL.createObjectURL(file));
+        addPendingImages(localUrls);
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const localUrl = localUrls[i];
+            if (file.size > MAX_IMAGE_SIZE) {
+                useToastStore.getState().showToast(
+                    t("Ảnh phải nhỏ hơn 5MB!"),
+                    3000,
+                    "warning"
+                );
+                removePendingImageByUrl(localUrl);
+                URL.revokeObjectURL(localUrl);
+                continue;
+            }
+            try {
+                const uploaded = await uploadImageMutation.mutateAsync(file);
+                console.log(uploaded)
+                removePendingImageByUrl(localUrl);
+                URL.revokeObjectURL(localUrl);
+                if (uploaded && uploaded.length > 0) {
+                    addPendingImages([uploaded[0].linkImage]);
+                }
+            } catch {
+                removePendingImageByUrl(localUrl);
+                URL.revokeObjectURL(localUrl);
+                useToastStore.getState().showToast(
+                    t("Image upload failed!"),
+                    3000,
+                    "error"
+                );
+            }
         }
         e.target.value = "";
     };

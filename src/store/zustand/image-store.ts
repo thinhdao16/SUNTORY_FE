@@ -6,6 +6,7 @@ interface ChatUploadStore {
     addPendingImages: (imgs: string[]) => void;
     addPendingFiles: (files: { name: string; url: string }[]) => void;
     removePendingImage: (idx: number) => void;
+    removePendingImageByUrl: (url: string) => void; // thêm dòng này
     removePendingFile: (idx: number) => void;
     clearAll: () => void;
 }
@@ -20,6 +21,10 @@ export const useImageStore = create<ChatUploadStore>((set) => ({
     removePendingImage: (idx) =>
         set((s) => ({
             pendingImages: s.pendingImages.filter((_, i) => i !== idx),
+        })),
+    removePendingImageByUrl: (url) =>
+        set((s) => ({
+            pendingImages: s.pendingImages.filter((img) => img !== url),
         })),
     removePendingFile: (idx) =>
         set((s) => ({
