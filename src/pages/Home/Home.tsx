@@ -119,7 +119,7 @@ function Home() {
             {userInfo?.id ? (
               <a
                 className="flex items-center gap-2 border border-white rounded-full text-white text-sm font-medium bg-gradient-to-b from-main to-primary-600 px-3 py-1 whitespace-nowrap"
-                onClick={() => history.push("/profile")}
+                onClick={() => history.push("/profile/account", { from: "home" })}
                 style={{ cursor: "pointer" }}
               >
                 <span>{t("Update Profile")}</span>

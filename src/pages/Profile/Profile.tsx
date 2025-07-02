@@ -3,7 +3,7 @@ import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
 import { IonContent, IonPage } from "@ionic/react";
 import React, { useState } from "react";
 import { IoChevronForward } from "react-icons/io5";
-import { useHistory, useParams } from "react-router-dom";
+import { useHistory, useLocation, useParams } from "react-router-dom";
 import { useAuthInfo } from "../Auth/hooks/useAuthInfo";
 import i18n from "@/config/i18n";
 import { ProfileHeader } from "./ProfileHeader";
@@ -25,6 +25,7 @@ const Profile: React.FC = () => {
     const [languageLoading, setLanguageLoading] = useState(false);
     const { section } = useParams<{ section?: string, type: string }>();
     const history = useHistory();
+    const location = useLocation<{ from?: string }>();
     const handleLogout = () => {
         useAuthStore.getState().logout();
         window.location.href = "/login";
@@ -85,7 +86,15 @@ const Profile: React.FC = () => {
                     {section ? (
                         <button
                             className="flex items-center gap-2 text-main font-medium"
-                            onClick={() => history.push("/profile")}
+                            onClick={() => {
+                                const from = location.state?.from;
+                                console.log(from)
+                                if (from === "home") {
+                                    history.replace("/");
+                                } else {
+                                    history.replace("/profile");
+                                }
+                            }}
                         >
                             <BackIcon aria-label="Back" />
                         </button>

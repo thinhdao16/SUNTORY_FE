@@ -102,7 +102,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 <span className="text-netural-300 font-medium">{t("New Chat")}</span>
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto pr-6 pl-2">
+            <div className="flex-1 overflow-y-auto pr-6 pl-2"
+            >
               {isLoading ? (
                 <div className="flex justify-center items-center py-8">
                   <span className="loader border-2 border-main border-t-transparent rounded-full w-8 h-8 animate-spin"></span>
@@ -134,14 +135,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 ))
               )}
             </div>
-            <div className="flex items-center gap-2 mt-4 pl-6">
+            <div
+              className="flex items-center gap-2 mt-4 pl-6"
+              onClick={() => {
+                history.push("/profile");
+                onClose?.();
+              }}
+            >
               <>
                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-main overflow-hidden">
                   {userAvatar && showAvatar ? (
                     <>
                       {!avatarLoaded && (
                         <img
-                          src="/default-avatar.png" // Đường dẫn avatar mẫu
+                          src="/default-avatar.png"
                           alt="default"
                           className="w-full h-full object-cover rounded-full absolute"
                           style={{ zIndex: 1 }}

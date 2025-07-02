@@ -10,6 +10,7 @@ import CameraIcon from "@/icons/logo/chat/cam.svg?react";
 import ImageIcon from "@/icons/logo/chat/image.svg?react";
 import FileIcon from "@/icons/logo/chat/file.svg?react";
 import SendIcon from "@/icons/logo/chat/send.svg?react";
+import CameraWeb from "@/pages/Camera/CameraWeb";
 
 const ChatWelcomePanel: React.FC<{
     pendingImages: any[];
@@ -27,6 +28,8 @@ const ChatWelcomePanel: React.FC<{
     history: any;
     messageRef: React.RefObject<HTMLTextAreaElement>;
     addPendingImages: (images: string[]) => void;
+    isNative?: boolean;
+    isDesktop?: boolean;
 }> = ({
     pendingImages,
     pendingFiles,
@@ -42,7 +45,9 @@ const ChatWelcomePanel: React.FC<{
     handleSendMessage,
     history,
     messageRef,
-    addPendingImages
+    addPendingImages,
+    isNative,
+    isDesktop
 }) => {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center">
@@ -104,9 +109,13 @@ const ChatWelcomePanel: React.FC<{
                     />
                     <div className="flex justify-between items-center">
                         <div className="flex gap-6">
-                            <button onClick={() => history.push("/camera")}>
-                                <CameraIcon aria-label={t("camera")} />
-                            </button>
+                            {(isNative || isDesktop) ? (
+                                <button onClick={() => history.push("/camera")}>
+                                    <CameraIcon aria-label={t("camera")} />
+                                </button>
+                            ) : (
+                                <CameraWeb />
+                            )}
                             <label>
                                 <ImageIcon aria-label={t("image")} />
                                 <input

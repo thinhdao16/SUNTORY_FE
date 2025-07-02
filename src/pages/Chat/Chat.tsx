@@ -102,6 +102,7 @@ const Chat: React.FC = () => {
     const isValidTopicType = topicTypeNum !== undefined && Object.values(TopicType).includes(topicTypeNum as TopicType);
     const topicType: TopicType | undefined = isValidTopicType ? (topicTypeNum as TopicType) : undefined;
     const title = isValidTopicType && topicType !== undefined ? TopicTypeLabel[topicType] : undefined;
+    const isDesktop = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
 
     const isWelcome =
         topicType === TopicType.Chat &&
@@ -302,7 +303,7 @@ const Chat: React.FC = () => {
                 )}
             </div>
             <div
-                className={`flex-1 overflow-y-auto p-6 ${!isNative && ("pb-26")}`}
+                className={`flex-1 overflow-y-auto p-6 ${!isNative && !keyboardResizeScreen ? ("pb-26") : ""}`}
                 ref={messagesContainerRef}
                 onScroll={handleScroll}
             >
@@ -323,6 +324,8 @@ const Chat: React.FC = () => {
                         history={history}
                         messageRef={messageRef}
                         addPendingImages={addPendingImages}
+                        isNative={isNative}
+                        isDesktop={isDesktop}
                     />
                 ) : (
                     <ChatMessageList
@@ -370,6 +373,9 @@ const Chat: React.FC = () => {
                         isSpending={isSending}
                         uploadImageMutation={uploadImageMutation}
                         addPendingImages={addPendingImages}
+                        isNative={isNative}
+                        isDesktop={isDesktop}
+
                     />
                 </div>
             )}

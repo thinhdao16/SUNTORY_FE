@@ -68,7 +68,7 @@ const ChatSidebarLayout: React.FC = () => {
             />
             <div className="relative z-10 max-w-full h-full w-[300px]">
               <ChatSidebar
-                history={[]}
+                history={history}
                 onSelectChat={handleSelectChat}
                 onNewChat={handleNewChat}
                 userName={userInfo?.name || "User"}
