@@ -1,15 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { RefObject } from "react";
-import { Link } from "react-router-dom";
-import { IonIcon, IonTextarea } from "@ionic/react";
-import { chevronBackOutline, close } from "ionicons/icons";
+import { IonTextarea } from "@ionic/react";
 import { IoCopyOutline } from "react-icons/io5";
 import MotionBottomSheet from "@/components/common/bottomSheet/MotionBottomSheet";
 import LanguageModal from "@/components/common/bottomSheet/LanguageModal";
-import LanguageSelector from "@/components/common/LanguageSelector";
 import TextToSpeechButton from "@/components/common/TextToSpeechButton";
 import { ImPaste } from "react-icons/im";
-
+import { MdOutlineSwapHoriz } from "react-icons/md";
+import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
+import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
+import CloseIcon from "@/icons/logo/chat/x.svg?react";
+import DownIcon from "@/icons/logo/translate/down.svg?react";
 interface TranslateContentProps {
   isOpen: boolean;
   scale: number;
@@ -106,7 +107,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
         borderRadius={borderRadius}
       >
         <div
-          className={`bg-white darkk:bg-dark-main !rounded-b-4xl overflow-auto`}
+          className={`bg-white darkk:bg-dark-main !rounded-b-4xl overflow-auto px-6`}
           style={{
             height: isKeyboardVisible
               ? `calc(100dvh - ${heightKeyBoard}px - 13%)`
@@ -114,67 +115,30 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
             borderRadius: borderRadius,
           }}
         >
-          <div className="flex justify-between p-3 pe-5 py-5 sticky z-50 top-0 darkk:bg-dark-main bg-white `}">
-            <Link to="/">
-              <div className="flex items-center justify-center gap-1">
-                <IonIcon icon={chevronBackOutline} className="w-6 h-6" />
-                <span>{t(`Home`)}</span>
-              </div>
-            </Link>
-            <div className="flex justify-end gap-2  ">
-              <div className="relative" ref={modelDropdown.dropdownRef}>
-                <button
-                  className=" darkk:text-white cursor-pointer flex items-end border border-gray-300 rounded-md px-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    modelDropdown.toggleDropdown();
-                  }}
-                >
-                  {modelSelect}
-                </button>
-                <div
-                  className={`absolute right-0 mt-2 w-48 bg-white darkk:bg-gray-800 rounded-lg shadow-lg z-10 transition-all duration-300 transform ${modelDropdown.isOpen
-                    ? "opacity-100 scale-100"
-                    : "opacity-0 scale-95 pointer-events-none"
-                    }`}
-                >
-                  <ul className="py-2">
-                    {modelList.map(
-                      (model: {
-                        value: string;
-                        selected: string;
-                        label: string;
-                      }) => (
-                        <li
-                          key={model.value}
-                          className={`cursor-pointer p-2 rounded ${model.selected
-                            ? "bg-blue-200 text-black darkk:bg-dark-select-extra darkk:text-dark-select-main"
-                            : " text-black darkk:text-white"
-                            }`}
-                          onClick={() => setModel(model.value)}
-                        >
-                          {model.label}
-                        </li>
-                      )
-                    )}
-                  </ul>
-                </div>
-              </div>
-              <IonIcon
-                icon={close}
-                className="text-2xl font-light"
-                style={{ "--ionicon-stroke-width": "50px" }}
-                onClick={() => {
-                  setInputValueTranslate((prev) => ({
-                    ...prev,
-                    input: "",
-                    output: "",
-                  }));
-                }}
-              />
-            </div>
+          <div className="flex items-start justify-between h-16 mb-2 pt-12">
+            <button
+              onClick={openSidebarWithAuthCheck}
+            >
+              <NavBarHomeHistoryIcon aria-label="Menu" />
+            </button>
+            <span className="font-semibold text-main uppercase tracking-wide">
+              {t(`Translate`)}
+            </span>
+            <button >
+              <CloseIcon aria-label={t("close")} />
+            </button>
           </div>
-          <div className="px-5 items-center flex flex-col">
+
+          <div className=" items-center flex flex-col border border-netural-200  rounded-2xl">
+            <div
+              onClick={() => openModal("from")}
+              className="border-b border-netural-200 w-full py-3 px-4 flex justify-between items-center cursor-pointer"
+            >
+              <span className="font-semibold text-main">
+                {selectedLanguageFrom.label}
+              </span>
+              <DownIcon />
+            </div>
             <IonTextarea
               autoGrow={true}
               ref={textareaRef}
@@ -182,9 +146,9 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
               placeholder={t(`Enter text`)}
               value={inputValueTranslate.input}
               onIonInput={(e: any) => handleInputTranslate(e)}
-              className="!text-3xl placeholder:text-gray-500 w-full text-ellipsis resize !darkk:text-white"
+              className=" placeholder:text-gray-500 w-full text-ellipsis resize px-4"
             />
-            {clipboardHasData && !inputValueTranslate.input && (
+            {false && (
               <div className="items-start flex w-full">
                 <button
                   className="bg-blue-200 darkk:bg-dark-select-main darkk:text-dark-select-extra cursor-pointer px-4 py-2 text-2l flex items-center justify-center gap-2 rounded-2xl mt-4"
@@ -195,7 +159,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                 </button>
               </div>
             )}
-            {inputValueTranslate.output && (
+            {false && (
               <>
                 <div className="flex justify-between items-center w-full py-2 text-gray-700">
                   <TextToSpeechButton
@@ -213,31 +177,14 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
               </>
             )}
           </div>
-          {inputValueTranslate.output && (
-            <div className="px-5 text-blue-500 mb-4 darkk:text-dark-select-extra">
-              <div>
-                <span className="text-3xl break-words whitespace-pre-line w-full">
-                  {inputValueTranslate.output}
-                </span>
-              </div>
-              <div className="flex justify-between items-center w-full py-2">
-                <div>
-                  <TextToSpeechButton
-                    text={inputValueTranslate.output}
-                    lang={selectedLanguageTo.lang}
-                  />
-                </div>
-                <div>
-                  <IoCopyOutline
-                    className="text-3xl"
-                    onClick={() =>
-                      handleCopyToClipboard(inputValueTranslate.output)
-                    }
-                  />
-                </div>
-              </div>
+          <div className="px-5 text-blue-500 mb-4 darkk:text-dark-select-extra bg-blue-100 p-4">
+            <div>
+              <span className="text-3xl break-words whitespace-pre-line w-full ">
+                {inputValueTranslate.output}
+              </span>
             </div>
-          )}
+
+          </div>
           {!isOnline && (
             <div className="bg-red-500 text-white text-center py-2">
               Bạn đang offline. Một số tính năng có thể không hoạt động.
@@ -245,12 +192,19 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
           )}
         </div>
         <div className="h-fit p-5">
-          <LanguageSelector
-            selectedLanguageFrom={selectedLanguageFrom}
-            selectedLanguageTo={selectedLanguageTo}
-            openModal={openModal}
-            swapLanguages={swapLanguages}
-          />
+          <div className="flex justify-between items-center">
+
+            <MdOutlineSwapHoriz
+              className="text-3xl text-gray-700 cursor-pointer darkk:text-white"
+              onClick={swapLanguages}
+            />
+            <button
+              onClick={() => openModal("to")}
+              className="w-[35%] py-4 bg-white rounded-xl text-sm darkk:bg-dark-main"
+            >
+              {selectedLanguageTo.label}
+            </button>
+          </div>
         </div>
       </MotionBottomSheet>
       <LanguageModal

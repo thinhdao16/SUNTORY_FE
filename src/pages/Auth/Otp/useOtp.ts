@@ -49,7 +49,17 @@ export function useOtp() {
     // ====== RESEND OTP ======
     const otpType = localStorage.getItem("otpType") || "register";
     const handleResend = () => {
-        resendOtpMutate({ email: email || "", otpType });
+        resendOtpMutate(
+            { email: email || "", otpType },
+            {
+                onSuccess: () => {
+                    const now = Date.now();
+                    localStorage.setItem("otpLastSent", now.toString());
+                    setTimer(RESEND_INTERVAL);
+                    setCanResend(false);
+                },
+            }
+        );
     };
 
     // ====== SUBMIT OTP ======

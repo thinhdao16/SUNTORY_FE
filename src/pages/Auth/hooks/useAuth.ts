@@ -139,7 +139,7 @@ export const useResendOtp = () => {
             },
             onError: (err: any) => {
                 showToast(
-                    err?.response?.data?.message ||
+                    t(err?.response?.data?.message) ||
                     t("Resending OTP failed. Please try again."),
                     3000,
                     "error"
@@ -160,7 +160,7 @@ export const useCheckValidOtp = () => {
             },
             onError: (err: any) => {
                 showToast(
-                    err?.response?.data?.message || t("OTP is invalid."),
+                    t(err?.response?.data?.message, { ns: "api" }) || t("OTP is invalid."),
                     3000,
                     "error"
                 );

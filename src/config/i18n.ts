@@ -11,7 +11,7 @@ i18n
     fallbackLng: "en",
     load: "languageOnly",
     supportedLngs: ["en", "vi", "zh"],
-    ns: ["home"],
+    ns: ["home", "auth", "api"],
     debug: true,
     interpolation: {
       escapeValue: false,

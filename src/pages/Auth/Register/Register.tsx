@@ -115,10 +115,17 @@ const Register: React.FC = () => {
                     inputClassName="text-netural-500"
                 />
                 <InputPasswordField
+                    label={t("Password")}
                     value={watch("password") || ""}
-                    onChange={(e) => setValue("password", e.target.value)}
+                    // onChange={(e) => setValue("password", e.target.value)}
                     error={errors.password?.message}
-                    // {...register("password", { required: t("Last name is required") })}
+                    {...register("password", {
+                        required: t("Password is required"),
+                        minLength: {
+                            value: 8,
+                            message: t("Password must be at least 8 characters"),
+                        },
+                    })}
                     required
                 />
                 <div className="flex items-center gap-1 mt-1 text-xs text-main" >
