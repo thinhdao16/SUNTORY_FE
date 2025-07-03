@@ -24,6 +24,7 @@ const AccountEdit: React.FC = () => {
     const birthdayInputRef = useRef<HTMLInputElement>(null);
     const today = dayjs().format("YYYY-MM-DD");
     const minDate = dayjs().subtract(120, "year").format("YYYY-MM-DD");
+    const maxDate = dayjs().subtract(6, "year").format("YYYY-MM-DD");
     const {
         control,
         handleSubmit,
@@ -110,13 +111,13 @@ const AccountEdit: React.FC = () => {
                                 <HealthTextInput
                                     label={t("Birthday")}
                                     register={register}
-                                    required={false}
+                                    required={true}
                                     placeholder={t("mm/dd/yyyy")}
                                     error={errors.dateOfBirth}
                                     type="date"
                                     inputRef={birthdayInputRef}
                                     min={minDate}
-                                    max={today}
+                                    max={maxDate}
                                     className="py-3 pr-2 h-[44px] ml-0 w-full min-w-0 appearance-none overflow-hidden"
                                     classNameContainer="mb-0"
                                     classNameLable="!mb-0"
