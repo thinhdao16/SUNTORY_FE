@@ -35,16 +35,14 @@ const Profile: React.FC = () => {
     };
     const currentLang = languageOptions.find(opt => opt.code === i18n.language)?.label || i18n.language;
 
+    // Thêm trường chevron vào từng item
     const menuItems = [
-        { label: t("Account"), onClick: () => history.replace("/profile/account"), },
-        // {
-        //     label: t("Update Health Information"),
-        //     onClick: () => history.replace("/profile/health"),
-        // },
-        { label: t("Change Password"), onClick: () => history.push("/change-password") },
-        { label: `${t("Language")} (${currentLang})`, onClick: () => handleChangeLanguage(true, "en") },
-        // { label: t("Help & Feedback"), onClick: () => { } },
-        { label: t("Logout"), onClick: () => { handleLogout() } },
+        { label: t("Account"), onClick: () => history.replace("/profile/account"), chevron: true },
+        // { label: t("Update Health Information"), onClick: () => history.replace("/profile/health"), chevron: true },
+        { label: t("Change Password"), onClick: () => history.push("/change-password"), chevron: true },
+        { label: `${t("Language")} (${currentLang})`, onClick: () => handleChangeLanguage(true, "en"), chevron: true },
+        // { label: t("Help & Feedback"), onClick: () => { }, chevron: false },
+        { label: t("Logout"), onClick: () => { handleLogout() }, chevron: false },
     ];
     const { data: userInfo, refetch, isLoading } = useAuthInfo();
     const renderSectionContent = () => {
@@ -63,7 +61,7 @@ const Profile: React.FC = () => {
                                     onClick={item.onClick}
                                 >
                                     <span>{item.label}</span>
-                                    <IoChevronForward className="text-lg text-gray-400" />
+                                    {item.chevron && <IoChevronForward className="text-lg text-gray-400" />}
                                 </button>
                             </li>
                         ))}

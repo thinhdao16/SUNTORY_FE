@@ -28,20 +28,17 @@ const PendingImages: React.FC<PendingImagesProps> = ({
                 const isLoaded = loadedIndexes.includes(idx);
                 return (
                     <div key={idx} className="relative w-[50px]">
-                        {/* Nút xóa */}
                         <button
                             className="absolute top-1 right-1 bg-black rounded-full w-[14px] h-[14px] flex items-center justify-center z-20"
                             onClick={() => removePendingImage(idx)}
                         >
                             <RemoveIcon />
                         </button>
-
-                        {((!isLoaded) || (imageLoading && idx === pendingImages.length - 1 && !isLoaded)) && (
+                        {((!isLoaded) || (imageLoading && idx === pendingImages.length - 1)) && (
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-10">
                                 <span className="loader border-2 border-white border-t-transparent rounded-full w-6 h-6 animate-spin"></span>
                             </div>
                         )}
-
                         <img
                             src={img}
                             alt={`captured-${idx}`}
@@ -58,7 +55,6 @@ const PendingImages: React.FC<PendingImagesProps> = ({
                                 )
                             }
                         />
-
                     </div>
                 );
             })}

@@ -2,7 +2,7 @@ import MedicalSupportIcon from "@/icons/logo/chat/medical_support.svg?react";
 import DocumentTranslationIcon from "@/icons/logo/chat/contract_translation.svg?react";
 import ProductInformationIcon from "@/icons/logo/chat/product_information.svg?react";
 import FoodDiscoveryIcon from "@/icons/logo/chat/food_discovery.svg?react";
-
+import DrugInstructionsIcon from "@/icons/logo/chat/drug_instructions.svg?react";
 export const quickActions = [
     {
         to: "/chat/10",
@@ -22,8 +22,8 @@ export const quickActions = [
         to: "/chat/30",
         iconBg: "bg-orange-100",
         icon: ProductInformationIcon,
-        label: "Product Information",
-        alt: "Product Information",
+        label: "Drug Instructions",
+        alt: "Drug Instructions",
     },
     {
         to: "/chat/40",

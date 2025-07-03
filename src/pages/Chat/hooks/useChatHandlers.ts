@@ -153,13 +153,13 @@ export function useChatHandlers({
                     setPendingMessages((prev: any) => [
                         ...prev,
                         {
-                            text: t("Message sending failed, please try again!"),
+                            text: t("AI is unable to respond at this time. Please wait or try again later."),
                             createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
                             timeStamp: generatePreciseTimestampFromDate(new Date()),
                             isError: true,
                         }
                     ]);
-                }, 1000 * 60);
+                }, 5000 * 60);
 
                 const filesArr = [
                     ...pendingFiles.map(f => ({ name: f.name })),
@@ -220,7 +220,7 @@ export function useChatHandlers({
                         text: t("Message sending failed, please try again!"),
                         createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
                         timeStamp: generatePreciseTimestampFromDate(new Date()),
-                        isError: true,
+                        isError: false,
                     }
                 ]);
             }

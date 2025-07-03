@@ -34,7 +34,7 @@ const CameraWeb: React.FC = () => {
         try {
             if (file.size > MAX_IMAGE_SIZE) {
                 present({
-                    message: t("Ảnh phải nhỏ hơn 5MB!"),
+                    message: t("Photo must be less than 5MB!"),
                     duration: 3000,
                     color: "danger",
                 });

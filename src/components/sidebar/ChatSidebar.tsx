@@ -6,6 +6,7 @@ import { useUserChatsByTopicSearch } from "@/pages/Chat/hooks/useChat";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { groupChatsByDate } from "@/utils/group-chats-by-date";
 import dayjs from "dayjs";
+import { TopicType, TopicTypeLabel } from "@/constants/topicType";
 
 // Import SVG as React component
 import SearchIcon from "@/icons/logo/chat/search.svg?react";
@@ -35,8 +36,23 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [search, setSearch] = React.useState("");
   const [showAvatar, setShowAvatar] = useState(false);
   const [avatarLoaded, setAvatarLoaded] = useState(false);
-  const { isLoading } = useUserChatsByTopicSearch(undefined, search);
+  const [selectedTopic, setSelectedTopic] = useState<TopicType | "all">("all");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const { isLoading } = useUserChatsByTopicSearch(
+    selectedTopic === "all" ? undefined : selectedTopic,
+    search
+  );
   const chats = useChatStore((s) => s.chats);
+
+  const topicOptions = [
+    { value: "all", label: t("All") },
+    ...Object.entries(TopicTypeLabel).map(([key, label]) => ({
+      value: key,
+      label,
+    })),
+  ];
+
   const groupedChats = React.useMemo(
     () => {
       const grouped = groupChatsByDate(chats);
@@ -90,9 +106,32 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     className="bg-transparent outline-none flex-1 py-2 placeholder:text-netural-300"
                   />
                 </div>
-                <button className="bg-main rounded-lg px-3 py-2" onClick={onNewChat}>
-                  <FilterIcon className="w-4 h-4" aria-label={t("new chat")} />
-                </button>
+                <div className="relative">
+                  <button className="bg-main rounded-lg !w-10 h-10 aspect-square grid items-center justify-center" onClick={() => setDropdownOpen((v) => !v)}
+                  >
+                    <FilterIcon aria-label={t("new chat")} />
+                  </button>
+                  {dropdownOpen && (
+                    <div className="absolute right-0 z-20 mt-2 w-[180px] bg-white border border-netural-100 p-1 rounded-xl shadow-2xl  ">
+                      {topicOptions.map((opt) => (
+                        <button
+                          key={opt.value}
+                          className={`block w-full text-left px-4 py-2 text-sm rounded-sm ${String(selectedTopic) === String(opt.value)
+                            ? "font-semibold bg-chat-to text-main"
+                            : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                          onClick={() => {
+                            setSelectedTopic(opt.value === "all" ? "all" : Number(opt.value));
+                            setDropdownOpen(false);
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
               </div>
               <button
                 className="flex items-center gap-2 bg-[#EDF1FC] rounded-lg px-3 py-2 mb-4 w-full "

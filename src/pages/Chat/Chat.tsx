@@ -66,6 +66,7 @@ const Chat: React.FC = () => {
     const clearPendingMessages = useChatStore((s) => s.clearPendingMessages);
     const stopMessages = useChatStore((s) => s.stopMessages);
     const setStopMessages = useChatStore((s) => s.setStopMessages);
+
     // ===== Chat & Message Hooks =====
     const {
         messages,
@@ -263,6 +264,7 @@ const Chat: React.FC = () => {
     });
     const allSignalR = signalRMessages.flatMap(mapSignalRMessage);
     const allPending = pendingMessages.map(mapPendingMessage);
+    console.log(pendingMessages)
     const mergedMessages = [
         ...messages,
         ...allSignalR.filter(
@@ -326,6 +328,7 @@ const Chat: React.FC = () => {
                         addPendingImages={addPendingImages}
                         isNative={isNative}
                         isDesktop={isDesktop}
+
                     />
                 ) : (
                     <ChatMessageList
@@ -375,7 +378,7 @@ const Chat: React.FC = () => {
                         addPendingImages={addPendingImages}
                         isNative={isNative}
                         isDesktop={isDesktop}
-
+                        imageLoading={uploadImageMutation.isLoading}
                     />
                 </div>
             )}

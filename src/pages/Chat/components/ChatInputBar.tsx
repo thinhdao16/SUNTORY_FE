@@ -20,6 +20,7 @@ interface ChatInputBarProps {
     addPendingImages: (images: string[]) => void;
     isNative?: boolean; // Thêm prop này nếu cần phân biệt native
     isDesktop?: boolean; // Thêm prop này nếu cần phân biệt desktop
+    imageLoading?: boolean; // Thêm prop này để kiểm soát trạng thái tải ảnh
 }
 
 const ChatInputBar: React.FC<ChatInputBarProps> = ({
@@ -35,7 +36,8 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     uploadImageMutation,
     addPendingImages,
     isNative,
-    isDesktop
+    isDesktop,
+    imageLoading
 }) => (
     <>
         <div className="flex items-center px-6 pt-4 pb-6">
@@ -117,7 +119,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                 <button
                     type="button"
                     onClick={(e) => handleSendMessage(e, true)}
-                    disabled={isSpending}
+                    disabled={isSpending || isLoading || imageLoading}
                 >
                     <SendIcon aria-label={t("send")} />
                 </button>

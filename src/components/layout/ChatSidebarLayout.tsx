@@ -7,6 +7,8 @@ import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import { TopicType } from "@/constants/topicType";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 import NavBarHomeIcon from "@/icons/logo/nav_bar_home.svg?react";
+import { useChatStore } from "@/store/zustand/chat-store";
+import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 
 const ChatSidebarLayout: React.FC = () => {
   const { isChatSidebarOpen, closeChatSidebar } = useUiStore();
@@ -15,11 +17,19 @@ const ChatSidebarLayout: React.FC = () => {
   const location = useLocation();
   const match = location.pathname.match(/\/chat\/[^/]+\/([^/]+)/);
   const sessionId = match ? match[1] : undefined;
-
+  const clearAll = () => {
+    useChatStore.getState().clearPendingMessages();
+    useChatStore.getState().clearMessages();
+    useChatStore.getState().setStopMessages(true);
+    useSignalRChatStore.getState().setMessages([]);
+    useChatStore.getState().setIsSending(false);
+  };
   const handleNewChat = () => {
+    clearAll();
     closeChatSidebar();
     history.push(`/chat/${TopicType.Chat}`);
   }
+
   const handleSelectChat = (chat: { type: string; code: string; topic: string }) => {
     closeChatSidebar();
     history.push(`/chat/${chat.topic}/${chat.code}`);

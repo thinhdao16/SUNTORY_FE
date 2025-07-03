@@ -30,6 +30,7 @@ const ChatWelcomePanel: React.FC<{
     addPendingImages: (images: string[]) => void;
     isNative?: boolean;
     isDesktop?: boolean;
+    uploadLoading?: boolean;
 }> = ({
     pendingImages,
     pendingFiles,
@@ -47,7 +48,8 @@ const ChatWelcomePanel: React.FC<{
     messageRef,
     addPendingImages,
     isNative,
-    isDesktop
+    isDesktop,
+    uploadLoading
 }) => {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center">
@@ -139,7 +141,7 @@ const ChatWelcomePanel: React.FC<{
                         <button
                             type="button"
                             onClick={(e) => handleSendMessage(e, true)}
-                            disabled={isSending || (!messageValue.trim() && pendingImages.length === 0 && pendingFiles.length === 0)}
+                            disabled={uploadImageMutation.isLoading || isSending || (!messageValue.trim() && pendingImages.length === 0 && pendingFiles.length === 0)}
                         >
                             <SendIcon aria-label={t("send")} />
                         </button>
