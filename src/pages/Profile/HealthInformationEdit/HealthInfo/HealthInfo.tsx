@@ -191,7 +191,7 @@ function HealthInfo() {
                 <ClickableCheckbox
                     checked={hasSurgery}
                     onChange={val => setValue("hasSurgery", val)}
-                    label={t("Có tiền sử phẫu thuật")}
+                    label={t("History of surgery")}
                 />
 
                 {hasSurgery && (
@@ -205,7 +205,7 @@ function HealthInfo() {
                 <ClickableCheckbox
                     checked={isPregnantOrBreastfeeding}
                     onChange={val => setValue("isPregnantOrBreastfeeding", val)}
-                    label={t("Đang mang thai/ cho con bú")}
+                    label={t("Pregnant or breastfeeding")}
                 />
                 {isPregnantOrBreastfeeding && (
                     <OtherInputField

@@ -82,7 +82,7 @@ export function useChatHandlers({
             const localUrl = localUrls[i];
             if (file.size > MAX_IMAGE_SIZE) {
                 useToastStore.getState().showToast(
-                    t("Ảnh phải nhỏ hơn 5MB!"),
+                    t("Photo must be less than 5MB!"),
                     3000,
                     "warning"
                 );
