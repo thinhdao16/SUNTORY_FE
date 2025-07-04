@@ -213,7 +213,13 @@ const CameraPage: React.FC = () => {
 
 
     };
-
+    const stopCamera = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+    };
     useEffect(() => {
         if (permissionDenied) return;
         let stream: MediaStream | null = null;
@@ -274,7 +280,12 @@ const CameraPage: React.FC = () => {
                 <button onClick={handleToggleFlash}>
                     {flashOn ? <FlashOnIcon aria-label="Flash On" /> : <FlashOffIcon aria-label="Flash Off" />}
                 </button>
-                <button onClick={() => history.goBack()}>
+                <button
+                    onClick={() => {
+                        stopCamera();
+                        history.goBack();
+                    }}
+                >
                     <CloseIcon aria-label="Đóng" />
                 </button>
             </div>

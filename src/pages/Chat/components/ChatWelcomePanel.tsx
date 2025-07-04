@@ -65,6 +65,7 @@ const ChatWelcomePanel: React.FC<{
                             pendingImages={pendingImages}
                             imageLoading={uploadImageMutation.isLoading}
                             removePendingImage={removePendingImage}
+                            imageLoadingMany={!!uploadLoading}
                         />
                         <PendingFiles
                             pendingFiles={pendingFiles}
@@ -74,7 +75,7 @@ const ChatWelcomePanel: React.FC<{
                     <textarea
                         placeholder={t("Enter your message...")}
                         value={messageValue}
-                        disabled={isLoading}
+                        disabled={isLoading || isSending || uploadImageMutation.isLoading || uploadLoading}
                         ref={messageRef}
                         onChange={(e) => setMessageValue(e.target.value)}
                         className="focus:outline-none resize-none max-h-[230px] overflow-y-auto"
@@ -141,7 +142,7 @@ const ChatWelcomePanel: React.FC<{
                         <button
                             type="button"
                             onClick={(e) => handleSendMessage(e, true)}
-                            disabled={uploadImageMutation.isLoading || isSending || (!messageValue.trim() && pendingImages.length === 0 && pendingFiles.length === 0)}
+                            disabled={uploadImageMutation.isLoading || isSending || (!messageValue.trim() && pendingImages.length === 0 && pendingFiles.length === 0) || uploadLoading}
                         >
                             <SendIcon aria-label={t("send")} />
                         </button>

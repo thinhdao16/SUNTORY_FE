@@ -28,7 +28,6 @@ type ChatMessageListProps = {
 };
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({ allMessages, pendingMessages, topicType, title, loading }) => {
-    console.log(allMessages)
     return (
         <div className="flex flex-col gap-8 mx-auto pt-8">
             <ChatIntroMessage topicType={topicType} />

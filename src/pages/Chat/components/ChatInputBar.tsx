@@ -21,6 +21,7 @@ interface ChatInputBarProps {
     isNative?: boolean; // Thêm prop này nếu cần phân biệt native
     isDesktop?: boolean; // Thêm prop này nếu cần phân biệt desktop
     imageLoading?: boolean; // Thêm prop này để kiểm soát trạng thái tải ảnh
+    imageLoadingMany?: boolean; // Thêm prop này nếu cần phân biệt trạng thái tải nhiều ảnh
 }
 
 const ChatInputBar: React.FC<ChatInputBarProps> = ({
@@ -37,7 +38,9 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     addPendingImages,
     isNative,
     isDesktop,
-    imageLoading
+    imageLoading,
+    imageLoadingMany
+
 }) => (
     <>
         <div className="flex items-center px-6 pt-4 pb-6">
@@ -46,7 +49,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                 ref={messageRef}
                 value={messageValue}
                 onChange={(e) => setMessageValue(e.target.value)}
-                disabled={isLoading || isSpending}
+                disabled={isLoading || isSpending || imageLoading || imageLoadingMany}
                 className="flex-1 focus:outline-none resize-none max-h-[230px] overflow-y-auto"
                 rows={1}
                 onFocus={() => {
@@ -119,7 +122,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                 <button
                     type="button"
                     onClick={(e) => handleSendMessage(e, true)}
-                    disabled={isSpending || isLoading || imageLoading}
+                    disabled={isSpending || isLoading || imageLoading || imageLoadingMany}
                 >
                     <SendIcon aria-label={t("send")} />
                 </button>

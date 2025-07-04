@@ -6,12 +6,15 @@ interface PendingImagesProps {
     pendingImages: string[];
     imageLoading: boolean;
     removePendingImage: (idx: number) => void;
+    imageLoadingMany: boolean; 
 }
 
 const PendingImages: React.FC<PendingImagesProps> = ({
     pendingImages,
     imageLoading,
     removePendingImage,
+    imageLoadingMany,
+
 }) => {
     const [loadedIndexes, setLoadedIndexes] = useState<number[]>([]);
     useEffect(() => {
@@ -34,7 +37,7 @@ const PendingImages: React.FC<PendingImagesProps> = ({
                         >
                             <RemoveIcon />
                         </button>
-                        {((!isLoaded) || (imageLoading && idx === pendingImages.length - 1)) && (
+                        {((!isLoaded) || (imageLoading && idx === pendingImages.length - 1) || (imageLoadingMany && idx === pendingImages.length - 1)) && (
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl z-10">
                                 <span className="loader border-2 border-white border-t-transparent rounded-full w-6 h-6 animate-spin"></span>
                             </div>

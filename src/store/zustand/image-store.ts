@@ -6,7 +6,7 @@ interface ChatUploadStore {
     addPendingImages: (imgs: string[]) => void;
     addPendingFiles: (files: { name: string; url: string }[]) => void;
     removePendingImage: (idx: number) => void;
-    removePendingImageByUrl: (url: string) => void; // thêm dòng này
+    removePendingImageByUrl: (url: string) => void;
     removePendingFile: (idx: number) => void;
     clearAll: () => void;
 }
