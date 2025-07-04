@@ -246,5 +246,6 @@
   "Today": "Today",
   "Yesterday": "Yesterday",
   "{{n}} days ago": "{{n}} days ago",
-  "Last Week": "Last Week"
+  "Last Week": "Last Week",
+  "Home": "Home"
 }

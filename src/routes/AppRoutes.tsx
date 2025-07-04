@@ -10,7 +10,6 @@ import BottomTabBar from "@/components/common/BottomTabBar";
 import RouteLoading from "./RouteLoading";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import ChatSidebarLayout from "@/components/layout/ChatSidebarLayout";
-import CameraWeb from "@/pages/Camera/CameraWeb";
 
 const routes = {
   Chat: lazy(() => import("@/pages/Chat/Chat")),
