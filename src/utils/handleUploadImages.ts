@@ -16,7 +16,7 @@ export async function handleUploadImages(
     const localUrls = arrFiles.map(file => URL.createObjectURL(file));
     const uploadResults = await Promise.all(arrFiles.map(file => {
         if (file.size > maxSize) {
-            showToast(t("Ảnh phải nhỏ hơn 5MB!"), 3000, "warning");
+            showToast(t("Photo must be less than 5MB!"), 3000, "warning");
             return null;
         }
         return uploadImageMutation.mutateAsync(file).catch(() => null);

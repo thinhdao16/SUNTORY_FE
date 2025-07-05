@@ -68,7 +68,7 @@ const CameraPage: React.FC = () => {
         try {
             if (file.size > MAX_IMAGE_SIZE) {
                 present({
-                    message: t("Ảnh phải nhỏ hơn 5MB!"),
+                    message: t("Photo must be less than 5MB!"),
                     duration: 3000,
                     color: "danger",
                 });
@@ -213,7 +213,13 @@ const CameraPage: React.FC = () => {
 
 
     };
-
+    const stopCamera = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+    };
     useEffect(() => {
         if (permissionDenied) return;
         let stream: MediaStream | null = null;
@@ -268,13 +274,18 @@ const CameraPage: React.FC = () => {
 
         // <PageContainer>
 
-        <div className="h-full relative w-screen bg-black grid items-center px-6">
+        <div className="h-full relative  bg-black grid items-center px-6">
             {/* Top bar */}
             <div className="fixed top-6 left-0 right-0 z-10 p-6 flex items-center justify-between">
                 <button onClick={handleToggleFlash}>
                     {flashOn ? <FlashOnIcon aria-label="Flash On" /> : <FlashOffIcon aria-label="Flash Off" />}
                 </button>
-                <button onClick={() => history.goBack()}>
+                <button
+                    onClick={() => {
+                        stopCamera();
+                        history.goBack();
+                    }}
+                >
                     <CloseIcon aria-label="Đóng" />
                 </button>
             </div>

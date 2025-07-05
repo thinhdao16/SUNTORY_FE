@@ -3,7 +3,7 @@ import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
 import { IonContent, IonPage } from "@ionic/react";
 import React, { useState } from "react";
 import { IoChevronForward } from "react-icons/io5";
-import { useHistory, useParams } from "react-router-dom";
+import { useHistory, useLocation, useParams } from "react-router-dom";
 import { useAuthInfo } from "../Auth/hooks/useAuthInfo";
 import i18n from "@/config/i18n";
 import { ProfileHeader } from "./ProfileHeader";
@@ -25,6 +25,7 @@ const Profile: React.FC = () => {
     const [languageLoading, setLanguageLoading] = useState(false);
     const { section } = useParams<{ section?: string, type: string }>();
     const history = useHistory();
+    const location = useLocation<{ from?: string }>();
     const handleLogout = () => {
         useAuthStore.getState().logout();
         window.location.href = "/login";
@@ -34,16 +35,14 @@ const Profile: React.FC = () => {
     };
     const currentLang = languageOptions.find(opt => opt.code === i18n.language)?.label || i18n.language;
 
+    // Thêm trường chevron vào từng item
     const menuItems = [
-        { label: t("Account"), onClick: () => history.replace("/profile/account"), },
-        // {
-        //     label: t("Update Health Information"),
-        //     onClick: () => history.replace("/profile/health"),
-        // },
-        { label: t("Change Password"), onClick: () => history.push("/change-password") },
-        { label: `${t("Language")} (${currentLang})`, onClick: () => handleChangeLanguage(true, "en") },
-        // { label: t("Help & Feedback"), onClick: () => { } },
-        { label: t("Logout"), onClick: () => { handleLogout() } },
+        { label: t("Account"), onClick: () => history.replace("/profile/account"), chevron: true },
+        // { label: t("Update Health Information"), onClick: () => history.replace("/profile/health"), chevron: true },
+        { label: t("Change Password"), onClick: () => history.push("/change-password"), chevron: true },
+        { label: `${t("Language")} (${currentLang})`, onClick: () => handleChangeLanguage(true, "en"), chevron: true },
+        // { label: t("Help & Feedback"), onClick: () => { }, chevron: false },
+        { label: t("Logout"), onClick: () => { handleLogout() }, chevron: false },
     ];
     const { data: userInfo, refetch, isLoading } = useAuthInfo();
     const renderSectionContent = () => {
@@ -62,7 +61,7 @@ const Profile: React.FC = () => {
                                     onClick={item.onClick}
                                 >
                                     <span>{item.label}</span>
-                                    <IoChevronForward className="text-lg text-gray-400" />
+                                    {item.chevron && <IoChevronForward className="text-lg text-gray-400" />}
                                 </button>
                             </li>
                         ))}
@@ -85,7 +84,15 @@ const Profile: React.FC = () => {
                     {section ? (
                         <button
                             className="flex items-center gap-2 text-main font-medium"
-                            onClick={() => history.push("/profile")}
+                            onClick={() => {
+                                const from = location.state?.from;
+                                console.log(from)
+                                if (from === "home") {
+                                    history.replace("/");
+                                } else {
+                                    history.replace("/profile");
+                                }
+                            }}
                         >
                             <BackIcon aria-label="Back" />
                         </button>

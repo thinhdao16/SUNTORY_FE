@@ -22,7 +22,9 @@ const AccountEdit: React.FC = () => {
     const updateAccountInfo = useUpdateAccountInfo();
 
     const birthdayInputRef = useRef<HTMLInputElement>(null);
-
+    const today = dayjs().format("YYYY-MM-DD");
+    const minDate = dayjs().subtract(120, "year").format("YYYY-MM-DD");
+    const maxDate = dayjs().subtract(6, "year").format("YYYY-MM-DD");
     const {
         control,
         handleSubmit,
@@ -91,37 +93,32 @@ const AccountEdit: React.FC = () => {
                         )}
                     />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-2">
+                <div className="flex gap-2 w-full">
+                    <div className="w-2/3 min-w-0">
                         <Controller
                             name="dateOfBirth"
                             control={control}
+                            rules={{
+                                validate: value => {
+                                    if (!value) return true;
+                                    const age = dayjs().diff(dayjs(value), "year");
+                                    if (age < 0) return t("Birthday cannot be in the future");
+                                    if (age > 120) return t("Age must be less than or equal to 120");
+                                    return true;
+                                }
+                            }}
                             render={({ field }) => (
                                 <HealthTextInput
                                     label={t("Birthday")}
                                     register={register}
-                                    required={false}
+                                    required={true}
                                     placeholder={t("mm/dd/yyyy")}
                                     error={errors.dateOfBirth}
                                     type="date"
                                     inputRef={birthdayInputRef}
-                                    logo={
-                                        <span
-                                            onClick={() => {
-                                                if (birthdayInputRef.current) {
-                                                    if (typeof birthdayInputRef.current.showPicker === "function") {
-                                                        birthdayInputRef.current.showPicker();
-                                                    } else {
-                                                        birthdayInputRef.current.focus();
-                                                    }
-                                                }
-                                            }}
-                                            className="cursor-pointer"
-                                        >
-                                            {/* <IoCalendarOutline className="text-base" /> */}
-                                        </span>
-                                    }
-                                    className="py-3 !pr-2"
+                                    min={minDate}
+                                    max={maxDate}
+                                    className="py-3 pr-2 h-[44px] ml-0 w-full min-w-0 appearance-none overflow-hidden"
                                     classNameContainer="mb-0"
                                     classNameLable="!mb-0"
                                     {...field}
@@ -129,30 +126,39 @@ const AccountEdit: React.FC = () => {
                             )}
                         />
                     </div>
-
-                    <Controller
-                        name="gender"
-                        control={control}
-                        render={({ field }) => (
-                            <SelectMenu
-                                label={t("Gender")}
-                                options={genderOptions}
-                                control={control}
-                                menuButtonClassName="py-3 !border-netural-200"
-                                labelClassName="!mb-0"
-                                {...field}
-                            />
-                        )}
-                    />
+                    <div className="w-1/3 min-w-0">
+                        <Controller
+                            name="gender"
+                            control={control}
+                            render={({ field }) => (
+                                <SelectMenu
+                                    label={t("Gender")}
+                                    options={genderOptions}
+                                    control={control}
+                                    menuButtonClassName="py-3 !border-netural-200"
+                                    labelClassName="!mb-0"
+                                    {...field}
+                                />
+                            )}
+                        />
+                    </div>
                 </div>
+
+
                 <div className="flex gap-2">
                     <Controller
                         name="height"
                         control={control}
+                        rules={{
+                            required: t("Height is required"),
+                            min: { value: 50, message: t("Height must be at least 50cm") },
+                            max: { value: 300, message: t("Height must be less than 300cm") },
+                        }}
                         render={({ field }) => (
                             <InputTextField
                                 label={`${t("Height")} (${t("cm")})`}
                                 type="number"
+                                error={errors.height?.message}
                                 {...field}
                             />
                         )}
@@ -160,10 +166,16 @@ const AccountEdit: React.FC = () => {
                     <Controller
                         name="weight"
                         control={control}
+                        rules={{
+                            required: t("Weight is required"),
+                            min: { value: 10, message: t("Weight must be at least 10kg") },
+                            max: { value: 500, message: t("Weight must be less than 500kg") },
+                        }}
                         render={({ field }) => (
                             <InputTextField
                                 label={`${t("Weight")} (${t("kg")})`}
                                 type="number"
+                                error={errors.weight?.message}
                                 {...field}
                             />
                         )}

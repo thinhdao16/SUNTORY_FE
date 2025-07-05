@@ -10,6 +10,7 @@ import LinkToIcon from "@/icons/logo/link_to.svg?react";
 import MedicalSupportIcon from "@/icons/logo/home/medical_support.svg?react";
 import DocumentTranslationIcon from "@/icons/logo/home/document_translation.svg?react";
 import ProductInformationIcon from "@/icons/logo/home/product_information.svg?react";
+import DrugIstrucstionsIcon from "@/icons/logo/home/drug_instructions.svg?react";
 import FoodDiscoveryIcon from "@/icons/logo/home/food_discovery.svg?react";
 import useAppInit from '@/hooks/useAppInit';
 import PageContainer from '@/components/layout/PageContainer';
@@ -21,25 +22,30 @@ function Home() {
 
   const features = [
     {
-      image: <MedicalSupportIcon className="w-full h-full object-cover rounded-xl flex-1" />,
+      image: <MedicalSupportIcon className="w-full h-full object-cover rounded-xl flex-1 my-2" />,
       title: t("Medical Support"),
-      link: "/chat/10",
+      link: `/chat/${TopicType.MedicalSupport}`,
     },
     {
-      image: <DocumentTranslationIcon className="w-full h-full object-cover rounded-xl flex-1" />,
+      image: <DocumentTranslationIcon className="w-full h-full object-cover rounded-xl flex-1 my-2" />,
       title: t("Document Translation"),
-      link: "/chat/20",
+      link: `/chat/${TopicType.DocumentTranslation}`,
     },
     {
-      image: <ProductInformationIcon className="w-full h-full object-cover rounded-xl flex-1" />,
-      title: t("Product Information"),
-      link: "/chat/30",
+      image: <DrugIstrucstionsIcon className="w-full h-full object-cover rounded-xl flex-1 my-2" />,
+      title: t("Drug Instructions"),
+      link: `/chat/${TopicType.DrugInstructions}`,
     },
     {
-      image: <FoodDiscoveryIcon className="w-full h-full object-cover rounded-xl flex-1" />,
+      image: <FoodDiscoveryIcon className="w-full h-full object-cover rounded-xl flex-1 my-2" />,
       title: t("Food Discovery"),
-      link: "/chat/40",
+      link: `/chat/${TopicType.FoodDiscovery}`,
     },
+    // {
+    //   image: <ProductInformationIcon className="w-full h-full object-cover rounded-xl flex-1" />,
+    //   title: t("Product Information"),
+    //   link: `/chat/${TopicType.ProductInformation}`,
+    // },
   ];
   const howItWorks = [
     {
@@ -119,7 +125,7 @@ function Home() {
             {userInfo?.id ? (
               <a
                 className="flex items-center gap-2 border border-white rounded-full text-white text-sm font-medium bg-gradient-to-b from-main to-primary-600 px-3 py-1 whitespace-nowrap"
-                onClick={() => history.push("/profile/account")}
+                onClick={() => history.push("/profile/")}
                 style={{ cursor: "pointer" }}
               >
                 <span>{t("Update Profile")}</span>
@@ -161,7 +167,7 @@ function Home() {
         </div>
       </div>
       <div className='-mt-24 px-6 pb-10'>
-        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 gap-4    relative z-999">
+        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 gap-4    relative z-9">
           {features.map((f, idx) => (
             <div
               key={f.title}

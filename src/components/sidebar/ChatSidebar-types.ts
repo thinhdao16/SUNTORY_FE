@@ -5,7 +5,7 @@ export interface ChatHistoryItem {
 }
 
 export interface ChatSidebarProps {
-    history: ChatHistoryItem[];
+    history: any; // Replace with the correct type for history
     onSearch?: (value: string) => void;
     onNewChat?: () => void;
     onSelectChat?: (item: { type: string, code: string, topic: string }) => void;
