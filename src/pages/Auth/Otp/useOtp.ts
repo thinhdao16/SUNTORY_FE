@@ -5,7 +5,7 @@ import { useToastStore } from "@/store/zustand/toast-store";
 import { useCheckValidOtp, useResendOtp, useVerifyOtp } from "../hooks/useAuth";
 
 // ====== CONSTANTS ======
-const RESEND_INTERVAL = 300;
+const RESEND_INTERVAL = 120;
 const OTP_LENGTH = 6;
 
 // ====== HOOK ======
@@ -49,11 +49,26 @@ export function useOtp() {
     // ====== RESEND OTP ======
     const otpType = localStorage.getItem("otpType") || "register";
     const handleResend = () => {
-        resendOtpMutate({ email: email || "", otpType });
+        setOtp(Array(OTP_LENGTH).fill(""))
+        resendOtpMutate(
+            { email: email || "", otpType },
+            {
+                onSuccess: () => {
+                    const now = Date.now();
+                    localStorage.setItem("otpLastSent", now.toString());
+                    setTimer(RESEND_INTERVAL);
+                    setCanResend(false);
+                },
+            }
+        );
     };
 
     // ====== SUBMIT OTP ======
     const handleSubmitOtp = async () => {
+        if (canResend) {
+            showToast(t("OTP has expired. Please request a new OTP."), 2000, "warning");
+            return false;
+        }
         try {
             const code = otp.join("");
             if (code.length !== OTP_LENGTH) {

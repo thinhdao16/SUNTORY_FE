@@ -26,6 +26,9 @@ import ChatWelcomePanel from "./components/ChatWelcomePanel";
 import { useScrollToBottom } from "@/hooks/useScrollToBottom";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 import CloseIcon from "@/icons/logo/chat/x.svg?react";
+import { Capacitor } from "@capacitor/core";
+import { useUploadChatFile } from "@/hooks/common/useUploadChatFile";
+import { useUploadStore } from "@/store/zustand/upload-store";
 dayjs.extend(utc);
 
 const Chat: React.FC = () => {
@@ -35,6 +38,7 @@ const Chat: React.FC = () => {
     // ===== State =====
 
     const [hasFirstSignalRMessage, setHasFirstSignalRMessage] = useState(false);
+    const [pendingBarHeight, setPendingBarHeight] = useState(0);
 
     // ===== Refs =====
     const messageRef = useRef<any>(null);
@@ -42,9 +46,10 @@ const Chat: React.FC = () => {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const prevSessionIdRef = useRef<string | undefined>(sessionId);
     const prevTypeRef = useRef<string | undefined>(type);
-
+    const pendingBarRef = useRef<HTMLDivElement>(null);
     // ===== Device Info =====
     const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
+    const isNative = Capacitor.isNativePlatform();
 
     // ===== Stores =====
     const {
@@ -64,6 +69,7 @@ const Chat: React.FC = () => {
     const clearPendingMessages = useChatStore((s) => s.clearPendingMessages);
     const stopMessages = useChatStore((s) => s.stopMessages);
     const setStopMessages = useChatStore((s) => s.setStopMessages);
+    const imageLoading = useUploadStore.getState().imageLoading;
     // ===== Chat & Message Hooks =====
     const {
         messages,
@@ -93,13 +99,14 @@ const Chat: React.FC = () => {
     useAutoResizeTextarea(messageRef, messageValue);
     useSignalRChat(deviceInfo.deviceId || "");
 
-    const uploadImageMutation = useUpload();
+    const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef);
     // ===== Derived State =====
     const topicTypeNum = type ? Number(type) : undefined;
     const isValidTopicType = topicTypeNum !== undefined && Object.values(TopicType).includes(topicTypeNum as TopicType);
     const topicType: TopicType | undefined = isValidTopicType ? (topicTypeNum as TopicType) : undefined;
     const title = isValidTopicType && topicType !== undefined ? TopicTypeLabel[topicType] : undefined;
+    const isDesktop = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
 
     const isWelcome =
         topicType === TopicType.Chat &&
@@ -137,7 +144,7 @@ const Chat: React.FC = () => {
         if (messagesEndRef.current) {
             scrollToBottomMess()
         }
-    }, [signalRMessages, type]);
+    }, [signalRMessages, type, pendingBarHeight]);
 
     useEffect(() => {
         if (
@@ -156,6 +163,12 @@ const Chat: React.FC = () => {
             useChatStore.getState().setIsSending(false);
         };
     }, [sessionId, type]);
+
+    useEffect(() => {
+        if (pendingBarRef.current) {
+            setPendingBarHeight(pendingBarRef.current.offsetHeight + 20);
+        }
+    }, [pendingImages, pendingFiles]);
     // ===== Handlers =====
     const {
         handleImageChange,
@@ -272,7 +285,6 @@ const Chat: React.FC = () => {
         ),
         ...allPending,
     ].sort((a, b) => a.timeStamp - b.timeStamp);
-
     return (
         <div
             className="flex flex-col bg-white"
@@ -301,7 +313,7 @@ const Chat: React.FC = () => {
                 )}
             </div>
             <div
-                className="flex-1 overflow-y-auto p-6"
+                className={`flex-1 overflow-y-auto p-6 ${!isNative && !keyboardResizeScreen ? ("pb-26") : ""}`}
                 ref={messagesContainerRef}
                 onScroll={handleScroll}
             >
@@ -322,6 +334,9 @@ const Chat: React.FC = () => {
                         history={history}
                         messageRef={messageRef}
                         addPendingImages={addPendingImages}
+                        isNative={isNative}
+                        isDesktop={isDesktop}
+                        uploadLoading={imageLoading}
                     />
                 ) : (
                     <ChatMessageList
@@ -332,10 +347,11 @@ const Chat: React.FC = () => {
                         loading={isSending}
                     />
                 )}
+                <div style={{ marginTop: pendingBarHeight }} />
                 <div ref={messagesEndRef} className="mt-4" />
             </div>
             {!isWelcome && (
-                <div className={`bg-white pb-4 bottom-0 w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : "sticky"}`}>
+                <div className={` bg-white pb-4  w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"} ${isNative ? "bottom-0" : "bottom-[76px]"} ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""}`}>
                     {showScrollButton && (
                         <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
                             <button
@@ -346,16 +362,19 @@ const Chat: React.FC = () => {
                             </button>
                         </div>
                     )}
-                    <div className="flex px-6 pt-4 gap-2 flex-wrap">
-                        <PendingImages
-                            pendingImages={pendingImages}
-                            imageLoading={uploadImageMutation.isLoading}
-                            removePendingImage={removePendingImage}
-                        />
-                        <PendingFiles
-                            pendingFiles={pendingFiles}
-                            removePendingFile={removePendingFile}
-                        />
+                    <div className="pt-4 px-6">
+                        <div ref={pendingBarRef} className="flex  gap-2 flex-wrap">
+                            <PendingImages
+                                pendingImages={pendingImages}
+                                imageLoading={uploadImageMutation.isLoading}
+                                removePendingImage={removePendingImage}
+                                imageLoadingMany={imageLoading}
+                            />
+                            <PendingFiles
+                                pendingFiles={pendingFiles}
+                                removePendingFile={removePendingFile}
+                            />
+                        </div>
                     </div>
                     <ChatInputBar
                         messageValue={messageValue}
@@ -369,6 +388,10 @@ const Chat: React.FC = () => {
                         isSpending={isSending}
                         uploadImageMutation={uploadImageMutation}
                         addPendingImages={addPendingImages}
+                        isNative={isNative}
+                        isDesktop={isDesktop}
+                        imageLoading={uploadImageMutation.isLoading}
+                        imageLoadingMany={imageLoading}
                     />
                 </div>
             )}

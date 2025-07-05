@@ -1,5 +1,6 @@
 import { ChatMessage } from "@/pages/Chat/hooks/useChatMessages";
 import { UserChatByTopicResponse } from "@/services/chat/chat-types";
+import { isError } from "lodash";
 import { create } from "zustand";
 
 interface ChatStoreState {
@@ -14,9 +15,13 @@ interface ChatStoreState {
     pendingMessages: {
         attachments: any;
         chatCode: any;
-        id: any; text: string; createdAt: string; timeStamp?: number
+        id: any;
+        text: string;
+        createdAt: string;
+        timeStamp?: number;
+        isError?: boolean;
     }[];
-    setPendingMessages: (fn: (prev: { attachments: any; chatCode: any; id: any; text: string; createdAt: string; timeStamp?: number }[]) => { attachments: any; chatCode: any; id: any; text: string; createdAt: string; timeStamp?: number }[]) => void;
+    setPendingMessages: (fn: (prev: { attachments: any; chatCode: any; id: any; text: string; createdAt: string; timeStamp?: number; isError?: boolean }[]) => { attachments: any; chatCode: any; id: any; text: string; createdAt: string; timeStamp?: number; isError?: boolean }[]) => void;
     clearPendingMessages: () => void;
     stopMessages: boolean
     setStopMessages: (val: boolean) => void;
@@ -40,7 +45,8 @@ export const useChatStore = create<ChatStoreState>((set) => ({
                 id: msg.id,
                 text: msg.text,
                 createdAt: msg.createdAt,
-                timeStamp: msg.timeStamp
+                timeStamp: msg.timeStamp,
+                isError: msg?.isError
             }))
         })),
     clearPendingMessages: () => set({ pendingMessages: [] }),

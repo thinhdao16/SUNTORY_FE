@@ -11,6 +11,9 @@ import ChatIcon from "@/icons/logo/footer/chat.svg?react";
 import ChatActiveIcon from "@/icons/logo/footer/chat_active.svg?react";
 import ProfileIcon from "@/icons/logo/footer/profile.svg?react";
 import ProfileActiveIcon from "@/icons/logo/footer/profile_active.svg?react";
+import TranslationIcon from "@/icons/logo/footer/translation.svg?react";
+import TranslationActiveIcon from "@/icons/logo/footer/translation_active.svg?react";
+import { useKeyboardResize } from "@/pages/Chat/hooks/useKeyboardResize";
 
 interface TabItem {
     label: string;
@@ -27,6 +30,7 @@ const BottomTabBar: React.FC = () => {
     const location = useLocation();
     const history = useHistory();
     const [keyboardOpen, setKeyboardOpen] = useState(false);
+    const { keyboardResizeScreen } = useKeyboardResize();
 
     const tabs: TabItem[] = [
         {
@@ -124,7 +128,7 @@ const BottomTabBar: React.FC = () => {
 
     return (
         <AnimatePresence>
-            {!keyboardOpen && (
+            {!keyboardOpen && !keyboardResizeScreen && (
                 <motion.div
                     key="bottom-tab-bar"
                     initial={{ y: 80, opacity: 0 }}

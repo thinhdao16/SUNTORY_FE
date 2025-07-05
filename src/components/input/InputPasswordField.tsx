@@ -42,7 +42,7 @@ const InputPasswordField = forwardRef<HTMLInputElement, InputPasswordFieldProps>
                         id={id}
                         ref={ref}
                         placeholder={placeholder}
-                        required={required}
+                        // required={required}
                         className={`mt-1 block w-full px-3 py-3 ${showIcon ? "pl-10" : ""} border ${error ? "border-red-500" : "border-gray-300 darkk:border-gray-600"} rounded-xl focus:outline-none focus:ring-blue-500 focus:border-blue-500 darkk:bg-gray-700 darkk:text-gray-300 `}
                         style={
                             !showPassword

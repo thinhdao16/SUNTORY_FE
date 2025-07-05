@@ -39,7 +39,7 @@ const InputTextField = React.forwardRef<HTMLInputElement, InputFieldTextProps>(
                     type={type}
                     id={id}
                     placeholder={placeholder}
-                    required={required}
+                    // required={required}
                     className={`mt-1 block w-full px-4 py-3 border ${error
                         ? "border-red-500"
                         : "border-netural-200"

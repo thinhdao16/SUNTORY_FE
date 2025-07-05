@@ -184,20 +184,20 @@ function HealthInfo() {
 
                 <OtherInputField
                     label={t("Other (if any)")}
-                    placeholder={t("Nhập tên bệnh lý khác")}
+                    placeholder={t("Enter other health condition name")}
                     value={otherCondition}
                     onChange={e => setValue("otherHealthCondition", e.target.value)}
                 />
                 <ClickableCheckbox
                     checked={hasSurgery}
                     onChange={val => setValue("hasSurgery", val)}
-                    label={t("Có tiền sử phẫu thuật")}
+                    label={t("History of surgery")}
                 />
 
                 {hasSurgery && (
                     <OtherInputField
-                        label={t("Chi tiết phẫu thuật (nếu có)")}
-                        placeholder={t("Nhập tên bệnh lý khác")}
+                        label={t("Surgery details (if any)")}
+                        placeholder={t("Enter other health condition name")}
                         value={surgeryDetail}
                         onChange={e => setValue("surgeryDetail", e.target.value)}
                     />
@@ -205,12 +205,12 @@ function HealthInfo() {
                 <ClickableCheckbox
                     checked={isPregnantOrBreastfeeding}
                     onChange={val => setValue("isPregnantOrBreastfeeding", val)}
-                    label={t("Đang mang thai/ cho con bú")}
+                    label={t("Pregnant or breastfeeding")}
                 />
                 {isPregnantOrBreastfeeding && (
                     <OtherInputField
-                        label={t("Chi tiết mang thai (nếu có)")}
-                        placeholder={t("Nhập triệu chứng khác")}
+                        label={t("Pregnancy details (if any)")}
+                        placeholder={t("Enter other symptoms")}
                         value={watch("pregnantDetail") || ""}
                         onChange={e => setValue("pregnantDetail", e.target.value)}
                     />

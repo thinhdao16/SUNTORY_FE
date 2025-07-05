@@ -34,7 +34,7 @@ export const updatePasswordOtp = async (payload: UpdatePasswordOtpPayload) => {
     return res.data;
 };
 export const resendOtpResetPassword = async (email: string) => {
-    const res = await httpClient.post("/api/v1/auth/forget-password", { email, type: 10, isForce: true });
+    const res = await httpClient.post("/api/v1/auth/forget-password", { email, type: 20, isForce: true });
     return res.data;
 };
 

@@ -66,7 +66,7 @@ const ChangePassword: React.FC = () => {
                     showIcon={false}
                     placeholder={t("Enter your current password")}
                     error={errors.currentPassword?.message}
-                    // required
+                    required
                     {...register("currentPassword", {
                         required: t("Password is required"),
                         minLength: { value: 8, message: t("At least 8 characters") },
@@ -78,7 +78,7 @@ const ChangePassword: React.FC = () => {
                     showIcon={false}
                     placeholder={t("Enter new password")}
                     error={errors.password?.message}
-                    // required
+                    required
                     {...register("password", {
                         required: t("Password is required"),
                         minLength: { value: 8, message: t("At least 8 characters") },
@@ -90,7 +90,7 @@ const ChangePassword: React.FC = () => {
                     showIcon={false}
                     placeholder={t("Confirm new password")}
                     error={errors.confirmPassword?.message}
-                    // required
+                    required
                     {...register("confirmPassword", {
                         required: t("Confirm password is required"),
                         validate: (value) =>

@@ -1,14 +1,19 @@
 import httpClient from "@/config/http-client";
 import i18n from "@/config/i18n";
 import { useToastStore } from "@/store/zustand/toast-store";
+import { useUploadStore } from "@/store/zustand/upload-store";
 
-export async function uploadChatFile(file: File | Blob) {
+export async function uploadChatFile(file: File | Blob, signal?: AbortSignal) {
+    const setImageLoading = useUploadStore.getState().setImageLoading;
+    setImageLoading(true);
+
     const formData = new FormData();
     formData.append("Files", file);
 
     try {
         const res = await httpClient.post("/api/v1/chat/upload-file", formData, {
             headers: { "Content-Type": "multipart/form-data" },
+            signal,
         });
         return res.data.data as Array<{ name: string; linkImage: string }>;
     } catch (err: any) {
@@ -19,5 +24,7 @@ export async function uploadChatFile(file: File | Blob) {
             "error"
         );
         throw err;
+    } finally {
+        setImageLoading(false);
     }
 }

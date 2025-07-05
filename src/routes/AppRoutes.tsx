@@ -15,6 +15,7 @@ const routes = {
   Chat: lazy(() => import("@/pages/Chat/Chat")),
   ChangePassword: lazy(() => import("@/pages/Auth/ChangePassword/ChangePassword")),
   Camera: lazy(() => import("@/pages/Camera/Camera")),
+  CameraWeb: lazy(() => import("@/pages/Camera/CameraWeb")),
   ForgotPassword: lazy(() => import("@/pages/Auth/ForgotPassword/ForgotPassword")),
   HealthInformation: lazy(() => import("@/pages/HealthInformation/HealthInformation")),
   HealthInformationDone: lazy(() => import("@/pages/HealthInformation/HealthInformationDone")),
@@ -62,6 +63,8 @@ const AppRoutes: React.FC = () => {
           <Route path="/home" component={routes.Home} exact />
           <Route path="/new-password" component={routes.NewPassword} exact />
           <Route path="/take-photo" component={routes.TakePhoto} exact />
+          <Route path="/camera-web" component={routes.CameraWeb} exact />
+
           <PrivateRoute path="/camera" component={routes.Camera} exact />
           <PrivateRoute path="/health-information" component={routes.HealthInformation} exact />
           <PrivateRoute path="/health-information/welcome" component={routes.HealthInformationWelcome} exact />
