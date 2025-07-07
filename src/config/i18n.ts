@@ -8,7 +8,10 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    fallbackLng: "en",
+    fallbackLng: {
+      'vi-VN': ['vi'],
+      'default': ['en'],
+    },
     load: "languageOnly",
     supportedLngs: ["en", "vi", "zh"],
     ns: ["home", "auth", "api"],

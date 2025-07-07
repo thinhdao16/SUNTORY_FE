@@ -34,7 +34,7 @@ const BottomTabBar: React.FC = () => {
 
     const tabs: TabItem[] = [
         {
-            label: "Home",
+            label: t("Home"),
             icon: HomeIcon,
             iconActive: HomeActiveIcon,
             path: "/home",
@@ -71,6 +71,7 @@ const BottomTabBar: React.FC = () => {
     const clearAll = () => {
         useChatStore.getState().clearPendingMessages();
         useChatStore.getState().clearMessages();
+        useChatStore.getState().clearSession();
         useChatStore.getState().setStopMessages(true);
         useSignalRChatStore.getState().setMessages([]);
     };

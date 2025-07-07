@@ -10,7 +10,7 @@ import BotIcon from "@/icons/logo/AI.svg?react";
 import CopyIcon from "@/icons/logo/chat/coppy.svg?react";
 import "../Chat.module.css"
 
-const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean }> = ({ msg, isUser, isError }) => {
+const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean; isSend?: boolean }> = ({ msg, isUser, isError, isSend }) => {
     return (
         <motion.div
             key={typeof msg.id === "string" || typeof msg.id === "number" ? msg.id : String(msg.createdAt)}
@@ -59,7 +59,7 @@ const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean }
                     )}
                     {(msg.text && String(msg.text).trim() !== "") && (
                         <div
-                            className={`relative  ${isError
+                            className={`relative  ${isError && !isSend
                                 ? "bg-red-50 text-red-700 border border-red-400 rounded-[16px_16px_16px_16px]"
                                 : isUser
                                     ? "bg-main text-white rounded-br-md rounded-[16px_16px_0px_16px] ml-auto"

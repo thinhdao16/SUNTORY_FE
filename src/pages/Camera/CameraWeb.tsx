@@ -1,6 +1,5 @@
 import { uploadChatFile } from "@/services/file/file-service";
 import { useImageStore } from "@/store/zustand/image-store";
-import { Camera } from "@capacitor/camera";
 import { Capacitor } from "@capacitor/core";
 import { useIonToast } from "@ionic/react";
 import { AndroidSettings, IOSSettings, NativeSettings } from "capacitor-native-settings";
@@ -9,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { useHistory } from "react-router";
 import CameraIcon from "@/icons/logo/chat/cam.svg?react";
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
 
 const CameraWeb: React.FC = () => {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -34,7 +33,7 @@ const CameraWeb: React.FC = () => {
         try {
             if (file.size > MAX_IMAGE_SIZE) {
                 present({
-                    message: t("Photo must be less than 5MB!"),
+                    message: t("Photo must be less than 20MB!"),
                     duration: 3000,
                     color: "danger",
                 });

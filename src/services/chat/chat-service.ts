@@ -18,11 +18,11 @@ export const getUserChatsByTopic = async (
     );
     return res.data;
 };
+
 export async function createChatApi(payload: CreateChatPayload) {
     const res = await httpClient.post("/api/v1/chat/create", payload);
     return res.data;
 }
-
 export async function getChatMessages(sessionId: string): Promise<ChatMessage[]> {
     const res = await httpClient.get("/api/v1/chat/messages", {
         params: {

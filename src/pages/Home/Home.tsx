@@ -18,7 +18,6 @@ import PageContainer from '@/components/layout/PageContainer';
 function Home() {
   const history = useHistory();
   const { data: userInfo } = useAuthInfo();
-  useAppInit();
 
   const features = [
     {
@@ -83,6 +82,7 @@ function Home() {
     user?.height && user?.weight
       ? (user.weight / ((user.height / 100) ** 2)).toFixed(1)
       : "-";
+  useAppInit();
 
   return (
     // <IonPage>

@@ -6,9 +6,9 @@ const useAppInit = () => {
     useSafeArea();
 
 
-    StatusBar.setOverlaysWebView({ overlay: true }); // hoặc false nếu muốn đẩy nội dung xuống
-    StatusBar.setBackgroundColor({ color: '#000000' });
-    StatusBar.setStyle({ style: Style.Light }); // hoặc .Dark
+    // StatusBar.setOverlaysWebView({ overlay: true }); // hoặc false nếu muốn đẩy nội dung xuống
+    // StatusBar.setBackgroundColor({ color: '#000000' });
+    // StatusBar.setStyle({ style: Style.Light }); // hoặc .Dark
 
     useEffect(() => {
         const onStatusTap = () => {

@@ -5,8 +5,6 @@ const config: CapacitorConfig = {
   appName: 'WayJet',
   webDir: 'dist',
   server: {
-    // url: "http://192.168.1.32:5173",
-    url: "https://130b-113-23-110-26.ngrok-free.app",
     cleartext: true,
   },
   plugins: {

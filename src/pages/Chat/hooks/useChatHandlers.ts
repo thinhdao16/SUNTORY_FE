@@ -82,7 +82,7 @@ export function useChatHandlers({
             const localUrl = localUrls[i];
             if (file.size > MAX_IMAGE_SIZE) {
                 useToastStore.getState().showToast(
-                    t("Photo must be less than 5MB!"),
+                    t("Photo must be less than 20MB!"),
                     3000,
                     "warning"
                 );
@@ -138,7 +138,14 @@ export function useChatHandlers({
     const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent, force?: boolean) => {
         e.preventDefault();
         useChatStore.getState().setStopMessages(false);
+        const setSession = useChatStore.getState().setSession;
+        setSession(sessionId || "");
+
+        const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
+
         setHasFirstSignalRMessage(true);
+
+        const sessionIdAtSend = sessionCreatedAt
         if (messageValue.trim() || pendingImages.length > 0 || pendingFiles.length > 0) {
             setMessageValue("");
             addPendingImages([]);
@@ -149,6 +156,8 @@ export function useChatHandlers({
             let timeoutId: ReturnType<typeof setTimeout> | null = null;
             try {
                 timeoutId = setTimeout(() => {
+                    const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
+                    if (sessionIdAtSend !== sessionCreatedAt) return;
                     useChatStore.getState().setIsSending(false);
                     setPendingMessages((prev: any) => [
                         ...prev,
@@ -160,17 +169,17 @@ export function useChatHandlers({
                         }
                     ]);
                 }, 5000 * 60);
-
                 const filesArr = [
                     ...pendingFiles.map(f => ({ name: f.name })),
                     ...pendingImages.map((img, idx) => ({ name: typeof img === "string" ? img.split("/").pop() || `image_${idx}` : `image_${idx}` }))
                 ];
+                const shortLang = i18n.language?.split("-")[0] || "en";
                 const payload = {
                     chatCode: sessionId ?? null,
                     messageText: messageValue.trim(),
                     topic: Number(topicType),
                     files: filesArr.length > 0 ? filesArr : undefined,
-                    language: i18n.language || "en",
+                    language: shortLang,
                 };
 
                 const now = dayjs.utc();
@@ -213,6 +222,8 @@ export function useChatHandlers({
                 }
             } catch (err) {
                 if (timeoutId) clearTimeout(timeoutId);
+                const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
+                if (sessionIdAtSend !== sessionCreatedAt) return;
                 useChatStore.getState().setIsSending(false);
                 setPendingMessages((prev: any) => [
                     ...prev,
@@ -220,7 +231,8 @@ export function useChatHandlers({
                         text: t("Message sending failed, please try again!"),
                         createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
                         timeStamp: generatePreciseTimestampFromDate(new Date()),
-                        isError: false,
+                        isError: true,
+                        isSend: true
                     }
                 ]);
             }

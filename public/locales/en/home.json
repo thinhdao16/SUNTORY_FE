@@ -10,6 +10,7 @@
   "Which dish have you tried?": "Which dish have you tried?",
   "Nothing product": "No product",
   "Done": "Done",
+  "Home": "Home",
   "Profile": "Profile",
   "No content to copy!": "No content to copy!",
   "Copied to clipboard!": "Copied to clipboard!",
@@ -34,7 +35,7 @@
   "Product Information": "Product Information",
   "Drug Instructions": "Drug Instructions",
   "Food Discovery": "Food Discovery",
-  "AI Assistant": "AI Assistant",
+  "JetAI": "JetAI",
   "Basic": "Basic",
   "Health": "Health",
   "Allergy": "Allergy",
@@ -81,6 +82,7 @@
   "Enter the OTP sent to": "Enter the OTP sent to",
   "Resend": "Resend",
   "Confirm": "Confirm",
+  "OTP has expired. Please request a new OTP.": "OTP has expired. Please request a new OTP.",
   "Please enter the full OTP code": "Please enter the full OTP code",
   "OTP verification successful!": "OTP verification successful!",
   "OTP verification failed. No token received.": "OTP verification failed. No token received.",
@@ -97,7 +99,7 @@
   "Already have an account?": "Already have an account?",
   "Device does not support flash!": "Device does not support flash!",
   "Failed to toggle flash!": "Failed to toggle flash!",
-  "Photo must be less than 5MB!": "Photo must be less than 5MB!",
+  "Photo must be less than 20MB!": "Photo must be less than 20MB!",
   "Image upload failed!": "Image upload failed!",
   "Please open your browser settings and allow camera permission for this site.": "Please open your browser settings and allow camera permission for this site.",
   "Cannot open device settings on this platform.": "Cannot open device settings on this platform.",
@@ -246,6 +248,5 @@
   "Today": "Today",
   "Yesterday": "Yesterday",
   "{{n}} days ago": "{{n}} days ago",
-  "Last Week": "Last Week",
-  "Home": "Home"
+  "Last Week": "Last Week"
 }

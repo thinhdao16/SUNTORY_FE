@@ -10,6 +10,7 @@
   "Which dish have you tried?": "Bạn đã thử món ăn nào?",
   "Nothing product": "Không có sản phẩm",
   "Done": "Hoàn tất",
+  "Home": "Trang chủ",
   "Profile": "Hồ sơ",
   "No content to copy!": "Không có nội dung để sao chép!",
   "Copied to clipboard!": "Đã sao chép vào bộ nhớ tạm!",
@@ -34,7 +35,7 @@
   "Product Information": "Thông tin sản phẩm",
   "Drug Instructions": "Hướng dẫn sử dụng thuốc",
   "Food Discovery": "Khám phá món ăn",
-  "AI Assistant": "Trợ lý AI",
+  "JetAI": "JetAI",
   "Basic": "Cơ bản",
   "Health": "Sức khỏe",
   "Allergy": "Dị ứng",
@@ -81,6 +82,7 @@
   "Enter the OTP sent to": "Nhập mã OTP đã gửi đến",
   "Resend": "Gửi lại",
   "Confirm": "Xác nhận",
+  "OTP has expired. Please request a new OTP.": "Mã OTP đã hết hạn. Vui lòng yêu cầu mã OTP mới.",
   "Please enter the full OTP code": "Vui lòng nhập đầy đủ mã OTP",
   "OTP verification successful!": "Xác thực OTP thành công!",
   "OTP verification failed. No token received.": "Xác thực OTP thất bại. Không nhận được token.",
@@ -97,7 +99,7 @@
   "Already have an account?": "Đã có tài khoản?",
   "Device does not support flash!": "Thiết bị không hỗ trợ flash!",
   "Failed to toggle flash!": "Không thể bật đèn flash!",
-  "Photo must be less than 5MB!": "Ảnh phải có dung lượng nhỏ hơn 5MB!",
+  "Photo must be less than 20MB!": "Ảnh phải có dung lượng dưới 20MB!",
   "Image upload failed!": "Tải hình ảnh lên không thành công!",
   "Please open your browser settings and allow camera permission for this site.": "Vui lòng mở cài đặt trình duyệt và cấp quyền truy cập camera cho trang web này.",
   "Cannot open device settings on this platform.": "Không thể mở cài đặt thiết bị trên nền tảng này.",
@@ -246,6 +248,5 @@
   "Today": "Hôm nay",
   "Yesterday": "Hôm qua",
   "{{n}} days ago": "{{n}} ngày trước",
-  "Last Week": "Tuần trước",
-  "Home": "Trang chủ"
+  "Last Week": "Tuần trước"
 }

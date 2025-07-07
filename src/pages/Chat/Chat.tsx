@@ -70,6 +70,7 @@ const Chat: React.FC = () => {
     const stopMessages = useChatStore((s) => s.stopMessages);
     const setStopMessages = useChatStore((s) => s.setStopMessages);
     const imageLoading = useUploadStore.getState().imageLoading;
+    const clearSession = useChatStore((s) => s.clearSession);
     // ===== Chat & Message Hooks =====
     const {
         messages,
@@ -161,6 +162,7 @@ const Chat: React.FC = () => {
         prevTypeRef.current = type;
         return () => {
             useChatStore.getState().setIsSending(false);
+            clearSession();
         };
     }, [sessionId, type]);
 

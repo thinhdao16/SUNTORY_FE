@@ -10,6 +10,7 @@ import BottomTabBar from "@/components/common/BottomTabBar";
 import RouteLoading from "./RouteLoading";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import ChatSidebarLayout from "@/components/layout/ChatSidebarLayout";
+import useAppInit from "@/hooks/useAppInit";
 
 const routes = {
   Chat: lazy(() => import("@/pages/Chat/Chat")),
@@ -47,11 +48,11 @@ const AppRoutes: React.FC = () => {
     !authRoutes.includes(location.pathname) &&
     !ignoreRoutes.includes(location.pathname) &&
     !authRoutesDontShowTabBar.includes(location.pathname);
+  useAppInit();
 
   if (isAuthenticated && authRoutes.includes(location.pathname)) {
     return <Redirect to="/home" />;
   }
-
   return (
     <>
       <Suspense fallback={<RouteLoading />}>

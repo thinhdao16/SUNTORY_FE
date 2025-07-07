@@ -60,7 +60,7 @@ const CameraPage: React.FC = () => {
         }
     };
 
-    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+    const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
 
     const handleUploadImageFile = async (file: File) => {
         const localUrl = URL.createObjectURL(file);
@@ -68,7 +68,7 @@ const CameraPage: React.FC = () => {
         try {
             if (file.size > MAX_IMAGE_SIZE) {
                 present({
-                    message: t("Photo must be less than 5MB!"),
+                    message: t("Photo must be less than 20MB!"),
                     duration: 3000,
                     color: "danger",
                 });
@@ -225,7 +225,9 @@ const CameraPage: React.FC = () => {
         let stream: MediaStream | null = null;
 
         const init = async () => {
-            checkPermission()
+            const ok = await checkPermission(); // ✅ await và gán kết quả
+            if (!ok) return; // ✅ thoát nếu chưa được cấp quyền
+
             try {
                 const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
                 stream = mediaStream;
@@ -237,10 +239,12 @@ const CameraPage: React.FC = () => {
             }
         };
         init();
+
         return () => {
             if (stream) stream.getTracks().forEach(track => track.stop());
         };
     }, [facingMode, permissionDenied]);
+
 
 
 

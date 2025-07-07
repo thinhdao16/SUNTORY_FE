@@ -28,7 +28,7 @@ const Translate: React.FC = () => {
   const modelDropdown = useDropdown();
 
   const isOnline = useNetworkStatus();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState({ emotion: false, language: false });
   const [translateY, setTranslateY] = useState(0);
   const [inputValue, setInputValue] = useState("");
   const [inputValueTranslate, setInputValueTranslate] = useState({
@@ -62,8 +62,8 @@ const Translate: React.FC = () => {
 
   const velocityThreshold = 0.4;
 
-  const openModal = (e: string) => {
-    setIsOpen(true);
+  const openModal = (e: string, type: string) => {
+    setIsOpen((prev) => ({ ...prev, [type]: true }));
     setTranslateY(0);
     setTargetModal(e);
   };
@@ -71,7 +71,7 @@ const Translate: React.FC = () => {
   const closeModal = () => {
     setTranslateY(screenHeight.current);
     setTimeout(() => {
-      setIsOpen(false);
+      setIsOpen({ emotion: false, language: false });
       setTranslateY(0);
     }, 300);
   };
@@ -177,7 +177,7 @@ const Translate: React.FC = () => {
   return (
     <>
       <MotionStyles
-        isOpen={isOpen}
+        isOpen={isOpen.emotion || isOpen.language}
         translateY={translateY}
         screenHeight={screenHeight.current}
       >
