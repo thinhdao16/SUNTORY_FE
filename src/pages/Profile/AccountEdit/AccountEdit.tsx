@@ -70,7 +70,13 @@ const AccountEdit: React.FC = () => {
                     <Controller
                         name="firstname"
                         control={control}
-                        rules={{ required: t("First name is required") }}
+                        rules={{
+                            required: t("First name is required"),
+                            pattern: {
+                                value: /^[a-zA-ZÀ-ỹ\s'-]+$/,
+                                message: t("First name cannot contain special characters"),
+                            },
+                        }}
                         render={({ field }) => (
                             <InputTextField
                                 label={t("First Name")}
@@ -83,7 +89,13 @@ const AccountEdit: React.FC = () => {
                     <Controller
                         name="lastname"
                         control={control}
-                        rules={{ required: t("Last name is required") }}
+                        rules={{
+                            required: t("Last name is required"),
+                            pattern: {
+                                value: /^[a-zA-ZÀ-ỹ\s'-]+$/,
+                                message: t("Last name cannot contain special characters"),
+                            },
+                        }}
                         render={({ field }) => (
                             <InputTextField
                                 label={t("Last Name")}

@@ -6,66 +6,93 @@ import { useChatStore } from "@/store/zustand/chat-store";
 
 export function useSignalRChat(deviceId: string) {
     const setIsConnected = useSignalRChatStore((s) => s.setIsConnected);
-    const setMessages = useSignalRChatStore((s) => s.setMessages);
     const addMessage = useSignalRChatStore((s) => s.addMessage);
     const setSendMessage = useSignalRChatStore((s) => s.setSendMessage);
-
     const connectionRef = useRef<signalR.HubConnection | null>(null);
+    const setIsSending = useChatStore.getState().setIsSending;
 
     useEffect(() => {
-        const linkBE = ENV.BE;
+        if (connectionRef.current) {
+            connectionRef.current.stop();
+            connectionRef.current = null;
+        }
+
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl(linkBE + "/chatHub", {
+            .withUrl(ENV.BE + "/chatHub", {
                 accessTokenFactory: () => localStorage.getItem("token") || "",
             })
             .withAutomaticReconnect()
+            .configureLogging(signalR.LogLevel.Warning)
             .build();
 
         connectionRef.current = connection;
 
-        let isCancelled = false;
+        connection
+            .start()
+            .then(() => {
+                setIsConnected("connected");
+                return connection.invoke("JoinChatRoom", deviceId);
+            })
+            .catch((err) => {
+                console.error("❌ Connect error", err);
+                setIsConnected("disconnected");
+            });
 
-        const startConnection = async () => {
-            try {
-                await connection.start();
-                if (isCancelled) {
-                    await connection.stop();
-                    return;
-                }
-
-                setIsConnected(true);
-                await connection.invoke("JoinChatRoom", deviceId);
-
-                connection.on("ReceiveMessage", (message: object) => {
-                    setMessages([...useSignalRChatStore.getState().messages, message]);
-                    useChatStore.getState().setIsSending(false);
-                });
-
-                connection.onclose(() => setIsConnected(false));
-                connection.onreconnecting(() => setIsConnected(false));
-                connection.onreconnected(() => {
-                    setIsConnected(true);
-                    connection.invoke("JoinChatRoom", deviceId);
-                });
-            } catch (error) {
-                setIsConnected(false);
-                console.error("❌ SignalR Connection Error:", error);
-            }
+        const handleReceive = (msg: any) => {
+            addMessage(msg);
+            useChatStore.getState().setIsSending(false);
         };
 
-        startConnection();
+        connection.on("ReceiveMessage", handleReceive);
 
+        connection.onclose((err) => {
+            setIsSending(false);
+            console.log("❌ Closed", err);
+            setIsConnected("disconnected");
+
+            if (!err) return;
+
+            setTimeout(() => {
+                if (connectionRef.current?.state === signalR.HubConnectionState.Disconnected) {
+                    connectionRef.current?.start().catch(console.error);
+                }
+            }, 5000);
+        });
+
+
+        connection.onreconnecting(() => {
+            setIsConnected("connecting");
+            setIsSending(false);
+
+        });
+
+        connection.onreconnected(() => {
+            setIsConnected("connected");
+            setIsSending(false);
+
+            connection.invoke("JoinChatRoom", deviceId).catch(console.error);
+        });
         setSendMessage(async (method: string, ...args: any[]) => {
-            if (connectionRef.current && connectionRef.current.state === signalR.HubConnectionState.Connected) {
-                await connectionRef.current.invoke(method, ...args);
+            try {
+                setIsSending(true);
+
+                if (connectionRef.current?.state === signalR.HubConnectionState.Connected) {
+                    await connectionRef.current.invoke(method, ...args);
+                } else {
+                    throw new Error("SignalR is not connected");
+                }
+            } catch (error) {
+                console.error("⚠️ Failed to send message", error);
+            } finally {
+                setIsSending(false);
             }
         });
 
+
         return () => {
-            isCancelled = true;
+            connection.off("ReceiveMessage", handleReceive);
             connection.stop();
+            connectionRef.current = null;
         };
-    }, [deviceId, setIsConnected, setSendMessage, addMessage]);
-
-
+    }, [deviceId, setIsConnected, addMessage, setSendMessage]);
 }

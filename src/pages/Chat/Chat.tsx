@@ -1,40 +1,50 @@
+// ================== Imports ==================
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useHistory, useParams } from "react-router-dom";
-import "./Chat.module.css";
-import { IoArrowDown } from "react-icons/io5";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import { Capacitor } from "@capacitor/core";
+import { useQueryClient } from "react-query";
+
+import { TopicType, TopicTypeLabel } from "@/constants/topicType";
+import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
+
+import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { useChatMessages } from "./hooks/useChatMessages";
 import { useKeyboardResize } from "./hooks/useKeyboardResize";
 import { useScrollButton } from "./hooks/useScrollButton";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
-import { useImageStore } from "@/store/zustand/image-store";
-import useDeviceInfo from "@/hooks/useDeviceInfo";
-import { useSignalRChat } from "@/hooks/useSignalRChat";
-import { TopicType, TopicTypeLabel } from "@/constants/topicType";
-import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
+import { useScrollToBottom } from "@/hooks/useScrollToBottom";
+import { useUpload } from "@/hooks/common/useUpload";
+import { useUploadChatFile } from "@/hooks/common/useUploadChatFile";
+import { useAppState } from "@/hooks/useAppState";
+import useNetworkStatus from "@/hooks/useNetworkStatus";
 import { useChatHandlers } from "./hooks/useChatHandlers";
+
+import { useChatStore } from "@/store/zustand/chat-store";
+import { useImageStore } from "@/store/zustand/image-store";
+import { useUploadStore } from "@/store/zustand/upload-store";
+import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
+import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
+
 import ChatInputBar from "./components/ChatInputBar";
 import PendingFiles from "./components/PendingFiles";
 import PendingImages from "./components/PendingImages";
-import { useUpload } from "@/hooks/common/useUpload";
-import { useChatStore } from "@/store/zustand/chat-store";
-import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { ChatMessageList } from "./components/ChatMessageList";
 import ChatWelcomePanel from "./components/ChatWelcomePanel";
-import { useScrollToBottom } from "@/hooks/useScrollToBottom";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 import CloseIcon from "@/icons/logo/chat/x.svg?react";
-import { Capacitor } from "@capacitor/core";
-import { useUploadChatFile } from "@/hooks/common/useUploadChatFile";
-import { useUploadStore } from "@/store/zustand/upload-store";
+
+import "./Chat.module.css";
+import { IoArrowDown } from "react-icons/io5";
+
 dayjs.extend(utc);
 
 const Chat: React.FC = () => {
     // ===== Params, Router =====
     const { type, sessionId } = useParams<{ sessionId?: string; type?: string }>();
     const history = useHistory();
+    const queryClient = useQueryClient();
     // ===== State =====
 
     const [hasFirstSignalRMessage, setHasFirstSignalRMessage] = useState(false);
@@ -50,6 +60,7 @@ const Chat: React.FC = () => {
     // ===== Device Info =====
     const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
     const isNative = Capacitor.isNativePlatform();
+    const isOnline = useNetworkStatus();
 
     // ===== Stores =====
     const {
@@ -79,13 +90,18 @@ const Chat: React.FC = () => {
         scrollToBottom,
         messageValue,
         setMessageValue,
-    } = useChatMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, hasFirstSignalRMessage);
+    } = useChatMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, hasFirstSignalRMessage, isOnline);
+
+    useAppState(() => {
+        if (sessionId) {
+            queryClient.invalidateQueries(["messages", sessionId]);
+        }
+    });
 
     // ===== SignalR =====
 
 
     const allSignalRMessages = useSignalRChatStore((s: any) => s.messages);
-
     const signalRMessages = useMemo(
         () =>
             allSignalRMessages.filter(
@@ -98,7 +114,6 @@ const Chat: React.FC = () => {
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
     const { showScrollButton, handleScroll } = useScrollButton(messagesContainerRef);
     useAutoResizeTextarea(messageRef, messageValue);
-    useSignalRChat(deviceInfo.deviceId || "");
 
     const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef);
@@ -108,7 +123,6 @@ const Chat: React.FC = () => {
     const topicType: TopicType | undefined = isValidTopicType ? (topicTypeNum as TopicType) : undefined;
     const title = isValidTopicType && topicType !== undefined ? TopicTypeLabel[topicType] : undefined;
     const isDesktop = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
-
     const isWelcome =
         topicType === TopicType.Chat &&
         !sessionId && pendingMessages.length === 0;

@@ -167,7 +167,7 @@ function Home() {
         </div>
       </div>
       <div className='-mt-24 px-6 pb-10'>
-        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 gap-4    relative z-9">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 gap-4    relative z-9">
           {features.map((f, idx) => (
             <div
               key={f.title}

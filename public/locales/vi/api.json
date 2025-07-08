@@ -3,5 +3,11 @@
     "Please wait before resending OTP.": "Vui lòng đợi trước khi gửi lại mã OTP.",
     "OTP has been resent.": "Mã OTP đã được gửi lại.",
     "OTP has been sent to your email.": "Mã OTP đã được gửi đến email của bạn.",
-    "Home": "Trang chủ"
+    "Home": "Trang chủ",
+    "Please check input fields": "Vui lòng kiểm tra các trường nhập liệu",
+    "Please check your email": "Vui lòng kiểm tra email của bạn",
+    "Please check your email for the OTP": "Vui lòng kiểm tra email của bạn để lấy mã OTP",
+    "Please check your email for the verification link": "Vui lòng kiểm tra email của bạn để lấy liên kết xác minh",
+    "Please check your email for the reset password link": "Vui lòng kiểm tra email của bạn để lấy liên kết đặt lại mật khẩu",
+    "Please check your email for the verification code": "Vui lòng kiểm tra email của bạn để lấy mã xác minh"
 }

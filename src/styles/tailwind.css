@@ -44,7 +44,7 @@ body {
   font-size: 14px !important;
   margin: 0 !important ;
   padding: 0 !important;
-  background-color: var(--color-chat-to) !important;
+  background-color: var(--color-success-500) !important;
 }
 html,
 body {

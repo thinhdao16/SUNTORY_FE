@@ -155,20 +155,20 @@ export function useChatHandlers({
 
             let timeoutId: ReturnType<typeof setTimeout> | null = null;
             try {
-                timeoutId = setTimeout(() => {
-                    const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
-                    if (sessionIdAtSend !== sessionCreatedAt) return;
-                    useChatStore.getState().setIsSending(false);
-                    setPendingMessages((prev: any) => [
-                        ...prev,
-                        {
-                            text: t("AI is unable to respond at this time. Please wait or try again later."),
-                            createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
-                            timeStamp: generatePreciseTimestampFromDate(new Date()),
-                            isError: true,
-                        }
-                    ]);
-                }, 5000 * 60);
+                // timeoutId = setTimeout(() => {
+                //     const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
+                //     if (sessionIdAtSend !== sessionCreatedAt) return;
+                //     useChatStore.getState().setIsSending(false);
+                //     setPendingMessages((prev: any) => [
+                //         ...prev,
+                //         {
+                //             text: t("AI is unable to respond at this time. Please wait or try again later."),
+                //             createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
+                //             timeStamp: generatePreciseTimestampFromDate(new Date()),
+                //             isError: true,
+                //         }
+                //     ]);
+                // }, 5000 * 60);
                 const filesArr = [
                     ...pendingFiles.map(f => ({ name: f.name })),
                     ...pendingImages.map((img, idx) => ({ name: typeof img === "string" ? img.split("/").pop() || `image_${idx}` : `image_${idx}` }))

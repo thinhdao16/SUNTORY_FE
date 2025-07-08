@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useState } from "react";
+import { RefObject, useEffect, useState, useRef } from "react";
 import { useQuery } from "react-query";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { getChatMessages } from "@/services/chat/chat-service";
@@ -16,20 +16,31 @@ export function useChatMessages(
     messagesEndRef: RefObject<HTMLDivElement | null>,
     messagesContainerRef: RefObject<HTMLDivElement | null>,
     sessionId?: string,
-    hasFirstSignalRMessage?: boolean
+    hasFirstSignalRMessage?: boolean,
+    isOnline: boolean = true
 ) {
     const { messages, setMessages, addMessage, clearMessages } = useChatStore();
     const [messageValue, setMessageValue] = useState("");
 
-    const { isLoading } = useQuery(
+    const { isLoading, refetch } = useQuery(
         ["chatMessages", sessionId],
         () => (sessionId ? getChatMessages(sessionId) : []),
         {
-            enabled: !!sessionId && !hasFirstSignalRMessage,
+            enabled: !!sessionId && !hasFirstSignalRMessage && isOnline,
             onSuccess: (data) => setMessages(data),
             onError: () => setMessages([]),
         }
     );
+
+    const prevOnline = useRef(isOnline);
+
+    useEffect(() => {
+        if (isOnline && !prevOnline.current && !!sessionId && !hasFirstSignalRMessage) {
+            refetch();
+        }
+        prevOnline.current = isOnline;
+    }, [isOnline, refetch, sessionId, hasFirstSignalRMessage]);
+
     useEffect(() => {
         if (!sessionId) clearMessages();
     }, [sessionId, clearMessages]);

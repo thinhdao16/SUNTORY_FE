@@ -41,8 +41,20 @@ httpClient.interceptors.response.use(
                 localStorage.setItem("refreshToken", newRefreshToken);
                 originalRequest.headers["Authorization"] = `Bearer ${token}`;
                 return httpClient(originalRequest);
-            } catch (refreshError) {
-                console.error("Refresh token failed:", refreshError);
+            } catch (refreshError: any) {
+                if (
+                    refreshError.response?.status === 401 ||
+                    refreshError.response?.status === 403 ||
+                    refreshError.response?.status === 400
+                ) {
+                    alert(t("sessionExpired"));
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("refreshToken");
+                    const path = window.location.pathname;
+                    if (path !== "/home" && path !== "/") {
+                        window.location.href = "/login";
+                    }
+                }
                 localStorage.removeItem("token");
                 localStorage.removeItem("refreshToken");
                 const path = window.location.pathname;

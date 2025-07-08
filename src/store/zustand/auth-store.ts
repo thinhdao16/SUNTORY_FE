@@ -1,7 +1,8 @@
 import { User } from "@/types/user";
 import { create } from "zustand";
-
-
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { Capacitor } from '@capacitor/core';
+import { googleLogout } from '@react-oauth/google';
 
 interface AuthState {
     user: User | null;
@@ -33,7 +34,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
     setProfile: (user: User) => set({ user }),
 
-    logout: () => {
+    logout: async () => {
+        if (Capacitor.getPlatform() === "web") {
+            try {
+                googleLogout();
+            } catch (e) {
+            }
+        }
+        if (Capacitor.getPlatform() !== "web") {
+            try {
+                await GoogleAuth.signOut();
+            } catch (e) {
+            }
+        }
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");

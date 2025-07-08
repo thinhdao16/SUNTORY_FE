@@ -11,6 +11,8 @@ import RouteLoading from "./RouteLoading";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import ChatSidebarLayout from "@/components/layout/ChatSidebarLayout";
 import useAppInit from "@/hooks/useAppInit";
+import { useSignalRChat } from "@/hooks/useSignalRChat";
+import useDeviceInfo from "@/hooks/useDeviceInfo";
 
 const routes = {
   Chat: lazy(() => import("@/pages/Chat/Chat")),
@@ -43,12 +45,14 @@ const ignoreRoutes = ["/forgot-password", "/otp", "/new-password", "/change-pass
 const AppRoutes: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
+  const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
 
   const showTabBar =
     !authRoutes.includes(location.pathname) &&
     !ignoreRoutes.includes(location.pathname) &&
     !authRoutesDontShowTabBar.includes(location.pathname);
   useAppInit();
+  useSignalRChat(deviceInfo.deviceId || "");
 
   if (isAuthenticated && authRoutes.includes(location.pathname)) {
     return <Redirect to="/home" />;

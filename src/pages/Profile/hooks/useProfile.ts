@@ -12,11 +12,8 @@ export const useUpdateAccountInfo = () => {
             queryClient.invalidateQueries("authInfo");
         },
         onError: (error: any) => {
-            showToast(
-                error?.response?.data?.message || t("Update profile failed!"),
-                3000,
-                "error"
-            );
+            const errorMessageKey = error?.response?.data?.message || "update_profile_failed";
+            showToast(t(errorMessageKey, { ns: "api" }), 3000, "error");
         },
     });
 };

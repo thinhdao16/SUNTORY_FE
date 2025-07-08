@@ -1,33 +1,35 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 
 const useNetworkStatus = () => {
   const [isOnline, setIsOnline] = useState(true);
 
-  const checkInternetConnection = async () => {
-    try {
-      await fetch("https://www.google.com/favicon.ico", {
-        method: "HEAD",
-        mode: "no-cors",
-      });
-      setIsOnline(true);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      setIsOnline(false);
-    }
-  };
-
   useEffect(() => {
-    checkInternetConnection();
+    let unsubscribe: (() => void) | undefined;
 
-    const handleOnline = () => checkInternetConnection();
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
+    // Native (Capacitor)
+    if (Capacitor.isNativePlatform()) {
+      import("@capacitor/network").then(({ Network }) => {
+        Network.getStatus().then((status) => setIsOnline(status.connected));
+        const handler = Network.addListener("networkStatusChange", (status) => {
+          setIsOnline(status.connected);
+        });
+        unsubscribe = () => handler.remove();
+      });
+    } else {
+      // Web
+      const updateOnline = () => setIsOnline(navigator.onLine);
+      window.addEventListener("online", updateOnline);
+      window.addEventListener("offline", updateOnline);
+      setIsOnline(navigator.onLine);
+      unsubscribe = () => {
+        window.removeEventListener("online", updateOnline);
+        window.removeEventListener("offline", updateOnline);
+      };
+    }
 
     return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+      if (unsubscribe) unsubscribe();
     };
   }, []);
 
