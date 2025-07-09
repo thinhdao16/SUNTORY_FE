@@ -224,7 +224,6 @@ export const useGoogleLogin = () => {
                 token: user.authentication?.idToken,
             });
             const auth = data?.data;
-            console.log(auth)
             if (auth?.token && auth?.refreshToken) {
                 setAuthData({
                     ...data.data,

@@ -40,7 +40,6 @@ const TakePhoto: React.FC = () => {
     }
     try {
       if (platform === "android") {
-        console.log('first')
         await NativeSettings.openAndroid({ option: AndroidSettings.ApplicationDetails });
       } else if (platform === "ios") {
         await NativeSettings.openIOS({ option: IOSSettings.App });

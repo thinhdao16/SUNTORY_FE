@@ -103,7 +103,6 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
   } | null>(null);
   // Hàm xử lý khi confirm modal
   const handleEmotionConfirm = (data: { emotions?: { icon: string; label: string }[]; context: string[] }) => {
-    console.log(data)
     if ((data.emotions && data.emotions.length !== 0) || data.context.length !== 0) {
       setEmotionData({
         emotions: data.emotions ?? [],

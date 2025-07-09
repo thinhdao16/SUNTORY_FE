@@ -3,6 +3,7 @@ import * as signalR from "@microsoft/signalr";
 import ENV from "@/config/env";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { useChatStore } from "@/store/zustand/chat-store";
+import { useAuthStore } from "@/store/zustand/auth-store";
 
 export function useSignalRChat(deviceId: string) {
     const setIsConnected = useSignalRChatStore((s) => s.setIsConnected);
@@ -10,6 +11,7 @@ export function useSignalRChat(deviceId: string) {
     const setSendMessage = useSignalRChatStore((s) => s.setSendMessage);
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const setIsSending = useChatStore.getState().setIsSending;
+    const { isAuthenticated } = useAuthStore();
 
     useEffect(() => {
         if (connectionRef.current) {
@@ -94,5 +96,5 @@ export function useSignalRChat(deviceId: string) {
             connection.stop();
             connectionRef.current = null;
         };
-    }, [deviceId, setIsConnected, addMessage, setSendMessage]);
+    }, [deviceId, setIsConnected, addMessage, setSendMessage, isAuthenticated]);
 }

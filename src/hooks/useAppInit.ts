@@ -12,7 +12,6 @@ const useAppInit = () => {
 
     useEffect(() => {
         const onStatusTap = () => {
-            console.log("statusbar tapped");
         };
         window.addEventListener("statusTap", onStatusTap);
 

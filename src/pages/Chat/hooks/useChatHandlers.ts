@@ -3,7 +3,7 @@ import { createChatApi } from "@/services/chat/chat-service";
 import dayjs from "dayjs";
 import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
 import React, { use } from "react";
-import { UseMutationResult } from "react-query";
+import { UseMutationResult, useQueryClient } from "react-query";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
 import i18n from "@/config/i18n";
@@ -59,6 +59,7 @@ export function useChatHandlers({
     removePendingImageByUrl
 }: UseChatHandlersProps) {
     const scrollToBottom = useScrollToBottom(messagesEndRef);
+    const queryClient = useQueryClient();
     const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -92,7 +93,6 @@ export function useChatHandlers({
             }
             try {
                 const uploaded = await uploadImageMutation.mutateAsync(file);
-                console.log(uploaded)
                 removePendingImageByUrl(localUrl);
                 URL.revokeObjectURL(localUrl);
                 if (uploaded && uploaded.length > 0) {
@@ -215,7 +215,12 @@ export function useChatHandlers({
                 if (timeoutId) clearTimeout(timeoutId);
                 if (res?.data?.userChatMessage && !useChatStore.getState().stopMessages) {
                     if (!sessionId) {
-                        history.replace(`/chat/${topicType}/${res.data.userChatMessage.chatInfo.code}`);
+                        const newSessionId = res.data.userChatMessage.chatInfo.code;
+
+                        // Refresh chat history để cập nhật với session mới
+                        queryClient.refetchQueries(["chatHistory"]);
+
+                        history.replace(`/chat/${topicType}/${newSessionId}`);
                         setHasFirstSignalRMessage(true);
                         setStopMessages(false);
                     }

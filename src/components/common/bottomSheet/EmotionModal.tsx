@@ -43,7 +43,6 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
     setEmotionInput(undefined);
     setContext("");
   };
-  console.log(context)
   const handleConfirm = () => {
     onConfirm({
       emotions: (emotionInput ?? "")

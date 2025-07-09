@@ -1,5 +1,5 @@
 import { ChatMessage } from "@/pages/Chat/hooks/useChatMessages";
-import { UserChatByTopicResponse } from "@/services/chat/chat-types";
+import { ChatHistoryLastModuleItem, UserChatByTopicResponse } from "@/services/chat/chat-types";
 import { isError } from "lodash";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -31,6 +31,8 @@ interface ChatStoreState {
     sessionCreatedAt: number | null;
     setSession: (id: string) => void;
     clearSession: () => void;
+    chatHistory: ChatHistoryLastModuleItem[];
+    setChatHistory: (history: ChatHistoryLastModuleItem[]) => void;
 }
 
 export const useChatStore = create<ChatStoreState>()(
@@ -73,12 +75,15 @@ export const useChatStore = create<ChatStoreState>()(
                     sessionId: null,
                     sessionCreatedAt: null,
                 }),
+            chatHistory: [],
+            setChatHistory: (history) => set({ chatHistory: history }),
         }),
         {
             name: "chat-session",
             partialize: (state) => ({
                 sessionId: state.sessionId,
                 sessionCreatedAt: state.sessionCreatedAt,
+                chatHistory: state.chatHistory,
             }),
         }
     )
