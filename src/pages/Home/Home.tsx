@@ -167,14 +167,14 @@ function Home() {
         </div>
       </div>
       <div className='-mt-24 px-6 pb-10'>
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 gap-4    relative z-9">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 gap-4 relative z-9">
           {features.map((f, idx) => (
             <div
               key={f.title}
               className="bg-white rounded-2xl p-4 flex flex-col items-start justify-start aspect-square w-full"
               onClick={() => history.push(f.link)}
             >
-              <div className="flex justify-between gap-4 items-center w-full mb-1">
+              <div className="flex justify-between gap-0.5 items-center w-full mb-1">
                 <div className="font-semibold leading-none text-[14px] mb-1">{f.title}</div>
                 <button
                   className=" top-3 right-3 bg-main rounded-full aspect-square h-[30px] flex items-center justify-center shadow-md"

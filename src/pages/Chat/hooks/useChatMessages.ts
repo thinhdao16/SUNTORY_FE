@@ -33,22 +33,9 @@ export function useChatMessages(
     );
 
     const prevOnline = useRef(isOnline);
-
-    useEffect(() => {
-        if (isOnline && !prevOnline.current && !!sessionId && !hasFirstSignalRMessage) {
-            refetch();
-        }
-        prevOnline.current = isOnline;
-    }, [isOnline, refetch, sessionId, hasFirstSignalRMessage]);
-
-    useEffect(() => {
-        if (!sessionId) clearMessages();
-    }, [sessionId, clearMessages]);
-
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
-
     const sendMessage = (e: any, force = false) => {
         if ((e.key === "Enter" && !e.shiftKey) || force) {
             e.preventDefault?.();
@@ -64,6 +51,15 @@ export function useChatMessages(
             }
         }
     };
+    useEffect(() => {
+        if (isOnline && !prevOnline.current && !!sessionId && !hasFirstSignalRMessage) {
+            refetch();
+        }
+        prevOnline.current = isOnline;
+    }, [isOnline, refetch, sessionId, hasFirstSignalRMessage]);
+    useEffect(() => {
+        if (!sessionId) clearMessages();
+    }, [sessionId, clearMessages]);
 
     return {
         messages,
