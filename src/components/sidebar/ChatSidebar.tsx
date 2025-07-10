@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { ChatSidebarProps } from "./ChatSidebar-types";
 import { useUserChatsByTopicSearch } from "@/pages/Chat/hooks/useChat";
 import { useChatStore } from "@/store/zustand/chat-store";
@@ -33,6 +34,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   history,
   userAvatar = "",
 }) => {
+  const { t } = useTranslation();
   const [search, setSearch] = React.useState("");
   const [showAvatar, setShowAvatar] = useState(false);
   const [avatarLoaded, setAvatarLoaded] = useState(false);
@@ -49,7 +51,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     { value: "all", label: t("All") },
     ...Object.entries(TopicTypeLabel).map(([key, label]) => ({
       value: key,
-      label,
+      label: t(label),
     })),
   ];
 
@@ -112,11 +114,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     <FilterIcon aria-label={t("new chat")} />
                   </button>
                   {dropdownOpen && (
-                    <div className="absolute right-0 z-20 mt-2 w-[180px] bg-white border border-netural-100 p-1 rounded-xl shadow-2xl  ">
+                    <div className="absolute right-0 z-20 mt-2 min-w-[180px] bg-white border border-netural-100 p-1 rounded-xl shadow-2xl  ">
                       {topicOptions.map((opt) => (
                         <button
                           key={opt.value}
-                          className={`block w-full text-left px-4 py-2 text-sm rounded-sm ${String(selectedTopic) === String(opt.value)
+                          className={`block w-full text-left px-4 py-2 text-sm rounded-sm whitespace-nowrap ${String(selectedTopic) === String(opt.value)
                             ? "font-semibold bg-chat-to text-main"
                             : "text-gray-700 hover:bg-gray-50"
                             }`}

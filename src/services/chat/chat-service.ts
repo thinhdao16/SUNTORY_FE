@@ -51,7 +51,7 @@ export async function getChatMessages(sessionId: string): Promise<ChatMessage[]>
         chatCode: msg.code,
     }));
 }
-export async function getChatHistoryModule(): Promise<ChatHistoryLastModuleItem[]> {
-    const res = await httpClient.get<ChatHistoryLastModuleResponse>("/api/v1/chat/history");
+export async function getChatHistoryModule(topicId: number): Promise<ChatHistoryLastModuleItem[]> {
+    const res = await httpClient.get<ChatHistoryLastModuleResponse>("/api/v1/chat/history", { params: { topic: topicId } });
     return res.data?.data || [];
 }

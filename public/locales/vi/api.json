@@ -9,5 +9,6 @@
     "Please check your email for the OTP": "Vui lòng kiểm tra email của bạn để lấy mã OTP",
     "Please check your email for the verification link": "Vui lòng kiểm tra email của bạn để lấy liên kết xác minh",
     "Please check your email for the reset password link": "Vui lòng kiểm tra email của bạn để lấy liên kết đặt lại mật khẩu",
-    "Please check your email for the verification code": "Vui lòng kiểm tra email của bạn để lấy mã xác minh"
+    "Please check your email for the verification code": "Vui lòng kiểm tra email của bạn để lấy mã xác minh",
+    "Current password is not correct": "Mật khẩu hiện tại không đúng."
 }

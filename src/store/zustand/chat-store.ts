@@ -33,6 +33,8 @@ interface ChatStoreState {
     clearSession: () => void;
     chatHistory: ChatHistoryLastModuleItem[];
     setChatHistory: (history: ChatHistoryLastModuleItem[]) => void;
+
+
 }
 
 export const useChatStore = create<ChatStoreState>()(

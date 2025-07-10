@@ -1,5 +1,8 @@
 import React from 'react';
 import { languages } from '@/constants/languageLocale';
+import ChineseIcon from '@/icons/logo/flag/chinese.svg?react';
+import VietnameseIcon from '@/icons/logo/flag/vietnam.svg?react';
+import USAIcon from '@/icons/logo/flag/usa.svg?react';
 
 interface LanguageSwitcherProps {
     i18n: any;
@@ -9,6 +12,19 @@ interface LanguageSwitcherProps {
     handleLanguageChange: (langCode: string) => void;
 }
 
+const getFlagIcon = (langCode: string) => {
+    switch (langCode) {
+        case 'vi':
+            return <VietnameseIcon className=" rounded-full" />;
+        case 'en':
+            return <USAIcon className=" rounded-full" />;
+        case 'zh':
+            return <ChineseIcon className=" rounded-full" />;
+        default:
+            return <USAIcon className=" rounded-full" />;
+    }
+};
+
 export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
     i18n,
     showLanguageOptions,
@@ -16,20 +32,20 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
     languageLoading,
     handleLanguageChange,
 }) => (
-    <div className="relative language-dropdown">
+    <div className="relative language-dropdown text-sm w-[70px]">
         <button
-            className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 text-white text-sm font-medium whitespace-nowrap"
+            className="flex items-center gap-1 bg-white w-full backdrop-blur-sm rounded-full px-2 py-1 text-white font-medium whitespace-nowrap"
             onClick={() => setShowLanguageOptions(!showLanguageOptions)}
             disabled={languageLoading}
         >
-            <span className="text-lg">
-                {i18n.language === 'vi' ? '🇻🇳' : i18n.language === 'en' ? '🇺🇸' : '🇨🇳'}
+            <span className="flex-shrink-0">
+                {getFlagIcon(i18n.language)}
             </span>
-            <span className="whitespace-nowrap">
+            <span className="whitespace-nowrap text-main font-semibold">
                 {languages.find(lang => lang.code === i18n.language)?.label || 'Language'}
             </span>
             <svg
-                className={`w-4 h-4 transition-transform flex-shrink-0 ${showLanguageOptions ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 rounded-full transition-transform flex-shrink-0 ${showLanguageOptions ? 'rotate-180 text-main' : 'text-main'}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -39,24 +55,26 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
         </button>
 
         {showLanguageOptions && (
-            <div className="absolute right-0 top-full mt-2 bg-white rounded-lg shadow-lg py-2 min-w-[140px] z-50">
-                {languages.map((lang) => (
-                    <button
-                        key={lang.code}
-                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 whitespace-nowrap ${i18n.language === lang.code ? 'bg-blue-50 text-main font-semibold' : 'text-gray-700'
-                            }`}
-                        onClick={() => handleLanguageChange(lang.code)}
-                        disabled={languageLoading}
-                    >
-                        <span className="text-lg flex-shrink-0">
-                            {lang.code === 'vi' ? '🇻🇳' : lang.code === 'en' ? '🇺🇸' : '🇨🇳'}
-                        </span>
-                        <span className="flex-shrink-0">{lang.label}</span>
-                        {i18n.language === lang.code && (
-                            <span className="ml-auto text-main flex-shrink-0">✓</span>
-                        )}
-                    </button>
-                ))}
+            <div className="absolute right-0 top-full w-full mt-2 bg-white rounded-xl shadow-lg py-1.5  gap-1 grid z-50">
+                {languages
+                    .filter(lang => lang.code !== i18n.language)
+                    .map((lang, index, filteredArray) => (
+                        <React.Fragment key={lang.code}>
+                            <button
+                                className="w-full px-3 text-left hover:bg-gray-50 flex items-center gap-1 whitespace-nowrap text-main font-semibold"
+                                onClick={() => handleLanguageChange(lang.code)}
+                                disabled={languageLoading}
+                            >
+                                <span className="flex-shrink-0">
+                                    {getFlagIcon(lang.code)}
+                                </span>
+                                <span className="flex-shrink-0">{lang.label}</span>
+                            </button>
+                            {index < filteredArray.length - 1 && (
+                                <div className="mx-2 border-t border-gray-200"></div>
+                            )}
+                        </React.Fragment>
+                    ))}
             </div>
         )}
     </div>

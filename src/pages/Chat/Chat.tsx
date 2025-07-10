@@ -7,6 +7,7 @@ import { Capacitor } from "@capacitor/core";
 import { useQueryClient } from "react-query";
 
 import { TopicType, TopicTypeLabel } from "@/constants/topicType";
+import { t } from "@/lib/globalT";
 
 import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { useChatMessages } from "./hooks/useChatMessages";
@@ -54,8 +55,9 @@ const Chat: React.FC = () => {
     const isDesktop = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
 
     // ==== State ====
-    const [hasFirstSignalRMessage, setHasFirstSignalRMessage] = useState(false);
     const [pendingBarHeight, setPendingBarHeight] = useState(0);
+    // Thêm state để debounce loading
+    const [debouncedLoading, setDebouncedLoading] = useState(false);
 
     // ==== Refs ====
     const messageRef = useRef<any>(null);
@@ -81,21 +83,10 @@ const Chat: React.FC = () => {
     const setStopMessages = useChatStore((s) => s.setStopMessages);
     const imageLoading = useUploadStore.getState().imageLoading;
     const clearSession = useChatStore((s) => s.clearSession);
-
+    const setHasFirstSignalRMessage = useSignalRChatStore((s) => s.setHasFirstSignalRMessage);
+    const hasFirstSignalRMessage = useSignalRChatStore((s) => s.hasFirstSignalRMessage);
     const allSignalRMessages = useSignalRChatStore((s: any) => s.messages);
     const setSignalRMessages = useSignalRChatStore((s) => s.setMessages);
-
-    const { chatHistory } = useChatHistoryLastModule();
-    // ==== Hooks: Chat & Message ====
-    const {
-        messages, isLoading, sendMessage,
-        scrollToBottom, messageValue, setMessageValue
-    } = useChatMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, hasFirstSignalRMessage, isOnline);
-    const uploadImageMutation = useUploadChatFile();
-    const scrollToBottomMess = useScrollToBottom(messagesEndRef);
-    const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
-    const { showScrollButton, handleScroll } = useScrollButton(messagesContainerRef);
-    useAutoResizeTextarea(messageRef, messageValue);
 
     // ==== Derived State ====
     const signalRMessages = useMemo(() =>
@@ -108,6 +99,32 @@ const Chat: React.FC = () => {
     const topicType: TopicType | undefined = isValidTopicType ? (topicTypeNum as TopicType) : undefined;
     const title = isValidTopicType && topicType !== undefined ? TopicTypeLabel[topicType] : undefined;
     const isWelcome = topicType === TopicType.Chat && !sessionId && pendingMessages.length === 0;
+
+    // ==== Hooks: Chat & Message ====
+    const {
+        messages, isLoading, sendMessage,
+        scrollToBottom, messageValue, setMessageValue
+    } = useChatMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, hasFirstSignalRMessage, isOnline);
+    const uploadImageMutation = useUploadChatFile();
+    const scrollToBottomMess = useScrollToBottom(messagesEndRef);
+    const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
+    const { showScrollButton, handleScroll } = useScrollButton(messagesContainerRef);
+    useAutoResizeTextarea(messageRef, messageValue);
+
+    const shouldFetchHistory = useMemo(() => {
+        if (isWelcome || sessionId) {
+            return false;
+        }
+        return true;
+    }, [isWelcome, sessionId]);
+
+    const { chatHistory, isLoading: isLoadingHistory } = useChatHistoryLastModule(
+        parseInt(type || "0", 10),
+        shouldFetchHistory
+    );
+
+
+
     // ===== Handlers =====
     const {
         handleImageChange,
@@ -145,15 +162,14 @@ const Chat: React.FC = () => {
         pendingImages,
         pendingFiles
     );
-    const getCodeByTopic = (topicId: number): string | undefined => {
-        const chatItem = chatHistory.find(item => item.topic === topicId);
-        return chatItem?.code;
-    };
-    const getChatLinkByTopic = (topicId: number): string => {
-        const code = getCodeByTopic(topicId);
-        const link = code ? `/chat/${topicId}/${code}` : `/chat/${topicId}`;
-        return link;
-    };
+
+    const getCodeByTopic = useMemo(() => {
+        return (topicId: number): string | undefined => {
+            const chatItem = chatHistory.find(item => item.topic === topicId);
+            return chatItem?.code;
+        };
+    }, [chatHistory, type]);
+
     // ==== Lifecycle Effects ====
     useEffect(() => {
         if (sessionId && !isLoading) clearPendingMessages();
@@ -161,8 +177,10 @@ const Chat: React.FC = () => {
 
     useEffect(() => {
         if (!isValidTopicType) history.push("/home");
-        if (messagesEndRef.current) scrollToBottomMess();
-    }, [isValidTopicType, history, messages]);
+        if (messagesEndRef.current) {
+            scrollToBottomMess();
+        }
+    }, [isValidTopicType, history, messages, debouncedLoading]);
 
     useEffect(() => {
         setPendingMessages((prev) =>
@@ -203,22 +221,48 @@ const Chat: React.FC = () => {
         }
     }, [pendingImages, pendingFiles]);
 
+    useEffect(() => {
+        if (topicType === TopicType.Chat) {
+            setDebouncedLoading(false);
+            return;
+        }
+        const currentPath = window.location.pathname;
+        const isNavigationFromTopicOnly = currentPath.includes('/chat/') &&
+            currentPath.split('/').length === 4 &&
+            chatHistory.length > 0;
+
+        const shouldLoad = sessionId ?
+            isLoading : // Chỉ cần chờ messages load khi có sessionId
+            isLoadingHistory;
+
+        if (shouldLoad) {
+            setDebouncedLoading(true);
+        } else {
+            const timer = setTimeout(() => {
+                setDebouncedLoading(false);
+                if (mergedMessages.length > 0 && !isNavigationFromTopicOnly) {
+                    setTimeout(() => scrollToBottomMess(), 100);
+                }
+            }, 100);
+            if (!sessionId && chatHistory.length > 0) {
+                const code = getCodeByTopic(parseInt(type || "0", 10));
+                if (code) {
+                    const expectedPath = `/chat/${type}/${code}`;
+                    const currentPath = window.location.pathname;
+                    if (currentPath !== expectedPath && currentPath === `/chat/${type}`) {
+                        console.log("One-time navigation:", currentPath, "→", expectedPath);
+                        history.replace(expectedPath);
+                    }
+                }
+            }
+
+            return () => clearTimeout(timer);
+        }
+    }, [isLoadingHistory, isLoading, type,]);
+
     useAppState(() => {
         if (sessionId) queryClient.invalidateQueries(["messages", sessionId]);
     });
-
-    if (isLoading && sessionId) {
-        return (
-            <div className="flex flex-col justify-center items-center h-full bg-white">
-                <IonSpinner
-                    name="crescent"
-                    color="primary"
-                    className="w-8 h-8 mb-4"
-                />
-                <p className="text-gray-500 text-sm">Đang tải tin nhắn...</p>
-            </div>
-        );
-    }
 
     return (
         <div
@@ -231,7 +275,6 @@ const Chat: React.FC = () => {
                 // paddingTop: "var(--safe-area-inset-top, 0px)",
             }}
         >
-
             <div className="flex items-center justify-between px-6 pb-4 pt-14 h-[49px]">
                 <button onClick={() => openSidebarWithAuthCheck()} >
                     <NavBarHomeHistoryIcon />
@@ -247,92 +290,104 @@ const Chat: React.FC = () => {
                     </>
                 )}
             </div>
-            <>
-                <div
-                    className={`flex-1 overflow-y-auto  p-6 ${!isNative && !keyboardResizeScreen ? ("pb-2 max-h-[calc(100dvh-246px)]") : ""}`}
-                    ref={messagesContainerRef}
-                    onScroll={handleScroll}
-                >
-                    {isWelcome ? (
-                        <ChatWelcomePanel
-                            pendingImages={pendingImages}
-                            pendingFiles={pendingFiles}
-                            uploadImageMutation={uploadImageMutation}
-                            removePendingImage={removePendingImage}
-                            removePendingFile={removePendingFile}
-                            messageValue={messageValue}
-                            setMessageValue={setMessageValue}
-                            isLoading={isLoading}
-                            isSending={isSending}
-                            handleImageChange={handleImageChange}
-                            handleFileChange={handleFileChange}
-                            handleSendMessage={handleSendMessage}
-                            history={history}
-                            messageRef={messageRef}
-                            addPendingImages={addPendingImages}
-                            isNative={isNative}
-                            isDesktop={isDesktop}
-                            uploadLoading={imageLoading}
-                            getChatLinkByTopic={getChatLinkByTopic}
+            {
+                debouncedLoading ? (
+                    <div className="flex flex-col justify-center items-center h-full bg-white">
+                        <IonSpinner
+                            name="crescent"
+                            color="primary"
+                            className="w-8 h-8 mb-4"
                         />
-                    ) : (
-                        <ChatMessageList
-                            allMessages={mergedMessages}
-                            pendingMessages={pendingMessages}
-                            topicType={topicType}
-                            title={title}
-                            loading={isSending}
-                        />
-                    )}
-                    <div style={{ marginTop: pendingBarHeight }} />
-                    <div ref={messagesEndRef} className="mt-4" />
-                </div>
-                {!isWelcome && (
-                    <div className={` bg-white pb-4  w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"} ${isNative ? "bottom-0" : "bottom-[76px]"} ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""}`}>
-                        {showScrollButton && (
-                            <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
-                                <button
-                                    className="p-2.5 rounded-full shadow bg-white"
-                                    onClick={scrollToBottom}
-                                >
-                                    <IoArrowDown />
-                                </button>
-                            </div>
-                        )}
-                        <div className="pt-4 px-6">
-                            <div ref={pendingBarRef} className="flex  gap-2 flex-wrap">
-                                <PendingImages
+                        <p className="text-gray-500 text-sm">{t("Loading messages...")}</p>
+                    </div>
+                ) : (
+                    <>
+                        <div
+                            className={`flex-1  ${!isWelcome && ("overflow-y-auto")}  p-6 ${!isNative && !keyboardResizeScreen ? ("pb-2 max-h-[calc(100dvh-246px)]") : ""}`}
+                            ref={messagesContainerRef}
+                            onScroll={handleScroll}
+                        >
+                            {isWelcome ? (
+                                <ChatWelcomePanel
                                     pendingImages={pendingImages}
-                                    imageLoading={uploadImageMutation.isLoading}
+                                    pendingFiles={pendingFiles}
+                                    uploadImageMutation={uploadImageMutation}
                                     removePendingImage={removePendingImage}
+                                    removePendingFile={removePendingFile}
+                                    messageValue={messageValue}
+                                    setMessageValue={setMessageValue}
+                                    isLoading={isLoading}
+                                    isSending={isSending}
+                                    handleImageChange={handleImageChange}
+                                    handleFileChange={handleFileChange}
+                                    handleSendMessage={handleSendMessage}
+                                    history={history}
+                                    messageRef={messageRef}
+                                    addPendingImages={addPendingImages}
+                                    isNative={isNative}
+                                    isDesktop={isDesktop}
+                                    uploadLoading={imageLoading}
+                                />
+                            ) : (
+                                <ChatMessageList
+                                    allMessages={mergedMessages}
+                                    pendingMessages={pendingMessages}
+                                    topicType={topicType}
+                                    title={title}
+                                    loading={isSending}
+                                />
+                            )}
+                            <div style={{ marginTop: pendingBarHeight }} />
+                            <div ref={messagesEndRef} className="mt-4" />
+                        </div>
+                        {!isWelcome && (
+                            <div className={` bg-white pb-4  w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"} ${isNative ? "bottom-0" : "bottom-[76px]"} ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""}`}>
+                                {showScrollButton && (
+                                    <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
+                                        <button
+                                            className="p-2.5 rounded-full shadow bg-white"
+                                            onClick={scrollToBottom}
+                                        >
+                                            <IoArrowDown />
+                                        </button>
+                                    </div>
+                                )}
+                                <div className="pt-4 px-6">
+                                    <div ref={pendingBarRef} className="flex  gap-2 flex-wrap">
+                                        <PendingImages
+                                            pendingImages={pendingImages}
+                                            imageLoading={uploadImageMutation.isLoading}
+                                            removePendingImage={removePendingImage}
+                                            imageLoadingMany={imageLoading}
+                                        />
+                                        <PendingFiles
+                                            pendingFiles={pendingFiles}
+                                            removePendingFile={removePendingFile}
+                                        />
+                                    </div>
+                                </div>
+                                <ChatInputBar
+                                    messageValue={messageValue}
+                                    setMessageValue={setMessageValue}
+                                    isLoading={isLoading}
+                                    messageRef={messageRef}
+                                    handleSendMessage={handleSendMessage}
+                                    handleImageChange={handleImageChange}
+                                    handleFileChange={handleFileChange}
+                                    onTakePhoto={() => history.push("/camera")}
+                                    isSpending={isSending}
+                                    uploadImageMutation={uploadImageMutation}
+                                    addPendingImages={addPendingImages}
+                                    isNative={isNative}
+                                    isDesktop={isDesktop}
+                                    imageLoading={uploadImageMutation.isLoading}
                                     imageLoadingMany={imageLoading}
                                 />
-                                <PendingFiles
-                                    pendingFiles={pendingFiles}
-                                    removePendingFile={removePendingFile}
-                                />
                             </div>
-                        </div>
-                        <ChatInputBar
-                            messageValue={messageValue}
-                            setMessageValue={setMessageValue}
-                            isLoading={isLoading}
-                            messageRef={messageRef}
-                            handleSendMessage={handleSendMessage}
-                            handleImageChange={handleImageChange}
-                            handleFileChange={handleFileChange}
-                            onTakePhoto={() => history.push("/camera")}
-                            isSpending={isSending}
-                            uploadImageMutation={uploadImageMutation}
-                            addPendingImages={addPendingImages}
-                            isNative={isNative}
-                            isDesktop={isDesktop}
-                            imageLoading={uploadImageMutation.isLoading}
-                            imageLoadingMany={imageLoading}
-                        />
-                    </div>
-                )}
-            </>
+                        )}
+                    </>
+                )
+            }
         </div>
     );
 };

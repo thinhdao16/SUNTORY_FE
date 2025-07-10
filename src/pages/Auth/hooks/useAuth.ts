@@ -113,7 +113,7 @@ export const useChangePassword = () => {
             },
             onError: (error: any) => {
                 showToast(
-                    error?.response?.data?.message || t("Password change failed. Please try again."),
+                    t(error?.response?.data?.message, { ns: "api" }) || t("Password change failed. Please try again."),
                     3000,
                     "error"
                 );

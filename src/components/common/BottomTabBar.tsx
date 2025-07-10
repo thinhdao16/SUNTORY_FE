@@ -73,6 +73,7 @@ const BottomTabBar: React.FC = () => {
         useChatStore.getState().clearMessages();
         useChatStore.getState().clearSession();
         useChatStore.getState().setStopMessages(true);
+        useSignalRChatStore.getState().setHasFirstSignalRMessage(false);
         useSignalRChatStore.getState().setMessages([]);
     };
 

@@ -48,7 +48,7 @@ httpClient.interceptors.response.use(
                     refreshError.response?.status === 403 ||
                     refreshError.response?.status === 400
                 ) {
-                    alert(t("sessionExpired"));
+                    // alert(t("sessionExpired"));
                     localStorage.removeItem("token");
                     localStorage.removeItem("refreshToken");
                     const path = window.location.pathname;

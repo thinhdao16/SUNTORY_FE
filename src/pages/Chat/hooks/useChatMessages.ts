@@ -22,7 +22,7 @@ export function useChatMessages(
     const { messages, setMessages, addMessage, clearMessages } = useChatStore();
     const [messageValue, setMessageValue] = useState("");
 
-    const { isLoading, refetch } = useQuery(
+    const { isLoading, refetch, isFetching } = useQuery(
         ["chatMessages", sessionId],
         () => (sessionId ? getChatMessages(sessionId) : []),
         {
@@ -31,7 +31,6 @@ export function useChatMessages(
             onError: () => setMessages([]),
         }
     );
-
     const prevOnline = useRef(isOnline);
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -52,7 +51,8 @@ export function useChatMessages(
         }
     };
     useEffect(() => {
-        if (isOnline && !prevOnline.current && !!sessionId && !hasFirstSignalRMessage) {
+        if (isOnline && !prevOnline.current) {
+            console.log("have connect")
             refetch();
         }
         prevOnline.current = isOnline;
@@ -63,7 +63,7 @@ export function useChatMessages(
 
     return {
         messages,
-        isLoading,
+        isLoading: isLoading || isFetching,
         sendMessage,
         scrollToBottom,
         messageValue,

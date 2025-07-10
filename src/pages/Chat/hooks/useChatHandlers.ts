@@ -216,10 +216,7 @@ export function useChatHandlers({
                 if (res?.data?.userChatMessage && !useChatStore.getState().stopMessages) {
                     if (!sessionId) {
                         const newSessionId = res.data.userChatMessage.chatInfo.code;
-
-                        // Refresh chat history để cập nhật với session mới
                         queryClient.refetchQueries(["chatHistory"]);
-
                         history.replace(`/chat/${topicType}/${newSessionId}`);
                         setHasFirstSignalRMessage(true);
                         setStopMessages(false);

@@ -3,25 +3,32 @@ import { useQuery } from "react-query";
 import { getChatHistoryModule } from "@/services/chat/chat-service";
 import { useToastStore } from "@/store/zustand/toast-store";
 import { useChatStore } from "@/store/zustand/chat-store";
+import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 
-export const useChatHistoryLastModule = () => {
+export const useChatHistoryLastModule = (topicId: number, enabled: boolean) => {
     const { showToast } = useToastStore();
     const { chatHistory, setChatHistory } = useChatStore();
+    const { data: userInfo } = useAuthInfo();
+
+    console.log("useChatHistoryLastModule:", { topicId, enabled });
 
     const {
         data,
         isLoading,
+        isFetching,
         isError,
         error: queryError,
         refetch,
     } = useQuery(
-        ["chatHistory"],
-        getChatHistoryModule,
+        ["chatHistory", topicId],
+        () => {
+            console.log("Fetching chat history for topic:", topicId);
+            return getChatHistoryModule(topicId);
+        },
         {
-            staleTime: 1000 * 60 * 5,
-            cacheTime: 1000 * 60 * 30,
-            refetchOnWindowFocus: false,
+            enabled: !!userInfo?.id && enabled,
             onSuccess: (data) => {
+                console.log("History loaded:", data);
                 setChatHistory(data);
             },
             onError: (err: any) => {
@@ -33,7 +40,7 @@ export const useChatHistoryLastModule = () => {
 
     return {
         chatHistory,
-        isLoading,
+        isLoading: isLoading || isFetching,
         error: queryError,
         refetch,
         refreshHistory: () => refetch(),

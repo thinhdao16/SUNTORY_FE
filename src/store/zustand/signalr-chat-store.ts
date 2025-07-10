@@ -9,6 +9,8 @@ interface SignalRChatState {
     addMessage: (msg: object) => void;
     sendMessage?: (method: string, ...args: any[]) => Promise<void>;
     setSendMessage: (fn: (method: string, ...args: any[]) => Promise<void>) => void;
+    hasFirstSignalRMessage: boolean;
+    setHasFirstSignalRMessage: (val: boolean) => void;
 }
 
 export const useSignalRChatStore = create<SignalRChatState>((set) => ({
@@ -19,4 +21,6 @@ export const useSignalRChatStore = create<SignalRChatState>((set) => ({
     addMessage: (msg) => set((state) => ({ messages: [...state.messages, msg] })),
     sendMessage: undefined,
     setSendMessage: (fn) => set({ sendMessage: fn }),
+    hasFirstSignalRMessage: false,
+    setHasFirstSignalRMessage: (val) => set({ hasFirstSignalRMessage: val }),
 }));

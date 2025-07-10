@@ -32,7 +32,6 @@ const ChatWelcomePanel: React.FC<{
     isNative?: boolean;
     isDesktop?: boolean;
     uploadLoading?: boolean;
-    getChatLinkByTopic: (topicId: number) => string;
 }> = ({
     pendingImages,
     pendingFiles,
@@ -51,8 +50,7 @@ const ChatWelcomePanel: React.FC<{
     addPendingImages,
     isNative,
     isDesktop,
-    uploadLoading,
-    getChatLinkByTopic
+    uploadLoading
 }) => {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center">
@@ -156,7 +154,8 @@ const ChatWelcomePanel: React.FC<{
                         const Icon = item.icon;
                         const getItemLink = () => {
                             if (item.topicId) {
-                                return getChatLinkByTopic(item.topicId);
+                                // Điều hướng trực tiếp với topic
+                                return `/chat/${item.topicId}`;
                             }
                             return typeof item.to === 'function'
                                 ? (item.to as (() => string))()
