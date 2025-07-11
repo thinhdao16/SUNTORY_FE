@@ -14,5 +14,5 @@ export const TopicTypeLabel: Record<TopicType, string> = {
     // [TopicType.ProductInformation]: t("Product Information"),
     [TopicType.DrugInstructions]: t("Drug Instructions"),
     [TopicType.FoodDiscovery]: t("Food Discovery"),
-    [TopicType.Chat]: t("AI Assistant"),
+    [TopicType.Chat]: t("JetAI"),
 };

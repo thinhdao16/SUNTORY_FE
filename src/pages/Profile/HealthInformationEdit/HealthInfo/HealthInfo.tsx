@@ -118,7 +118,6 @@ function HealthInfo() {
         () => getHealthConditionsByCategory(masterDataHealth, t, 1),
         [masterDataHealth, t]
     );
-    console.log(healthInfo)
     const selectedHealthConditions = watch("healthConditions" as const) || [];
 
     const otherCondition = watch("otherHealthCondition") || "";

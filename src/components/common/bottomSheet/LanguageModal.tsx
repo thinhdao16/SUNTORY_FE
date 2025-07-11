@@ -4,10 +4,8 @@ import { IonIcon } from "@ionic/react";
 import {
   close,
   searchOutline,
-  languageOutline,
-  checkmarkOutline,
 } from "ionicons/icons";
-
+import SelectIcon from "@/icons/logo/translate/selected.svg?react"
 interface LanguageModalProps {
   isOpen: boolean;
   translateY: number;
@@ -80,7 +78,7 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
           transition={{ duration: 0.2 }}
         >
           <div
-            className="bg-blue-50 darkk:bg-dark-extra w-full h-[95%] rounded-t-lg shadow-lg transition-transform duration-300 ease-out"
+            className="bg-success-500 darkk:bg-dark-extra w-full h-[95%] rounded-t-4xl shadow-lg transition-transform duration-300 ease-out"
             style={{
               transform: `translateY(${translateY}px)`,
               touchAction: "none",
@@ -89,9 +87,9 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-            <div className="bg-white darkk:bg-dark-main p-4">
+            <div className="bg-white  p-4 rounded-t-4xl">
               <div className="flex justify-center items-center relative">
-                <span className="font-semibold">{isFrom ? t(`Translate from`) : t(`Translate to`)}</span>
+                <span className="font-semibold text-netural-500">{isFrom ? t(`Translate from`) : t(`Translate to`)}</span>
                 <button
                   className="absolute right-0 top-0 bg-gray-300 darkk:bg-dark-extra p-1 rounded-full flex items-center justify-center"
                   onClick={closeModal}
@@ -103,12 +101,12 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
                 </button>
               </div>
               <div className="mt-4 flex justify-between items-center gap-4">
-                <div className="w-full bg-gray-200 darkk:bg-dark-extra flex items-center rounded-xl p-1.5 relative">
+                <div className="w-full bg-chat-to darkk:bg-dark-extra flex items-center rounded-xl p-2 relative">
                   <IonIcon
                     slot="start"
                     icon={searchOutline}
                     aria-hidden="true"
-                    className="text-gray-500 text-xl mr-2"
+                    className="text-gray-500 text-xl mx-2"
                   />
                   <input
                     type="text"
@@ -130,21 +128,21 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
             <div className="p-4">
               <div>
                 <span className="uppercase text-gray-500 text-sm">
-                  {t(`Language`)}
+                  {t(`SUGGESTED LANGUAGES`)}
                 </span>
                 <div className="rounded-lg mt-2 ">
-                  <div className="rounded-2xl">
+                  <div className="rounded-2xl bg-white">
                     {validLanguage.map(
                       (lang, index) => (
                         <div
                           key={lang.label}
                           className={`flex items-center justify-center gap-2 w-full ${lang.selected
-                            ? "bg-blue-200 text-gray-700 darkk:bg-dark-select-main darkk:text-white"
-                            : "bg-white text-gray-500 darkk:bg-dark-main darkk:text-white"
+                            ? "bg-main text-white rounded-2xl"
+                            : ""
                             } ${index === 0
-                              ? "rounded-t-lg"
+                              ? "rounded-t-2xl"
                               : index === validLanguage.length - 1
-                                ? "rounded-b-lg"
+                                ? "rounded-b-2xl"
                                 : ""
                             }`}
                           onClick={() => {
@@ -152,17 +150,11 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
                             closeModal();
                           }}
                         >
-                          <IonIcon
-                            icon={languageOutline}
-                            className="text-2xl pl-4 pr-2 py-3"
-                          />
-                          <div className="py-3 w-full flex items-center justify-between pr-4">
+
+                          <div className="py-3 w-full flex items-center justify-between px-6 font-medium">
                             <span>{lang.label}</span>
                             {lang.selected && (
-                              <IonIcon
-                                icon={checkmarkOutline}
-                                className="text-xl"
-                              />
+                              <SelectIcon />
                             )}
                           </div>
                         </div>

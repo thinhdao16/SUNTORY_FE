@@ -10,6 +10,10 @@ import BottomTabBar from "@/components/common/BottomTabBar";
 import RouteLoading from "./RouteLoading";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import ChatSidebarLayout from "@/components/layout/ChatSidebarLayout";
+import useAppInit from "@/hooks/useAppInit";
+import { useSignalRChat } from "@/hooks/useSignalRChat";
+import useDeviceInfo from "@/hooks/useDeviceInfo";
+import { useSignalRStream } from "@/hooks/useSignalRStream";
 
 const routes = {
   Chat: lazy(() => import("@/pages/Chat/Chat")),
@@ -33,6 +37,7 @@ const routes = {
   Register: lazy(() => import("@/pages/Auth/Register/Register")),
   TakePhoto: lazy(() => import("@/pages/TakePhoto/TakePhoto")),
   Translate: lazy(() => import("@/pages/Translate/Translate")),
+  StreamDebugger: lazy(() => import("@/components/StreamDebugger")),
 };
 
 const authRoutes = ["/login", "/register"];
@@ -42,16 +47,21 @@ const ignoreRoutes = ["/forgot-password", "/otp", "/new-password", "/change-pass
 const AppRoutes: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
+  const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
 
   const showTabBar =
     !authRoutes.includes(location.pathname) &&
     !ignoreRoutes.includes(location.pathname) &&
     !authRoutesDontShowTabBar.includes(location.pathname);
-
+  useAppInit();
+  useSignalRChat(deviceInfo.deviceId || "");
+  useSignalRStream(deviceInfo.deviceId || "", {
+    autoReconnect: true,
+    logLevel: 0, // Verbose logging for debugging
+  });
   if (isAuthenticated && authRoutes.includes(location.pathname)) {
     return <Redirect to="/home" />;
   }
-
   return (
     <>
       <Suspense fallback={<RouteLoading />}>
@@ -77,6 +87,7 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/translate" component={routes.Translate} exact />
           <PrivateRoute path="/profile/:section?" component={routes.Profile} exact />
           <PrivateRoute path="/change-password" component={routes.ChangePassword} exact />
+          <PrivateRoute path="/stream-debug" component={routes.StreamDebugger} exact />
           <Route exact path="/" render={() => <Redirect to="/home" />} />
           <Route path="*" component={routes.NotFound} />
         </Switch>

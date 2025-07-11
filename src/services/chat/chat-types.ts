@@ -18,3 +18,23 @@ export interface CreateChatPayload {
     files?: { name: string }[];
     language: string;
 }
+export interface ChatHistoryLastModuleItem {
+    id: number;
+    code: string;
+    title: string;
+    type: number;
+    topic: number;
+    status: number;
+    createDate: string;
+    updateDate: string | null;
+    lastMessage: string;
+    lastMessageDate: string;
+    lastMessageUserId: number | null;
+    lastMessageSenderType: string;
+}
+export interface ChatHistoryLastModuleResponse {
+    result: number;
+    errors: any;
+    message: string;
+    data: ChatHistoryLastModuleItem[];
+}

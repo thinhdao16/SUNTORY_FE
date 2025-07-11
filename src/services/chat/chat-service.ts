@@ -1,5 +1,5 @@
 import httpClient from "@/config/http-client";
-import { CreateChatPayload, UserChatByTopicResponse } from "./chat-types";
+import { ChatHistoryLastModuleItem, ChatHistoryLastModuleResponse, CreateChatPayload, UserChatByTopicResponse } from "./chat-types";
 import { ChatMessage } from "@/pages/Chat/hooks/useChatMessages";
 import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
 
@@ -18,11 +18,11 @@ export const getUserChatsByTopic = async (
     );
     return res.data;
 };
+
 export async function createChatApi(payload: CreateChatPayload) {
     const res = await httpClient.post("/api/v1/chat/create", payload);
     return res.data;
 }
-
 export async function getChatMessages(sessionId: string): Promise<ChatMessage[]> {
     const res = await httpClient.get("/api/v1/chat/messages", {
         params: {
@@ -50,4 +50,8 @@ export async function getChatMessages(sessionId: string): Promise<ChatMessage[]>
         chatInfoId: msg.chatInfoId,
         chatCode: msg.code,
     }));
+}
+export async function getChatHistoryModule(topicId: number): Promise<ChatHistoryLastModuleItem[]> {
+    const res = await httpClient.get<ChatHistoryLastModuleResponse>("/api/v1/chat/history", { params: { topic: topicId } });
+    return res.data?.data || [];
 }
