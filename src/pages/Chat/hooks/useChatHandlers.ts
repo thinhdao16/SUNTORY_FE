@@ -3,7 +3,7 @@ import { createChatApi } from "@/services/chat/chat-service";
 import dayjs from "dayjs";
 import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
 import React, { use } from "react";
-import { UseMutationResult } from "react-query";
+import { UseMutationResult, useQueryClient } from "react-query";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
 import i18n from "@/config/i18n";
@@ -59,6 +59,7 @@ export function useChatHandlers({
     removePendingImageByUrl
 }: UseChatHandlersProps) {
     const scrollToBottom = useScrollToBottom(messagesEndRef);
+    const queryClient = useQueryClient();
     const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -82,7 +83,7 @@ export function useChatHandlers({
             const localUrl = localUrls[i];
             if (file.size > MAX_IMAGE_SIZE) {
                 useToastStore.getState().showToast(
-                    t("Photo must be less than 5MB!"),
+                    t("Photo must be less than 20MB!"),
                     3000,
                     "warning"
                 );
@@ -92,7 +93,6 @@ export function useChatHandlers({
             }
             try {
                 const uploaded = await uploadImageMutation.mutateAsync(file);
-                console.log(uploaded)
                 removePendingImageByUrl(localUrl);
                 URL.revokeObjectURL(localUrl);
                 if (uploaded && uploaded.length > 0) {
@@ -138,7 +138,14 @@ export function useChatHandlers({
     const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent, force?: boolean) => {
         e.preventDefault();
         useChatStore.getState().setStopMessages(false);
+        const setSession = useChatStore.getState().setSession;
+        setSession(sessionId || "");
+
+        const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
+
         setHasFirstSignalRMessage(true);
+
+        const sessionIdAtSend = sessionCreatedAt
         if (messageValue.trim() || pendingImages.length > 0 || pendingFiles.length > 0) {
             setMessageValue("");
             addPendingImages([]);
@@ -148,29 +155,31 @@ export function useChatHandlers({
 
             let timeoutId: ReturnType<typeof setTimeout> | null = null;
             try {
-                timeoutId = setTimeout(() => {
-                    useChatStore.getState().setIsSending(false);
-                    setPendingMessages((prev: any) => [
-                        ...prev,
-                        {
-                            text: t("AI is unable to respond at this time. Please wait or try again later."),
-                            createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
-                            timeStamp: generatePreciseTimestampFromDate(new Date()),
-                            isError: true,
-                        }
-                    ]);
-                }, 5000 * 60);
-
+                // timeoutId = setTimeout(() => {
+                //     const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
+                //     if (sessionIdAtSend !== sessionCreatedAt) return;
+                //     useChatStore.getState().setIsSending(false);
+                //     setPendingMessages((prev: any) => [
+                //         ...prev,
+                //         {
+                //             text: t("AI is unable to respond at this time. Please wait or try again later."),
+                //             createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
+                //             timeStamp: generatePreciseTimestampFromDate(new Date()),
+                //             isError: true,
+                //         }
+                //     ]);
+                // }, 5000 * 60);
                 const filesArr = [
                     ...pendingFiles.map(f => ({ name: f.name })),
                     ...pendingImages.map((img, idx) => ({ name: typeof img === "string" ? img.split("/").pop() || `image_${idx}` : `image_${idx}` }))
                 ];
+                const shortLang = i18n.language?.split("-")[0] || "en";
                 const payload = {
                     chatCode: sessionId ?? null,
                     messageText: messageValue.trim(),
                     topic: Number(topicType),
                     files: filesArr.length > 0 ? filesArr : undefined,
-                    language: i18n.language || "en",
+                    language: shortLang,
                 };
 
                 const now = dayjs.utc();
@@ -206,13 +215,17 @@ export function useChatHandlers({
                 if (timeoutId) clearTimeout(timeoutId);
                 if (res?.data?.userChatMessage && !useChatStore.getState().stopMessages) {
                     if (!sessionId) {
-                        history.replace(`/chat/${topicType}/${res.data.userChatMessage.chatInfo.code}`);
+                        const newSessionId = res.data.userChatMessage.chatInfo.code;
+                        queryClient.refetchQueries(["chatHistory"]);
+                        history.replace(`/chat/${topicType}/${newSessionId}`);
                         setHasFirstSignalRMessage(true);
                         setStopMessages(false);
                     }
                 }
             } catch (err) {
                 if (timeoutId) clearTimeout(timeoutId);
+                const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
+                if (sessionIdAtSend !== sessionCreatedAt) return;
                 useChatStore.getState().setIsSending(false);
                 setPendingMessages((prev: any) => [
                     ...prev,
@@ -220,7 +233,8 @@ export function useChatHandlers({
                         text: t("Message sending failed, please try again!"),
                         createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
                         timeStamp: generatePreciseTimestampFromDate(new Date()),
-                        isError: false,
+                        isError: true,
+                        isSend: true
                     }
                 ]);
             }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { ChatSidebarProps } from "./ChatSidebar-types";
 import { useUserChatsByTopicSearch } from "@/pages/Chat/hooks/useChat";
 import { useChatStore } from "@/store/zustand/chat-store";
@@ -10,8 +11,12 @@ import { TopicType, TopicTypeLabel } from "@/constants/topicType";
 
 // Import SVG as React component
 import SearchIcon from "@/icons/logo/chat/search.svg?react";
-import FilterIcon from "@/icons/logo/chat/filter.svg?react";
+import BotIcon from "@/icons/logo/AI.svg?react";
 import NewChatIcon from "@/icons/logo/chat/new_chat.svg?react";
+import MedicalSupportIcon from "@/icons/logo/chat/medical_support.svg?react";
+import DocumentTranslationIcon from "@/icons/logo/chat/contract_translation.svg?react";
+import DrugInstructionsIcon from "@/icons/logo/chat/product_information.svg?react";
+import FoodDiscoveryIcon from "@/icons/logo/chat/food_discovery.svg?react";
 import "./ChatSidebar.module.css"
 const sidebarVariants: Variants = {
   hidden: { x: "-100%", opacity: 0 },
@@ -33,10 +38,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   history,
   userAvatar = "",
 }) => {
+  const { t } = useTranslation();
   const [search, setSearch] = React.useState("");
   const [showAvatar, setShowAvatar] = useState(false);
   const [avatarLoaded, setAvatarLoaded] = useState(false);
-  const [selectedTopic, setSelectedTopic] = useState<TopicType | "all">("all");
+  const [selectedTopic, setSelectedTopic] = useState<TopicType | "all">(50);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const { isLoading } = useUserChatsByTopicSearch(
@@ -49,7 +55,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     { value: "all", label: t("All") },
     ...Object.entries(TopicTypeLabel).map(([key, label]) => ({
       value: key,
-      label,
+      label: t(label),
     })),
   ];
 
@@ -80,6 +86,33 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
+  const quickAccessItems = [
+    {
+      icon: MedicalSupportIcon,
+      label: "Medical Support",
+      topicType: TopicType.MedicalSupport,
+    },
+    {
+      icon: DocumentTranslationIcon,
+      label: "Document Translation",
+      topicType: TopicType.DocumentTranslation,
+    },
+    {
+      icon: DrugInstructionsIcon,
+      label: "Drug Instructions",
+      topicType: TopicType.DrugInstructions,
+    },
+    {
+      icon: FoodDiscoveryIcon,
+      label: "Food Discovery",
+      topicType: TopicType.FoodDiscovery,
+    },
+    {
+      icon: BotIcon,
+      label: "JETAI",
+      topicType: TopicType.Chat,
+    },
+  ];
 
   return (
     <>
@@ -106,17 +139,21 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     className="bg-transparent outline-none flex-1 py-2 placeholder:text-netural-300"
                   />
                 </div>
-                <div className="relative">
+                <button onClick={onNewChat}>
+                  <NewChatIcon className="w-7 h-7" aria-label={t("new chat")} />
+                </button>
+
+                {/* <div className="relative">
                   <button className="bg-main rounded-lg !w-10 h-10 aspect-square grid items-center justify-center" onClick={() => setDropdownOpen((v) => !v)}
                   >
                     <FilterIcon aria-label={t("new chat")} />
                   </button>
                   {dropdownOpen && (
-                    <div className="absolute right-0 z-20 mt-2 w-[180px] bg-white border border-netural-100 p-1 rounded-xl shadow-2xl  ">
+                    <div className="absolute right-0 z-20 mt-2 min-w-[180px] bg-white border border-netural-100 p-1 rounded-xl shadow-2xl  ">
                       {topicOptions.map((opt) => (
                         <button
                           key={opt.value}
-                          className={`block w-full text-left px-4 py-2 text-sm rounded-sm ${String(selectedTopic) === String(opt.value)
+                          className={`block w-full text-left px-4 py-2 text-sm rounded-sm whitespace-nowrap ${String(selectedTopic) === String(opt.value)
                             ? "font-semibold bg-chat-to text-main"
                             : "text-gray-700 hover:bg-gray-50"
                             }`}
@@ -130,17 +167,38 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       ))}
                     </div>
                   )}
-                </div>
-
+                </div> */}
               </div>
-              <button
-                className="flex items-center gap-2 bg-[#EDF1FC] rounded-lg px-3 py-2 mb-4 w-full "
+              {/* <button
+                className="flex items-center gap-2  rounded-lg  py-2  w-full "
                 onClick={onNewChat}
               >
-                <NewChatIcon className="w-4 h-4" aria-label={t("new chat")} />
-                <span className="text-netural-300 font-medium">{t("New Chat")}</span>
-              </button>
+                <NewChatIcon aria-label={t("new chat")} />
+                <span className=" font-medium">{t("New Chat")}</span>
+              </button> */}
+
+              <div className="my-6">
+                <div className="flex flex-col gap-5">
+                  {quickAccessItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.topicType}
+                        className="bg-white  flex items-center gap-3  text-left w-full"
+                        onClick={() => {
+                          history.push(`/chat/${item.topicType}`);
+                          onClose?.();
+                        }}
+                      >
+                        <Icon className=" flex-shrink-0 w-[30px] h-[30px]" />
+                        <span className=" font-medium uppercase">{t(item.label)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
+            <hr className="border-t border-netural-100" />
             <div className="flex-1 overflow-y-auto pr-6 pl-2"
             >
               {isLoading ? (

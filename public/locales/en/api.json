@@ -3,5 +3,13 @@
     "Please wait before resending OTP.": "Please wait before resending OTP.",
     "OTP has been resent.": "OTP has been resent.",
     "OTP has been sent to your email.": "OTP has been sent to your email.",
-    "Home": "Home"
+    "Home": "Home",
+    "Please check input fields": "Please check input fields",
+    "Please check your email": "Please check your email",
+    "Please check your email for the OTP": "Please check your email for the OTP",
+    "Please check your email for the verification link": "Please check your email for the verification link",
+    "Please check your email for the reset password link": "Please check your email for the reset password link",
+    "Please check your email for the verification code": "Please check your email for the verification code",
+    "Current password is not correct": "Current password is not correct.",
+    "Username or password did not match.": "Username or password did not match."
 }

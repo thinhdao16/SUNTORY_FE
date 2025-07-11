@@ -9,6 +9,7 @@ import { useQueryClient } from "react-query";
 import { useUpdateAccountInfo } from "../hooks/useProfile";
 import dayjs from "dayjs";
 import HealthTextInput from "@/components/input/HealthTextInput";
+import { useHistory } from "react-router";
 
 const genderOptions = [
     { label: "Male", code: "Male" },
@@ -17,6 +18,7 @@ const genderOptions = [
 ];
 
 const AccountEdit: React.FC = () => {
+    const history = useHistory();
     const { data: userInfo } = useAuthInfo();
     const queryClient = useQueryClient();
     const updateAccountInfo = useUpdateAccountInfo();
@@ -58,6 +60,7 @@ const AccountEdit: React.FC = () => {
             {
                 onSuccess: () => {
                     queryClient.invalidateQueries("authInfo");
+                    history.replace("/profile");
                 },
             }
         );
@@ -70,7 +73,13 @@ const AccountEdit: React.FC = () => {
                     <Controller
                         name="firstname"
                         control={control}
-                        rules={{ required: t("First name is required") }}
+                        rules={{
+                            required: t("First name is required"),
+                            pattern: {
+                                value: /^[a-zA-ZÀ-ỹ\s'-]+$/,
+                                message: t("First name cannot contain special characters"),
+                            },
+                        }}
                         render={({ field }) => (
                             <InputTextField
                                 label={t("First Name")}
@@ -83,7 +92,13 @@ const AccountEdit: React.FC = () => {
                     <Controller
                         name="lastname"
                         control={control}
-                        rules={{ required: t("Last name is required") }}
+                        rules={{
+                            required: t("Last name is required"),
+                            pattern: {
+                                value: /^[a-zA-ZÀ-ỹ\s'-]+$/,
+                                message: t("Last name cannot contain special characters"),
+                            },
+                        }}
                         render={({ field }) => (
                             <InputTextField
                                 label={t("Last Name")}
@@ -118,9 +133,9 @@ const AccountEdit: React.FC = () => {
                                     inputRef={birthdayInputRef}
                                     min={minDate}
                                     max={maxDate}
-                                    className="py-3 pr-2 h-[44px] ml-0 w-full min-w-0 appearance-none overflow-hidden"
+                                    className="py-3 !pr-2 h-[44px] ml-0 w-full min-w-0 appearance-none overflow-hidden "
                                     classNameContainer="mb-0"
-                                    classNameLable="!mb-0"
+                                    classNameLable=" !text-sm"
                                     {...field}
                                 />
                             )}
@@ -136,7 +151,7 @@ const AccountEdit: React.FC = () => {
                                     options={genderOptions}
                                     control={control}
                                     menuButtonClassName="py-3 !border-netural-200"
-                                    labelClassName="!mb-0"
+                                    labelClassName=" !text-sm"
                                     {...field}
                                 />
                             )}

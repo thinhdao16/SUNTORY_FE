@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import CameraIcon from "@/icons/logo/chat/cam.svg?react";
-import { motion, AnimatePresence } from "framer-motion";
+import AvatarPreviewModal from "@/components/common/AvatarPreviewModal";
 import { useUploadAvatar } from "./hooks/useProfile";
 
 interface UserInfo {
@@ -40,7 +40,6 @@ export const ProfileHeader = ({
 
     return (
         <>
-
             <div className="flex flex-col items-center mt-18 mb-2">
                 <div className="relative w-24 h-24">
                     <img
@@ -73,28 +72,12 @@ export const ProfileHeader = ({
                 <div className="mt-3 text-xl font-bold">{userInfo?.name}</div>
                 <div className="text-gray-400 text-sm">{userInfo?.email}</div>
             </div>
-            <AnimatePresence>
-                {showPreview && (
-                    <motion.div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setShowPreview(false)}
-                    >
-                        <motion.img
-                            src={userInfo?.avatarLink || "/favicon.png"}
-                            alt="Avatar Preview"
-                            className="max-w-[200px] max-h-[80vh]"
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.8, opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            onClick={(e) => e.stopPropagation()}
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <AvatarPreviewModal
+                open={showPreview}
+                src={userInfo?.avatarLink || "/favicon.png"}
+                alt="Avatar Preview"
+                onClose={() => setShowPreview(false)}
+            />
         </>
     );
 };

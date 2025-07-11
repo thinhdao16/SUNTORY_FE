@@ -28,6 +28,7 @@
     "@capacitor/device": "^7.0.1",
     "@capacitor/ios": "^7.2.0",
     "@capacitor/keyboard": "^7.0.1",
+    "@capacitor/network": "^7.0.1",
     "@capacitor/splash-screen": "^7.0.1",
     "@capacitor/status-bar": "7.0.1",
     "@codetrix-studio/capacitor-google-auth": "3.4.0-rc.4",
@@ -35,6 +36,8 @@
     "@headlessui/react": "^2.2.4",
     "@ionic/react": "^8.5.5",
     "@ionic/react-router": "^8.5.5",
+    "@llm-ui/markdown": "^0.13.3",
+    "@llm-ui/react": "^0.13.3",
     "@microsoft/signalr": "^8.0.7",
     "@react-oauth/google": "^0.12.2",
     "@tailwindcss/vite": "^4.1.4",
@@ -62,6 +65,7 @@
     "react-router": "^5.3.4",
     "react-router-dom": "^5.3.4",
     "remark-gfm": "^4.0.1",
+    "sharp": "^0.34.3",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

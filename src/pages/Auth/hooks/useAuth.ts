@@ -61,7 +61,7 @@ export const useLogin = () => {
                     history.push("/otp");
                 } else {
                     showToast(
-                        message || t("Login failed. Please try again."),
+                        t(message, { ns: "api" }) || t("Login failed. Please try again."),
                         3000,
                         "error"
                     );
@@ -113,7 +113,7 @@ export const useChangePassword = () => {
             },
             onError: (error: any) => {
                 showToast(
-                    error?.response?.data?.message || t("Password change failed. Please try again."),
+                    t(error?.response?.data?.message, { ns: "api" }) || t("Password change failed. Please try again."),
                     3000,
                     "error"
                 );
@@ -223,23 +223,26 @@ export const useGoogleLogin = () => {
             const data = await loginAuthGoogle({
                 token: user.authentication?.idToken,
             });
-            const auth = data?.data?.authentication;
+            const auth = data?.data;
             if (auth?.token && auth?.refreshToken) {
                 setAuthData({
                     ...data.data,
                     token: auth.token,
                     refreshToken: auth.refreshToken,
                 });
+                updateNewDeviceMutation.mutate({
+                    deviceId: deviceInfo.deviceId,
+                });
             } else {
                 setAuthData(data.data);
             }
             showToast(t("Login successful!"), 2000, "success");
             return user;
-        } catch (err) {
+        } catch (err: any) {
+            console.error("Google Native Sign-In Error (FULL):", JSON.stringify(err));
             showToast("Login failed. Please try again.", 3000, "error");
-            console.error("Google Native Sign-In Error:", err);
-            return null;
         }
+
     };
 
     return { handleGoogleWebLogin, nativeLogin, isWeb };

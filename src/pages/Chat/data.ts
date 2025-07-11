@@ -1,35 +1,31 @@
 import MedicalSupportIcon from "@/icons/logo/chat/medical_support.svg?react";
 import DocumentTranslationIcon from "@/icons/logo/chat/contract_translation.svg?react";
-import ProductInformationIcon from "@/icons/logo/chat/product_information.svg?react";
+import DrugInstructionsIcon from "@/icons/logo/chat/product_information.svg?react";
 import FoodDiscoveryIcon from "@/icons/logo/chat/food_discovery.svg?react";
-import DrugInstructionsIcon from "@/icons/logo/chat/drug_instructions.svg?react";
+import { TopicType } from "@/constants/topicType";
 export const quickActions = [
     {
-        to: "/chat/10",
-        iconBg: "bg-blue-100",
         icon: MedicalSupportIcon,
         label: "Medical Support",
-        alt: "Medical Support",
+        to: `/chat/${TopicType.MedicalSupport}`,
+        topicId: TopicType.MedicalSupport,
     },
     {
-        to: "/chat/20",
-        iconBg: "bg-green-100",
         icon: DocumentTranslationIcon,
         label: "Document Translation",
-        alt: "Document Translation",
+        to: `/chat/${TopicType.DocumentTranslation}`,
+        topicId: TopicType.DocumentTranslation,
     },
     {
-        to: "/chat/30",
-        iconBg: "bg-orange-100",
-        icon: ProductInformationIcon,
+        icon: DrugInstructionsIcon,
         label: "Drug Instructions",
-        alt: "Drug Instructions",
+        to: `/chat/${TopicType.DrugInstructions}`,
+        topicId: TopicType.DrugInstructions,
     },
     {
-        to: "/chat/40",
-        iconBg: "bg-red-100",
         icon: FoodDiscoveryIcon,
         label: "Food Discovery",
-        alt: "Food Discovery",
+        to: `/chat/${TopicType.FoodDiscovery}`,
+        topicId: TopicType.FoodDiscovery,
     },
 ];

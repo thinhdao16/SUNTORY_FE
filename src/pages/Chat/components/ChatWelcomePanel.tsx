@@ -3,6 +3,7 @@ import PendingFiles from "./PendingFiles";
 import { t } from "@/lib/globalT";
 import { quickActions } from "../data";
 import React from "react";
+import { useChatHistoryLastModule } from "../hooks/useChatHistorylastModule";
 
 // Import SVG as React component
 import BotIcon from "@/icons/logo/AI.svg?react";
@@ -129,7 +130,8 @@ const ChatWelcomePanel: React.FC<{
                                     onChange={handleImageChange}
                                 />
                             </label>
-                            {/* <label>
+                        </div>
+                        {/* <label>
                             <FileIcon aria-label={t("file")} />
                             <input
                                 type="file"
@@ -138,7 +140,6 @@ const ChatWelcomePanel: React.FC<{
                                 onChange={handleFileChange}
                             />
                         </label> */}
-                        </div>
                         <button
                             type="button"
                             onClick={(e) => handleSendMessage(e, true)}
@@ -151,14 +152,23 @@ const ChatWelcomePanel: React.FC<{
                 <div className="grid grid-cols-2 gap-4 w-full mt-8">
                     {quickActions.map((item) => {
                         const Icon = item.icon;
+                        const getItemLink = () => {
+                            if (item.topicId) {
+                                // Điều hướng trực tiếp với topic
+                                return `/chat/${item.topicId}`;
+                            }
+                            return typeof item.to === 'function'
+                                ? (item.to as (() => string))()
+                                : item.to;
+                        };
                         return (
                             <button
-                                key={item.to}
+                                key={item.label}
                                 className="flex items-center gap-4 p-4 rounded-3xl w-full  bg-white shadow-[0px_2px_2px_2px_#0000001A] transition hover:shadow-md"
-                                onClick={() => history.push(item.to)}
+                                onClick={() => history.push(getItemLink())}
                             >
                                 <span className="inline-flex items-center justify-center rounded-full ">
-                                    {Icon ? <Icon className="w-8 aspect-square" /> : null}
+                                    {Icon ? <Icon className="w-[30px] h-[30px]" /> : null}
                                 </span>
                                 <span className="font-semibold text-main text-left leading-none break-words line-clamp-2">
                                     {t(item.label)}

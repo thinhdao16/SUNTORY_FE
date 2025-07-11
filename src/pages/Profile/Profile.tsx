@@ -33,7 +33,10 @@ const Profile: React.FC = () => {
     const handleChangeLanguage = (status: boolean, lang?: string) => {
         setShowLanguageOptions(status);
     };
-    const currentLang = languageOptions.find(opt => opt.code === i18n.language)?.label || i18n.language;
+    const shortLang = i18n.language?.split("-")[0] || "en";
+
+    const currentLang = languageOptions.find(opt => opt.code === shortLang)?.label || shortLang;
+
 
     // Thêm trường chevron vào từng item
     const menuItems = [
@@ -86,7 +89,6 @@ const Profile: React.FC = () => {
                             className="flex items-center gap-2 text-main font-medium"
                             onClick={() => {
                                 const from = location.state?.from;
-                                console.log(from)
                                 if (from === "home") {
                                     history.replace("/");
                                 } else {

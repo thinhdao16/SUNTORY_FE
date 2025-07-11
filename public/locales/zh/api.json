@@ -3,5 +3,13 @@
     "Please wait before resending OTP.": "Vui lòng đợi trước khi gửi lại mã OTP.",
     "OTP has been resent.": "Mã OTP đã được gửi lại.",
     "OTP has been sent to your email.": "Mã OTP đã được gửi đến email của bạn.",
-    "Home": "家"
+    "Home": "家",
+    "Please check input fields": "请检查输入字段",
+    "Please check your email": "请检查您的电子邮件",
+    "Please check your email for the OTP": "请检查您的电子邮件以获取OTP",
+    "Please check your email for the verification link": "请检查您的电子邮件以获取验证链接",
+    "Please check your email for the reset password link": "请检查您的电子邮件以获取重置密码链接",
+    "Please check your email for the verification code": "请检查您的电子邮件以获取验证码",
+    "Current password is not correct": "当前密码不正确。",
+    "Username or password did not match.": "用户名或密码不匹配。"
 }
