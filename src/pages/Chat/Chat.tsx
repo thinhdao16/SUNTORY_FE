@@ -232,11 +232,11 @@ const Chat: React.FC = () => {
             currentPath.split('/').length === 4 &&
             chatHistory.length > 0;
 
-        const shouldLoad = sessionId ?
-            isLoading : // Chỉ cần chờ messages load khi có sessionId
-            isLoadingHistory;
+        // const shouldLoad = sessionId ?
+        //     isLoading : // Chỉ cần chờ messages load khi có sessionId
+        //     isLoadingHistory;
 
-        if (shouldLoad) {
+        if (isLoadingHistory && !sessionId) {
             setDebouncedLoading(true);
         } else {
             const timer = setTimeout(() => {
