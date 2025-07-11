@@ -41,6 +41,7 @@ export function useSignalRChat(deviceId: string) {
             });
 
         const handleReceive = (msg: any) => {
+            console.log(msg)
             addMessage(msg);
             useChatStore.getState().setIsSending(false);
         };

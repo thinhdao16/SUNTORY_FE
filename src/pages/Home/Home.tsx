@@ -21,22 +21,22 @@ function Home() {
 
   const features = [
     {
-      image: <MedicalSupportIcon className="w-full h-full object-cover flex-1 my-2" />,
+      image: <MedicalSupportIcon className="w-full h-full object-cover flex-1 " />,
       title: t("Medical Support"),
       topic: TopicType.MedicalSupport,
     },
     {
-      image: <DocumentTranslationIcon className="w-full h-full object-cover flex-1 my-2" />,
+      image: <DocumentTranslationIcon className="w-full h-full object-cover flex-1 " />,
       title: t("Document Translation"),
       topic: TopicType.DocumentTranslation,
     },
     {
-      image: <DrugIstrucstionsIcon className="w-full h-full object-cover flex-1 my-2" />,
+      image: <DrugIstrucstionsIcon className="w-full h-full object-cover flex-1 " />,
       title: t("Drug Instructions"),
       topic: TopicType.DrugInstructions,
     },
     {
-      image: <FoodDiscoveryIcon className="w-full h-full object-cover flex-1 my-2" />,
+      image: <FoodDiscoveryIcon className="w-full h-full object-cover flex-1 " />,
       title: t("Food Discovery"),
       topic: TopicType.FoodDiscovery,
     },

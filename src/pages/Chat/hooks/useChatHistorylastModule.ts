@@ -10,8 +10,6 @@ export const useChatHistoryLastModule = (topicId: number, enabled: boolean) => {
     const { chatHistory, setChatHistory } = useChatStore();
     const { data: userInfo } = useAuthInfo();
 
-    console.log("useChatHistoryLastModule:", { topicId, enabled });
-
     const {
         data,
         isLoading,

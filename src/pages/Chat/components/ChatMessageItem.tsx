@@ -54,7 +54,7 @@ const ChatMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean; 
                                                         src={file.fileUrl}
                                                         alt={fileName}
                                                         className="w-[200px] aspect-square object-cover rounded-xl cursor-pointer"
-                                                        onError={(e) => handleImageError(e, "/public/temp_logo.png")}
+                                                    // onError={(e) => handleImageError(e, "/public/temp_logo.png")}
                                                     />
                                                 </a>
                                                 <button

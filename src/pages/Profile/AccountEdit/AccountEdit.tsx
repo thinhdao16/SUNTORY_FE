@@ -130,9 +130,9 @@ const AccountEdit: React.FC = () => {
                                     inputRef={birthdayInputRef}
                                     min={minDate}
                                     max={maxDate}
-                                    className="py-3 pr-2 h-[44px] ml-0 w-full min-w-0 appearance-none overflow-hidden"
+                                    className="py-3 !pr-2 h-[44px] ml-0 w-full min-w-0 appearance-none overflow-hidden "
                                     classNameContainer="mb-0"
-                                    classNameLable="!mb-0"
+                                    classNameLable=" !text-sm"
                                     {...field}
                                 />
                             )}
@@ -148,7 +148,7 @@ const AccountEdit: React.FC = () => {
                                     options={genderOptions}
                                     control={control}
                                     menuButtonClassName="py-3 !border-netural-200"
-                                    labelClassName="!mb-0"
+                                    labelClassName=" !text-sm"
                                     {...field}
                                 />
                             )}

@@ -27,10 +27,10 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({ features }) => {
             {features.map((feature) => (
                 <div
                     key={feature.title}
-                    className="bg-white rounded-2xl p-4 flex flex-col items-start justify-start aspect-square w-full"
+                    className="bg-white rounded-2xl p-5 flex flex-col items-start justify-start w-full"
                     onClick={() => handleFeatureClick(feature.topic)}
                 >
-                    <div className="flex justify-between gap-0.5 items-center w-full mb-1">
+                    <div className="flex justify-between gap-1 items-center w-full mb-3">
                         <div className="font-semibold leading-none text-[14px] mb-1">{feature.title}</div>
                         <button
                             className="top-3 right-3 bg-main rounded-full aspect-square h-[30px] flex items-center justify-center shadow-md"
@@ -42,7 +42,9 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({ features }) => {
                             <LinkToIcon />
                         </button>
                     </div>
-                    {feature.image}
+                    <div className='w-full'>
+                        {feature.image}
+                    </div>
                 </div>
             ))}
         </div>
