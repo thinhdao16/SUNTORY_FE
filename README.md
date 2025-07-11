@@ -5,3 +5,11 @@ npm run build
 npx cap add android
 
 npx cap sync android
+
+# build icon
+pnpm remove @codetrix-studio/capacitor-google-auth
+rm -rf node_modules pnpm-lock.yaml
+npm install sharp --legacy-peer-deps --force
+
+# Test
+npx @capacitor/assets generate
