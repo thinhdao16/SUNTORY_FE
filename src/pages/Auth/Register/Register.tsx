@@ -126,6 +126,7 @@ const Register: React.FC = () => {
                             message: t("Password must be at least 8 characters"),
                         },
                     })}
+                    showIcon={false}
                     required
                 />
                 <div className="flex items-center gap-1 mt-1 text-xs text-main" >

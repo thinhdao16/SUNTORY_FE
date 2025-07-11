@@ -10,5 +10,6 @@
     "Please check your email for the verification link": "请检查您的电子邮件以获取验证链接",
     "Please check your email for the reset password link": "请检查您的电子邮件以获取重置密码链接",
     "Please check your email for the verification code": "请检查您的电子邮件以获取验证码",
-    "Current password is not correct": "当前密码不正确。"
+    "Current password is not correct": "当前密码不正确。",
+    "Username or password did not match.": "用户名或密码不匹配。"
 }

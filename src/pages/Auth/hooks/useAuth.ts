@@ -61,7 +61,7 @@ export const useLogin = () => {
                     history.push("/otp");
                 } else {
                     showToast(
-                        message || t("Login failed. Please try again."),
+                        t(message, { ns: "api" }) || t("Login failed. Please try again."),
                         3000,
                         "error"
                     );

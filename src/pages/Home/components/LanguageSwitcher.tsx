@@ -15,13 +15,13 @@ interface LanguageSwitcherProps {
 const getFlagIcon = (langCode: string) => {
     switch (langCode) {
         case 'vi':
-            return <VietnameseIcon className="w-5 h-5 rounded-full" />;
+            return <VietnameseIcon className=" rounded-full" />;
         case 'en':
-            return <USAIcon className="w-5 h-5 rounded-full" />;
+            return <USAIcon className=" rounded-full" />;
         case 'zh':
-            return <ChineseIcon className="w-5 h-5 rounded-full" />;
+            return <ChineseIcon className=" rounded-full" />;
         default:
-            return <USAIcon className="w-5 h-5 rounded-full" />;
+            return <USAIcon className=" rounded-full" />;
     }
 };
 
@@ -39,18 +39,16 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
     return (
         <div className="relative language-dropdown text-sm w-[70px]">
             <button
-                className="flex items-center gap-1 bg-white w-full backdrop-blur-sm rounded-full px-2 py-1 text-white font-medium whitespace-nowrap"
+                className="flex items-center justify-between bg-white w-full rounded-full px-2 py-1.5"
                 onClick={() => setShowLanguageOptions(!showLanguageOptions)}
                 disabled={languageLoading}
             >
-                <span className="flex-shrink-0">
-                    {getFlagIcon(shortLang)} {/* ✅ Sử dụng shortLang */}
-                </span>
-                <span className="whitespace-nowrap text-main font-semibold">
-                    {currentLang} {/* ✅ Sử dụng currentLang */}
-                </span>
+                <div className="flex items-center gap-1">
+                    {getFlagIcon(shortLang)}
+                    <span className="text-sm leading-none font-semibold text-main">{currentLang}</span>
+                </div>
                 <svg
-                    className={`w-4 h-4 rounded-full transition-transform flex-shrink-0 ${showLanguageOptions ? 'rotate-180 text-main' : 'text-main'}`}
+                    className={`w-4 h-4 transition-transform ${showLanguageOptions ? 'rotate-180' : ''} text-main`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -59,6 +57,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                 </svg>
             </button>
 
+
             {showLanguageOptions && (
                 <div className="absolute right-0 top-full w-full mt-2 bg-white rounded-xl shadow-lg py-1.5 gap-1 grid z-50">
                     {languages
@@ -66,14 +65,14 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                         .map((lang, index, filteredArray) => (
                             <React.Fragment key={lang.code}>
                                 <button
-                                    className="w-full px-3 py-1 text-left hover:bg-gray-50 flex items-center gap-1 whitespace-nowrap text-main font-semibold"
+                                    className="w-full px-3 py-1 text-left hover:bg-gray-50 flex items-center  gap-1 whitespace-nowrap text-main font-semibold"
                                     onClick={() => handleLanguageChange(lang.code)}
                                     disabled={languageLoading}
                                 >
-                                    <span className="flex-shrink-0">
+                                    <span className="flex items-center gap-1">
                                         {getFlagIcon(lang.code)}
                                     </span>
-                                    <span className="flex-shrink-0">{lang.label}</span>
+                                    <span className="text-sm leading-none font-semibold text-main">{lang.label}</span>
                                 </button>
                                 {index < filteredArray.length - 1 && (
                                     <div className="mx-2 border-t border-gray-200"></div>

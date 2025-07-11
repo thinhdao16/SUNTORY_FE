@@ -10,5 +10,6 @@
     "Please check your email for the verification link": "Please check your email for the verification link",
     "Please check your email for the reset password link": "Please check your email for the reset password link",
     "Please check your email for the verification code": "Please check your email for the verification code",
-    "Current password is not correct": "Current password is not correct."
+    "Current password is not correct": "Current password is not correct.",
+    "Username or password did not match.": "Username or password did not match."
 }

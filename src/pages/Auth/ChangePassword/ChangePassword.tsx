@@ -80,7 +80,7 @@ const ChangePassword: React.FC = () => {
                     error={errors.password?.message}
                     required
                     {...register("password", {
-                        required: t("Password is required"),
+                        required: t("Password is required new"),
                         minLength: { value: 8, message: t("At least 8 characters") },
                     })}
                 />
@@ -92,7 +92,7 @@ const ChangePassword: React.FC = () => {
                     error={errors.confirmPassword?.message}
                     required
                     {...register("confirmPassword", {
-                        required: t("Confirm password is required"),
+                        required: t("Confirm password is required new"),
                         validate: (value) =>
                             value === watch("password") || t("Passwords do not match"),
                     })}

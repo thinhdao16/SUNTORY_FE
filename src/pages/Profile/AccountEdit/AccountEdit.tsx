@@ -9,6 +9,7 @@ import { useQueryClient } from "react-query";
 import { useUpdateAccountInfo } from "../hooks/useProfile";
 import dayjs from "dayjs";
 import HealthTextInput from "@/components/input/HealthTextInput";
+import { useHistory } from "react-router";
 
 const genderOptions = [
     { label: "Male", code: "Male" },
@@ -17,6 +18,7 @@ const genderOptions = [
 ];
 
 const AccountEdit: React.FC = () => {
+    const history = useHistory();
     const { data: userInfo } = useAuthInfo();
     const queryClient = useQueryClient();
     const updateAccountInfo = useUpdateAccountInfo();
@@ -58,6 +60,7 @@ const AccountEdit: React.FC = () => {
             {
                 onSuccess: () => {
                     queryClient.invalidateQueries("authInfo");
+                    history.replace("/profile");
                 },
             }
         );

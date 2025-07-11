@@ -31,7 +31,7 @@ export const useChatHistoryLastModule = (topicId: number, enabled: boolean) => {
             },
             onError: (err: any) => {
                 const errorMessage = err?.response?.data?.message || "Failed to load chat history";
-                showToast(errorMessage, 3000, "error");
+                // showToast(errorMessage, 3000, "error");
             },
         }
     );

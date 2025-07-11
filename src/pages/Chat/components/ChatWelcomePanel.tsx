@@ -168,7 +168,7 @@ const ChatWelcomePanel: React.FC<{
                                 onClick={() => history.push(getItemLink())}
                             >
                                 <span className="inline-flex items-center justify-center rounded-full ">
-                                    {Icon ? <Icon className="w-8 aspect-square" /> : null}
+                                    {Icon ? <Icon className="w-[30px] h-[30px]" /> : null}
                                 </span>
                                 <span className="font-semibold text-main text-left leading-none break-words line-clamp-2">
                                     {t(item.label)}

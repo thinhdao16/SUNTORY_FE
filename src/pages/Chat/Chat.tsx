@@ -24,6 +24,7 @@ import { useChatStore } from "@/store/zustand/chat-store";
 import { useImageStore } from "@/store/zustand/image-store";
 import { useUploadStore } from "@/store/zustand/upload-store";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
+import { useSignalRStream } from "@/hooks/useSignalRStream";
 import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
 
 import ChatInputBar from "./components/ChatInputBar";

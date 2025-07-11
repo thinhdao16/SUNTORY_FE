@@ -11,10 +11,11 @@ const useNetworkStatus = () => {
     if (Capacitor.isNativePlatform()) {
       import("@capacitor/network").then(({ Network }) => {
         Network.getStatus().then((status) => setIsOnline(status.connected));
-        const handler = Network.addListener("networkStatusChange", (status) => {
+        Network.addListener("networkStatusChange", (status) => {
           setIsOnline(status.connected);
+        }).then((handler) => {
+          unsubscribe = () => handler.remove();
         });
-        unsubscribe = () => handler.remove();
       });
     } else {
       // Web

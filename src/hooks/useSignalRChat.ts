@@ -4,6 +4,7 @@ import ENV from "@/config/env";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { useAuthStore } from "@/store/zustand/auth-store";
+import { useSignalRStreamStore } from "@/store/zustand/signalr-stream-store";
 
 export function useSignalRChat(deviceId: string) {
     const setIsConnected = useSignalRChatStore((s) => s.setIsConnected);
@@ -12,6 +13,9 @@ export function useSignalRChat(deviceId: string) {
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const setIsSending = useChatStore.getState().setIsSending;
     const { isAuthenticated } = useAuthStore();
+
+    // ✅ Add streaming store for compatibility
+    const { addStreamChunk, completeStream, errorStream } = useSignalRStreamStore();
 
     useEffect(() => {
         if (connectionRef.current) {
@@ -47,6 +51,37 @@ export function useSignalRChat(deviceId: string) {
         };
 
         connection.on("ReceiveMessage", handleReceive);
+
+        // ✅ Add streaming event handlers for compatibility
+        connection.on("ReceiveStreamChunk", (data: any) => {
+            console.log("📩 Stream chunk in useSignalRChat:", data);
+            addStreamChunk({
+                chatCode: data.ChatCode,
+                messageCode: data.MessageCode,
+                chunk: data.Chunk,
+                completeText: data.CompleteText,
+                timestamp: new Date().toISOString()
+            });
+        });
+
+        connection.on("StreamComplete", (data: any) => {
+            console.log("✅ Stream complete in useSignalRChat:", data);
+            completeStream({
+                chatCode: data.ChatCode,
+                messageCode: data.MessageCode,
+                timestamp: new Date().toISOString()
+            });
+        });
+
+        connection.on("StreamError", (data: any) => {
+            console.error("❌ Stream error in useSignalRChat:", data);
+            errorStream({
+                chatCode: data.ChatCode,
+                messageCode: data.MessageCode,
+                timestamp: new Date().toISOString(),
+                errorMessage: data.ErrorMessage
+            });
+        });
 
         connection.onclose((err) => {
             setIsSending(false);
@@ -94,8 +129,12 @@ export function useSignalRChat(deviceId: string) {
 
         return () => {
             connection.off("ReceiveMessage", handleReceive);
+            // ✅ Clean up streaming handlers
+            connection.off("ReceiveStreamChunk");
+            connection.off("StreamComplete");
+            connection.off("StreamError");
             connection.stop();
             connectionRef.current = null;
         };
-    }, [deviceId, setIsConnected, addMessage, setSendMessage, isAuthenticated]);
+    }, [deviceId, setIsConnected, addMessage, setSendMessage, isAuthenticated, addStreamChunk, completeStream, errorStream]);
 }
