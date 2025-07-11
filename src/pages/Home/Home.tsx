@@ -69,7 +69,7 @@ function Home() {
       <div className='-mt-24 px-6 pb-10'>
         <FeatureGrid features={features} />
         {/* <HowItWorksSection items={howItWorks} /> */}
-        <GetStartedButton chatTopicId={TopicType.Chat} />
+        {/* <GetStartedButton chatTopicId={TopicType.Chat} /> */}
       </div>
     </PageContainer>
   );
