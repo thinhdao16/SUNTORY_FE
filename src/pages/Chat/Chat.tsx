@@ -36,7 +36,7 @@ import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 import CloseIcon from "@/icons/logo/chat/x.svg?react";
 
 import "./Chat.module.css";
-import { IoArrowDown } from "react-icons/io5";
+import { IoArrowBack, IoArrowDown } from "react-icons/io5";
 import { mergeMessages } from "@/utils/mapSignalRMessage";
 import { useChatHistoryLastModule } from "./hooks/useChatHistorylastModule";
 import { IonSpinner } from "@ionic/react";
@@ -106,6 +106,7 @@ const Chat: React.FC = () => {
         messages, isLoading, sendMessage,
         scrollToBottom, messageValue, setMessageValue
     } = useChatMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, hasFirstSignalRMessage, isOnline);
+
     const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef);
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
@@ -123,8 +124,6 @@ const Chat: React.FC = () => {
         parseInt(type || "0", 10),
         shouldFetchHistory
     );
-
-
 
     // ===== Handlers =====
     const {
@@ -166,7 +165,10 @@ const Chat: React.FC = () => {
 
     const getCodeByTopic = useMemo(() => {
         return (topicId: number): string | undefined => {
-            const chatItem = chatHistory.find(item => item.topic === topicId);
+            const chatItem = chatHistory
+                .slice()
+                .reverse()
+                .find(item => item.topic === topicId);
             return chatItem?.code;
         };
     }, [chatHistory, type]);
@@ -204,12 +206,15 @@ const Chat: React.FC = () => {
             prevSessionIdRef.current && sessionId &&
             prevSessionIdRef.current.split("/")[0] !== sessionId.split("/")[0]
         ) {
-            setHasFirstSignalRMessage(false);
+            // setHasFirstSignalRMessage(false);
             setSignalRMessages?.([]);
             clearPendingMessages();
         }
+
+        setHasFirstSignalRMessage(false);
         prevSessionIdRef.current = sessionId;
         prevTypeRef.current = type;
+
         return () => {
             useChatStore.getState().setIsSending(false);
             clearSession();
@@ -232,13 +237,11 @@ const Chat: React.FC = () => {
             currentPath.split('/').length === 4 &&
             chatHistory.length > 0;
 
-        const shouldLoad = sessionId ?
-            isLoading : // Chỉ cần chờ messages load khi có sessionId
-            isLoadingHistory;
+        // const shouldLoad = sessionId ?
+        //     isLoading : // Chỉ cần chờ messages load khi có sessionId
+        //     isLoadingHistory;
 
-        if (shouldLoad) {
-            setDebouncedLoading(true);
-        } else {
+        if (!sessionId) {
             const timer = setTimeout(() => {
                 setDebouncedLoading(false);
                 if (mergedMessages.length > 0 && !isNavigationFromTopicOnly) {
@@ -267,7 +270,7 @@ const Chat: React.FC = () => {
 
     return (
         <div
-            className="flex flex-col bg-white"
+            className="relative flex flex-col bg-white"
             style={{
                 paddingRight: 0,
                 paddingLeft: 0,
@@ -276,10 +279,17 @@ const Chat: React.FC = () => {
                 // paddingTop: "var(--safe-area-inset-top, 0px)",
             }}
         >
-            <div className="flex items-center justify-between px-6 pb-4 pt-14 h-[49px]">
-                <button onClick={() => openSidebarWithAuthCheck()} >
-                    <NavBarHomeHistoryIcon />
-                </button>
+            <div className="flex items-center justify-between px-6 pb-4 pt-14 pb-6 h-[49px]">
+                <div className="flex items-center gap-4">
+                    {!isWelcome && (
+                        <button onClick={() => history.goBack()} aria-label="Back">
+                            <IoArrowBack size={20} className="text-blue-600" />
+                        </button>
+                    )}
+                    <button onClick={() => openSidebarWithAuthCheck()} aria-label="Sidebar">
+                        <NavBarHomeHistoryIcon />
+                    </button>
+                </div>
                 {(!isWelcome) && (
                     <>
                         <span className="font-semibold text-main uppercase tracking-wide">
@@ -371,6 +381,7 @@ const Chat: React.FC = () => {
                                     messageValue={messageValue}
                                     setMessageValue={setMessageValue}
                                     isLoading={isLoading}
+                                    isLoadingHistory={isLoadingHistory}
                                     messageRef={messageRef}
                                     handleSendMessage={handleSendMessage}
                                     handleImageChange={handleImageChange}
@@ -389,6 +400,13 @@ const Chat: React.FC = () => {
                     </>
                 )
             }
+
+            {/* {isLoadingHistory && (
+                <div className="absolute top-0 left-0 right-0 bottom-0 z-[200] flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm">
+                    <IonSpinner name="crescent" color="primary" className="w-8 h-8 mb-4" />
+                    <p className="text-gray-500 text-sm">{t("Loading messages...")}</p>
+                </div>
+            )} */}
         </div>
     );
 };

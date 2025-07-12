@@ -40,7 +40,11 @@ importers:
         version: 7.0.1(@capacitor/core@7.4.2)
       '@capacitor/network':
         specifier: ^7.0.1
+<<<<<<< HEAD
         version: 7.0.1(@capacitor/core@7.4.2)
+=======
+        version: 7.0.1(@capacitor/core@7.4.1)
+>>>>>>> origin/develop
       '@capacitor/splash-screen':
         specifier: ^7.0.1
         version: 7.0.1(@capacitor/core@7.4.2)
@@ -7122,7 +7126,11 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.4.2
 
+<<<<<<< HEAD
   '@capacitor/network@7.0.1(@capacitor/core@7.4.2)':
+=======
+  '@capacitor/network@7.0.1(@capacitor/core@7.4.1)':
+>>>>>>> origin/develop
     dependencies:
       '@capacitor/core': 7.4.2
 

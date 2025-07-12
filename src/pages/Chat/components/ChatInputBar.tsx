@@ -10,6 +10,7 @@ interface ChatInputBarProps {
     messageValue: string;
     setMessageValue: (v: string) => void;
     isLoading: boolean;
+    isLoadingHistory: boolean;
     messageRef: React.RefObject<HTMLTextAreaElement>;
     handleSendMessage: (e: any, force?: boolean) => void;
     handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -28,6 +29,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     messageValue,
     setMessageValue,
     isLoading,
+    isLoadingHistory,
     messageRef,
     handleSendMessage,
     handleImageChange,
@@ -40,95 +42,104 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     isDesktop,
     imageLoading,
     imageLoadingMany
+}) => {
+    const isLoadingBtn = useMemo(() => {
+        return isSpending || isLoading || imageLoading || imageLoadingMany || isLoadingHistory;
+    }, [isSpending, isLoading, imageLoading, imageLoadingMany, isLoadingHistory]);
 
-}) => (
-    <>
-        <div className="flex items-center px-6 pt-4 pb-6">
-            <textarea
-                placeholder={t("Enter your message...")}
-                ref={messageRef}
-                value={messageValue}
-                onChange={(e) => setMessageValue(e.target.value)}
-                disabled={isLoading || isSpending || imageLoading || imageLoadingMany}
-                className="flex-1 focus:outline-none resize-none max-h-[230px] overflow-y-auto"
-                rows={1}
-                onFocus={() => {
-                    setTimeout(() => {
-                        window.dispatchEvent(new Event("resize"));
-                    }, 100);
-                }}
-                onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage(e, true);
-                    }
-                }}
-                onPaste={async (e) => {
-                    const items = e.clipboardData?.items;
-                    if (!items) return;
-                    for (const item of items) {
-                        if (item.type.startsWith("image/")) {
-                            const file = item.getAsFile();
-                            if (file) {
-                                await uploadImageMutation.mutateAsync(file, {
-                                    onSuccess: (uploaded: any) => {
-                                        if (uploaded && uploaded.length > 0) {
-                                            addPendingImages([uploaded[0].linkImage]);
-                                        }
-                                    },
-                                });
+    return (
+        <>
+            <div className="flex items-center px-6 pt-4 pb-6">
+                <textarea
+                    placeholder={t("Enter your message...")}
+                    ref={messageRef}
+                    value={messageValue}
+                    onChange={(e) => setMessageValue(e.target.value)}
+                    disabled={isLoading || isSpending || imageLoading || imageLoadingMany}
+                    className="flex-1 focus:outline-none resize-none max-h-[230px] overflow-y-auto"
+                    rows={1}
+                    onFocus={() => {
+                        setTimeout(() => {
+                            window.dispatchEvent(new Event("resize"));
+                        }, 100);
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage(e, true);
+                        }
+                    }}
+                    onPaste={async (e) => {
+                        const items = e.clipboardData?.items;
+                        if (!items) return;
+                        for (const item of items) {
+                            if (item.type.startsWith("image/")) {
+                                const file = item.getAsFile();
+                                if (file) {
+                                    await uploadImageMutation.mutateAsync(file, {
+                                        onSuccess: (uploaded: any) => {
+                                            if (uploaded && uploaded.length > 0) {
+                                                addPendingImages([uploaded[0].linkImage]);
+                                            }
+                                        },
+                                    });
+                                }
                             }
                         }
-                    }
-                }}
-            />
-        </div>
-        <div className="flex justify-between items-center px-6">
-            <div className="flex gap-6">
-                {isNative || isDesktop ? (
-                    <button onClick={onTakePhoto} disabled={isSpending}>
-                        <CameraIcon aria-label={t("camera")} />
-                    </button>
-                ) : (
-                    <CameraWeb />
-                )}
-                <label>
-                    <ImageIcon aria-label={t("image")} />
-                    <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        onChange={handleImageChange}
-                        disabled={isSpending}
-                    />
-                </label>
-                {/* <label>
-                    <FileIcon aria-label={t("file")} />
-                    <input
-                        type="file"
-                        multiple
-                        accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.txt,.zip,.rar,.csv"
-                        className="hidden"
-                        onChange={handleFileChange}
-                        disabled={isSpending}
-                    />
-                </label> */}
+                    }}
+                />
             </div>
-            <div className="flex gap-6">
-                {/* <button onClick={onTakePhoto}>
-                    <MicIcon aria-label={t("microphone")} />
-                </button> */}
-                <button
-                    type="button"
-                    onClick={(e) => handleSendMessage(e, true)}
-                    disabled={isSpending || isLoading || imageLoading || imageLoadingMany}
-                >
-                    <SendIcon aria-label={t("send")} />
-                </button>
+            <div className="flex justify-between items-center px-6">
+                <div className="flex gap-6">
+                    {isNative || isDesktop ? (
+                        <button onClick={onTakePhoto} disabled={isSpending}>
+                            <CameraIcon aria-label={t("camera")} />
+                        </button>
+                    ) : (
+                        <CameraWeb />
+                    )}
+                    <label>
+                        <ImageIcon aria-label={t("image")} />
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={handleImageChange}
+                            disabled={isSpending}
+                        />
+                    </label>
+                    {/* <label>
+                        <FileIcon aria-label={t("file")} />
+                        <input
+                            type="file"
+                            multiple
+                            accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.txt,.zip,.rar,.csv"
+                            className="hidden"
+                            onChange={handleFileChange}
+                            disabled={isSpending}
+                        />
+                    </label> */}
+                </div>
+                <div className="flex gap-6">
+                    {/* <button onClick={onTakePhoto}>
+                        <MicIcon aria-label={t("microphone")} />
+                    </button> */}
+                    {isLoadingBtn ? (
+                        <div className="w-6 h-6 animate-spin border-2 border-t-transparent border-gray-500 rounded-full" />
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={(e) => handleSendMessage(e, true)}
+                            disabled={isSpending || isLoading || imageLoading || imageLoadingMany || isLoadingHistory}
+                        >
+                            <SendIcon aria-label={t("send")} />
+                        </button>
+                    )}
+                </div>
             </div>
-        </div>
-    </>
-);
+        </>
+    )
+};
 
 export default ChatInputBar;
