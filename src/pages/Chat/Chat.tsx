@@ -374,10 +374,10 @@ const Chat: React.FC = () => {
                             <div ref={messagesEndRef} className="mt-4" />
                         </div>
                         {!isWelcome && (
-                            <div className={` bg-white pb-4  w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
+                            <div className={`bg-white w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
                                 } ${isNative ? "bottom-0" : "bottom-[60px]"
                                 } ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
-                                }`}>
+                                } ${keyboardResizeScreen && isNative ? "pb-0" : "pb-4"}`}>
                                 {showScrollButton && (
                                     <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
                                         <button
