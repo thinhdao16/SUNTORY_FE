@@ -1,27 +1,27 @@
 @font-face {
   font-family: "Geologica";
-  src: url("/src/assets/fonts/Geologica-Regular.ttf") format("truetype");
+  src: url("../..//assets/fonts/Geologica-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Geologica";
-  src: url("/src/assets/fonts/Geologica-Bold.ttf") format("truetype");
+  src: url("../..//assets/fonts/Geologica-Bold.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Geologica";
-  src: url("/src/assets/fonts/Geologica-Italic.ttf") format("truetype");
+  src: url("../..//assets/fonts/Geologica-Italic.ttf") format("truetype");
   font-weight: 400;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: "Geologica";
-  src: url("/src/assets/fonts/Geologica-BoldItalic.ttf") format("truetype");
+  src: url("../..//assets/fonts/Geologica-BoldItalic.ttf") format("truetype");
   font-weight: 700;
   font-style: italic;
   font-display: swap;
