@@ -1,6 +1,23 @@
+html, body, ion-app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+}
+
+ion-router-outlet {
+  display: block;
+  height: 100%;
+}
+
+.ion-page {
+  margin: auto;
+}
+
 .prose table {
-  width: max-content;
-  min-width: 100%;
+  /* width: 100% !important; */
+  min-width: 800px !important;
+  /* max-width: 100% !important; */
 }
 
 .prose pre {
