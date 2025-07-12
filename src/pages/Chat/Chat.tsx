@@ -106,6 +106,7 @@ const Chat: React.FC = () => {
         messages, isLoading, sendMessage,
         scrollToBottom, messageValue, setMessageValue
     } = useChatMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, hasFirstSignalRMessage, isOnline);
+
     const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef);
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
@@ -123,8 +124,6 @@ const Chat: React.FC = () => {
         parseInt(type || "0", 10),
         shouldFetchHistory
     );
-
-
 
     // ===== Handlers =====
     const {
@@ -166,7 +165,10 @@ const Chat: React.FC = () => {
 
     const getCodeByTopic = useMemo(() => {
         return (topicId: number): string | undefined => {
-            const chatItem = chatHistory.find(item => item.topic === topicId);
+            const chatItem = chatHistory
+                .slice()
+                .reverse()
+                .find(item => item.topic === topicId);
             return chatItem?.code;
         };
     }, [chatHistory, type]);
@@ -204,12 +206,15 @@ const Chat: React.FC = () => {
             prevSessionIdRef.current && sessionId &&
             prevSessionIdRef.current.split("/")[0] !== sessionId.split("/")[0]
         ) {
-            setHasFirstSignalRMessage(false);
+            // setHasFirstSignalRMessage(false);
             setSignalRMessages?.([]);
             clearPendingMessages();
         }
+
+        setHasFirstSignalRMessage(false);
         prevSessionIdRef.current = sessionId;
         prevTypeRef.current = type;
+
         return () => {
             useChatStore.getState().setIsSending(false);
             clearSession();
@@ -236,9 +241,7 @@ const Chat: React.FC = () => {
         //     isLoading : // Chỉ cần chờ messages load khi có sessionId
         //     isLoadingHistory;
 
-        if (isLoadingHistory && !sessionId) {
-            setDebouncedLoading(true);
-        } else {
+        if (!sessionId) {
             const timer = setTimeout(() => {
                 setDebouncedLoading(false);
                 if (mergedMessages.length > 0 && !isNavigationFromTopicOnly) {
@@ -371,6 +374,7 @@ const Chat: React.FC = () => {
                                     messageValue={messageValue}
                                     setMessageValue={setMessageValue}
                                     isLoading={isLoading}
+                                    isLoadingHistory={isLoadingHistory}
                                     messageRef={messageRef}
                                     handleSendMessage={handleSendMessage}
                                     handleImageChange={handleImageChange}
