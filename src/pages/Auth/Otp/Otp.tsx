@@ -40,7 +40,7 @@ const Otp: React.FC = () => {
     <AuthCardLayout title={t("OTP Verification")}>
       <CustomButton
         icon={<CloseIcon aria-label={t("Close")} />}
-        className="fixed top-10 left-6"
+        className="fixed top-6 left-6"
         navigateTo={
           otpType === "register"
             ? "/register"

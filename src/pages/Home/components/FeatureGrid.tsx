@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { act } from 'react';
 import { useHistory } from 'react-router-dom';
 import { TopicType } from '@/constants/topicType';
 
@@ -19,7 +19,9 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({ features }) => {
 
     const handleFeatureClick = (topic: TopicType) => {
         // Điều hướng đến chat với topic, API sẽ được gọi trong Chat component
-        history.push(`/chat/${topic}`);
+        history.push(`/chat/${topic}`, {
+            actionFrom: '/home',
+        });
     };
 
     return (

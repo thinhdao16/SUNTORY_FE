@@ -8,7 +8,7 @@ const BaseMarkdown = ({ content }: { content: string }) => {
             remarkPlugins={[remarkGfm]}
             components={{
                 table: ({ node, ...props }) => (
-                    <div className="overflow-x-auto max-w-full my-2">
+                    <div className="overflow-x-auto max-w-[328px] my-2">
                         <table {...props} />
                     </div>
                 ),
