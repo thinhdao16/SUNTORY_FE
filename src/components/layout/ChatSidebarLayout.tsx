@@ -15,6 +15,8 @@ const ChatSidebarLayout: React.FC = () => {
   const { data: userInfo } = useAuthInfo();
   const history = useHistory();
   const location = useLocation();
+  const pathParts = location.pathname.split("/"); // ['', 'chat', '20', 'sessionId']
+  const currentTopicType = pathParts[2]; // '20'
   const match = location.pathname.match(/\/chat\/[^/]+\/([^/]+)/);
   const sessionId = match ? match[1] : undefined;
   const clearAll = () => {
@@ -80,6 +82,7 @@ const ChatSidebarLayout: React.FC = () => {
               <ChatSidebar
                 history={history}
                 onSelectChat={handleSelectChat}
+                currentTopicType={currentTopicType}
                 onNewChat={handleNewChat}
                 userName={userInfo?.name || "User"}
                 isOpen={true}

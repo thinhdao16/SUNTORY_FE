@@ -33,6 +33,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onSelectChat,
   userName = "John",
   isOpen = true,
+  currentTopicType,
   onClose,
   sessionId,
   history,
@@ -127,7 +128,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           onAnimationComplete={() => setShowAvatar(true)}
         >
           <div className="flex flex-col h-full w-full  py-5">
-            <div className="px-6">
+            <div className="px-4">
               <div className="flex gap-2 mb-4 ">
                 <div className="flex-1 flex items-center bg-[#EDF1FC] rounded-lg px-3">
                   <SearchIcon className="w-4 h-4 mr-2" aria-label={t("search")} />
@@ -178,13 +179,17 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               </button> */}
 
               <div className="my-6">
-                <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-2">
                   {quickAccessItems.map((item) => {
                     const Icon = item.icon;
+                    const isActive = String(item.topicType) === String(currentTopicType);
+
                     return (
                       <button
                         key={item.topicType}
-                        className="bg-white  flex items-center gap-3  text-left w-full"
+                        className={`flex items-center gap-3 text-left w-full px-1 py-2 rounded-md transition ${
+                          isActive ? "bg-gray-100" : "bg-white hover:bg-gray-50"
+                        }`}
                         onClick={() => {
                           history.push(`/chat/${item.topicType}`);
                           onClose?.();
