@@ -74,7 +74,6 @@ const Profile: React.FC = () => {
     };
     return (
         <PageContainer className="">
-
             {isLoading && (
                 <div className="fixed inset-0 bg-white/80 flex items-center justify-center z-[9999]">
                     <div className="loader border-4 border-white border-t-main rounded-full w-12 h-12 animate-spin"></div>
@@ -83,7 +82,7 @@ const Profile: React.FC = () => {
             <div className="min-h-screen bg-white flex flex-col px-6"
             // style={{ paddingTop: "var(--safe-area-inset-top)" }}
             >
-                <div className="flex items-center h-16 mb-2 pt-12">
+                <div className="flex items-center h-16 mb-2">
                     {section ? (
                         <button
                             className="flex items-center gap-2 text-main font-medium"

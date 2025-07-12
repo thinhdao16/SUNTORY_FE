@@ -21,7 +21,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ userInfo }) => {
     const { age, height, weight, bmi } = useUserStats(userInfo);
 
     return (
-        <div className="relative rounded-b-3xl overflow-hidden px-6 pt-6 h-[318px]">
+        <div className="relative rounded-b-3xl overflow-hidden px-6 pt-4 h-[318px]">
             <div
                 className="absolute inset-0 w-full h-full object-cover"
                 style={{
@@ -31,7 +31,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ userInfo }) => {
                 }}
             />
             <div className="relative z-10">
-                <div className="h-[62px] flex items-center justify-between">
+                <div className="flex items-center justify-between">
                     <button onClick={() => openSidebarWithAuthCheck()}>
                         <NavBarHomeIcon />
                     </button>

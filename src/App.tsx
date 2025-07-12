@@ -17,11 +17,18 @@ import "./App.css";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { GOOGLE_WEB_CLIENT_ID, initGoogleAuth } from "@/config/google";
 import useAppInit from "./hooks/useAppInit";
+import { StatusBar, Style } from "@capacitor/status-bar";
 setupIonicReact();
 initGoogleAuth();
 
 const App: React.FC = () => {
   useAppInit();
+
+  useEffect(() => {
+    StatusBar.setOverlaysWebView({ overlay: true });
+    StatusBar.setStyle({ style: Style.Light });
+  }, []);
+
   return (
     <GoogleOAuthProvider clientId={GOOGLE_WEB_CLIENT_ID}>
       <IonApp className="ion-light">
