@@ -75,14 +75,15 @@ const AccountEdit: React.FC = () => {
                         control={control}
                         rules={{
                             required: t("First name is required"),
-                            pattern: {
-                                value: /^[a-zA-ZÀ-ỹ\s'-]+$/,
-                                message: t("First name cannot contain special characters"),
-                            },
+                            // pattern: {
+                            //     value: /^[a-zA-ZÀ-ỹ\s'-]+$/,
+                            //     message: t("First name cannot contain special characters"),
+                            // },
                         }}
                         render={({ field }) => (
                             <InputTextField
                                 label={t("First Name")}
+                                required={true}
                                 error={errors.firstname?.message}
                                 inputClassName="text-netural-500"
                                 {...field}
@@ -94,14 +95,15 @@ const AccountEdit: React.FC = () => {
                         control={control}
                         rules={{
                             required: t("Last name is required"),
-                            pattern: {
-                                value: /^[a-zA-ZÀ-ỹ\s'-]+$/,
-                                message: t("Last name cannot contain special characters"),
-                            },
+                            // pattern: {
+                            //     value: /^[a-zA-ZÀ-ỹ\s'-]+$/,
+                            //     message: t("Last name cannot contain special characters"),
+                            // },
                         }}
                         render={({ field }) => (
                             <InputTextField
                                 label={t("Last Name")}
+                                required={true}
                                 error={errors.lastname?.message}
                                 {...field}
                             />
@@ -126,7 +128,7 @@ const AccountEdit: React.FC = () => {
                                 <HealthTextInput
                                     label={t("Birthday")}
                                     register={register}
-                                    required={true}
+                                    // required={true}
                                     placeholder={t("mm/dd/yyyy")}
                                     error={errors.dateOfBirth}
                                     type="date"
@@ -164,11 +166,11 @@ const AccountEdit: React.FC = () => {
                     <Controller
                         name="height"
                         control={control}
-                        rules={{
-                            required: t("Height is required"),
-                            min: { value: 50, message: t("Height must be at least 50cm") },
-                            max: { value: 300, message: t("Height must be less than 300cm") },
-                        }}
+                        // rules={{
+                        //     required: t("Height is required"),
+                        //     min: { value: 50, message: t("Height must be at least 50cm") },
+                        //     max: { value: 300, message: t("Height must be less than 300cm") },
+                        // }}
                         render={({ field }) => (
                             <InputTextField
                                 label={`${t("Height")} (${t("cm")})`}
@@ -181,11 +183,11 @@ const AccountEdit: React.FC = () => {
                     <Controller
                         name="weight"
                         control={control}
-                        rules={{
-                            required: t("Weight is required"),
-                            min: { value: 10, message: t("Weight must be at least 10kg") },
-                            max: { value: 500, message: t("Weight must be less than 500kg") },
-                        }}
+                        // rules={{
+                        //     required: t("Weight is required"),
+                        //     min: { value: 10, message: t("Weight must be at least 10kg") },
+                        //     max: { value: 500, message: t("Weight must be less than 500kg") },
+                        // }}
                         render={({ field }) => (
                             <InputTextField
                                 label={`${t("Weight")} (${t("kg")})`}
