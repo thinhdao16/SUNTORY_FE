@@ -36,7 +36,7 @@ import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 import CloseIcon from "@/icons/logo/chat/x.svg?react";
 
 import "./Chat.module.css";
-import { IoArrowDown } from "react-icons/io5";
+import { IoArrowBack, IoArrowDown } from "react-icons/io5";
 import { mergeMessages } from "@/utils/mapSignalRMessage";
 import { useChatHistoryLastModule } from "./hooks/useChatHistorylastModule";
 import { IonSpinner } from "@ionic/react";
@@ -279,10 +279,17 @@ const Chat: React.FC = () => {
                 // paddingTop: "var(--safe-area-inset-top, 0px)",
             }}
         >
-            <div className="flex items-center justify-between px-6 pb-4 pt-14 h-[49px]">
-                <button onClick={() => openSidebarWithAuthCheck()} >
-                    <NavBarHomeHistoryIcon />
-                </button>
+            <div className="flex items-center justify-between px-6 pb-4 pt-14 pb-6 h-[49px]">
+                <div className="flex items-center gap-4">
+                    {!isWelcome && (
+                        <button onClick={() => history.goBack()} aria-label="Back">
+                            <IoArrowBack size={20} className="text-blue-600" />
+                        </button>
+                    )}
+                    <button onClick={() => openSidebarWithAuthCheck()} aria-label="Sidebar">
+                        <NavBarHomeHistoryIcon />
+                    </button>
+                </div>
                 {(!isWelcome) && (
                     <>
                         <span className="font-semibold text-main uppercase tracking-wide">
