@@ -334,8 +334,8 @@ const Chat: React.FC = () => {
                 ) : (
                     <>
                         <div
-                            className={`flex-1 overflow-x-hidden ${!isWelcome && ("overflow-y-auto")}  p-6 ${
-                                !isNative && !keyboardResizeScreen ? ("pb-2 max-h-[calc(100dvh-218px)] overflow-hidden") : ""
+                            className={`flex-1 overflow-x-hidden ${!isWelcome && ("overflow-y-auto")} p-6 ${
+                                isWelcome ? "max-h-(100%) pb-40 overflow-y-hidden" : (!isNative && !keyboardResizeScreen ? ("pb-2 max-h-[calc(100dvh-218px)] overflow-hidden") : "")
                             }`}
                             ref={messagesContainerRef}
                             onScroll={handleScroll}

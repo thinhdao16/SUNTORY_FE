@@ -10,6 +10,10 @@ ion-router-outlet {
   height: 100%;
 }
 
+.ion-page {
+  margin: auto;
+}
+
 .prose table {
   /* width: 100% !important; */
   min-width: 800px !important;
