@@ -270,7 +270,7 @@ const Chat: React.FC = () => {
 
     return (
         <div
-            className="flex flex-col bg-white"
+            className="relative flex flex-col bg-white"
             style={{
                 paddingRight: 0,
                 paddingLeft: 0,
@@ -400,6 +400,13 @@ const Chat: React.FC = () => {
                     </>
                 )
             }
+
+            {/* {isLoadingHistory && (
+                <div className="absolute top-0 left-0 right-0 bottom-0 z-[200] flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm">
+                    <IonSpinner name="crescent" color="primary" className="w-8 h-8 mb-4" />
+                    <p className="text-gray-500 text-sm">{t("Loading messages...")}</p>
+                </div>
+            )} */}
         </div>
     );
 };
