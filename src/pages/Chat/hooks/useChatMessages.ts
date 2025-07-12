@@ -26,15 +26,19 @@ export function useChatMessages(
         ["chatMessages", sessionId],
         () => (sessionId ? getChatMessages(sessionId) : []),
         {
-            enabled: !!sessionId && !hasFirstSignalRMessage && isOnline,
+            enabled: !!sessionId && 
+                !hasFirstSignalRMessage && 
+                isOnline,
             onSuccess: (data) => setMessages(data),
             onError: () => setMessages([]),
         }
     );
     const prevOnline = useRef(isOnline);
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
+
     const sendMessage = (e: any, force = false) => {
         if ((e.key === "Enter" && !e.shiftKey) || force) {
             e.preventDefault?.();
@@ -50,6 +54,7 @@ export function useChatMessages(
             }
         }
     };
+
     useEffect(() => {
         if (isOnline && !prevOnline.current) {
             console.log("have connect")
@@ -57,8 +62,11 @@ export function useChatMessages(
         }
         prevOnline.current = isOnline;
     }, [isOnline, refetch, sessionId, hasFirstSignalRMessage]);
+
     useEffect(() => {
-        if (!sessionId) clearMessages();
+        if (!sessionId) {
+            clearMessages();
+        }
     }, [sessionId, clearMessages]);
 
     return {
