@@ -46,7 +46,7 @@ const ForgotPassword: React.FC = () => {
         <AuthCardLayout title={t("Reset Password")}>
             <CustomButton
                 icon={<BackIcon className="w-6 h-6" aria-label={t("Back")} />}
-                className="fixed top-10 left-6"
+                className="fixed top-6 left-6"
                 back
             />
             <form onSubmit={handleSubmit(onSubmit)}>

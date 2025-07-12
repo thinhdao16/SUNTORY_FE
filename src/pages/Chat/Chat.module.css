@@ -13,6 +13,6 @@
     transform: rotate(360deg);
   }
 }
-:global(.prose) table {
+/* :global(.prose) table {
   width: 150px !important;
-}
+} */

@@ -1,6 +1,6 @@
 // ================== Imports ==================
 import React, { useRef, useEffect, useState, useMemo } from "react";
-import { useHistory, useParams } from "react-router-dom";
+import { useHistory, useLocation, useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { Capacitor } from "@capacitor/core";
@@ -46,6 +46,7 @@ dayjs.extend(utc);
 const Chat: React.FC = () => {
     // ==== Router & Params ====
     const { type, sessionId } = useParams<{ sessionId?: string; type?: string }>();
+    const location = useLocation<{ actionFrom?: string }>();
     const history = useHistory();
     const queryClient = useQueryClient();
 
@@ -59,6 +60,8 @@ const Chat: React.FC = () => {
     const [pendingBarHeight, setPendingBarHeight] = useState(0);
     // Thêm state để debounce loading
     const [debouncedLoading, setDebouncedLoading] = useState(false);
+
+    const [actionFrom, setActionFrom] = useState<string | undefined>('');
 
     // ==== Refs ====
     const messageRef = useRef<any>(null);
@@ -264,6 +267,12 @@ const Chat: React.FC = () => {
         }
     }, [isLoadingHistory, isLoading, type,]);
 
+    useEffect(() => {
+        if(!!location.state?.actionFrom) {
+            setActionFrom(location.state.actionFrom);
+        }
+    }, [location.state?.actionFrom]);
+
     useAppState(() => {
         if (sessionId) queryClient.invalidateQueries(["messages", sessionId]);
     });
@@ -274,32 +283,43 @@ const Chat: React.FC = () => {
             style={{
                 paddingRight: 0,
                 paddingLeft: 0,
-                paddingBottom: !isWelcome ? (keyboardHeight > 0 ? (keyboardResizeScreen ? 76 : keyboardHeight) : 76) : 0,
+                paddingBottom: !isWelcome ? (keyboardHeight > 0 ? (keyboardResizeScreen ? 60 : keyboardHeight) : 60) : 0,
                 height: "100dvh",
                 // paddingTop: "var(--safe-area-inset-top, 0px)",
             }}
         >
-            <div className="flex items-center justify-between px-6 pb-4 pt-14 pb-6 h-[49px]">
-                <div className="flex items-center gap-4">
+            <div className="relative flex items-center justify-between px-6 h-[50px]">
+                {/* Cột trái */}
+                <div className="flex items-center gap-4 z-10">
                     {!isWelcome && (
-                        <button onClick={() => history.goBack()} aria-label="Back">
+                        <button onClick={() => !!actionFrom ? history.push(actionFrom) : history.goBack()} aria-label="Back">
                             <IoArrowBack size={20} className="text-blue-600" />
                         </button>
                     )}
-                    <button onClick={() => openSidebarWithAuthCheck()} aria-label="Sidebar">
-                        <NavBarHomeHistoryIcon />
-                    </button>
+                    {isWelcome && (
+                        <button onClick={() => openSidebarWithAuthCheck()} aria-label="Sidebar">
+                            <NavBarHomeHistoryIcon />
+                        </button>
+                    )}
                 </div>
+
+                {/* Cột giữa: Tiêu đề chiếm giữa và full chiều ngang */}
                 {(!isWelcome) && (
-                    <>
-                        <span className="font-semibold text-main uppercase tracking-wide">
+                    <div className="absolute left-0 right-0 flex justify-center pointer-events-none">
+                        <span className="font-semibold text-main uppercase tracking-wide text-center">
                             {t(title || "")}
                         </span>
-                        <button onClick={() => history.push("/home")}>
-                            <CloseIcon aria-label={t("close")} />
-                        </button>
-                    </>
+                    </div>
                 )}
+
+                {/* Cột phải */}
+                <div className="flex items-center justify-end z-10">
+                    {!isWelcome && (
+                        <button onClick={() => openSidebarWithAuthCheck()} aria-label="Sidebar">
+                            <NavBarHomeHistoryIcon />
+                        </button>
+                    )}
+                </div>
             </div>
             {
                 debouncedLoading ? (
@@ -314,7 +334,9 @@ const Chat: React.FC = () => {
                 ) : (
                     <>
                         <div
-                            className={`flex-1  ${!isWelcome && ("overflow-y-auto")}  p-6 ${!isNative && !keyboardResizeScreen ? ("pb-2 max-h-[calc(100dvh-246px)]") : ""}`}
+                            className={`flex-1 overflow-x-hidden ${!isWelcome && ("overflow-y-auto")}  p-6 ${
+                                !isNative && !keyboardResizeScreen ? ("pb-2 max-h-[calc(100dvh-218px)] overflow-hidden") : ""
+                            }`}
                             ref={messagesContainerRef}
                             onScroll={handleScroll}
                         >
@@ -352,7 +374,10 @@ const Chat: React.FC = () => {
                             <div ref={messagesEndRef} className="mt-4" />
                         </div>
                         {!isWelcome && (
-                            <div className={` bg-white pb-4  w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"} ${isNative ? "bottom-0" : "bottom-[76px]"} ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""}`}>
+                            <div className={` bg-white pb-4  w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
+                                } ${isNative ? "bottom-0" : "bottom-[60px]"
+                                } ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
+                                }`}>
                                 {showScrollButton && (
                                     <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
                                         <button
@@ -412,4 +437,3 @@ const Chat: React.FC = () => {
 };
 
 export default Chat;
-

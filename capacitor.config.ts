@@ -1,5 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 import 'dotenv/config';
+import { KeyboardResize } from '@capacitor/keyboard';
+
 const config: CapacitorConfig = {
   appId: 'com.wayjet.app',
   appName: 'WayJet',
@@ -25,7 +27,17 @@ const config: CapacitorConfig = {
       serverClientId: process.env.VITE_GOOGLE_API_KEY || "",
       forceCodeForRefreshToken: true,
     },
+    Keyboard: {
+      resize: KeyboardResize.Body,       // hoặc Ionic nếu bạn cần ion-app resize
+      resizeOnFullScreen: true,          // Bắt buộc để hỗ trợ scroll khi fullscreen
+    },
+    EdgeToEdge: {
+      backgroundColor: "#ffffff",
+    },
   },
+  android: {
+    adjustMarginsForEdgeToEdge: "force"
+  }
 };
 
 export default config;

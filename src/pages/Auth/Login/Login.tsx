@@ -45,7 +45,7 @@ const Login: React.FC = () => {
         <AuthCardLayout title={t("Sign In")}>
             <CustomButton
                 icon={<CloseIcon className="w-6 h-6" aria-label={t("Close")} />}
-                className="fixed top-10 left-6"
+                className="fixed top-6 left-6"
                 navigateTo="/home"
             />
             <form onSubmit={handleSubmit(onSubmit)}>
