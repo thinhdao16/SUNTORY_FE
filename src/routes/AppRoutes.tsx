@@ -37,7 +37,6 @@ const routes = {
   Register: lazy(() => import("@/pages/Auth/Register/Register")),
   TakePhoto: lazy(() => import("@/pages/TakePhoto/TakePhoto")),
   Translate: lazy(() => import("@/pages/Translate/Translate")),
-  StreamDebugger: lazy(() => import("@/components/StreamDebugger")),
 };
 
 const authRoutes = ["/login", "/register"];
@@ -57,7 +56,7 @@ const AppRoutes: React.FC = () => {
   useSignalRChat(deviceInfo.deviceId || "");
   useSignalRStream(deviceInfo.deviceId || "", {
     autoReconnect: true,
-    logLevel: 0, // Verbose logging for debugging
+    logLevel: 0,
   });
   if (isAuthenticated && authRoutes.includes(location.pathname)) {
     return <Redirect to="/home" />;
@@ -87,7 +86,6 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/translate" component={routes.Translate} exact />
           <PrivateRoute path="/profile/:section?" component={routes.Profile} exact />
           <PrivateRoute path="/change-password" component={routes.ChangePassword} exact />
-          <PrivateRoute path="/stream-debug" component={routes.StreamDebugger} exact />
           <Route exact path="/" render={() => <Redirect to="/home" />} />
           <Route path="*" component={routes.NotFound} />
         </Switch>
