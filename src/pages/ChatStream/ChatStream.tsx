@@ -12,15 +12,15 @@ import { TopicType, TopicTypeLabel } from "@/constants/topicType";
 import { t } from "@/lib/globalT";
 
 import useDeviceInfo from "@/hooks/useDeviceInfo";
-import { useChatMessages } from "./hooks/useChatMessages";
-import { useKeyboardResize } from "@/hooks/useKeyboardResize";
-import { useScrollButton } from "@/hooks/useScrollButton";
+import { useChatStreamMessages } from "./hooks/useChatMessages";
+import { useKeyboardResize } from "../../hooks/useKeyboardResize";
+import { useScrollButton } from "../../hooks/useScrollButton";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import { useScrollToBottom } from "@/hooks/useScrollToBottom";
 import { useUploadChatFile } from "@/hooks/common/useUploadChatFile";
 import { useAppState } from "@/hooks/useAppState";
 import useNetworkStatus from "@/hooks/useNetworkStatus";
-import { useChatHandlers } from "./hooks/useChatHandlers";
+import { useChatStreamHandlers } from "./hooks/useChatStreamHandlers";
 
 import { useChatStore } from "@/store/zustand/chat-store";
 import { useImageStore } from "@/store/zustand/image-store";
@@ -28,17 +28,17 @@ import { useUploadStore } from "@/store/zustand/upload-store";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
 
-import ChatInputBar from "./components/ChatInputBar";
+import ChatInputBar from "./components/ChatStreamInputBar";
 import PendingFiles from "./components/PendingFiles";
 import PendingImages from "./components/PendingImages";
-import { ChatMessageList } from "./components/ChatMessageList";
-import ChatWelcomePanel from "./components/ChatWelcomePanel";
+import { ChatStreamMessageList } from "./components/ChatStreamMessageList";
+import ChatWelcomePanel from "./components/ChatStreamWelcomePanel";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 
-import "./Chat.module.css";
+import "./ChatStream.module.css";
 import { IoArrowBack, IoArrowDown } from "react-icons/io5";
 import { mergeMessages } from "@/utils/mapSignalRMessage";
-import { useChatHistoryLastModule } from "./hooks/useChatHistorylastModule";
+import { useChatHistoryLastModule } from "./hooks/useChatStreamHistorylastModule";
 import { IonSpinner } from "@ionic/react";
 
 dayjs.extend(utc);
@@ -108,7 +108,7 @@ const Chat: React.FC = () => {
     const {
         messages, isLoading,
         scrollToBottom, messageValue, setMessageValue
-    } = useChatMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, hasFirstSignalRMessage, isOnline);
+    } = useChatStreamMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, hasFirstSignalRMessage, isOnline);
 
     const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef);
@@ -133,7 +133,7 @@ const Chat: React.FC = () => {
         handleImageChange,
         handleFileChange,
         handleSendMessage,
-    } = useChatHandlers({
+    } = useChatStreamHandlers({
         addPendingImages,
         addPendingFiles,
         setPendingMessages,
@@ -361,7 +361,7 @@ const Chat: React.FC = () => {
                                     uploadLoading={imageLoading}
                                 />
                             ) : (
-                                <ChatMessageList
+                                <ChatStreamMessageList
                                     allMessages={mergedMessages}
                                     pendingMessages={pendingMessages}
                                     topicType={topicType}
