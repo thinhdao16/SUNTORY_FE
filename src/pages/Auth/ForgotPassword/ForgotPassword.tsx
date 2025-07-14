@@ -85,6 +85,7 @@ const ForgotPassword: React.FC = () => {
                 showActions={false}
                 showDivider={false}
                 bottomLogo={{ icon: LogoIcon, textIcon: LogoTextIcon }}
+                showTermsAndPrivacy={false}
             />
         </AuthCardLayout>
     );

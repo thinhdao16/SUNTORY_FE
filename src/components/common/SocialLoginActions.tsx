@@ -11,6 +11,7 @@ interface SocialLoginActionsProps {
     dividerText?: string;
     showDivider?: boolean;
     showActions?: boolean;
+    showTermsAndPrivacy?: boolean; // Thêm prop này
     bottomLogo?: { icon: React.FC<React.SVGProps<SVGSVGElement>>; textIcon: React.FC<React.SVGProps<SVGSVGElement>> };
 }
 
@@ -18,6 +19,7 @@ const SocialLoginActions: React.FC<SocialLoginActionsProps> = ({
     dividerText = t("OR"),
     showDivider = true,
     showActions = true,
+    showTermsAndPrivacy = true, // Mặc định hiển thị
     bottomLogo,
 }) => {
     const { handleGoogleWebLogin, nativeLogin, isWeb } = useGoogleLogin();
@@ -73,9 +75,33 @@ const SocialLoginActions: React.FC<SocialLoginActionsProps> = ({
                 </div>
             )}
             {bottomLogo && (
-                <div className="flex justify-center fixed bottom-10 left-1/2 -translate-x-1/2 -translate-y-1/2x gap-1">
-                    <bottomLogo.icon className="h-6" aria-label={t("WAYJET")} />
-                    <bottomLogo.textIcon className="h-6" aria-label={t("WAYJET")} />
+                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 -translate-y-1/2x w-full">
+                    <div className="flex justify-center gap-1 mb-4">
+                        <bottomLogo.icon className="h-6" aria-label={t("WAYJET")} />
+                        <bottomLogo.textIcon className="h-6" aria-label={t("WAYJET")} />
+                    </div>
+
+                    {showTermsAndPrivacy && (
+                        <div className="flex justify-center items-center gap-2 text-sm text-netural-300">
+                            <a
+                                href="https://wayjetai.com/terms-of-use"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline hover:text-gray-600 transition-colors"
+                            >
+                                {t("Terms of Use")}
+                            </a>
+                            <span>|</span>
+                            <a
+                                href="https://wayjetai.com/privacy-policy"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline hover:text-gray-600 transition-colors"
+                            >
+                                {t("Privacy Policy")}
+                            </a>
+                        </div>
+                    )}
                 </div>
             )}
         </>
