@@ -45,7 +45,7 @@ const ForgotPassword: React.FC = () => {
     return (
         <AuthCardLayout title={t("Reset Password")}>
             <CustomButton
-                icon={<BackIcon className="w-6 h-6" aria-label={t("Back")} />}
+                icon={<BackIcon aria-label={t("Back")} />}
                 className="fixed top-6 left-6"
                 back
             />
@@ -85,6 +85,7 @@ const ForgotPassword: React.FC = () => {
                 showActions={false}
                 showDivider={false}
                 bottomLogo={{ icon: LogoIcon, textIcon: LogoTextIcon }}
+                showTermsAndPrivacy={false}
             />
         </AuthCardLayout>
     );

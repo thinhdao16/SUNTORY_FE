@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ChatMessage } from "@/pages/Chat/hooks/useChatMessages";
 import { ChatHistoryLastModuleItem, UserChatByTopicResponse } from "@/services/chat/chat-types";
 import { isError } from "lodash";

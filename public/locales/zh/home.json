@@ -296,5 +296,7 @@
   "Receive a nutritional evaluation and usage recommendation": "获得营养评估和使用建议",
   "(e.g., \"occasionally acceptable\", \"should be limited\")": "（例如：\"偶尔可接受\"，\"应限制使用\"）",
   "Password is required new": "需要输入新密码",
-  "Confirm password is required new": "需要确认新密码"
+  "Confirm password is required new": "需要确认新密码",
+  "Terms of Use": "使用条款",
+  "Privacy Policy": "隐私政策"
 }

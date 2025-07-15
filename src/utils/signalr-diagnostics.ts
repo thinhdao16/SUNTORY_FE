@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * SignalR Diagnostics Utility
  * Helps diagnose common SignalR connection issues on mobile devices
@@ -70,16 +71,6 @@ export const getSignalRDiagnostics = (): SignalRDiagnostics => {
 
 export const logSignalRDiagnostics = (): void => {
     const diagnostics = getSignalRDiagnostics();
-
-    console.group('🔍 SignalR Diagnostics');
     console.log('Platform:', diagnostics.platform);
-    console.log('Is Capacitor:', diagnostics.isCapacitor);
-    console.log('Is Mobile:', diagnostics.isMobile);
-    console.log('Network Status:', diagnostics.networkStatus);
-    console.log('Suggested Transport:', diagnostics.suggestedTransport);
-    console.log('Troubleshooting Tips:');
-    diagnostics.troubleshootingTips.forEach((tip, index) => {
-        console.log(`  ${index + 1}. ${tip}`);
-    });
-    console.groupEnd();
+
 };

@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import React, { useEffect, useState } from "react";
 import { useLocation, useHistory } from "react-router-dom";
 import { useChatStore } from "@/store/zustand/chat-store";
@@ -11,9 +12,8 @@ import ChatIcon from "@/icons/logo/footer/chat.svg?react";
 import ChatActiveIcon from "@/icons/logo/footer/chat_active.svg?react";
 import ProfileIcon from "@/icons/logo/footer/profile.svg?react";
 import ProfileActiveIcon from "@/icons/logo/footer/profile_active.svg?react";
-import TranslationIcon from "@/icons/logo/footer/translation.svg?react";
-import TranslationActiveIcon from "@/icons/logo/footer/translation_active.svg?react";
-import { useKeyboardResize } from "@/pages/Chat/hooks/useKeyboardResize";
+import { useKeyboardResize } from "@/hooks/useKeyboardResize";
+
 
 interface TabItem {
     label: string;

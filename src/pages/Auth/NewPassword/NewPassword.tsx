@@ -66,7 +66,7 @@ const NewPassword: React.FC = () => {
                 className="flex items-center gap-2 text-main font-medium fixed top-6 left-6"
                 onClick={() => history.push("/login")}
             >
-                <CloseIcon className="w-6 h-6" aria-label="Back" />
+                <CloseIcon aria-label="Back" />
             </button>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
                 <InputPasswordField
@@ -117,6 +117,7 @@ const NewPassword: React.FC = () => {
                 showActions={false}
                 showDivider={false}
                 bottomLogo={{ icon: LogoIcon, textIcon: LogoTextIcon }}
+                showTermsAndPrivacy={false}
             />
         </AuthCardLayout>
     );
