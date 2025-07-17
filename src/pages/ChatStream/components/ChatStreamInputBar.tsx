@@ -4,7 +4,7 @@ import ImageIcon from "@/icons/logo/chat/image.svg?react";
 // import FileIcon from "@/icons/logo/chat/file.svg?react";
 import SendIcon from "@/icons/logo/chat/send.svg?react";
 import CameraWeb from "@/pages/Camera/CameraWeb";
-// import MicIcon from "@/icons/logo/chat/mic.svg?react"; // Nếu cần dùng mic
+import MicIcon from "@/icons/logo/chat/mic.svg?react"; // Nếu cần dùng mic
 
 interface ChatStreamInputBarProps {
     messageValue: string;
@@ -43,6 +43,7 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
     imageLoading,
     imageLoadingMany
 }) => {
+    console.log(isLoading)
     const isLoadingBtn = useMemo(() => {
         return isSpending || isLoading || imageLoading || imageLoadingMany || isLoadingHistory;
     }, [isSpending, isLoading, imageLoading, imageLoadingMany, isLoadingHistory]);
@@ -55,7 +56,7 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
                     ref={messageRef}
                     value={messageValue}
                     onChange={(e) => setMessageValue(e.target.value)}
-                    disabled={isLoading || isSpending || imageLoading || imageLoadingMany}
+                    // disabled={isLoading || isSpending || imageLoading || imageLoadingMany}
                     className="flex-1 focus:outline-none resize-none max-h-[230px] overflow-y-auto"
                     rows={1}
                     onFocus={() => {
@@ -106,7 +107,7 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
                             multiple
                             className="hidden"
                             onChange={handleImageChange}
-                            disabled={isSpending}
+                        // disabled={isSpending}
                         />
                     </label>
                     {/* <label>

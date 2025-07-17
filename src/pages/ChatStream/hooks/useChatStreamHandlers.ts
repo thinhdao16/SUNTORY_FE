@@ -2,7 +2,7 @@
 /* eslint-disable prefer-const */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { uploadChatFile } from "@/services/file/file-service";
-import { createChatApi } from "@/services/chat/chat-service";
+import { createChatApi, createChatStreamApi } from "@/services/chat/chat-service";
 import dayjs from "dayjs";
 import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
 import React from "react";
@@ -35,6 +35,8 @@ interface UseChatStreamHandlersProps {
     stopMessages?: boolean;
     setStopMessages: (value: boolean) => void;
     removePendingImageByUrl: (url: string) => void;
+    messageRetry: string;
+    setMessageRetry: (value: string) => void;
 }
 
 export function useChatStreamHandlers({
@@ -53,7 +55,9 @@ export function useChatStreamHandlers({
     messagesEndRef,
     setHasFirstSignalRMessage,
     setStopMessages,
-    removePendingImageByUrl
+    removePendingImageByUrl,
+    messageRetry,
+    setMessageRetry
 }: UseChatStreamHandlersProps) {
     const scrollToBottom = useScrollToBottom(messagesEndRef);
     const queryClient = useQueryClient();
@@ -132,19 +136,17 @@ export function useChatStreamHandlers({
         e.target.value = "";
     };
 
-    const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent) => {
+    const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent,) => {
         e.preventDefault();
         useChatStore.getState().setStopMessages(false);
         const setSession = useChatStore.getState().setSession;
         setSession(sessionId || "");
-
         const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
-
         setHasFirstSignalRMessage(true);
-
-        const sessionIdAtSend = sessionCreatedAt
-        if (messageValue.trim() || pendingImages.length > 0 || pendingFiles.length > 0) {
+        const sessionIdAtSend = sessionCreatedAt;
+        if (messageValue.trim() || pendingImages.length > 0 || pendingFiles.length > 0 || messageRetry.trim()) {
             setMessageValue("");
+            setMessageRetry("");
             addPendingImages([]);
             addPendingFiles([]);
             clearAll();
@@ -152,28 +154,17 @@ export function useChatStreamHandlers({
 
             let timeoutId: ReturnType<typeof setTimeout> | null = null;
             try {
-                // timeoutId = setTimeout(() => {
-                //     const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
-                //     if (sessionIdAtSend !== sessionCreatedAt) return;
-                //     useChatStore.getState().setIsSending(false);
-                //     setPendingMessages((prev: any) => [
-                //         ...prev,
-                //         {
-                //             text: t("AI is unable to respond at this time. Please wait or try again later."),
-                //             createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
-                //             timeStamp: generatePreciseTimestampFromDate(new Date()),
-                //             isError: true,
-                //         }
-                //     ]);
-                // }, 5000 * 60);
                 const filesArr = [
                     ...pendingFiles.map(f => ({ name: f.name })),
-                    ...pendingImages.map((img, idx) => ({ name: typeof img === "string" ? img.split("/").pop() || `image_${idx}` : `image_${idx}` }))
+                    ...pendingImages.map((img, idx) => ({
+                        name: typeof img === "string" ? img.split("/").pop() || `image_${idx}` : `image_${idx}`
+                    }))
                 ];
+
                 const shortLang = i18n.language?.split("-")[0] || "en";
                 const payload = {
                     chatCode: sessionId ?? null,
-                    messageText: messageValue.trim(),
+                    messageText: messageValue.trim() || messageRetry.trim(),
                     topic: Number(topicType),
                     files: filesArr.length > 0 ? filesArr : undefined,
                     language: shortLang,
@@ -195,22 +186,67 @@ export function useChatStreamHandlers({
                     })),
                 ];
 
+                // Tạo temporary ID
+                const tempId = `temp_${Date.now()}`;
+
                 setPendingMessages((prev: any) => [
                     ...prev,
                     {
-                        text: messageValue.trim(),
+                        id: tempId, // Add temporary ID
+                        text: messageValue.trim() || messageRetry.trim(),
                         createdAt: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
                         timeStamp: generatePreciseTimestampFromDate(now.toDate()),
                         attachments: attachments.length > 0 ? attachments : undefined,
                         files: attachments.length > 0 ? attachments.map(a => ({ name: a.fileName })) : undefined,
+                        messageState: "SENDING",
+                        isRight: true,
                     }
                 ]);
 
                 scrollToBottom();
-                const res = await createChatApi(payload);
+                const res = await createChatStreamApi(payload);
 
                 if (timeoutId) clearTimeout(timeoutId);
-                if (res?.data?.userChatMessage && !useChatStore.getState().stopMessages) {
+
+                // Cập nhật pending message với data từ server
+                if (res?.data?.userChatMessage) {
+                    setPendingMessages((prev: any[]) => {
+                        return prev.map(msg => {
+                            if (msg.id === tempId) {
+                                const serverMsg = res.data.userChatMessage;
+                                return {
+                                    ...msg,
+                                    id: serverMsg.id, // Update với real ID từ server
+                                    code: serverMsg.code,
+                                    text: serverMsg.massageText || msg.text,
+                                    createdAt: serverMsg.createDate || msg.createdAt,
+                                    timeStamp: serverMsg.createDate ?
+                                        generatePreciseTimestampFromDate(new Date(serverMsg.createDate)) :
+                                        msg.timeStamp,
+                                    messageType: serverMsg.messageType,
+                                    senderType: serverMsg.senderType,
+                                    replyToMessageId: serverMsg.replyToMessageId,
+                                    status: serverMsg.status,
+                                    chatInfoId: serverMsg.chatInfoId,
+                                    userName: serverMsg.userName,
+                                    chatCode: serverMsg.chatInfo?.code,
+                                    messageState: "SENT", // Update state
+                                    hasAttachment: serverMsg.hasAttachment,
+                                    isRead: serverMsg.isRead,
+                                    // Update attachments nếu có từ server
+                                    attachments: serverMsg.chatAttachments?.length > 0 ?
+                                        serverMsg.chatAttachments.map((att: any) => ({
+                                            fileUrl: att.fileUrl,
+                                            fileName: att.fileName,
+                                            fileType: att.fileType,
+                                            createDate: att.createDate,
+                                        })) : msg.attachments,
+                                };
+                            }
+                            return msg;
+                        });
+                    });
+
                     if (!sessionId) {
                         const newSessionId = res.data.userChatMessage.chatInfo.code;
                         queryClient.refetchQueries(["chatHistory"]);
@@ -219,11 +255,15 @@ export function useChatStreamHandlers({
                         setStopMessages(false);
                     }
                 }
+
             } catch (err) {
                 if (timeoutId) clearTimeout(timeoutId);
                 const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
                 if (sessionIdAtSend !== sessionCreatedAt) return;
+
                 useChatStore.getState().setIsSending(false);
+
+                // Update message thành failed state
                 setPendingMessages((prev: any) => [
                     ...prev,
                     {
@@ -231,7 +271,9 @@ export function useChatStreamHandlers({
                         createdAt: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
                         timeStamp: generatePreciseTimestampFromDate(new Date()),
                         isError: true,
-                        isSend: true
+                        isSend: true,
+                        messageState: "FAILED",
+                        id: `failed_${Date.now()}`,
                     }
                 ]);
             }

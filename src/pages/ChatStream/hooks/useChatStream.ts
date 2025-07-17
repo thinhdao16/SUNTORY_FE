@@ -1,8 +1,9 @@
 import { useQuery } from "react-query";
 import { useState, useEffect } from "react";
-import { getUserChatsByTopic } from "@/services/chat/chat-service";
+import { getChatMessage, getUserChatsByTopic } from "@/services/chat/chat-service";
 import { UserChatByTopicResponse } from "@/services/chat/chat-types";
 import { useChatStore } from "@/store/zustand/chat-store";
+import { ChatMessage } from "@/pages/Chat/hooks/useChatMessages";
 
 export const useUserChatsStreamByTopicSearch = (
     topicId?: number | null,
@@ -26,6 +27,15 @@ export const useUserChatsStreamByTopicSearch = (
             onSuccess: (data) => {
                 setChats(data.data);
             },
+        }
+    );
+};
+export const useChatMessageQuery = (chatCode: string) => {
+    return useQuery<ChatMessage[], Error>(
+        ["chatMessages", chatCode],
+        () => getChatMessage(chatCode),
+        {
+            enabled: !!chatCode,
         }
     );
 };

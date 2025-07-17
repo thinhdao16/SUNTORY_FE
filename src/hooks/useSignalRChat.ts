@@ -53,7 +53,6 @@ export function useSignalRChat(deviceId: string) {
 
         connection.onclose((err) => {
             setIsSending(false);
-            console.log("❌ Closed", err);
             setIsConnected("disconnected");
 
             if (!err) return;

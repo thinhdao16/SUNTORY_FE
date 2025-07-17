@@ -9,11 +9,17 @@ import CopyIcon from "@/icons/logo/chat/coppy.svg?react";
 import AvatarPreviewModal from "@/components/common/AvatarPreviewModal";
 import "../ChatStream.module.css"
 import { MarkdownRenderer } from "@/components/markdown/MarkdownRenderer";
-
-const ChatStreamMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boolean; isSend?: boolean }> = ({ msg, isUser, isError, isSend }) => {
+import { MessageState } from "@/types/chat-message";
+import RetryIcon from "@/icons/logo/chat/retry.svg?react";
+const ChatStreamMessageItem: React.FC<{
+    msg: any;
+    isUser: boolean;
+    isError?: boolean;
+    isSend?: boolean;
+    onRetryMessage?: (msgId: string) => void;
+}> = ({ msg, isUser, isError, isSend, onRetryMessage }) => {
     const [showCopy, setShowCopy] = useState(false);
     const [previewImg, setPreviewImg] = useState<string | null>(null);
-
     const handleBubbleClick = () => {
         if (isUser) setShowCopy(true);
     };
@@ -81,28 +87,53 @@ const ChatStreamMessageItem: React.FC<{ msg: any; isUser: boolean; isError?: boo
                                 })}
                             </div>
                         )}
-                        {(msg.text && String(msg.text).trim() !== "") && (
+                        {(!isUser && msg.text === MessageState.FAILED) ? (
                             <div
-                                className={`relative group ${isError && !isSend
-                                    ? "bg-red-50 text-red-700 border border-red-400 rounded-[16px_16px_16px_16px]"
-                                    : isUser
-                                        ? "bg-main text-white rounded-br-md rounded-[16px_16px_0px_16px] ml-auto"
-                                        : "bg-screen-page text-gray-900 rounded-[0px_16px_16px_16px]"
-                                    }
-                                    `}
+                                className="relative bg-red-50 text-red-700 border border-red-400 rounded-[16px_16px_16px_16px] group"
                                 style={{ maxWidth: "calc(100vw - 80px)" }}
                                 tabIndex={0}
-                                onClick={handleBubbleClick}
-                                onTouchStart={handleBubbleClick}
                             >
-                                <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] xl:max-w-[350px] ">
-                                    <div className="prose prose-sm whitespace-break-spaces break-words text-[15px]">
-                                        <MarkdownRenderer text={msg.text} />
+                                <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] xl:max-w-[350px] flex justify-between">
+                                    <div className="prose prose-sm whitespace-break-spaces break-words text-[15px] font-semibold">
+                                        Tin nhắn thất bại, vui lòng thử lại.
                                     </div>
+                                    <RetryIcon
+                                        className="cursor-pointer hover:scale-110 transition-transform"
+                                        onClick={async () => {
+                                            try {
+                                                // Gọi với msg.id chứ không phải msg.replyToMessageId
+                                                await onRetryMessage?.(msg.replyToMessageId);
+                                            } catch (error) {
+                                                console.error('Retry failed:', error);
+                                            }
+                                        }}
+                                    />
                                 </div>
                             </div>
+                        ) : (
+                            (msg.text && String(msg.text).trim() !== "") && (
+                                <div
+                                    className={`relative group ${isError && !isSend
+                                        ? "bg-red-50 text-red-700 border border-red-400 rounded-[16px_16px_16px_16px]"
+                                        : isUser
+                                            ? "bg-main text-white rounded-br-md rounded-[16px_16px_0px_16px] ml-auto"
+                                            : "bg-screen-page text-gray-900 rounded-[0px_16px_16px_16px]"
+                                        }`}
+                                    style={{ maxWidth: "calc(100vw - 80px)" }}
+                                    tabIndex={0}
+                                    onClick={handleBubbleClick}
+                                    onTouchStart={handleBubbleClick}
+                                >
+                                    <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] xl:max-w-[350px]">
+                                        <div className="prose prose-sm whitespace-break-spaces break-words text-[15px]">
+                                            <MarkdownRenderer text={msg.text} />
+                                        </div>
+                                    </div>
+                                </div>
+                            )
                         )}
-                        {isUser ? (
+
+                        {isUser || msg.text !== MessageState.FAILED || msg.text !== MessageState.PENDING ? (
                             <div className="flex justify-end mt-1">
                                 <button
                                     className={`bottom-2 right-2 p-1 rounded hover:bg-gray-100 transition

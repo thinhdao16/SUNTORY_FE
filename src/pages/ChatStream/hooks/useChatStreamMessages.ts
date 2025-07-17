@@ -4,7 +4,7 @@ import { useQuery } from "react-query";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { getChatMessages } from "@/services/chat/chat-service";
 
-export interface ChatMessage {
+export interface ChatStreamMessage {
     id: number;
     text: string;
     isRight: boolean;
@@ -22,7 +22,6 @@ export function useChatStreamMessages(
 ) {
     const { messages, setMessages, addMessage, clearMessages } = useChatStore();
     const [messageValue, setMessageValue] = useState("");
-
     const { isLoading, refetch, isFetching } = useQuery(
         ["chatMessages", sessionId],
         () => (sessionId ? getChatMessages(sessionId) : []),

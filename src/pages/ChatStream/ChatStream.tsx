@@ -12,20 +12,21 @@ import { TopicType, TopicTypeLabel } from "@/constants/topicType";
 import { t } from "@/lib/globalT";
 
 import useDeviceInfo from "@/hooks/useDeviceInfo";
-import { useChatStreamMessages } from "./hooks/useChatMessages";
-import { useKeyboardResize } from "../../hooks/useKeyboardResize";
-import { useScrollButton } from "../../hooks/useScrollButton";
+import { useChatStreamMessages } from "./hooks/useChatStreamMessages";
+import { useKeyboardResize } from "@/hooks/useKeyboardResize";
+import { useScrollButton } from "@/hooks/useScrollButton";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import { useScrollToBottom } from "@/hooks/useScrollToBottom";
 import { useUploadChatFile } from "@/hooks/common/useUploadChatFile";
 import { useAppState } from "@/hooks/useAppState";
 import useNetworkStatus from "@/hooks/useNetworkStatus";
 import { useChatStreamHandlers } from "./hooks/useChatStreamHandlers";
+import { useSignalRStreamStore } from "@/store/zustand/signalr-stream-store";
+import { useMessageRetry } from "@/hooks/useMessageRetry";
 
 import { useChatStore } from "@/store/zustand/chat-store";
 import { useImageStore } from "@/store/zustand/image-store";
 import { useUploadStore } from "@/store/zustand/upload-store";
-import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
 
 import ChatInputBar from "./components/ChatStreamInputBar";
@@ -37,9 +38,10 @@ import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 
 import "./ChatStream.module.css";
 import { IoArrowBack, IoArrowDown } from "react-icons/io5";
-import { mergeMessages } from "@/utils/mapSignalRMessage";
 import { useChatHistoryLastModule } from "./hooks/useChatStreamHistorylastModule";
 import { IonSpinner } from "@ionic/react";
+import { mergeMessagesStream } from "@/utils/mapSignalRStreamMessage ";
+import { MessageState } from "@/types/chat-message";
 
 dayjs.extend(utc);
 
@@ -58,6 +60,7 @@ const Chat: React.FC = () => {
 
     // ==== State ====
     const [pendingBarHeight, setPendingBarHeight] = useState(0);
+    const [messageRetry, setMessageRetry] = useState<string>("");
     // Thêm state để debounce loading
     const [debouncedLoading, setDebouncedLoading] = useState(false);
 
@@ -87,16 +90,24 @@ const Chat: React.FC = () => {
     const setStopMessages = useChatStore((s) => s.setStopMessages);
     const imageLoading = useUploadStore.getState().imageLoading;
     const clearSession = useChatStore((s) => s.clearSession);
-    const setHasFirstSignalRMessage = useSignalRChatStore((s) => s.setHasFirstSignalRMessage);
-    const hasFirstSignalRMessage = useSignalRChatStore((s) => s.hasFirstSignalRMessage);
-    const allSignalRMessages = useSignalRChatStore((s: any) => s.messages);
-    const setSignalRMessages = useSignalRChatStore((s) => s.setMessages);
 
+    // ==== Stream Integration ====
+    const streamMessages = useSignalRStreamStore((state) => state.streamMessages);
+    const completedMessages = useSignalRStreamStore((state) => state.completedMessages);
+    const clearAllStreams = useSignalRStreamStore((state) => state.clearAllStreams);
+    // Debug log on mount
+
+    // Get stream messages for current session (raw format for mergeMessagesStream to process)
+    const signalRMessages = useMemo(() => {
+        if (!sessionId) return [];
+
+        const allStreamValues = Object.values(streamMessages);
+        const filtered = allStreamValues.filter(
+            (msg: any) => msg.chatCode === sessionId
+        );
+        return filtered;
+    }, [streamMessages, sessionId]);
     // ==== Derived State ====
-    const signalRMessages = useMemo(() =>
-        allSignalRMessages.filter((msg: any) => msg.chatInfo?.code === sessionId || msg.code === sessionId),
-        [allSignalRMessages, sessionId]
-    );
 
     const topicTypeNum = type ? Number(type) : undefined;
     const isValidTopicType = topicTypeNum !== undefined && Object.values(TopicType).includes(topicTypeNum as TopicType);
@@ -108,7 +119,7 @@ const Chat: React.FC = () => {
     const {
         messages, isLoading,
         scrollToBottom, messageValue, setMessageValue
-    } = useChatStreamMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, hasFirstSignalRMessage, isOnline);
+    } = useChatStreamMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, false, isOnline);
 
     const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef);
@@ -129,6 +140,7 @@ const Chat: React.FC = () => {
     );
 
     // ===== Handlers =====
+
     const {
         handleImageChange,
         handleFileChange,
@@ -137,7 +149,7 @@ const Chat: React.FC = () => {
         addPendingImages,
         addPendingFiles,
         setPendingMessages,
-        setSignalRMessages,
+        setSignalRMessages: () => { },
         clearAll,
         history,
         sessionId,
@@ -151,21 +163,46 @@ const Chat: React.FC = () => {
         signalRMessages,
         uploadImageMutation,
         messagesEndRef,
-        setHasFirstSignalRMessage,
+        setHasFirstSignalRMessage: () => { },
         deviceInfo,
         stopMessages,
         setStopMessages,
-        removePendingImageByUrl
+        removePendingImageByUrl,
+        messageRetry,
+        setMessageRetry
     });
 
-    const mergedMessages = mergeMessages(
-        messages,
-        signalRMessages,
-        pendingMessages,
+
+    const mergedMessages = useMemo(() => {
+        const raw = mergeMessagesStream(
+            [...completedMessages, ...messages],
+            signalRMessages,
+            pendingMessages,
+            pendingImages,
+            pendingFiles
+        );
+        const seen = new Set<string>();
+        return raw.filter(msg => {
+            const key = msg.id != null
+                ? String(msg.id)
+                : String(msg.messageCode ?? msg.timeStamp);
+            if (seen.has(key)) {
+                return false;
+            }
+            seen.add(key);
+            return true;
+        });
+    }, [messages, signalRMessages, pendingMessages, pendingImages, pendingFiles, completedMessages]);
+    const { retryMessage } = useMessageRetry(
+        handleSendMessage,
+        setMessageValue,
+        addPendingImages,
+        addPendingFiles,
+        mergedMessages,
+        setMessageRetry,
         pendingImages,
         pendingFiles
     );
-
     const getCodeByTopic = useMemo(() => {
         return (topicId: number): string | undefined => {
             const chatItem = chatHistory
@@ -176,9 +213,20 @@ const Chat: React.FC = () => {
         };
     }, [chatHistory, type]);
 
+    const hasPendingMessages = useMemo(() => {
+        return mergedMessages.some(msg =>
+            msg.text === MessageState.PENDING ||
+            msg.messageState === MessageState.PENDING ||
+            msg.text === 'PENDING_MESSAGE'
+        );
+    }, [mergedMessages]);
+
     // ==== Lifecycle Effects ====
     useEffect(() => {
-        if (sessionId && !isLoading) clearPendingMessages();
+        if (sessionId && !isLoading) {
+            clearPendingMessages();
+            clearAllStreams();
+        }
     }, [isLoading]);
 
     useEffect(() => {
@@ -201,7 +249,7 @@ const Chat: React.FC = () => {
 
     useEffect(() => {
         if (messagesEndRef.current) scrollToBottomMess();
-    }, [signalRMessages, type, pendingBarHeight]);
+    }, [signalRMessages, type, pendingBarHeight, scrollToBottomMess]);
 
     useEffect(() => {
         if (
@@ -209,12 +257,10 @@ const Chat: React.FC = () => {
             prevSessionIdRef.current && sessionId &&
             prevSessionIdRef.current.split("/")[0] !== sessionId.split("/")[0]
         ) {
-            // setHasFirstSignalRMessage(false);
-            setSignalRMessages?.([]);
             clearPendingMessages();
+            clearAllStreams();
         }
 
-        setHasFirstSignalRMessage(false);
         prevSessionIdRef.current = sessionId;
         prevTypeRef.current = type;
 
@@ -239,11 +285,6 @@ const Chat: React.FC = () => {
         const isNavigationFromTopicOnly = currentPath.includes('/chat/') &&
             currentPath.split('/').length === 4 &&
             chatHistory.length > 0;
-
-        // const shouldLoad = sessionId ?
-        //     isLoading : // Chỉ cần chờ messages load khi có sessionId
-        //     isLoadingHistory;
-
         if (!sessionId) {
             const timer = setTimeout(() => {
                 setDebouncedLoading(false);
@@ -315,9 +356,11 @@ const Chat: React.FC = () => {
                 {/* Cột phải */}
                 <div className="flex items-center justify-end z-10">
                     {!isWelcome && (
-                        <button onClick={() => openSidebarWithAuthCheck()} aria-label="Sidebar">
-                            <NavBarHomeHistoryIcon />
-                        </button>
+                        <>
+                            <button onClick={() => openSidebarWithAuthCheck()} aria-label="Sidebar">
+                                <NavBarHomeHistoryIcon />
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
@@ -367,6 +410,7 @@ const Chat: React.FC = () => {
                                     topicType={topicType}
                                     title={title}
                                     loading={isSending}
+                                    onRetryMessage={retryMessage}
                                 />
                             )}
                             <div style={{ marginTop: pendingBarHeight }} />
@@ -404,7 +448,7 @@ const Chat: React.FC = () => {
                                 <ChatInputBar
                                     messageValue={messageValue}
                                     setMessageValue={setMessageValue}
-                                    isLoading={isLoading}
+                                    isLoading={isLoading || hasPendingMessages}
                                     isLoadingHistory={isLoadingHistory}
                                     messageRef={messageRef}
                                     handleSendMessage={handleSendMessage}
