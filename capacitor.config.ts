@@ -28,8 +28,8 @@ const config: CapacitorConfig = {
       forceCodeForRefreshToken: true,
     },
     Keyboard: {
-      resize: KeyboardResize.Body,       // hoặc Ionic nếu bạn cần ion-app resize
-      resizeOnFullScreen: true,          // Bắt buộc để hỗ trợ scroll khi fullscreen
+      resize: KeyboardResize.Body,
+      resizeOnFullScreen: true,
     },
     EdgeToEdge: {
       backgroundColor: "#ffffff",

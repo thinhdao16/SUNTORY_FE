@@ -12,6 +12,7 @@ import HealthInformationEdit from "./HealthInformationEdit/HealthInformationEdit
 import BackIcon from "@/icons/logo/back.svg?react";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 import PageContainer from "@/components/layout/PageContainer";
+import ChangePassword from "../Auth/ChangePassword/ChangePassword";
 
 
 const languageOptions = [
@@ -42,7 +43,7 @@ const Profile: React.FC = () => {
     const menuItems = [
         { label: t("Account"), onClick: () => history.replace("/profile/account"), chevron: true },
         // { label: t("Update Health Information"), onClick: () => history.replace("/profile/health"), chevron: true },
-        { label: t("Change Password"), onClick: () => history.push("/change-password"), chevron: true },
+        { label: t("Change Password"), onClick: () => history.push("/profile/change-password"), chevron: true },
         { label: `${t("Language")} (${currentLang})`, onClick: () => handleChangeLanguage(true, "en"), chevron: true },
         // { label: t("Help & Feedback"), onClick: () => { }, chevron: false },
         { label: t("Logout"), onClick: () => { handleLogout() }, chevron: false },
@@ -53,6 +54,7 @@ const Profile: React.FC = () => {
             case "account":
                 return <AccountEdit />;
             case "health": return <HealthInformationEdit />;
+            case "change-password": return <ChangePassword />;
             default:
                 return (
                     <ul className="space-y-2">

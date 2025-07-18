@@ -103,6 +103,7 @@ const Otp: React.FC = () => {
         showDivider={false}
         showActions={false}
         bottomLogo={{ icon: LogoIcon, textIcon: LogoTextIcon }}
+        showTermsAndPrivacy={false}
       />
     </AuthCardLayout>
   );

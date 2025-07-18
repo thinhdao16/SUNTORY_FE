@@ -69,7 +69,7 @@ const Register: React.FC = () => {
     return (
         <AuthCardLayout title={t("Sign Up")}>
             <CustomButton
-                icon={<CloseIcon className="w-6 h-6" aria-label={t("Close")} />}
+                icon={<CloseIcon aria-label={t("Close")} />}
                 className="fixed top-6 left-6"
                 navigateTo="/home"
             />

@@ -1,3 +1,5 @@
+/* eslint-disable no-extra-boolean-cast */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // ================== Imports ==================
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
@@ -11,8 +13,8 @@ import { t } from "@/lib/globalT";
 
 import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { useChatMessages } from "./hooks/useChatMessages";
-import { useKeyboardResize } from "./hooks/useKeyboardResize";
-import { useScrollButton } from "./hooks/useScrollButton";
+import { useKeyboardResize } from "@/hooks/useKeyboardResize";
+import { useScrollButton } from "@/hooks/useScrollButton";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import { useScrollToBottom } from "@/hooks/useScrollToBottom";
 import { useUploadChatFile } from "@/hooks/common/useUploadChatFile";
@@ -24,7 +26,6 @@ import { useChatStore } from "@/store/zustand/chat-store";
 import { useImageStore } from "@/store/zustand/image-store";
 import { useUploadStore } from "@/store/zustand/upload-store";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
-import { useSignalRStream } from "@/hooks/useSignalRStream";
 import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
 
 import ChatInputBar from "./components/ChatInputBar";
@@ -33,7 +34,6 @@ import PendingImages from "./components/PendingImages";
 import { ChatMessageList } from "./components/ChatMessageList";
 import ChatWelcomePanel from "./components/ChatWelcomePanel";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
-import CloseIcon from "@/icons/logo/chat/x.svg?react";
 
 import "./Chat.module.css";
 import { IoArrowBack, IoArrowDown } from "react-icons/io5";
@@ -106,7 +106,7 @@ const Chat: React.FC = () => {
 
     // ==== Hooks: Chat & Message ====
     const {
-        messages, isLoading, sendMessage,
+        messages, isLoading,
         scrollToBottom, messageValue, setMessageValue
     } = useChatMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, hasFirstSignalRMessage, isOnline);
 
@@ -268,7 +268,7 @@ const Chat: React.FC = () => {
     }, [isLoadingHistory, isLoading, type,]);
 
     useEffect(() => {
-        if(!!location.state?.actionFrom) {
+        if (!!location.state?.actionFrom) {
             setActionFrom(location.state.actionFrom);
         }
     }, [location.state?.actionFrom]);
@@ -334,9 +334,8 @@ const Chat: React.FC = () => {
                 ) : (
                     <>
                         <div
-                            className={`flex-1 overflow-x-hidden ${!isWelcome && ("overflow-y-auto")} p-6 ${
-                                isWelcome ? "max-h-(100%) pb-40 overflow-y-hidden" : (!isNative && !keyboardResizeScreen ? ("pb-2 max-h-[calc(100dvh-218px)] overflow-hidden") : "")
-                            }`}
+                            className={`flex-1 overflow-x-hidden ${!isWelcome && ("overflow-y-auto")} p-6 ${isWelcome ? "max-h-(100%) pb-40 overflow-y-hidden" : (!isNative && !keyboardResizeScreen ? ("pb-2 max-h-[calc(100dvh-218px)] overflow-hidden") : "")
+                                }`}
                             ref={messagesContainerRef}
                             onScroll={handleScroll}
                         >
@@ -377,7 +376,7 @@ const Chat: React.FC = () => {
                             <div className={`bg-white w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
                                 } ${isNative ? "bottom-0" : "bottom-[60px]"
                                 } ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
-                                } ${keyboardResizeScreen && isNative ? "pb-0" : "pb-4"}`}>
+                                } ${keyboardResizeScreen && isNative ? "pb-4" : "pb-4"}`}>
                                 {showScrollButton && (
                                     <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
                                         <button

@@ -5,6 +5,7 @@
  * @returns microsecond timestamp as string
  */
 export function generatePreciseTimestampFromDate(dateInput: Date | string): number {
+    if (!dateInput) return 0;
     const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
     const milliseconds = date.getTime();
     const fractionalMicro = extractMicroFraction(dateInput);

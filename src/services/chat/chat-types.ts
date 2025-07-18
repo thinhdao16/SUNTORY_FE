@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface UserChatItem {
     id: number;
     code: string;
@@ -12,6 +13,13 @@ export interface UserChatByTopicResponse {
     data: UserChatItem[];
 }
 export interface CreateChatPayload {
+    chatCode: string | null;
+    messageText: string;
+    topic: number;
+    files?: { name: string }[];
+    language: string;
+}
+export interface CreateChatStreamPayload {
     chatCode: string | null;
     messageText: string;
     topic: number;

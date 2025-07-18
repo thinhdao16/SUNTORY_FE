@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { t } from "@/lib/globalT";
@@ -24,7 +25,6 @@ const AccountEdit: React.FC = () => {
     const updateAccountInfo = useUpdateAccountInfo();
 
     const birthdayInputRef = useRef<HTMLInputElement>(null);
-    const today = dayjs().format("YYYY-MM-DD");
     const minDate = dayjs().subtract(120, "year").format("YYYY-MM-DD");
     const maxDate = dayjs().subtract(6, "year").format("YYYY-MM-DD");
     const {

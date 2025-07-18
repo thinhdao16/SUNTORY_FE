@@ -16,7 +16,7 @@ import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { useSignalRStream } from "@/hooks/useSignalRStream";
 
 const routes = {
-  Chat: lazy(() => import("@/pages/Chat/Chat")),
+  Chat: lazy(() => import("@/pages/ChatStream/ChatStream")),
   ChangePassword: lazy(() => import("@/pages/Auth/ChangePassword/ChangePassword")),
   Camera: lazy(() => import("@/pages/Camera/Camera")),
   CameraWeb: lazy(() => import("@/pages/Camera/CameraWeb")),
@@ -37,7 +37,6 @@ const routes = {
   Register: lazy(() => import("@/pages/Auth/Register/Register")),
   TakePhoto: lazy(() => import("@/pages/TakePhoto/TakePhoto")),
   Translate: lazy(() => import("@/pages/Translate/Translate")),
-  StreamDebugger: lazy(() => import("@/components/StreamDebugger")),
 };
 
 const authRoutes = ["/login", "/register"];
@@ -48,7 +47,6 @@ const AppRoutes: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
   const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
-
   const showTabBar =
     !authRoutes.includes(location.pathname) &&
     !ignoreRoutes.includes(location.pathname) &&
@@ -57,7 +55,7 @@ const AppRoutes: React.FC = () => {
   useSignalRChat(deviceInfo.deviceId || "");
   useSignalRStream(deviceInfo.deviceId || "", {
     autoReconnect: true,
-    logLevel: 0, // Verbose logging for debugging
+    logLevel: 0,
   });
   if (isAuthenticated && authRoutes.includes(location.pathname)) {
     return <Redirect to="/home" />;
@@ -87,7 +85,6 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/translate" component={routes.Translate} exact />
           <PrivateRoute path="/profile/:section?" component={routes.Profile} exact />
           <PrivateRoute path="/change-password" component={routes.ChangePassword} exact />
-          <PrivateRoute path="/stream-debug" component={routes.StreamDebugger} exact />
           <Route exact path="/" render={() => <Redirect to="/home" />} />
           <Route path="*" component={routes.NotFound} />
         </Switch>
