@@ -45,6 +45,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [avatarLoaded, setAvatarLoaded] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<TopicType | "all">(50);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isJetAIExpanded, setIsJetAIExpanded] = useState(false);
 
   const { isLoading } = useUserChatsByTopicSearch(
     selectedTopic === "all" ? undefined : selectedTopic,
@@ -108,18 +109,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       label: "Food Discovery",
       topicType: TopicType.FoodDiscovery,
     },
-    {
-      icon: BotIcon,
-      label: "JETAI",
-      topicType: TopicType.Chat,
-    },
+
   ];
 
   return (
     <>
       {isOpen && (
         <motion.div
-          className="w-[300px] max-w-full h-full bg-white"
+          className="w-[300px] max-w-full h-full bg-white flex flex-col"
           variants={sidebarVariants}
           initial="hidden"
           animate="visible"
@@ -127,150 +124,157 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           style={{ paddingTop: "var(--safe-area-inset-top)" }}
           onAnimationComplete={() => setShowAvatar(true)}
         >
-          <div className="flex flex-col h-full w-full  py-5">
-            <div className="px-4">
-              <div className="flex gap-2 mb-4 ">
-                <div className="flex-1 flex items-center bg-[#EDF1FC] rounded-lg px-3">
-                  <SearchIcon className="w-4 h-4 mr-2" aria-label={t("search")} />
-                  <input
-                    type="text"
-                    placeholder={t("Search")}
-                    value={search}
-                    onChange={handleSearch}
-                    className="bg-transparent outline-none flex-1 py-2 placeholder:text-netural-300"
-                  />
-                </div>
-                <button onClick={onNewChat}>
-                  <NewChatIcon className="w-7 h-7" aria-label={t("new chat")} />
+          {/* Fixed Header Section */}
+          <div className="flex-shrink-0 px-4 py-5">
+            <div className="flex gap-2 mb-4">
+              <div className="flex-1 flex items-center bg-[#EDF1FC] rounded-lg pl-3">
+                <SearchIcon className="w-4 h-4 mr-2" aria-label={t("search")} />
+                <input
+                  type="text"
+                  placeholder={t("Search")}
+                  value={search}
+                  onChange={handleSearch}
+                  className="bg-transparent outline-none flex-1 py-2 placeholder:text-netural-300"
+                />
+              </div>
+              <button onClick={onNewChat}>
+                <NewChatIcon className="w-7 h-7" aria-label={t("new chat")} />
+              </button>
+            </div>
+          </div>
+
+          {/* Scrollable Content Section */}
+          <div className="flex-1 overflow-y-auto px-4">
+            <div className="flex flex-col gap-2">
+              {/* JETAI Button with expand/collapse */}
+              <div className="w-full">
+                <button
+                  className={`flex items-center justify-between text-left w-full px-1 py-2 rounded-md transition ${String(TopicType.Chat) === String(currentTopicType) ? "bg-chat-to" : "bg-white hover:bg-gray-50"
+                    }`}
+                  onClick={() => {
+                    setIsJetAIExpanded(!isJetAIExpanded);
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <BotIcon className="flex-shrink-0 w-[30px] h-[30px]" />
+                    <span className="font-medium uppercase">{t("JETAI")}</span>
+                  </div>
+                  {/* Collapse/Expand Arrow */}
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-200 ${isJetAIExpanded ? 'rotate-180' : ''
+                      }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
 
-                {/* <div className="relative">
-                  <button className="bg-main rounded-lg !w-10 h-10 aspect-square grid items-center justify-center" onClick={() => setDropdownOpen((v) => !v)}
+                {/* Collapsible Chat History */}
+                {isJetAIExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="overflow-hidden"
                   >
-                    <FilterIcon aria-label={t("new chat")} />
-                  </button>
-                  {dropdownOpen && (
-                    <div className="absolute right-0 z-20 mt-2 min-w-[180px] bg-white border border-netural-100 p-1 rounded-xl shadow-2xl  ">
-                      {topicOptions.map((opt) => (
-                        <button
-                          key={opt.value}
-                          className={`block w-full text-left px-4 py-2 text-sm rounded-sm whitespace-nowrap ${String(selectedTopic) === String(opt.value)
-                            ? "font-semibold bg-chat-to text-main"
-                            : "text-gray-700 hover:bg-gray-50"
-                            }`}
-                          onClick={() => {
-                            setSelectedTopic(opt.value === "all" ? "all" : Number(opt.value));
-                            setDropdownOpen(false);
-                          }}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
+                    <div className="bg-chat-to rounded-xl mt-2 max-h-[200px] overflow-y-auto">
+                      {isLoading ? (
+                        <div className="flex justify-center items-center py-8">
+                          <span className="loader border-2 border-main border-t-transparent rounded-full w-8 h-8 animate-spin"></span>
+                        </div>
+                      ) : (
+                        Object.entries(groupedChats).map(([label, chats]) => (
+                          <div className="py-3 space-y-2" key={label}>
+                            <div className="text-sm text-netural-300 font-semibold pl-4">
+                              {t(label)}
+                            </div>
+                            {chats.map((item: any) => (
+                              <div
+                                key={item.fakeId ?? item.id}
+                                className={
+                                  "cursor-pointer hover:bg-gray-50 rounded-lg py-2 pl-4 mr-2" +
+                                  (sessionId && item.code === sessionId
+                                    ? " bg-netural-50 "
+                                    : "")
+                                }
+                                onClick={() => onSelectChat?.(item)}
+                              >
+                                <span
+                                  className="font-medium block max-w-[220px] truncate text-sm"
+                                  title={item.title}
+                                >
+                                  {item.title}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ))
+                      )}
                     </div>
-                  )}
-                </div> */}
+                  </motion.div>
+                )}
               </div>
-              {/* <button
-                className="flex items-center gap-2  rounded-lg  py-2  w-full "
-                onClick={onNewChat}
-              >
-                <NewChatIcon aria-label={t("new chat")} />
-                <span className=" font-medium">{t("New Chat")}</span>
-              </button> */}
 
-              <div className="my-6">
-                <div className="flex flex-col gap-2">
-                  {quickAccessItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = String(item.topicType) === String(currentTopicType);
+              {/* Other Quick Access Items */}
+              {quickAccessItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = String(item.topicType) === String(currentTopicType);
 
-                    return (
-                      <button
-                        key={item.topicType}
-                        className={`flex items-center gap-3 text-left w-full px-1 py-2 rounded-md transition ${
-                          isActive ? "bg-gray-100" : "bg-white hover:bg-gray-50"
-                        }`}
-                        onClick={() => {
-                          history.push(`/chat/${item.topicType}`);
-                          onClose?.();
-                        }}
-                      >
-                        <Icon className=" flex-shrink-0 w-[30px] h-[30px]" />
-                        <span className=" font-medium uppercase">{t(item.label)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+                return (
+                  <button
+                    key={item.topicType}
+                    className={`flex items-center gap-3 text-left w-full px-1 py-2 rounded-md transition ${isActive ? "bg-chat-to" : "bg-white hover:bg-gray-50"
+                      }`}
+                    onClick={() => {
+                      history.push(`/chat/${item.topicType}`);
+                      onClose?.();
+                    }}
+                  >
+                    <Icon className="flex-shrink-0 w-[30px] h-[30px]" />
+                    <span className="font-medium uppercase text-sm">{t(item.label)}</span>
+                  </button>
+                );
+              })}
             </div>
-            <hr className="border-t border-netural-100" />
-            <div className="flex-1 overflow-y-auto pr-6 pl-2"
-            >
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <span className="loader border-2 border-main border-t-transparent rounded-full w-8 h-8 animate-spin"></span>
-                </div>
-              ) : (
-                Object.entries(groupedChats).map(([label, chats]) => (
-                  <div className=" py-3" key={label}>
-                    <div className="text-sm text-netural-300 font-semibold py-2 pl-4">{t(label)}</div>
-                    {chats.map((item: any) => (
-                      <div
-                        key={item.fakeId ?? item.id}
-                        className={
-                          "cursor-pointer hover:bg-gray-50 rounded-lg py-2 pl-4" +
-                          (sessionId && item.code === sessionId
-                            ? " bg-netural-50 "
-                            : "")
-                        }
-                        onClick={() => onSelectChat?.(item)}
-                      >
-                        <span
-                          className="font-medium block max-w-[250px] truncate"
-                          title={item.title}
-                        >
-                          {item.title}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ))
-              )}
-            </div>
+          </div>
+
+          {/* Fixed Footer Section */}
+          <div className="flex-shrink-0 px-4 py-4 border-t border-gray-100">
             <div
-              className="flex items-center gap-2 mt-4 pl-6"
+              className="flex items-center gap-2 cursor-pointer"
               onClick={() => {
                 history.push("/profile");
                 onClose?.();
               }}
             >
-              <>
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-main overflow-hidden">
-                  {userAvatar && showAvatar ? (
-                    <>
-                      {!avatarLoaded && (
-                        <img
-                          src="/default-avatar.png"
-                          alt="default"
-                          className="w-full h-full object-cover rounded-full absolute"
-                          style={{ zIndex: 1 }}
-                        />
-                      )}
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-main overflow-hidden">
+                {userAvatar && showAvatar ? (
+                  <>
+                    {!avatarLoaded && (
                       <img
-                        src={userAvatar}
-                        alt={userName}
-                        className="w-full h-full object-cover rounded-full relative"
-                        style={{ zIndex: 2 }}
-                        onLoad={() => setAvatarLoaded(true)}
-                        onError={() => setAvatarLoaded(false)}
+                        src="/default-avatar.png"
+                        alt="default"
+                        className="w-full h-full object-cover rounded-full absolute"
+                        style={{ zIndex: 1 }}
                       />
-                    </>
-                  ) : (
-                    userName?.[0]?.toUpperCase() || "J"
-                  )}
-                </div>
-                <span className="font-medium">{userName}</span>
-              </>
+                    )}
+                    <img
+                      src={userAvatar}
+                      alt={userName}
+                      className="w-full h-full object-cover rounded-full relative"
+                      style={{ zIndex: 2 }}
+                      onLoad={() => setAvatarLoaded(true)}
+                      onError={() => setAvatarLoaded(false)}
+                    />
+                  </>
+                ) : (
+                  userName?.[0]?.toUpperCase() || "J"
+                )}
+              </div>
+              <span className="font-medium text-sm">{userName}</span>
             </div>
           </div>
         </motion.div>

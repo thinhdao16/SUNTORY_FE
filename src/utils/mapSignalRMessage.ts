@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
 
 export function mapSignalRMessage(

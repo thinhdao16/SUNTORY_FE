@@ -6,6 +6,7 @@ import { useSignalRStreamStore, StreamChunk, StreamEvent } from '@/store/zustand
 import { logSignalRDiagnostics, getSignalRDiagnostics } from '@/utils/signalr-diagnostics';
 import { runPreConnectionTests } from '@/utils/signalr-connection-test';
 import { createMobileOptimizedConnection } from '@/utils/mobile-signalr-config';
+import { useChatStore } from '@/store/zustand/chat-store';
 
 export interface UseSignalRStreamOptions {
     autoReconnect?: boolean;
@@ -16,29 +17,22 @@ export interface UseSignalRStreamOptions {
 export interface UseSignalRStreamReturn {
     isConnected: boolean;
     connectionId?: string;
-
     getStreamMessage: (messageCode: string) => any;
     getStreamMessagesByChatCode: (chatCode: string) => any[];
     getActiveStreams: () => any[];
-
     sendStreamMessage: (chatCode: string, message: string, additionalData?: any) => Promise<string>;
     clearStream: (messageCode: string) => void;
     clearChatStreams: (chatCode: string) => void;
-
     isStreamActive: (messageCode: string) => boolean;
     isStreamComplete: (messageCode: string) => boolean;
     hasStreamError: (messageCode: string) => boolean;
     getStreamError: (messageCode: string) => string | null;
-
     manualRetry: () => void;
     getConnectionStats: () => {
         failures: number;
         lastAttempt: Date | null;
         isRetrying: boolean;
     };
-
-    logStreamStats: () => void;
-
     streamStats: {
         total: number;
         active: number;
@@ -74,6 +68,7 @@ export const useSignalRStream = (
         getCompletedStreams,
         getErrorStreams
     } = useSignalRStreamStore();
+    const setIsSending = useChatStore.getState().setIsSending;
 
     const connectionFailures = useRef(0);
     const lastConnectionAttempt = useRef<Date | null>(null);
@@ -81,69 +76,98 @@ export const useSignalRStream = (
     useEffect(() => {
         deviceIdRef.current = deviceId;
     }, [deviceId]);
-
     const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
         connection.on("ReceiveStreamChunk", (data: {
+            botMessageCode: string;
+            botMessageId: number;
             chatCode: string;
-            messageCode: string;
             chunk: string;
             completeText: string;
+            userMessageCode: string;
+            userMessageId: number;
         }) => {
+            // console.log("Stream Chunk Received:", data);
             const chunk: StreamChunk = {
+                id: data.botMessageId,
                 chatCode: data.chatCode,
-                messageCode: data.messageCode,
+                messageCode: data.userMessageCode,
                 chunk: data.chunk,
                 completeText: data.completeText,
+                userMessageId: data.userMessageId,
+                code: data.botMessageCode,
                 timestamp: new Date().toISOString()
             };
             addStreamChunk(chunk);
         });
 
         connection.on("StreamComplete", (data: {
-            ChatCode: string;
-            MessageCode: string;
+            botMessageCode: string;
+            botMessageId: number;
+            chatCode: string;
+            chunk: string;
+            completeText: string;
+            userMessageCode: string;
+            userMessageId: number;
         }) => {
+            console.log("Stream Complete:", data);
             const event: StreamEvent = {
-                chatCode: data.ChatCode,
-                messageCode: data.MessageCode,
-                timestamp: new Date().toISOString()
+                id: data.botMessageId,
+                chatCode: data.chatCode,
+                messageCode: data.userMessageCode,
+                timestamp: new Date().toISOString(),
+                code: data.botMessageCode
             };
             completeStream(event);
+            setIsSending(false);
         });
 
         connection.on("StreamError", (data: {
-            ChatCode: string;
-            MessageCode: string;
-            ErrorMessage: string;
+            botMessageCode: string;
+            botMessageId: number;
+            chatCode: string;
+            chunk: string;
+            completeText: string;
+            userMessageCode: string;
+            userMessageId: number;
+            errorMessage: string;
         }) => {
+            console.log("Stream Error:", data);
             const event: StreamEvent = {
-                chatCode: data.ChatCode,
-                messageCode: data.MessageCode,
+                id: data.botMessageId,
+                chatCode: data.chatCode,
+                messageCode: data.userMessageCode,
                 timestamp: new Date().toISOString(),
-                errorMessage: data.ErrorMessage
+                errorMessage: data.errorMessage,
+                code: data.botMessageCode
             };
-
-
+            setIsSending(false);
             errorStream(event);
         });
 
         connection.onreconnecting(() => {
             console.log("🔄 SignalR Stream reconnecting...");
             setConnection(false);
+            setIsSending(false);
         });
 
         connection.onreconnected(async (connectionId?: string) => {
             try {
                 await connection.invoke("JoinChatRoom", deviceIdRef.current);
                 setConnection(true, connectionId || undefined);
+                setIsSending(false);
+
             } catch (error) {
                 console.error("❌ Failed to rejoin chat room:", error);
+                setIsSending(false);
+
             }
         });
 
         connection.onclose((error?: Error) => {
             console.log("❌ SignalR Stream connection closed:", error);
             setConnection(false);
+            setIsSending(false);
+
         });
 
     }, [addStreamChunk, completeStream, errorStream, setConnection]);
@@ -338,62 +362,6 @@ export const useSignalRStream = (
         };
     }, [getActiveStreams, getCompletedStreams, getErrorStreams]);
 
-    const logStreamStats = useCallback(() => {
-        const stats = streamStats;
-        const activeStreams = getActiveStreams();
-        const completedStreams = getCompletedStreams();
-        const errorStreams = getErrorStreams();
-
-        console.group("📊 Stream Statistics");
-        console.log("Total streams:", stats.total);
-        console.log("Active streams:", stats.active);
-        console.log("Completed streams:", stats.completed);
-        console.log("Error streams:", stats.errors);
-
-        if (activeStreams.length > 0) {
-            console.group("Active Streams Details:");
-            activeStreams.forEach(stream => {
-                console.log(`${stream.messageCode}:`, {
-                    chatCode: stream.chatCode,
-                    chunks: stream.chunks.length,
-                    textLength: stream.completeText.length,
-                    isStreaming: stream.isStreaming,
-                    startTime: stream.startTime
-                });
-            });
-            console.groupEnd();
-        }
-
-        if (completedStreams.length > 0) {
-            console.group("Completed Streams Details:");
-            completedStreams.forEach(stream => {
-                console.log(`${stream.messageCode}:`, {
-                    chatCode: stream.chatCode,
-                    chunks: stream.chunks.length,
-                    textLength: stream.completeText.length,
-                    duration: stream.endTime ?
-                        new Date(stream.endTime).getTime() - new Date(stream.startTime).getTime() + "ms" :
-                        "unknown"
-                });
-            });
-            console.groupEnd();
-        }
-
-        if (errorStreams.length > 0) {
-            console.group("Error Streams Details:");
-            errorStreams.forEach(stream => {
-                console.error(`${stream.messageCode}:`, {
-                    chatCode: stream.chatCode,
-                    chunks: stream.chunks.length,
-                    errorMessage: stream.errorMessage,
-                    startTime: stream.startTime
-                });
-            });
-            console.groupEnd();
-        }
-
-        console.groupEnd();
-    }, [streamStats, getActiveStreams, getCompletedStreams, getErrorStreams]);
 
     return {
         // Connection status
@@ -421,7 +389,6 @@ export const useSignalRStream = (
         getConnectionStats,
 
         // Debug helpers
-        logStreamStats,
 
         // Stats
         streamStats

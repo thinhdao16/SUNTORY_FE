@@ -16,7 +16,7 @@ import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { useSignalRStream } from "@/hooks/useSignalRStream";
 
 const routes = {
-  Chat: lazy(() => import("@/pages/Chat/Chat")),
+  Chat: lazy(() => import("@/pages/ChatStream/ChatStream")),
   ChangePassword: lazy(() => import("@/pages/Auth/ChangePassword/ChangePassword")),
   Camera: lazy(() => import("@/pages/Camera/Camera")),
   CameraWeb: lazy(() => import("@/pages/Camera/CameraWeb")),
@@ -47,7 +47,6 @@ const AppRoutes: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
   const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
-
   const showTabBar =
     !authRoutes.includes(location.pathname) &&
     !ignoreRoutes.includes(location.pathname) &&
