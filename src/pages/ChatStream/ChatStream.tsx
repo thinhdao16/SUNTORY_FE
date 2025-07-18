@@ -42,6 +42,7 @@ import { useChatHistoryLastModule } from "./hooks/useChatStreamHistorylastModule
 import { IonSpinner } from "@ionic/react";
 import { mergeMessagesStream } from "@/utils/mapSignalRStreamMessage ";
 import { MessageState } from "@/types/chat-message";
+import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 
 dayjs.extend(utc);
 
@@ -224,6 +225,15 @@ const Chat: React.FC = () => {
             msg.text === 'PENDING_MESSAGE'
         );
     }, [mergedMessages]);
+    const clearAllMessages = () => {
+        useChatStore.getState().clearPendingMessages();
+        useChatStore.getState().clearMessages();
+        useChatStore.getState().clearSession();
+        useChatStore.getState().setStopMessages(true);
+        useSignalRChatStore.getState().setHasFirstSignalRMessage(false);
+        useSignalRChatStore.getState().setMessages([]);
+        useSignalRStreamStore.getState().clearAllStreams();
+    };
     // ==== Lifecycle Effects ====
     useEffect(() => {
         if (sessionId && !isLoading) {
@@ -336,7 +346,17 @@ const Chat: React.FC = () => {
                 {/* Cột trái */}
                 <div className="flex items-center gap-4 z-10">
                     {!isWelcome && (
-                        <button onClick={() => !!actionFrom ? history.push(actionFrom) : history.goBack()} aria-label="Back">
+                        <button
+                            onClick={() => {
+                                clearAllMessages();
+                                if (!!actionFrom) {
+                                    history.push(actionFrom);
+                                } else {
+                                    history.goBack();
+                                }
+                            }}
+                            aria-label="Back"
+                        >
                             <IoArrowBack size={20} className="text-blue-600" />
                         </button>
                     )}

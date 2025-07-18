@@ -24,8 +24,8 @@ const StreamingMessageItem: React.FC<StreamingMessageItemProps> = ({ msg }) => {
 
     const { displayText, isTyping } = useBatchedTypingEffect(fullText, msg.isComplete, {
         charDelay: 6,
-        batchSize: 1, // Start with 1 character for more natural feel
-        batchDelay: 15 // Faster for responsiveness
+        batchSize: 1,
+        batchDelay: 15
     });
 
     if (!msg) return null;
