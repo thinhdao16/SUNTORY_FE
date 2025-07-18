@@ -43,7 +43,6 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
     imageLoading,
     imageLoadingMany
 }) => {
-    console.log(isLoading)
     const isLoadingBtn = useMemo(() => {
         return isSpending || isLoading || imageLoading || imageLoadingMany || isLoadingHistory;
     }, [isSpending, isLoading, imageLoading, imageLoadingMany, isLoadingHistory]);
@@ -67,7 +66,9 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
                     onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
-                            handleSendMessage(e, true);
+                            if (!isLoadingBtn) {
+                                handleSendMessage(e, true);
+                            }
                         }
                     }}
                     onPaste={async (e) => {

@@ -54,7 +54,7 @@ const BottomTabBar: React.FC = () => {
             classNameIcon: "h-6",
         },
         {
-            label: "Translation",
+            label: t("Translation"),
             icon: TranslationIcon,
             iconActive: TranslationActiveIcon,
             path: "/translate",

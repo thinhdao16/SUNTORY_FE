@@ -34,7 +34,7 @@ const ChatStreamMessageItem: React.FC<{
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
             >
                 <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : ""} items-start w-full`}>
-                    {!isUser && (
+                    {!isUser && msg.text !== MessageState.PENDING && (
                         <div>
                             <BotIcon className="min-w-[30px] aspect-square object-contain" />
                         </div>
@@ -101,7 +101,6 @@ const ChatStreamMessageItem: React.FC<{
                                         className="cursor-pointer hover:scale-110 transition-transform"
                                         onClick={async () => {
                                             try {
-                                                // Gọi với msg.id chứ không phải msg.replyToMessageId
                                                 await onRetryMessage?.(msg.replyToMessageId);
                                             } catch (error) {
                                                 console.error('Retry failed:', error);
@@ -111,7 +110,7 @@ const ChatStreamMessageItem: React.FC<{
                                 </div>
                             </div>
                         ) : (
-                            (msg.text && String(msg.text).trim() !== "") && (
+                            msg.text !== MessageState.PENDING && (msg.text && String(msg.text).trim() !== "") && (
                                 <div
                                     className={`relative group ${isError && !isSend
                                         ? "bg-red-50 text-red-700 border border-red-400 rounded-[16px_16px_16px_16px]"
@@ -132,8 +131,7 @@ const ChatStreamMessageItem: React.FC<{
                                 </div>
                             )
                         )}
-
-                        {isUser || msg.text !== MessageState.FAILED || msg.text !== MessageState.PENDING ? (
+                        {isUser || msg.text === MessageState.FAILED || msg.text === MessageState.PENDING ? (
                             <div className="flex justify-end mt-1">
                                 <button
                                     className={`bottom-2 right-2 p-1 rounded hover:bg-gray-100 transition

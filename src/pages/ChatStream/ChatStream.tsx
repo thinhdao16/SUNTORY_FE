@@ -90,10 +90,9 @@ const Chat: React.FC = () => {
     const setStopMessages = useChatStore((s) => s.setStopMessages);
     const imageLoading = useUploadStore.getState().imageLoading;
     const clearSession = useChatStore((s) => s.clearSession);
-
     // ==== Stream Integration ====
     const streamMessages = useSignalRStreamStore((state) => state.streamMessages);
-    const completedMessages = useSignalRStreamStore((state) => state.completedMessages);
+    const rawCompleted = useSignalRStreamStore(state => state.completedMessages);
     const clearAllStreams = useSignalRStreamStore((state) => state.clearAllStreams);
     // Debug log on mount
 
@@ -105,8 +104,13 @@ const Chat: React.FC = () => {
         const filtered = allStreamValues.filter(
             (msg: any) => msg.chatCode === sessionId
         );
+        console.log(allStreamValues)
         return filtered;
     }, [streamMessages, sessionId]);
+    const completedMessages = useMemo(() => {
+        if (!sessionId) return [];
+        return rawCompleted.filter((msg: any) => msg.chatCode === sessionId);
+    }, [rawCompleted, sessionId]);
     // ==== Derived State ====
 
     const topicTypeNum = type ? Number(type) : undefined;
@@ -220,7 +224,6 @@ const Chat: React.FC = () => {
             msg.text === 'PENDING_MESSAGE'
         );
     }, [mergedMessages]);
-
     // ==== Lifecycle Effects ====
     useEffect(() => {
         if (sessionId && !isLoading) {
@@ -409,7 +412,7 @@ const Chat: React.FC = () => {
                                     pendingMessages={pendingMessages}
                                     topicType={topicType}
                                     title={title}
-                                    loading={isSending}
+                                    loading={isSending || hasPendingMessages}
                                     onRetryMessage={retryMessage}
                                 />
                             )}

@@ -37,35 +37,116 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
   handleTouchMove,
   handleTouchEnd,
 }) => {
+  // Suggested languages (hiển thị đầu tiên)
+  const suggestedLanguages = ["Detect language", "English", "Vietnamese", "Chinese (Simplified)"];
 
-  const [keyword, setKeyword] = useState<string>('');
-
-  const filterLanguages = (keyword: string, isFrom: boolean, languages: any[], languagesTo: any[]) => {
+  const filterAndGroupLanguages = (searchKeyword: string, isFrom: boolean, languages: any[], languagesTo: any[]) => {
     const list = isFrom ? languages : languagesTo;
-    return list.filter(item =>
-      item.label.toLowerCase().includes((keyword || '').toLowerCase()) ||
-      item.lang.toLowerCase().includes((keyword || '').toLowerCase())
+
+    // Filter by search keyword
+    const filtered = list.filter(item =>
+      item.label.toLowerCase().includes((searchKeyword || '').toLowerCase()) ||
+      item.lang.toLowerCase().includes((searchKeyword || '').toLowerCase())
     );
+
+    if (!searchKeyword || searchKeyword.trim() === '') {
+      // Nếu không có search, hiển thị suggested trước
+      const suggested = filtered.filter(lang =>
+        suggestedLanguages.some(suggLang => {
+          // More flexible matching for suggested languages
+          const normalizedSuggested = suggLang.toLowerCase();
+          const normalizedLangLabel = lang.label.toLowerCase();
+          const normalizedLangName = lang.lang.toLowerCase();
+
+          return normalizedLangLabel.includes(normalizedSuggested) ||
+            normalizedLangName.includes(normalizedSuggested) ||
+            normalizedLangLabel.includes('detect') && normalizedSuggested.includes('detect') ||
+            normalizedLangLabel.includes('english') && normalizedSuggested.includes('english') ||
+            normalizedLangLabel.includes('vietnamese') && normalizedSuggested.includes('vietnamese') ||
+            normalizedLangLabel.includes('chinese') && normalizedSuggested.includes('chinese');
+        })
+      );
+
+      const others = filtered.filter(lang =>
+        !suggestedLanguages.some(suggLang => {
+          const normalizedSuggested = suggLang.toLowerCase();
+          const normalizedLangLabel = lang.label.toLowerCase();
+          const normalizedLangName = lang.lang.toLowerCase();
+
+          return normalizedLangLabel.includes(normalizedSuggested) ||
+            normalizedLangName.includes(normalizedSuggested) ||
+            normalizedLangLabel.includes('detect') && normalizedSuggested.includes('detect') ||
+            normalizedLangLabel.includes('english') && normalizedSuggested.includes('english') ||
+            normalizedLangLabel.includes('vietnamese') && normalizedSuggested.includes('vietnamese') ||
+            normalizedLangLabel.includes('chinese') && normalizedSuggested.includes('chinese');
+        })
+      );
+
+      // Group others by alphabet
+      const groupedOthers = others.reduce((groups: any, lang: any) => {
+        const firstLetter = lang.label.charAt(0).toUpperCase();
+        if (!groups[firstLetter]) {
+          groups[firstLetter] = [];
+        }
+        groups[firstLetter].push(lang);
+        return groups;
+      }, {});
+
+      // Sort each group alphabetically
+      Object.keys(groupedOthers).forEach(letter => {
+        groupedOthers[letter].sort((a: any, b: any) => a.label.localeCompare(b.label));
+      });
+
+      return {
+        suggested,
+        grouped: groupedOthers,
+        isSearching: false
+      };
+    } else {
+      // Nếu có search, group kết quả theo alphabet
+      const groupedSearch = filtered.reduce((groups: any, lang: any) => {
+        const firstLetter = lang.label.charAt(0).toUpperCase();
+        if (!groups[firstLetter]) {
+          groups[firstLetter] = [];
+        }
+        groups[firstLetter].push(lang);
+        return groups;
+      }, {});
+
+      // Sort each group alphabetically
+      Object.keys(groupedSearch).forEach(letter => {
+        groupedSearch[letter].sort((a: any, b: any) => a.label.localeCompare(b.label));
+      });
+
+      return {
+        suggested: [],
+        grouped: groupedSearch,
+        isSearching: true
+      };
+    }
   };
 
   const isFrom = useMemo(() => {
     return targetModal === "from";
   }, [targetModal]);
 
-  const validLanguage = useMemo(() => {
-    return filterLanguages(keyword, isFrom, languages, languagesTo);
-  }, [targetModal, keyword, languages, languagesTo]);
+  const { suggested, grouped, isSearching } = useMemo(() => {
+    return filterAndGroupLanguages(inputValue, isFrom, languages, languagesTo);
+  }, [targetModal, inputValue, languages, languagesTo]);
 
-  const onChangeInputSearch = (e: any) => {
-    setKeyword(e.target.value);
+  const onChangeInputSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleInputSearch(e);
-  }
+  };
 
-  useEffect(() => {
-    return () => {
-      setKeyword('');
+  const clearSearch = () => {
+    setInputValue("");
+  };
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      closeModal();
     }
-  }, []);
+  };
 
   return (
     <AnimatePresence>
@@ -76,6 +157,7 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -10, opacity: 0 }}
           transition={{ duration: 0.2 }}
+          onClick={handleOverlayClick}
         >
           <div
             className="bg-success-500 darkk:bg-dark-extra w-full h-[95%] rounded-t-4xl shadow-lg transition-transform duration-300 ease-out"
@@ -86,10 +168,13 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-white  p-4 rounded-t-4xl">
+            <div className="bg-white p-4 rounded-t-4xl">
               <div className="flex justify-center items-center relative">
-                <span className="font-semibold text-netural-500">{isFrom ? t(`Translate from`) : t(`Translate to`)}</span>
+                <span className="font-semibold text-netural-500">
+                  {isFrom ? "TRANSLATE FROM" : "TRANSLATE TO"}
+                </span>
                 <button
                   className="absolute right-0 top-0 bg-gray-300 darkk:bg-dark-extra p-1 rounded-full flex items-center justify-center"
                   onClick={closeModal}
@@ -101,68 +186,101 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
                 </button>
               </div>
               <div className="mt-4 flex justify-between items-center gap-4">
-                <div className="w-full bg-chat-to darkk:bg-dark-extra flex items-center rounded-xl p-2 relative">
+                <div className="w-full bg-gray-100 flex items-center rounded-xl px-3 py-2 relative">
                   <IonIcon
-                    slot="start"
                     icon={searchOutline}
-                    aria-hidden="true"
-                    className="text-gray-500 text-xl mx-2"
+                    className="text-gray-500 text-xl mr-2"
                   />
                   <input
                     type="text"
-                    placeholder={t(`Search`)}
+                    placeholder={t("Search")}
                     value={inputValue}
                     onChange={onChangeInputSearch}
-                    className="w-full focus:outline-none relative"
+                    className="w-full focus:outline-none bg-transparent"
                   />
                   {inputValue && (
-                    <IonIcon
-                      icon={close}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-500 text-white text-sm p-0.5 rounded-full flex items-center justify-center cursor-pointer"
-                      onClick={() => setInputValue("")}
-                    />
+                    <button
+                      onClick={clearSearch}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center"
+                    >
+                      <IonIcon icon={close} className="text-xs" />
+                    </button>
                   )}
                 </div>
               </div>
             </div>
-            <div className="p-4">
-              <div>
-                <span className="uppercase text-gray-500 text-sm">
-                  {t(`SUGGESTED LANGUAGES`)}
-                </span>
-                <div className="rounded-lg mt-2 ">
-                  <div className="rounded-2xl bg-white">
-                    {validLanguage.map(
-                      (lang, index) => (
-                        <div
-                          key={lang.label}
-                          className={`flex items-center justify-center gap-2 w-full ${lang.selected
-                            ? "bg-main text-white rounded-2xl"
-                            : ""
-                            } ${index === 0
-                              ? "rounded-t-2xl"
-                              : index === validLanguage.length - 1
-                                ? "rounded-b-2xl"
-                                : ""
-                            }`}
-                          onClick={() => {
-                            toggleLanguage(isFrom ? "from" : "to", lang.lang);
-                            closeModal();
-                          }}
-                        >
 
-                          <div className="py-3 w-full flex items-center justify-between px-6 font-medium">
-                            <span>{lang.label}</span>
-                            {lang.selected && (
-                              <SelectIcon />
-                            )}
-                          </div>
+            <div className="px-4 pb-4 h-full overflow-y-auto">
+              {/* Suggested Languages - chỉ hiển thị khi không search */}
+              {!isSearching && suggested.length > 0 && (
+                <div className="mb-6">
+                  <span className="uppercase text-gray-500  font-medium my-4 block">
+                    {t("SUGGESTED LANGUAGES")}
+                  </span>
+                  <div className="rounded-2xl bg-white overflow-hidden">
+                    {suggested.map((lang, index) => (
+                      <div
+                        key={lang.label}
+                        className={`flex items-center w-full cursor-pointer border-b border-gray-100 last:border-b-0 ${lang.selected ? "bg-main text-white" : "hover:bg-gray-50"
+                          }`}
+                        onClick={() => {
+                          toggleLanguage(isFrom ? "from" : "to", lang.lang);
+                          closeModal();
+                        }}
+                      >
+                        <div className="py-3 w-full flex items-center justify-between px-4 font-medium">
+                          <span>{lang.label}</span>
+                          {lang.selected && <SelectIcon className="text-white" />}
                         </div>
-                      )
-                    )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Search Results hoặc Alphabetical Groups */}
+              {Object.keys(grouped).length > 0 ? (
+                Object.keys(grouped)
+                  .sort()
+                  .map((letter) => (
+                    <div key={letter} className="mb-4">
+                      {!isSearching && (
+                        <div className="flex items-center mb-2">
+                          <span className="text-gray-400 font-medium text-sm bg-gray-100 px-2 py-1 rounded">
+                            {letter}
+                          </span>
+                        </div>
+                      )}
+                      <div className="rounded-2xl bg-white overflow-hidden">
+                        {grouped[letter].map((lang: any, index: number) => (
+                          <div
+                            key={lang.label}
+                            className={`flex items-center w-full cursor-pointer border-b border-gray-100 last:border-b-0 ${lang.selected ? "bg-main text-white" : "hover:bg-gray-50"
+                              }`}
+                            onClick={() => {
+                              toggleLanguage(isFrom ? "from" : "to", lang.lang);
+                              closeModal();
+                            }}
+                          >
+                            <div className="py-3 w-full flex items-center justify-between px-4 font-medium">
+                              <span>{lang.label}</span>
+                              {lang.selected && <SelectIcon className="text-white" />}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                // No results found
+                isSearching && (
+                  <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                    <div className="text-4xl mb-2">🔍</div>
+                    <span className="text-sm">{t("No languages found")}</span>
+                    <span className="text-xs">{t("Try a different search term")}</span>
+                  </div>
+                )
+              )}
             </div>
           </div>
         </motion.div>

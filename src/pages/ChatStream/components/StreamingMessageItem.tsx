@@ -11,6 +11,7 @@ interface StreamingMessageItemProps {
 }
 
 const StreamingMessageItem: React.FC<StreamingMessageItemProps> = ({ msg }) => {
+    console.log(msg)
     // Ensure we get text from the correct property
     let fullText = '';
     if (typeof msg.text === 'string') {

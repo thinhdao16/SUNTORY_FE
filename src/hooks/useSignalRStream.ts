@@ -86,7 +86,7 @@ export const useSignalRStream = (
             userMessageCode: string;
             userMessageId: number;
         }) => {
-            console.log("Stream Chunk Received:", data);
+            // console.log("Stream Chunk Received:", data);
             const chunk: StreamChunk = {
                 id: data.botMessageId,
                 chatCode: data.chatCode,
