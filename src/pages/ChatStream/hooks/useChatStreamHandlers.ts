@@ -11,6 +11,7 @@ import { useChatStore } from "@/store/zustand/chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
 import i18n from "@/config/i18n";
 import { useScrollToBottom } from "@/hooks/useScrollToBottom";
+import { TopicType } from "@/constants/topicType";
 
 interface UseChatStreamHandlersProps {
     addPendingImages: (images: string[]) => void;
@@ -204,8 +205,12 @@ export function useChatStreamHandlers({
                 ]);
 
                 scrollToBottom();
-                const res = await createChatStreamApi(payload);
-
+                let res: any
+                if (parseInt(topicType) === TopicType.Chat || parseInt(topicType) === TopicType.FoodDiscovery) {
+                    res = await createChatApi(payload);
+                } else {
+                    res = await createChatStreamApi(payload);
+                }
                 if (timeoutId) clearTimeout(timeoutId);
 
                 // Cập nhật pending message với data từ server

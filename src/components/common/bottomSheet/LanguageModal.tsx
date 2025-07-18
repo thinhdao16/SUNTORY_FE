@@ -173,7 +173,7 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
             <div className="bg-white p-4 rounded-t-4xl">
               <div className="flex justify-center items-center relative">
                 <span className="font-semibold text-netural-500">
-                  {isFrom ? "TRANSLATE FROM" : "TRANSLATE TO"}
+                  {isFrom ? t("TRANSLATE FROM") : t("TRANSLATE TO")}
                 </span>
                 <button
                   className="absolute right-0 top-0 bg-gray-300 darkk:bg-dark-extra p-1 rounded-full flex items-center justify-center"
