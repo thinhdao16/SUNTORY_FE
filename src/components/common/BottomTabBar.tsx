@@ -12,7 +12,10 @@ import ChatIcon from "@/icons/logo/footer/chat.svg?react";
 import ChatActiveIcon from "@/icons/logo/footer/chat_active.svg?react";
 import ProfileIcon from "@/icons/logo/footer/profile.svg?react";
 import ProfileActiveIcon from "@/icons/logo/footer/profile_active.svg?react";
+import TranslationIcon from "@/icons/logo/footer/translation.svg?react";
+import TranslationActiveIcon from "@/icons/logo/footer/translation_active.svg?react";
 import { useKeyboardResize } from "@/hooks/useKeyboardResize";
+import { useSignalRStreamStore } from "@/store/zustand/signalr-stream-store";
 
 
 interface TabItem {
@@ -50,14 +53,14 @@ const BottomTabBar: React.FC = () => {
             className: "gap-[5px]",
             classNameIcon: "h-6",
         },
-        // {
-        //     label: "Translation",
-        //     icon: TranslationIcon,
-        //     iconActive: TranslationActiveIcon,
-        //     path: "/translate",
-        //     activePath: (pathname: string) => pathname.startsWith("/translate"),
-        //     classNameIcon: "h-6",
-        // },
+        {
+            label: t("Translation"),
+            icon: TranslationIcon,
+            iconActive: TranslationActiveIcon,
+            path: "/translate",
+            activePath: (pathname: string) => pathname.startsWith("/translate"),
+            classNameIcon: "h-6",
+        },
         {
             label: t("Profile"),
             icon: ProfileIcon,
@@ -75,6 +78,7 @@ const BottomTabBar: React.FC = () => {
         useChatStore.getState().setStopMessages(true);
         useSignalRChatStore.getState().setHasFirstSignalRMessage(false);
         useSignalRChatStore.getState().setMessages([]);
+        useSignalRStreamStore.getState().clearAllStreams();
     };
 
     useEffect(() => {

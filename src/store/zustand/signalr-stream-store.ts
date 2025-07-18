@@ -1,3 +1,5 @@
+import { ChatMessage } from "@/pages/Chat/hooks/useChatMessages";
+import { getChatMessage } from "@/services/chat/chat-service";
 import { create } from "zustand";
 
 export interface StreamChunk {
@@ -6,6 +8,9 @@ export interface StreamChunk {
     chunk: string;
     completeText: string;
     timestamp: string;
+    id: number;
+    userMessageId: number;
+    code: string;
 }
 
 export interface StreamEvent {
@@ -13,6 +18,9 @@ export interface StreamEvent {
     messageCode: string;
     timestamp: string;
     errorMessage?: string;
+    code: string;
+    id: number;
+    completeText?: string;
 }
 
 export interface StreamMessage {
@@ -26,73 +34,60 @@ export interface StreamMessage {
     completeText: string;
     startTime: string;
     endTime?: string;
+    code: string;
+    id: number
 }
 
 interface SignalRStreamStore {
-    // Connection status
     isConnected: boolean;
     connectionId?: string;
-
-    // Stream messages by messageCode
     streamMessages: Record<string, StreamMessage>;
-
-    // Actions
+    completedMessages: ChatMessage[]; // Đổi tên từ allFetchedMessages
     setConnection: (isConnected: boolean, connectionId?: string) => void;
-
-    // Stream chunk handling
     addStreamChunk: (chunk: StreamChunk) => void;
-
-    // Stream completion
+    startTyping: (chatCode: string, messageCode: string) => void;
     completeStream: (event: StreamEvent) => void;
-
-    // Stream error
     errorStream: (event: StreamEvent) => void;
-
-    // Stream management
     clearStream: (messageCode: string) => void;
     clearChatStreams: (chatCode: string) => void;
     clearAllStreams: () => void;
-
-    // Getters
     getStreamMessage: (messageCode: string) => StreamMessage | undefined;
     getStreamMessagesByChatCode: (chatCode: string) => StreamMessage[];
     getActiveStreams: () => StreamMessage[];
     getCompletedStreams: () => StreamMessage[];
     getErrorStreams: () => StreamMessage[];
+    getCompletedMessages: (chatCode?: string) => ChatMessage[]; // Đổi tên từ getFetchedMessages
 }
 
 export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
-    // Initial state
     isConnected: false,
     connectionId: undefined,
     streamMessages: {},
+    completedMessages: [], // Đổi tên từ allFetchedMessages
 
-    // Connection management
     setConnection: (isConnected, connectionId) =>
         set({ isConnected, connectionId }),
 
-    // Add stream chunk
     addStreamChunk: (chunk) =>
         set((state) => {
             const existing = state.streamMessages[chunk.messageCode];
-
             if (existing) {
-                // Update existing stream
+                const newChunks = [...existing.chunks, chunk];
+
                 return {
                     streamMessages: {
                         ...state.streamMessages,
                         [chunk.messageCode]: {
                             ...existing,
-                            chunks: [...existing.chunks, chunk],
+                            chunks: newChunks,
                             completeText: chunk.completeText,
                             isStreaming: true,
                             isComplete: false,
-                            hasError: false
+                            hasError: false,
                         }
                     }
                 };
             } else {
-                // Create new stream
                 return {
                     streamMessages: {
                         ...state.streamMessages,
@@ -104,15 +99,43 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
                             isComplete: false,
                             hasError: false,
                             completeText: chunk.completeText,
-                            startTime: chunk.timestamp
+                            startTime: chunk.timestamp,
+                            code: chunk.code,
+                            id: chunk.id,
+                            userMessageId: chunk.userMessageId
                         }
                     }
                 };
             }
         }),
 
-    // Complete stream
-    completeStream: (event) =>
+    startTyping: (chatCode, messageCode) =>
+        set((state) => {
+            if (state.streamMessages[messageCode]) {
+                return state;
+            }
+
+            return {
+                streamMessages: {
+                    ...state.streamMessages,
+                    [messageCode]: {
+                        messageCode,
+                        chatCode,
+                        chunks: [],
+                        isStreaming: true,
+                        isComplete: false,
+                        hasError: false,
+                        completeText: '',
+                        startTime: new Date().toISOString(),
+                        code: messageCode,
+                        id: Date.now(),
+                        userMessageId: -1
+                    }
+                }
+            };
+        }),
+
+    completeStream: (event) => {
         set((state) => {
             const existing = state.streamMessages[event.messageCode];
             if (!existing) return state;
@@ -129,51 +152,65 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
                     }
                 }
             };
-        }),
+        });
 
-    // Error stream
-    errorStream: (event) =>
+        getChatMessage(event.code)
+            .then((data) => {
+                set((state) => {
+                    // Merge completed messages, loại bỏ duplicate
+                    const existingMessages = state.completedMessages;
+                    const newMessages = data.filter(newMsg =>
+                        !existingMessages.some(existing => existing.id === newMsg.id)
+                    );
+
+                    return {
+                        completedMessages: [...existingMessages, ...newMessages]
+                    };
+                });
+            })
+            .catch((error) => {
+                console.error('Failed to fetch completed messages:', error);
+            });
+    },
+
+    errorStream: (event) => {
         set((state) => {
             const existing = state.streamMessages[event.messageCode];
 
-            if (existing) {
-                // Update existing with error
-                return {
-                    streamMessages: {
-                        ...state.streamMessages,
-                        [event.messageCode]: {
-                            ...existing,
-                            isStreaming: false,
-                            isComplete: false,
-                            hasError: true,
-                            errorMessage: event.errorMessage,
-                            endTime: event.timestamp
-                        }
+            if (!existing) return state;
+            return {
+                streamMessages: {
+                    ...state.streamMessages,
+                    [event.messageCode]: {
+                        ...existing,
+                        isStreaming: false,
+                        isComplete: false,
+                        hasError: true,
+                        errorMessage: event.errorMessage,
+                        endTime: event.timestamp,
                     }
-                };
-            } else {
-                // Create error-only stream
-                return {
-                    streamMessages: {
-                        ...state.streamMessages,
-                        [event.messageCode]: {
-                            messageCode: event.messageCode,
-                            chatCode: event.chatCode,
-                            chunks: [],
-                            isStreaming: false,
-                            isComplete: false,
-                            hasError: true,
-                            errorMessage: event.errorMessage,
-                            completeText: '',
-                            startTime: event.timestamp,
-                            endTime: event.timestamp
-                        }
-                    }
-                };
-            }
-        }),
+                }
+            };
+        });
 
-    // Clear single stream
+        getChatMessage(event.code)
+            .then((data) => {
+                set((state) => {
+                    const existingMessages = state.completedMessages;
+                    const newMessages = data.filter(newMsg =>
+                        !existingMessages.some(existing => existing.id === newMsg.id)
+                    );
+
+                    return {
+                        completedMessages: [...existingMessages, ...newMessages]
+                    };
+                });
+            })
+            .catch((error) => {
+                console.error('Failed to fetch error messages:', error);
+            });
+    },
+
     clearStream: (messageCode) =>
         set((state) => {
             const newStreamMessages = { ...state.streamMessages };
@@ -181,7 +218,6 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
             return { streamMessages: newStreamMessages };
         }),
 
-    // Clear all streams for a specific chat
     clearChatStreams: (chatCode) =>
         set((state) => {
             const newStreamMessages = { ...state.streamMessages };
@@ -193,13 +229,10 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
             return { streamMessages: newStreamMessages };
         }),
 
-    // Clear all streams
-    clearAllStreams: () => set({ streamMessages: {} }),
+    clearAllStreams: () => set({ streamMessages: {}, completedMessages: [] }),
 
-    // Get single stream message
     getStreamMessage: (messageCode) => get().streamMessages[messageCode],
 
-    // Get streams by chat code
     getStreamMessagesByChatCode: (chatCode) => {
         const messages = Object.values(get().streamMessages);
         return messages
@@ -207,21 +240,25 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
             .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     },
 
-    // Get active streams
     getActiveStreams: () => {
         return Object.values(get().streamMessages)
             .filter(msg => msg.isStreaming);
     },
 
-    // Get completed streams
     getCompletedStreams: () => {
         return Object.values(get().streamMessages)
             .filter(msg => msg.isComplete);
     },
 
-    // Get error streams
     getErrorStreams: () => {
         return Object.values(get().streamMessages)
             .filter(msg => msg.hasError);
+    },
+
+    getCompletedMessages: (chatCode) => {
+        const allMessages = get().completedMessages;
+        if (!chatCode) return allMessages;
+
+        return allMessages.filter(msg => msg.chatCode === chatCode);
     }
 }));
