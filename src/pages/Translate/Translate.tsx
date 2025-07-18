@@ -196,7 +196,7 @@ const Translate: React.FC = () => {
         false
       );
 
-      if (toLanguageId === 0) {
+      if (toLanguageId) {
         showToast(t("Please select a valid target language."), 3000, "error");
         return;
       }
