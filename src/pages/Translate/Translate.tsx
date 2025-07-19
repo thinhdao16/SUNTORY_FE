@@ -52,6 +52,8 @@ const Translate: React.FC = () => {
     languagesTo,
     selectedLanguageFrom,
     selectedLanguageTo,
+    setSelectedLanguageFrom,
+    setSelectedLanguageTo,
     swapLanguages,
     toggleLanguage,
     reloadSwap,
@@ -83,16 +85,6 @@ const Translate: React.FC = () => {
   const startTime = useRef<number | null>(null);
   const screenHeight = useRef(window.innerHeight);
   const textareaRef = useRef<HTMLIonTextareaElement>(null);
-
-  const [languageFrom, setLanguageFrom] = useState<{ code: string | null; lang: string }>({
-    code: null, // "auto" thường tương ứng null
-    lang: "Auto",
-  });
-
-  const [languageTo, setLanguageTo] = useState<{ code: string; lang: string }>({
-    code: "en",
-    lang: "English",
-  });
 
   const location = useLocation();
   const velocityThreshold = 0.4;
@@ -170,9 +162,9 @@ const Translate: React.FC = () => {
     }));
 
     // Clear current result when input changes
-    if (newValue !== currentResult?.originalText) {
-      clearCurrentResult();
-    }
+    // if (newValue !== currentResult?.originalText) {
+    //   clearCurrentResult();
+    // }
   };
 
   const handlePastContent = () => {
@@ -206,7 +198,7 @@ const Translate: React.FC = () => {
         false
       );
 
-      if (toLanguageId) {
+      if (!toLanguageId) {
         showToast(t("Please select a valid target language."), 3000, "error");
         return;
       }
@@ -264,10 +256,10 @@ const Translate: React.FC = () => {
       const autoLang = translationLanguages.find(lang => lang.code === "auto" || lang.name.toLowerCase() === "auto");
       const englishLang = translationLanguages.find(lang => lang.code === "en" || lang.name.toLowerCase().includes("english"));
 
-      // if (autoLang && englishLang) {
-      //   setLanguagesFromAPI(autoLang);
-      //   toggleLanguage("to", englishLang);
-      // }
+      if (autoLang && englishLang) {
+        setSelectedLanguageFrom({ id: autoLang.id, code: autoLang.code, label: autoLang.name, selected: true, lang: autoLang.name });
+        setSelectedLanguageTo({id: englishLang.id, code: englishLang.code, label: englishLang.name, selected: true, lang: englishLang.name });
+      }
     }
   }, [translationLanguages, setLanguagesFromAPI]);
 
@@ -307,20 +299,21 @@ const Translate: React.FC = () => {
     }
   }, [reloadSwap, clearCurrentResult]);
 
-  useEffect(() => {
-    if (shouldAutoTranslate && inputValueTranslate.input.trim() && !storeIsTranslating) {
-      setShouldAutoTranslate(false);
-      setTimeout(() => {
-        handleTranslateAI();
-      }, 500);
-    }
-  }, [shouldAutoTranslate, inputValueTranslate.input, storeIsTranslating, handleTranslateAI, setShouldAutoTranslate]);
+  // useEffect(() => {
+  //   if (shouldAutoTranslate && inputValueTranslate.input.trim() && !storeIsTranslating) {
+  //     setShouldAutoTranslate(false);
+  //     setTimeout(() => {
+  //       handleTranslateAI();
+  //     }, 500);
+  //   }
+  // }, [shouldAutoTranslate, inputValueTranslate.input, storeIsTranslating, handleTranslateAI, setShouldAutoTranslate]);
 
   useEffect(() => {
     if (location.pathname === "/translate") {
       clearCurrentResult();
     }
   }, [location.pathname, clearCurrentResult]);
+
   return (
     <>
       <MotionStyles

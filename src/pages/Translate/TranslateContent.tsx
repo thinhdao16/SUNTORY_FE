@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { RefObject, useState } from "react";
 import { IonTextarea } from "@ionic/react";
-import { IoCopyOutline } from "react-icons/io5";
+import { IoArrowBack, IoCopyOutline } from "react-icons/io5";
 import MotionBottomSheet from "@/components/common/bottomSheet/MotionBottomSheet";
 import LanguageModal from "@/components/common/bottomSheet/LanguageModal";
-import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
-import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 import CloseIcon from "@/icons/logo/close.svg?react";
 import DownIcon from "@/icons/logo/translate/down.svg?react";
 import SwapIcon from "@/icons/logo/translate/swap.svg?react";
@@ -16,6 +14,7 @@ import PlusIcon from "@/icons/logo/translate/plus.svg?react";
 import SettingsIcon from "@/icons/logo/translate/settings.svg?react"
 import { TranslationResult } from "@/store/zustand/translation-store";
 import ReactMarkdown from 'react-markdown';
+import { useHistory } from "react-router-dom";
 
 interface TranslateContentProps {
   isOpen: { emotion: boolean; language: boolean };
@@ -115,11 +114,13 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
   isTranslating = false,
   translationResult,
 }) => {
+  const history = useHistory();
+
   const [emotionInput, setEmotionInput] = useState(undefined as string | undefined);
   const [context, setContext] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
-  const [isReverseCollapsed, setIsReverseCollapsed] = useState(false);
-  const [isAiInsightsCollapsed, setIsAiInsightsCollapsed] = useState(false);
+  const [isReverseCollapsed, setIsReverseCollapsed] = useState<boolean>(false);
+  const [isAiInsightsCollapsed, setIsAiInsightsCollapsed] = useState<boolean>(false);
 
   const handleEmotionConfirm = (data: { emotions?: { icon: string; label: string }[]; context: string[] }) => {
     if ((data.emotions && data.emotions.length !== 0) || data.context.length !== 0) {
@@ -129,7 +130,6 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
       });
     } else {
       setEmotionData(null);
-
     }
   };
 
@@ -157,6 +157,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
     }
     setContext("");
   };
+
   return (
     <div
       className={`darkk:bg-gray-700 ${isOpen ? "" : "bg-blue-100"}`}
@@ -183,9 +184,9 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
             flexDirection: "column",
           }}
         >
-          <div className="flex items-start justify-between h-16 mb-2 pt-12 flex-shrink-0  px-6">
-            <button onClick={openSidebarWithAuthCheck}>
-              <NavBarHomeHistoryIcon aria-label="Menu" />
+          <div className="relative flex items-center justify-between px-6 h-[50px]">
+            <button onClick={() => history.goBack()} aria-label="Back">
+              <IoArrowBack size={20} className="text-blue-600" />
             </button>
             <span className="font-semibold text-main uppercase tracking-wide">
               {t(`Translate`)}
@@ -291,7 +292,8 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                   <DownIcon />
                 </div>
               </div>
-              <div className="items-center flex flex-col border border-netural-200 rounded-2xl">
+
+              <div className="items-center flex flex-col border border-neutral-200 rounded-2xl">
                 <IonTextarea
                   autoGrow={true}
                   ref={textareaRef}
@@ -300,16 +302,38 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                   value={inputValueTranslate.input}
                   onIonInput={(e: any) => handleInputTranslate(e)}
                   disabled={isTranslating}
-                  className="placeholder:text-gray-500 w-full text-ellipsis resize px-4 h-[130px] !max-h-[200px] focus:!outline-0"
+                  className="placeholder:text-gray-500 w-full px-4 pb-2 focus:outline-none resize-none overflow-hidden"
                   style={{
                     border: "none",
                     boxShadow: "none",
                     "--highlight-color-focused": "none",
-                    overflowY: "auto",
+                    height: "auto",
+                    minHeight: "150px",
                   } as React.CSSProperties}
                 />
               </div>
-              {translationResult ? (
+
+              <div className="flex items-center justify-center">
+                <button
+                  className="bg-main flex justify-center items-center gap-3 rounded-xl text-white px-4 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleTranslateAI()}
+                  disabled={isTranslating || !inputValueTranslate.input.trim()}
+                >
+                  {isTranslating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>{t("Translating...")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <SparkleIcon />
+                      <span>{t("Smart Translate")}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {!!translationResult && (
                 <div className="border border-netural-200 bg-chat-to rounded-xl h-full">
                   <div className="space-y-4 p-4">
                     {translationResult.translatedText && (
@@ -324,7 +348,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                           </button>
                         </div>
                         <div className="px-4 py-3">
-                          <p className="text-gray-700">{translationResult.translatedText}</p>
+                          <p className="text-gray-700 whitespace-pre-line break-words">{translationResult.translatedText}</p>
                         </div>
                       </div>
                     )}
@@ -341,7 +365,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
 
                             <button className="text-gray-500 transition-transform duration-200">
                               <DownIcon
-                                className={`w-4 h-4 transition-transform duration-200 ${isReverseCollapsed ? 'rotate-180' : ''}`}
+                                className={`w-4 h-4 transition-transform duration-200 ${!isReverseCollapsed ? 'rotate-180' : ''}`}
                               />
                             </button>
                           </div>
@@ -349,7 +373,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
 
                         {/* Collapsible Content */}
                         <div
-                          className={`overflow-hidden transition-all duration-300 ease-in-out ${isReverseCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'}`}
+                          className={`overflow-hidden transition-all duration-300 ease-in-out ${!isReverseCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'}`}
                         >
                           <div className="px-4 py-3">
                             <p className="text-gray-600 ">{translationResult.reverseTranslation}</p>
@@ -380,14 +404,14 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                             </button> */}
                             <button className="text-gray-500 transition-transform duration-200">
                               <DownIcon
-                                className={`w-4 h-4 transition-transform duration-200 ${isAiInsightsCollapsed ? 'rotate-180' : ''}`}
+                                className={`w-4 h-4 transition-transform duration-200 ${!isAiInsightsCollapsed ? 'rotate-180' : ''}`}
                               />
                             </button>
                           </div>
                         </div>
 
                         <div
-                          className={`overflow-hidden transition-all duration-300 ease-in-out ${isAiInsightsCollapsed ? 'max-h-0 opacity-0' : ' opacity-100'
+                          className={`overflow-hidden transition-all duration-300 ease-in-out ${!isAiInsightsCollapsed ? 'max-h-0 opacity-0' : ' opacity-100'
                             }`}
                         >
                           <div className="px-4 py-3">
@@ -427,40 +451,21 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                     )}
                   </div>
                 </div>
-              ) : (
-                <div className="items-center flex flex-col border border-netural-200 bg-chat-to rounded-2xl">
-                  <IonTextarea
-                    autoGrow={true}
-                    ref={textareaRef}
-                    rows={1}
-                    placeholder={t(`Translation`)}
-                    disabled
-                    className="placeholder:text-gray-500 w-full text-ellipsis resize px-4 h-[130px] !max-h-[200px] focus:!outline-0"
+              )
+                // : (
+                //   <div className="items-center flex flex-col border border-netural-200 bg-chat-to rounded-2xl">
+                //     <IonTextarea
+                //       autoGrow={true}
+                //       ref={textareaRef}
+                //       rows={1}
+                //       placeholder={t(`Translation`)}
+                //       disabled
+                //       className="placeholder:text-gray-500 w-full text-ellipsis resize px-4 h-[130px] !max-h-[200px] focus:!outline-0"
 
-                  />
-                </div>
-              )}
-
-              <div className="flex items-center justify-center">
-                <button
-                  className="bg-main flex justify-center items-center gap-3 rounded-xl text-white px-4 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={() => handleTranslateAI()}
-                  disabled={isTranslating || !inputValueTranslate.input.trim()}
-                >
-                  {isTranslating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span>{t("Translating...")}</span>
-                    </>
-                  ) : (
-                    <>
-                      <SparkleIcon />
-                      <span>{t("Smart AI Translate")}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
+                //     />
+                //   </div>
+                // )
+              }
             </div>
           </div>
         </div>
@@ -481,7 +486,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
         handleTouchMove={handleTouchMove}
         handleTouchEnd={handleTouchEnd}
       />
-      
+
       <EmotionModal
         isOpen={isOpen.emotion}
         translateY={translateY}
@@ -498,7 +503,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
         setSelected={setSelected}
         t={t}
       />
-    </div >
+    </div>
   );
 };
 
