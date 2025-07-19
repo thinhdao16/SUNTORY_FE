@@ -52,6 +52,8 @@ const Translate: React.FC = () => {
     languagesTo,
     selectedLanguageFrom,
     selectedLanguageTo,
+    setSelectedLanguageFrom,
+    setSelectedLanguageTo,
     swapLanguages,
     toggleLanguage,
     reloadSwap,
@@ -160,9 +162,9 @@ const Translate: React.FC = () => {
     }));
 
     // Clear current result when input changes
-    if (newValue !== currentResult?.originalText) {
-      clearCurrentResult();
-    }
+    // if (newValue !== currentResult?.originalText) {
+    //   clearCurrentResult();
+    // }
   };
 
   const handlePastContent = () => {
@@ -196,7 +198,7 @@ const Translate: React.FC = () => {
         false
       );
 
-      if (toLanguageId === 0) {
+      if (!toLanguageId) {
         showToast(t("Please select a valid target language."), 3000, "error");
         return;
       }
@@ -249,6 +251,15 @@ const Translate: React.FC = () => {
   useEffect(() => {
     if (translationLanguages && translationLanguages.length > 0) {
       setLanguagesFromAPI(translationLanguages);
+
+      // ✅ Set mặc định: trái là Auto (null), phải là English
+      const autoLang = translationLanguages.find(lang => lang.code === "auto" || lang.name.toLowerCase() === "auto");
+      const englishLang = translationLanguages.find(lang => lang.code === "en" || lang.name.toLowerCase().includes("english"));
+
+      if (autoLang && englishLang) {
+        setSelectedLanguageFrom({ id: autoLang.id, code: autoLang.code, label: autoLang.name, selected: true, lang: autoLang.name });
+        setSelectedLanguageTo({id: englishLang.id, code: englishLang.code, label: englishLang.name, selected: true, lang: englishLang.name });
+      }
     }
   }, [translationLanguages, setLanguagesFromAPI]);
 
@@ -288,20 +299,21 @@ const Translate: React.FC = () => {
     }
   }, [reloadSwap, clearCurrentResult]);
 
-  useEffect(() => {
-    if (shouldAutoTranslate && inputValueTranslate.input.trim() && !storeIsTranslating) {
-      setShouldAutoTranslate(false);
-      setTimeout(() => {
-        handleTranslateAI();
-      }, 500);
-    }
-  }, [shouldAutoTranslate, inputValueTranslate.input, storeIsTranslating, handleTranslateAI, setShouldAutoTranslate]);
+  // useEffect(() => {
+  //   if (shouldAutoTranslate && inputValueTranslate.input.trim() && !storeIsTranslating) {
+  //     setShouldAutoTranslate(false);
+  //     setTimeout(() => {
+  //       handleTranslateAI();
+  //     }, 500);
+  //   }
+  // }, [shouldAutoTranslate, inputValueTranslate.input, storeIsTranslating, handleTranslateAI, setShouldAutoTranslate]);
 
   useEffect(() => {
     if (location.pathname === "/translate") {
       clearCurrentResult();
     }
   }, [location.pathname, clearCurrentResult]);
+
   return (
     <>
       <MotionStyles

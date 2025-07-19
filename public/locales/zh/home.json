@@ -278,6 +278,7 @@
   "AI Review & Insights": "AI评估与见解",
   "Translating...": "正在翻译...",
   "Smart AI Translate": "智能AI翻译",
+  "Smart Translate": "智能翻译",
   "upload_image_failed": "上传图片失败",
   "language_already_selected": "此语言已被选为{{side}}。请选择其他语言。",
   "Cannot swap when 'Detect language' is selected": "无法在选择“检测语言”时进行交换",

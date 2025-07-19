@@ -4,18 +4,21 @@ import { TranslationLanguage } from "@/services/translation/translation-service"
 import { useToastStore } from "@/store/zustand/toast-store";
 import { t } from "@/lib/globalT";
 
-interface Language {
+export interface Language {
   label: string;
   selected: boolean;
   lang: string;
   code?: string | null;
   id?: number;
 }
+
 interface LanguageStore {
   languages: Language[];
   languagesTo: Language[];
-  selectedLanguageFrom: { label: string; lang: string; code?: string | null; id?: number };
-  selectedLanguageTo: { label: string; lang: string; code?: string | null; id?: number };
+  selectedLanguageFrom: Language;
+  selectedLanguageTo: Language;
+  setSelectedLanguageFrom: (item: Language) => void;
+  setSelectedLanguageTo: (item: Language) => void;
   reloadSwap: number;
   isLoading: boolean;
   setLanguagesFromAPI: (apiLanguages: TranslationLanguage[]) => void;
@@ -76,7 +79,7 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
   selectedLanguageFrom: loadFromLocalStorage("selectedLanguageFrom", {
     label: "Detect language",
     lang: "Detect",
-    code: null,
+    code: "auto",
     id: -1,
   }),
   selectedLanguageTo: loadFromLocalStorage("selectedLanguageTo", {
@@ -86,6 +89,14 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
   }),
   reloadSwap: 0,
   isLoading: false,
+  setSelectedLanguageFrom: (item) => {
+    set({ selectedLanguageFrom: item });
+    localStorage.setItem("selectedLanguageFrom", JSON.stringify(item));
+  },
+  setSelectedLanguageTo: (item) => {
+    set({ selectedLanguageTo: item });
+    localStorage.setItem("selectedLanguageTo", JSON.stringify(item));
+  },
   getAvailableLanguagesFrom: () => {
     const state = get();
     const selectedTo = state.selectedLanguageTo;
@@ -154,13 +165,12 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
     set({ languagesTo });
     localStorage.setItem("languagesTo", JSON.stringify(languagesTo));
   },
-
   toggleLanguage: (type, lang) => {
     const { showToast } = useToastStore.getState();
-    return set((state) => {
+    return set((state: any) => {
       const key = type === "from" ? "languages" : "languagesTo";
       const oppositeSelectedKey = type === "from" ? "selectedLanguageTo" : "selectedLanguageFrom";
-      const selectedLang = state[key].find(item => item.lang === lang);
+      const selectedLang = state[key].find((item: any) => item.lang === lang);
       const oppositeSelected = state[oppositeSelectedKey];
       const isConflict = selectedLang && oppositeSelected && selectedLang.code !== null && (
         (selectedLang.id && oppositeSelected.id && selectedLang.id === oppositeSelected.id) ||
@@ -173,10 +183,10 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
         console.warn(`Language "${lang}" is already selected on the opposite side`);
         return state;
       }
-      const updated = state[key].map((item) =>
+      const updated = state[key].map((item: any) =>
         item.lang === lang ? { ...item, selected: true } : { ...item, selected: false }
       );
-      const selectedItem = updated.find((item) => item.selected) || {
+      const selectedItem = updated.find((item: any) => item.selected) || {
         label: "Chọn ngôn ngữ",
         lang: "",
         code: "",
@@ -233,7 +243,6 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
 
       return newState;
     });
-
   },
   shouldAutoTranslate: false,
   setShouldAutoTranslate: (value: boolean) => set({ shouldAutoTranslate: value }),

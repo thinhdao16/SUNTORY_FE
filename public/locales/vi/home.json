@@ -278,6 +278,7 @@
   "AI Review & Insights": "Đánh giá & Tư vấn AI",
   "Translating...": "Đang dịch...",
   "Smart AI Translate": "Dịch thông minh bằng AI",
+  "Smart Translate": "Dịch thông minh",
   "upload_image_failed": "Tải lên hình ảnh không thành công",
   "language_already_selected": "Ngôn ngữ này đã được chọn ở phía {{side}}. Vui lòng chọn ngôn ngữ khác.",
   "Cannot swap when 'Detect language' is selected": "Không thể hoán đổi khi 'Phát hiện ngôn ngữ' được chọn",
