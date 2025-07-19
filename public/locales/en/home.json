@@ -14,6 +14,8 @@
   "Office": "Office",
   "Cancel": "Cancel",
   "Save Setting": "Save Setting",
+  "TRANSLATE FROM": "TRANSLATE FROM",
+  "TRANSLATE TO": "TRANSLATE TO",
   "Search": "Search",
   "SUGGESTED LANGUAGES": "SUGGESTED LANGUAGES",
   "No languages found": "No languages found",
@@ -287,5 +289,11 @@
   "Today": "Today",
   "Yesterday": "Yesterday",
   "{{n}} days ago": "{{n}} days ago",
-  "Last Week": "Last Week"
+  "Last Week": "Last Week",
+  "source language": "source language",
+  "target language": "target language",
+  "language_already_selected_message": "This language is already selected on the {{side}} side. Please choose a different language.",
+  "cannot_swap_detect_language": "Cannot swap when 'Detect language' is selected",
+  "languages_swapped_successfully": "Languages swapped successfully",
+  "Detect language": "Detect language"
 }

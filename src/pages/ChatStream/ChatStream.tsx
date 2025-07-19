@@ -41,7 +41,7 @@ import { IoArrowBack, IoArrowDown } from "react-icons/io5";
 import { useChatHistoryLastModule } from "./hooks/useChatStreamHistorylastModule";
 import { IonSpinner } from "@ionic/react";
 import { mergeMessagesStream } from "@/utils/mapSignalRStreamMessage ";
-import { MessageState } from "@/types/chat-message";
+import { MessageState, StreamMsg } from "@/types/chat-message";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 
 dayjs.extend(utc);
@@ -91,12 +91,13 @@ const Chat: React.FC = () => {
     const setStopMessages = useChatStore((s) => s.setStopMessages);
     const imageLoading = useUploadStore.getState().imageLoading;
     const clearSession = useChatStore((s) => s.clearSession);
+    const allSignalRMessages = useSignalRChatStore((s: any) => s.messages);
+    const setSignalRMessagesBackUp = useSignalRChatStore((s) => s.setMessages);
     // ==== Stream Integration ====
     const streamMessages = useSignalRStreamStore((state) => state.streamMessages);
     const rawCompleted = useSignalRStreamStore(state => state.completedMessages);
     const clearAllStreams = useSignalRStreamStore((state) => state.clearAllStreams);
     // Debug log on mount
-
     // Get stream messages for current session (raw format for mergeMessagesStream to process)
     const signalRMessages = useMemo(() => {
         if (!sessionId) return [];
@@ -105,15 +106,43 @@ const Chat: React.FC = () => {
         const filtered = allStreamValues.filter(
             (msg: any) => msg.chatCode === sessionId
         );
-        console.log(allStreamValues)
         return filtered;
     }, [streamMessages, sessionId]);
     const completedMessages = useMemo(() => {
         if (!sessionId) return [];
         return rawCompleted.filter((msg: any) => msg.chatCode === sessionId);
     }, [rawCompleted, sessionId]);
-    // ==== Derived State ====
 
+
+    const signalRMessagesBackUp = useMemo(() =>
+        allSignalRMessages.filter((msg: any) => msg.chatInfo?.code === sessionId || msg.code === sessionId),
+        [allSignalRMessages, sessionId]
+    );
+    const dataBackUpMap = useMemo<Record<string, StreamMsg>>(() => {
+        return signalRMessagesBackUp.reduce((acc: any, msg: any) => {
+            const messageCode = msg.code;         // key
+            const chatCode = msg.chatInfo?.code ?? msg.chatInfoId;
+            const text = msg.completeText ?? msg.massageText;
+            const time = msg.startTime ?? msg.createDate;
+
+            acc[messageCode] = {
+                messageCode,
+                chatCode,
+                chunks: msg.chunks ?? [],    // giữ nguyên array chunks nếu có
+                isStreaming: msg.isStreaming ?? false,
+                isComplete: msg.isComplete ?? true,
+                hasError: msg.hasError ?? false,
+                completeText: text,
+                startTime: time,
+                code: msg.code,
+                id: msg.id,
+                userMessageId: msg.userChatMessage?.id ?? msg.replyToMessageId,
+                endTime: msg.endTime ?? time,
+            };
+            return acc;
+        }, {} as Record<string, StreamMsg>);
+    }, [signalRMessagesBackUp]);
+    // ==== Derived State ====
     const topicTypeNum = type ? Number(type) : undefined;
     const isValidTopicType = topicTypeNum !== undefined && Object.values(TopicType).includes(topicTypeNum as TopicType);
     const topicType: TopicType | undefined = isValidTopicType ? (topicTypeNum as TopicType) : undefined;
@@ -181,7 +210,7 @@ const Chat: React.FC = () => {
     const mergedMessages = useMemo(() => {
         const raw = mergeMessagesStream(
             [...completedMessages, ...messages],
-            signalRMessages,
+            [...signalRMessages, ...Object.values(dataBackUpMap)],
             pendingMessages,
             pendingImages,
             pendingFiles
@@ -197,7 +226,7 @@ const Chat: React.FC = () => {
             seen.add(key);
             return true;
         });
-    }, [messages, signalRMessages, pendingMessages, pendingImages, pendingFiles, completedMessages]);
+    }, [messages, signalRMessages, pendingMessages, pendingImages, pendingFiles, completedMessages, signalRMessagesBackUp]);
     const { retryMessage } = useMessageRetry(
         handleSendMessage,
         setMessageValue,
@@ -262,7 +291,7 @@ const Chat: React.FC = () => {
 
     useEffect(() => {
         if (messagesEndRef.current) scrollToBottomMess();
-    }, [signalRMessages, type, pendingBarHeight, scrollToBottomMess]);
+    }, [signalRMessages, type, pendingBarHeight, scrollToBottomMess, signalRMessagesBackUp]);
 
     useEffect(() => {
         if (
@@ -272,6 +301,7 @@ const Chat: React.FC = () => {
         ) {
             clearPendingMessages();
             clearAllStreams();
+            setSignalRMessagesBackUp?.([]);
         }
 
         prevSessionIdRef.current = sessionId;
