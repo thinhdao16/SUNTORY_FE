@@ -44,12 +44,13 @@ const loadFromLocalStorage = (key: string, defaultValue: any) => {
 };
 const transformAPILanguages = (apiLanguages: TranslationLanguage[]): Language[] => {
   const detectLanguage: Language = {
-    label: "Detect language",
+    label: t("Detect language"),
     selected: false,
     lang: "Detect",
     code: null,
     id: -1,
   };
+  
   const transformedLanguages = apiLanguages
     .sort((a, b) => a.orderView - b.orderView)
     .map((lang) => ({
@@ -59,6 +60,7 @@ const transformAPILanguages = (apiLanguages: TranslationLanguage[]): Language[] 
       code: lang.code,
       id: lang.id,
     }));
+    
   return [detectLanguage, ...transformedLanguages];
 };
 const useLanguageStore = create<LanguageStore>((set, get) => ({
