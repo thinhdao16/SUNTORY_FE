@@ -31,6 +31,7 @@ export function useChatStreamMessages(
                 isOnline,
             onSuccess: (data) => setMessages(data),
             onError: () => setMessages([]),
+            refetchOnWindowFocus: false,
         }
     );
     const prevOnline = useRef(isOnline);
