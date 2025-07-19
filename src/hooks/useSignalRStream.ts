@@ -76,6 +76,7 @@ export const useSignalRStream = (
     useEffect(() => {
         deviceIdRef.current = deviceId;
     }, [deviceId]);
+    
     const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
         connection.on("ReceiveStreamChunk", (data: {
             botMessageCode: string;

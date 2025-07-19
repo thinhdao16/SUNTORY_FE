@@ -93,10 +93,12 @@ const Chat: React.FC = () => {
     const clearSession = useChatStore((s) => s.clearSession);
     const allSignalRMessages = useSignalRChatStore((s: any) => s.messages);
     const setSignalRMessagesBackUp = useSignalRChatStore((s) => s.setMessages);
+
     // ==== Stream Integration ====
     const streamMessages = useSignalRStreamStore((state) => state.streamMessages);
     const rawCompleted = useSignalRStreamStore(state => state.completedMessages);
     const clearAllStreams = useSignalRStreamStore((state) => state.clearAllStreams);
+
     // Debug log on mount
     // Get stream messages for current session (raw format for mergeMessagesStream to process)
     const signalRMessages = useMemo(() => {
@@ -108,16 +110,17 @@ const Chat: React.FC = () => {
         );
         return filtered;
     }, [streamMessages, sessionId]);
+
     const completedMessages = useMemo(() => {
         if (!sessionId) return [];
         return rawCompleted.filter((msg: any) => msg.chatCode === sessionId);
     }, [rawCompleted, sessionId]);
 
-
     const signalRMessagesBackUp = useMemo(() =>
         allSignalRMessages.filter((msg: any) => msg.chatInfo?.code === sessionId || msg.code === sessionId),
         [allSignalRMessages, sessionId]
     );
+
     const dataBackUpMap = useMemo<Record<string, StreamMsg>>(() => {
         return signalRMessagesBackUp.reduce((acc: any, msg: any) => {
             const messageCode = msg.code;         // key
@@ -142,6 +145,7 @@ const Chat: React.FC = () => {
             return acc;
         }, {} as Record<string, StreamMsg>);
     }, [signalRMessagesBackUp]);
+
     // ==== Derived State ====
     const topicTypeNum = type ? Number(type) : undefined;
     const isValidTopicType = topicTypeNum !== undefined && Object.values(TopicType).includes(topicTypeNum as TopicType);
@@ -206,7 +210,6 @@ const Chat: React.FC = () => {
         setMessageRetry
     });
 
-
     const mergedMessages = useMemo(() => {
         const raw = mergeMessagesStream(
             [...completedMessages, ...messages],
@@ -227,6 +230,7 @@ const Chat: React.FC = () => {
             return true;
         });
     }, [messages, signalRMessages, pendingMessages, pendingImages, pendingFiles, completedMessages, signalRMessagesBackUp]);
+    
     const { retryMessage } = useMessageRetry(
         handleSendMessage,
         setMessageValue,
@@ -237,6 +241,7 @@ const Chat: React.FC = () => {
         pendingImages,
         pendingFiles
     );
+
     const getCodeByTopic = useMemo(() => {
         return (topicId: number): string | undefined => {
             const chatItem = chatHistory
@@ -254,6 +259,7 @@ const Chat: React.FC = () => {
             msg.text === 'PENDING_MESSAGE'
         );
     }, [mergedMessages]);
+
     const clearAllMessages = () => {
         useChatStore.getState().clearPendingMessages();
         useChatStore.getState().clearMessages();
@@ -263,6 +269,7 @@ const Chat: React.FC = () => {
         useSignalRChatStore.getState().setMessages([]);
         useSignalRStreamStore.getState().clearAllStreams();
     };
+
     // ==== Lifecycle Effects ====
     useEffect(() => {
         if (sessionId && !isLoading) {
@@ -328,6 +335,7 @@ const Chat: React.FC = () => {
         const isNavigationFromTopicOnly = currentPath.includes('/chat/') &&
             currentPath.split('/').length === 4 &&
             chatHistory.length > 0;
+
         if (!sessionId) {
             const timer = setTimeout(() => {
                 setDebouncedLoading(false);
