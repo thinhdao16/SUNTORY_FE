@@ -84,6 +84,16 @@ const Translate: React.FC = () => {
   const screenHeight = useRef(window.innerHeight);
   const textareaRef = useRef<HTMLIonTextareaElement>(null);
 
+  const [languageFrom, setLanguageFrom] = useState<{ code: string | null; lang: string }>({
+    code: null, // "auto" thường tương ứng null
+    lang: "Auto",
+  });
+
+  const [languageTo, setLanguageTo] = useState<{ code: string; lang: string }>({
+    code: "en",
+    lang: "English",
+  });
+
   const location = useLocation();
   const velocityThreshold = 0.4;
 
@@ -249,6 +259,15 @@ const Translate: React.FC = () => {
   useEffect(() => {
     if (translationLanguages && translationLanguages.length > 0) {
       setLanguagesFromAPI(translationLanguages);
+
+      // ✅ Set mặc định: trái là Auto (null), phải là English
+      const autoLang = translationLanguages.find(lang => lang.code === "auto" || lang.name.toLowerCase() === "auto");
+      const englishLang = translationLanguages.find(lang => lang.code === "en" || lang.name.toLowerCase().includes("english"));
+
+      // if (autoLang && englishLang) {
+      //   setLanguagesFromAPI(autoLang);
+      //   toggleLanguage("to", englishLang);
+      // }
     }
   }, [translationLanguages, setLanguagesFromAPI]);
 

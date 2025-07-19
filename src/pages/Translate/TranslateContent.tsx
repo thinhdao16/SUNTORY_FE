@@ -466,7 +466,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
         </div>
       </MotionBottomSheet >
 
-      < LanguageModal
+      <LanguageModal
         isOpen={isOpen.language}
         translateY={translateY}
         targetModal={targetModal}
@@ -481,6 +481,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
         handleTouchMove={handleTouchMove}
         handleTouchEnd={handleTouchEnd}
       />
+      
       <EmotionModal
         isOpen={isOpen.emotion}
         translateY={translateY}
