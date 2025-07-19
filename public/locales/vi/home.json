@@ -14,6 +14,8 @@
   "Office": "Văn phòng",
   "Cancel": "Hủy",
   "Save Setting": "Lưu cài đặt",
+  "TRANSLATE FROM": "DỊCH TỪ",
+  "TRANSLATE TO": "DỊCH ĐẾN",
   "Search": "Tìm kiếm",
   "SUGGESTED LANGUAGES": "Danh sách ngôn ngữ gợi ý",
   "No languages found": "Không tìm thấy ngôn ngữ",
@@ -276,6 +278,7 @@
   "AI Review & Insights": "Đánh giá & Tư vấn AI",
   "Translating...": "Đang dịch...",
   "Smart AI Translate": "Dịch thông minh bằng AI",
+  "Smart Translate": "Dịch thông minh",
   "upload_image_failed": "Tải lên hình ảnh không thành công",
   "language_already_selected": "Ngôn ngữ này đã được chọn ở phía {{side}}. Vui lòng chọn ngôn ngữ khác.",
   "Cannot swap when 'Detect language' is selected": "Không thể hoán đổi khi 'Phát hiện ngôn ngữ' được chọn",
@@ -287,5 +290,11 @@
   "Today": "Hôm nay",
   "Yesterday": "Hôm qua",
   "{{n}} days ago": "{{n}} ngày trước",
-  "Last Week": "Tuần trước"
+  "Last Week": "Tuần trước",
+  "source language": "ngôn ngữ nguồn",
+  "target language": "ngôn ngữ đích",
+  "language_already_selected_message": "Ngôn ngữ này đã được chọn ở phía {{side}}. Vui lòng chọn ngôn ngữ khác.",
+  "cannot_swap_detect_language": "Không thể hoán đổi khi đã chọn 'Tự động nhận diện ngôn ngữ'",
+  "languages_swapped_successfully": "Hoán đổi ngôn ngữ thành công",
+  "Detect language": "Tự động nhận diện ngôn ngữ"
 }

@@ -14,6 +14,8 @@
   "Office": "办公室",
   "Cancel": "取消",
   "Save Setting": "保存设置",
+  "TRANSLATE FROM": "翻译自",
+  "TRANSLATE TO": "翻译到",
   "Search": "搜索",
   "SUGGESTED LANGUAGES": "建议的语言",
   "No languages found": "未找到语言",
@@ -276,6 +278,7 @@
   "AI Review & Insights": "AI评估与见解",
   "Translating...": "正在翻译...",
   "Smart AI Translate": "智能AI翻译",
+  "Smart Translate": "智能翻译",
   "upload_image_failed": "上传图片失败",
   "language_already_selected": "此语言已被选为{{side}}。请选择其他语言。",
   "Cannot swap when 'Detect language' is selected": "无法在选择“检测语言”时进行交换",
@@ -287,5 +290,11 @@
   "Today": "今天",
   "Yesterday": "昨天",
   "{{n}} days ago": "{{n}}天前",
-  "Last Week": "上周"
+  "Last Week": "上周",
+  "source language": "源语言",
+  "target language": "目标语言",
+  "language_already_selected_message": "此语言已被选为{{side}}。请选择其他语言。",
+  "cannot_swap_detect_language": "无法在选择“检测语言”时进行交换",
+  "languages_swapped_successfully": "语言交换成功",
+  "Detect language": "检测语言"
 }
