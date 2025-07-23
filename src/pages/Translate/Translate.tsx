@@ -27,7 +27,7 @@ import { t } from "@/lib/globalT";
 
 const Translate: React.FC = () => {
   const { isKeyboardVisible, heightKeyBoard } = useKeyboardManager();
-  const { clipboardHasData, clipboardContent } = useClipboardStatus();
+  const { clipboardHasData, clipboardContent, toggleReloadCopy } = useClipboardStatus();
   const modelDropdown = useDropdown();
   const { showToast } = useToastStore();
 
@@ -46,7 +46,8 @@ const Translate: React.FC = () => {
     emotions: { icon: string; label: string }[];
     context: string[];
   } | null>(null);
-
+  const [isReverseCollapsed, setIsReverseCollapsed] = useState<boolean>(false);
+  const [isAiInsightsCollapsed, setIsAiInsightsCollapsed] = useState<boolean>(false);
   const {
     languages,
     languagesTo,
@@ -171,12 +172,15 @@ const Translate: React.FC = () => {
     if (clipboardContent) {
       setInputValueTranslate((prev) => ({
         ...prev,
-        input: clipboardContent,
+        input: prev.input + clipboardContent,
       }));
-      clearCurrentResult(); 
+      clearCurrentResult();
     }
   };
-
+  const handleCopy = (e: string) => {
+    handleCopyToClipboard(e);
+    toggleReloadCopy();
+  }
   const handleTranslateAI = async () => {
     if (!inputValueTranslate.input.trim()) {
       showToast(t("Please enter text to translate"), 3000, "error");
@@ -184,7 +188,7 @@ const Translate: React.FC = () => {
     }
 
     setTranslating(true);
-    clearCurrentResult(); 
+    clearCurrentResult();
 
     try {
       const fromLanguageId = getLanguageId(
@@ -236,7 +240,8 @@ const Translate: React.FC = () => {
           ...prev,
           output: result.data.translatedText || ""
         }));
-
+        setIsReverseCollapsed(false);
+        setIsAiInsightsCollapsed(false);
         showToast(t("Translation completed successfully!"), 3000, "success");
       }
     } catch (error) {
@@ -258,7 +263,7 @@ const Translate: React.FC = () => {
 
       if (autoLang && englishLang) {
         setSelectedLanguageFrom({ id: autoLang.id, code: autoLang.code, label: autoLang.name, selected: true, lang: autoLang.name });
-        setSelectedLanguageTo({id: englishLang.id, code: englishLang.code, label: englishLang.name, selected: true, lang: englishLang.name });
+        setSelectedLanguageTo({ id: englishLang.id, code: englishLang.code, label: englishLang.name, selected: true, lang: englishLang.name });
       }
     }
   }, [translationLanguages, setLanguagesFromAPI]);
@@ -333,7 +338,7 @@ const Translate: React.FC = () => {
             inputValueTranslate={inputValueTranslate}
             setInputValueTranslate={setInputValueTranslate}
             handleInputTranslate={handleInputTranslate}
-            handleCopyToClipboard={handleCopyToClipboard}
+            handleCopyToClipboard={handleCopy}
             openModal={openModal}
             closeModal={closeModal}
             swapLanguages={swapLanguages}
@@ -381,6 +386,10 @@ const Translate: React.FC = () => {
             handleTranslateAI={handleTranslateAI}
             isTranslating={storeIsTranslating || createTranslationMutation.isLoading}
             translationResult={currentResult}
+            isReverseCollapsed={isReverseCollapsed}
+            isAiInsightsCollapsed={isAiInsightsCollapsed}
+            setIsReverseCollapsed={setIsReverseCollapsed}
+            setIsAiInsightsCollapsed={setIsAiInsightsCollapsed}
           />
         )}
       </MotionStyles>

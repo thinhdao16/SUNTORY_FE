@@ -95,21 +95,10 @@ const Chat: React.FC = () => {
     const setSignalRMessagesBackUp = useSignalRChatStore((s) => s.setMessages);
 
     // ==== Stream Integration ====
-    const streamMessages = useSignalRStreamStore((state) => state.streamMessages);
+    const signalRMessages = Object.values(useSignalRStreamStore((state) => state.streamMessages));
     const rawCompleted = useSignalRStreamStore(state => state.completedMessages);
     const clearAllStreams = useSignalRStreamStore((state) => state.clearAllStreams);
-
-    // Debug log on mount
-    // Get stream messages for current session (raw format for mergeMessagesStream to process)
-    const signalRMessages = useMemo(() => {
-        if (!sessionId) return [];
-
-        const allStreamValues = Object.values(streamMessages);
-        const filtered = allStreamValues.filter(
-            (msg: any) => msg.chatCode === sessionId
-        );
-        return filtered;
-    }, [streamMessages, sessionId]);
+    const setChatCode = useSignalRStreamStore((state) => state.setChatCode);
 
     const completedMessages = useMemo(() => {
         if (!sessionId) return [];
@@ -131,7 +120,7 @@ const Chat: React.FC = () => {
             acc[messageCode] = {
                 messageCode,
                 chatCode,
-                chunks: msg.chunks ?? [],    // giữ nguyên array chunks nếu có
+                chunks: msg.chunks ?? [],
                 isStreaming: msg.isStreaming ?? false,
                 isComplete: msg.isComplete ?? true,
                 hasError: msg.hasError ?? false,
@@ -209,7 +198,7 @@ const Chat: React.FC = () => {
         messageRetry,
         setMessageRetry
     });
-
+    console.log(signalRMessages);
     const mergedMessages = useMemo(() => {
         const raw = mergeMessagesStream(
             [...completedMessages, ...messages],
@@ -230,7 +219,7 @@ const Chat: React.FC = () => {
             return true;
         });
     }, [messages, signalRMessages, pendingMessages, pendingImages, pendingFiles, completedMessages, signalRMessagesBackUp]);
-    
+
     const { retryMessage } = useMessageRetry(
         handleSendMessage,
         setMessageValue,
@@ -313,7 +302,11 @@ const Chat: React.FC = () => {
 
         prevSessionIdRef.current = sessionId;
         prevTypeRef.current = type;
-
+        if (sessionId) {
+            setChatCode(sessionId);
+        } else {
+            setChatCode('');
+        }
         return () => {
             useChatStore.getState().setIsSending(false);
             clearSession();
@@ -349,7 +342,6 @@ const Chat: React.FC = () => {
                     const expectedPath = `/chat/${type}/${code}`;
                     const currentPath = window.location.pathname;
                     if (currentPath !== expectedPath && currentPath === `/chat/${type}`) {
-                        console.log("One-time navigation:", currentPath, "→", expectedPath);
                         history.replace(expectedPath);
                     }
                 }

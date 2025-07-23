@@ -7,6 +7,8 @@ import BotIcon from "@/icons/logo/AI.svg?react";
 import SparklesIcon from "@/icons/logo/AI_thinking.svg?react";
 import ChatStreamIntroMessage from "./ChatStreamIntroMessage";
 import styles from "./StreamingMessage.module.css";
+import { useSignalRStreamStore } from "@/store/zustand/signalr-stream-store";
+import StreamingMessageChunk from "./StreamingMessageChunk";
 
 type Attachment = {
     fileName: string;
@@ -43,6 +45,8 @@ type ChatStreamMessageListProps = {
 export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
     onRetryMessage?: (msgId: string) => void;
 }> = ({ allMessages, pendingMessages, topicType, title, loading, onRetryMessage }) => {
+    const { text } = useSignalRStreamStore((s) => s.currentChatStream || { text: '' });
+    console.log(text);
     const {
         completedMessages,
         streamingMessage,
@@ -78,7 +82,6 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
             isWaitingForFirstChunk: waitingFirst,
         };
     }, [allMessages]);
-
     return (
         <div className="flex flex-col gap-6 mx-auto pt-8">
             <ChatStreamIntroMessage topicType={topicType} />
@@ -102,6 +105,9 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
             {streamingMessage && (
                 <StreamingMessageItemComponent msg={streamingMessage} />
             )}
+            {/* {streamingMessage && (
+                <StreamingMessageChunk msg={text} />
+            )} */}
             {isWaitingForFirstChunk && (
                 <motion.div
                     key="thinking-bubble"

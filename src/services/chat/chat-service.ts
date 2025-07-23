@@ -65,6 +65,7 @@ export async function getChatMessage(chatCode: string): Promise<ChatMessage[]> {
     });
     const data = res.data?.data || [];
     const messages = Array.isArray(data) ? data : [data];
+    console.log(messages);
     return messages.map((msg: any) => ({
         id: msg.id?.toString(),
         text: msg.massageText,
@@ -81,6 +82,6 @@ export async function getChatMessage(chatCode: string): Promise<ChatMessage[]> {
         replyToMessageId: msg.replyToMessageId,
         status: msg.status,
         chatInfoId: msg.chatInfoId,
-        chatCode: msg.code,
+        chatCode: msg.chatInfo.code,
     }));
 }

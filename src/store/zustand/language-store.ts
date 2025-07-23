@@ -53,7 +53,7 @@ const transformAPILanguages = (apiLanguages: TranslationLanguage[]): Language[] 
     code: null,
     id: -1,
   };
-  
+
   const transformedLanguages = apiLanguages
     .sort((a, b) => a.orderView - b.orderView)
     .map((lang) => ({
@@ -63,7 +63,7 @@ const transformAPILanguages = (apiLanguages: TranslationLanguage[]): Language[] 
       code: lang.code,
       id: lang.id,
     }));
-    
+
   return [detectLanguage, ...transformedLanguages];
 };
 const useLanguageStore = create<LanguageStore>((set, get) => ({
@@ -177,11 +177,12 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
         (selectedLang.lang === oppositeSelected.lang && selectedLang.code === oppositeSelected.code)
       );
       if (isConflict) {
-        const oppositeSide = type === "from" ? "target language" : "source language";
-        const message = t('language_already_selected', { side: oppositeSide });;
-        showToast(message, 3000, "warning");
-        console.warn(`Language "${lang}" is already selected on the opposite side`);
-        return state;
+        const oppositeSideKey = type === "from" ? "target language" : "source language"
+        const sideLabel = t(oppositeSideKey)
+        const message = t("language_already_selected_message", { side: sideLabel })
+        showToast(message, 3000, "warning")
+        console.warn(message)
+        return state
       }
       const updated = state[key].map((item: any) =>
         item.lang === lang ? { ...item, selected: true } : { ...item, selected: false }

@@ -56,15 +56,28 @@ interface SignalRStreamStore {
     getActiveStreams: () => StreamMessage[];
     getCompletedStreams: () => StreamMessage[];
     getErrorStreams: () => StreamMessage[];
-    getCompletedMessages: (chatCode?: string) => ChatMessage[]; // Đổi tên từ getFetchedMessages
+    getCompletedMessages: (chatCode?: string) => ChatMessage[];
+    currentChatStream: {
+        messageCode: string;
+        text: string;
+        isComplete?: boolean;
+    };
+    setCurrentChatStream: any;
+    clearCurrentChatStream: () => void;
+    chatCode: string;
+    setChatCode: (chatCode: string) => void;
 }
 
 export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
     isConnected: false,
     connectionId: undefined,
     streamMessages: {},
-    completedMessages: [], // Đổi tên từ allFetchedMessages
-
+    completedMessages: [],
+    currentChatStream: {
+        messageCode: '',
+        text: '',
+        isComplete: false,
+    },
     setConnection: (isConnected, connectionId) =>
         set({ isConnected, connectionId }),
 
@@ -108,7 +121,6 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
                 };
             }
         }),
-
     startTyping: (chatCode, messageCode) =>
         set((state) => {
             if (state.streamMessages[messageCode]) {
@@ -229,7 +241,12 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
             return { streamMessages: newStreamMessages };
         }),
 
-    clearAllStreams: () => set({ streamMessages: {}, completedMessages: [] }),
+    clearAllStreams: () => set({
+        streamMessages: {}, completedMessages: [], currentChatStream: {
+            messageCode: "",
+            text: ""
+        }
+    }),
 
     getStreamMessage: (messageCode) => get().streamMessages[messageCode],
 
@@ -260,5 +277,26 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
         if (!chatCode) return allMessages;
 
         return allMessages.filter(msg => msg.chatCode === chatCode);
-    }
+    },
+    setCurrentChatStream: (data: StreamChunk) => {
+        set(() => ({
+            currentChatStream: {
+                messageCode: data.messageCode,
+                text: data.completeText,
+                isComplete: false,
+            },
+        }));
+    },
+
+    chatCode: '',
+    setChatCode: (chatCode: string) => set({ chatCode }),
+    clearCurrentChatStream: () =>
+        set(() => ({
+            currentChatStream: {
+                messageCode: "",
+                text: "",
+                isComplete: false,
+            }
+        })),
+
 }));

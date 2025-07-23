@@ -22,16 +22,24 @@ const ChatStreamMessageItem: React.FC<{
     const [previewImg, setPreviewImg] = useState<string | null>(null);
     const handleBubbleClick = () => {
         if (isUser) setShowCopy(true);
+
     };
     return (
         <>
-            <motion.div
+            {/* <motion.div
                 key={typeof msg.id === "string" || typeof msg.id === "number" ? msg.id : String(msg.createdAt)}
                 className={`flex w-full mb-4 ${isUser ? "justify-end" : "justify-start"}`}
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 40 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            > */}
+            <motion.div
+                key={msg.id ?? msg.createdAt}
+                initial={!msg.isStreaming ? { opacity: 0, y: 40 } : false}
+                animate={!msg.isStreaming ? { opacity: 1, y: 0 } : false}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className={`flex w-full mb-4 ${isUser ? "justify-end" : "justify-start"}`}
             >
                 <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : ""} items-start w-full`}>
                     {!isUser && msg.text !== MessageState.PENDING && (

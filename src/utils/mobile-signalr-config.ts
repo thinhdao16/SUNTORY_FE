@@ -81,7 +81,7 @@ export const createMobileOptimizedConnection = (
             accessTokenFactory,
             transport: config.transport,
             timeout: config.timeout,
-            withCredentials: config.withCredentials,
+            withCredentials: true,
             skipNegotiation: config.skipNegotiation,
             headers: config.headers
         })
