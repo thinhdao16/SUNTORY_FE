@@ -74,6 +74,7 @@ const Chat: React.FC = () => {
     const prevSessionIdRef = useRef<string | undefined>(sessionId);
     const prevTypeRef = useRef<string | undefined>(type);
     const pendingBarRef = useRef<HTMLDivElement>(null);
+    const prevMessagesLengthRef = useRef(0);
 
     // ==== Stores ====
     const {
@@ -144,9 +145,13 @@ const Chat: React.FC = () => {
 
     // ==== Hooks: Chat & Message ====
     const {
-        messages, isLoading,
-        scrollToBottom, messageValue, setMessageValue
+        messages,
+        isLoading,
+        scrollToBottom,
+        messageValue,
+        setMessageValue
     } = useChatStreamMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, false, isOnline);
+
 
     const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef);
@@ -198,11 +203,12 @@ const Chat: React.FC = () => {
         messageRetry,
         setMessageRetry
     });
-    console.log(signalRMessages);
     const mergedMessages = useMemo(() => {
         const raw = mergeMessagesStream(
             [...completedMessages, ...messages],
+            // messages,
             [...signalRMessages, ...Object.values(dataBackUpMap)],
+            // signalRMessages,
             pendingMessages,
             pendingImages,
             pendingFiles
@@ -218,7 +224,7 @@ const Chat: React.FC = () => {
             seen.add(key);
             return true;
         });
-    }, [messages, signalRMessages, pendingMessages, pendingImages, pendingFiles, completedMessages, signalRMessagesBackUp]);
+    }, [signalRMessages, pendingMessages, pendingImages, pendingFiles, signalRMessagesBackUp, messages, completedMessages, dataBackUpMap]);
 
     const { retryMessage } = useMessageRetry(
         handleSendMessage,
@@ -274,7 +280,15 @@ const Chat: React.FC = () => {
         }
     }, [isValidTopicType, history, messages, debouncedLoading]);
 
+
     useEffect(() => {
+        if (messages.length === 0 || messages.length === prevMessagesLengthRef.current) {
+            prevMessagesLengthRef.current = messages.length;
+            return;
+        }
+
+        prevMessagesLengthRef.current = messages.length;
+
         setPendingMessages((prev) =>
             prev.filter((pending) =>
                 !messages.some((msg) =>
@@ -287,7 +301,7 @@ const Chat: React.FC = () => {
 
     useEffect(() => {
         if (messagesEndRef.current) scrollToBottomMess();
-    }, [signalRMessages, type, pendingBarHeight, scrollToBottomMess, signalRMessagesBackUp]);
+    }, [type, pendingBarHeight, scrollToBottomMess]);
 
     useEffect(() => {
         if (
@@ -464,6 +478,7 @@ const Chat: React.FC = () => {
                                     title={title}
                                     loading={isSending || hasPendingMessages}
                                     onRetryMessage={retryMessage}
+
                                 />
                             )}
                             <div style={{ marginTop: pendingBarHeight }} />

@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { RefObject, useState } from "react";
 import { IonTextarea } from "@ionic/react";
-import { IoArrowBack, IoCopyOutline } from "react-icons/io5";
+import { IoCopyOutline } from "react-icons/io5";
 import MotionBottomSheet from "@/components/common/bottomSheet/MotionBottomSheet";
 import LanguageModal from "@/components/common/bottomSheet/LanguageModal";
 import CloseIcon from "@/icons/logo/close.svg?react";
+import HistoryIcon from "@/icons/logo/translate/history.svg?react";
 import DownIcon from "@/icons/logo/translate/down.svg?react";
 import SwapIcon from "@/icons/logo/translate/swap.svg?react";
 import SwapDetectedIcon from "@/icons/logo/translate/swap.svg?react";
@@ -16,6 +17,7 @@ import { TranslationResult } from "@/store/zustand/translation-store";
 import { GoPaste } from "react-icons/go";
 import ReactMarkdown from 'react-markdown';
 import { useHistory } from "react-router-dom";
+import BackIcon from "@/icons/logo/vector_left.svg?react";
 
 interface TranslateContentProps {
   isOpen: { emotion: boolean; language: boolean };
@@ -194,13 +196,13 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
         >
           <div className="relative flex items-center justify-between px-6 h-[50px]">
             <button onClick={() => history.goBack()} aria-label="Back">
-              <IoArrowBack size={20} className="text-blue-600" />
+              <BackIcon className="text-blue-600" />
             </button>
             <span className="font-semibold text-main uppercase tracking-wide">
               {t(`Translate`)}
             </span>
-            <button>
-              {/* <CloseIcon aria-label={t("close")} /> */}
+            <button onClick={() => history.replace("/translate/history", { history: true })} >
+              <HistoryIcon aria-label={t("history")} />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[85dvh] px-6 pt-10">
@@ -329,6 +331,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                       <button
                         onClick={() => handleCopyToClipboard(inputValueTranslate.input || "")}
                         className="text-gray-500 hover:text-main transition-colors"
+                        disabled={isTranslating}
                       >
                         <IoCopyOutline className="w-5 h-5" />
                       </button>
@@ -338,6 +341,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                     <button
                       onClick={handlePastContent}
                       className="text-gray-500 hover:text-main transition-colors ml-2"
+                      disabled={isTranslating}
                     >
                       <GoPaste className="w-5 h-5" />
                     </button>

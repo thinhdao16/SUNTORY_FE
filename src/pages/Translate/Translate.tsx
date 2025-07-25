@@ -35,17 +35,11 @@ const Translate: React.FC = () => {
   const [isOpen, setIsOpen] = useState({ emotion: false, language: false });
   const [translateY, setTranslateY] = useState(0);
   const [inputValue, setInputValue] = useState("");
-  const [inputValueTranslate, setInputValueTranslate] = useState({
-    input: "",
-    output: "",
-  });
+
   const [targetModal, setTargetModal] = useState("");
   const [hasFocused, setHasFocused] = useState(false);
 
-  const [emotionData, setEmotionData] = useState<{
-    emotions: { icon: string; label: string }[];
-    context: string[];
-  } | null>(null);
+
   const [isReverseCollapsed, setIsReverseCollapsed] = useState<boolean>(false);
   const [isAiInsightsCollapsed, setIsAiInsightsCollapsed] = useState<boolean>(false);
   const {
@@ -61,24 +55,23 @@ const Translate: React.FC = () => {
     clipboardContentStatus,
     setLanguagesFromAPI,
     setLoading,
-    shouldAutoTranslate,
-    setShouldAutoTranslate,
   } = useLanguageStore();
 
-  // Translation Store
   const {
     currentResult,
     setCurrentResult,
     clearCurrentResult,
     isTranslating: storeIsTranslating,
     setTranslating,
+    emotionData,
+    setEmotionData,
+    inputValueTranslate,
+    setInputValueTranslate,
   } = useTranslationStore();
-
   const { getDisplayName, getModelList, setModel } = useModelStore();
   const modelSelect = getDisplayName();
   const modelList = getModelList();
 
-  // React Query hooks
   const { data: translationLanguages, isLoading: isLoadingLanguages } = useTranslationLanguages();
   const createTranslationMutation = useCreateTranslation();
 
@@ -87,42 +80,32 @@ const Translate: React.FC = () => {
   const screenHeight = useRef(window.innerHeight);
   const textareaRef = useRef<HTMLIonTextareaElement>(null);
 
-  const location = useLocation();
+  const location: any = useLocation();
   const velocityThreshold = 0.4;
 
-  // Helper function to get language ID by code/lang
   const getLanguageId = (langCode: string | null, langName: string, allowNull = false) => {
     if (!translationLanguages) return allowNull ? null : 0;
-
     const language = translationLanguages.find(lang =>
       lang.code === langCode ||
       lang.name === langName ||
       lang.nativeName === langName
     );
-
     if (!language) {
       return allowNull ? null : 0;
     }
-
     return language.id;
   };
-
-  // Helper function to format emotion data
   const formatEmotionType = (emotions: { icon: string; label: string }[]) => {
     return emotions.map(emotion => emotion.label).join(", ");
   };
-
-  // Helper function to format context
   const formatContext = (context: string[]) => {
     return context.join(", ");
   };
-
   const openModal = (e: string, type: string) => {
     setIsOpen((prev) => ({ ...prev, [type]: true }));
     setTranslateY(0);
     setTargetModal(e);
   };
-
   const closeModal = () => {
     setTranslateY(screenHeight.current);
     setTimeout(() => {
@@ -157,24 +140,35 @@ const Translate: React.FC = () => {
 
   const handleInputTranslate = (e: CustomEvent) => {
     const newValue = e.detail.value ?? "";
-    setInputValueTranslate((prev) => ({
+    setInputValueTranslate((prev: { input: string; output: string }) => ({
       ...prev,
       input: newValue,
     }));
-
-    // Clear current result when input changes
-    // if (newValue !== currentResult?.originalText) {
-    //   clearCurrentResult();
-    // }
+    clearCurrentResult();
   };
 
-  const handlePastContent = () => {
-    if (clipboardContent) {
+  const handlePastContent = async () => {
+    if (clipboardContent && textareaRef.current) {
+      const textareaEl: any = await textareaRef.current.getInputElement();
+      const selectionStart = textareaEl.selectionStart ?? 0;
+      const selectionEnd = textareaEl.selectionEnd ?? 0;
+      const prevInput = inputValueTranslate.input || "";
+      const newInput =
+        prevInput.slice(0, selectionStart) +
+        clipboardContent +
+        prevInput.slice(selectionEnd);
+
       setInputValueTranslate((prev) => ({
         ...prev,
-        input: prev.input + clipboardContent,
+        input: newInput,
       }));
+
       clearCurrentResult();
+      setTimeout(() => {
+        textareaEl.focus();
+        const cursorPos = selectionStart + clipboardContent.length;
+        textareaEl.setSelectionRange(cursorPos, cursorPos);
+      }, 0);
     }
   };
   const handleCopy = (e: string) => {
@@ -219,16 +213,33 @@ const Translate: React.FC = () => {
           : null
       };
 
-      const result = await createTranslationMutation.mutateAsync(payload);
+      const callTranslation = async () => {
+        const result = await createTranslationMutation.mutateAsync(payload);
+        return result;
+      };
+      let result = null;
+      let retries = 0;
+      const maxRetries = 1;
+
+      do {
+        result = await callTranslation();
+        const allFieldsEmpty = !result?.data?.translatedText &&
+          !result?.data?.reverseTranslation &&
+          !result?.data?.aiReviewInsights;
+
+        if (!allFieldsEmpty) break;
+
+        retries++;
+        console.warn(`Translation retry attempt #${retries}`);
+      } while (retries <= maxRetries);
+
 
       if (result.data) {
         const translationResult = {
-          // id: result.data.id,
-          // code: result.data.code,
           originalText: payload.originalText,
-          translatedText: result.data.translatedText,
-          reverseTranslation: result.data.reverseTranslation ?? "",
-          aiReviewInsights: result.data.aiReviewInsights ?? "",
+          translatedText: result.data.translatedText ?? t("No translation available"),
+          reverseTranslation: result.data.reverseTranslation ?? t("No reverse translation available"),
+          aiReviewInsights: result.data.aiReviewInsights ?? t("No AI review insights available"),
           fromLanguageId: payload.fromLanguageId ?? 0,
           toLanguageId: payload.toLanguageId ?? 0,
           context: payload.context,
@@ -251,13 +262,9 @@ const Translate: React.FC = () => {
       setTranslating(false);
     }
   };
-
-  // Load translation languages on mount
   useEffect(() => {
     if (translationLanguages && translationLanguages.length > 0) {
       setLanguagesFromAPI(translationLanguages);
-
-      // ✅ Set mặc định: trái là Auto (null), phải là English
       const autoLang = translationLanguages.find(lang => lang.code === "auto" || lang.name.toLowerCase() === "auto");
       const englishLang = translationLanguages.find(lang => lang.code === "en" || lang.name.toLowerCase().includes("english"));
 
@@ -304,20 +311,14 @@ const Translate: React.FC = () => {
     }
   }, [reloadSwap, clearCurrentResult]);
 
-  // useEffect(() => {
-  //   if (shouldAutoTranslate && inputValueTranslate.input.trim() && !storeIsTranslating) {
-  //     setShouldAutoTranslate(false);
-  //     setTimeout(() => {
-  //       handleTranslateAI();
-  //     }, 500);
-  //   }
-  // }, [shouldAutoTranslate, inputValueTranslate.input, storeIsTranslating, handleTranslateAI, setShouldAutoTranslate]);
-
   useEffect(() => {
-    if (location.pathname === "/translate") {
+    if (location.pathname === "/translate" && !location.state?.history) {
+      setEmotionData(null);
       clearCurrentResult();
+      setInputValueTranslate({ input: "", output: "" });
     }
-  }, [location.pathname, clearCurrentResult]);
+
+  }, [location.pathname, clearCurrentResult,]);
 
   return (
     <>

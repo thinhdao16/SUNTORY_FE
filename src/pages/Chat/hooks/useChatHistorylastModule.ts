@@ -20,7 +20,6 @@ export const useChatHistoryLastModule = (topicId: number, enabled: boolean) => {
     } = useQuery(
         ["chatHistory", topicId],
         () => {
-            console.log("Fetching chat history for topic:", topicId);
             return getChatHistoryModule(topicId);
         },
         {

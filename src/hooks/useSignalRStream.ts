@@ -68,8 +68,8 @@ export const useSignalRStream = (
         getActiveStreams,
         getCompletedStreams,
         getErrorStreams,
-        setCurrentChatStream,
-        clearCurrentChatStream,
+        // setCurrentChatStream,
+        // clearCurrentChatStream,
     } = useSignalRStreamStore();
     const chatCodeRef = useRef<string | null>(null);
     chatCodeRef.current = useSignalRStreamStore.getState().chatCode;
@@ -78,11 +78,13 @@ export const useSignalRStream = (
 
     const connectionFailures = useRef(0);
     const lastConnectionAttempt = useRef<Date | null>(null);
-
     useEffect(() => {
         deviceIdRef.current = deviceId;
     }, [deviceId]);
     const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
+        connection.off("ReceiveStreamChunk");
+        connection.off("StreamComplete");
+        connection.off("StreamError");
         connection.on("ReceiveStreamChunk", (data: {
             botMessageCode: string;
             botMessageId: number;
@@ -92,7 +94,6 @@ export const useSignalRStream = (
             userMessageCode: string;
             userMessageId: number;
         }) => {
-            // console.log("Stream Chunk Received:", data);
             const chunk: StreamChunk = {
                 id: data.botMessageId,
                 chatCode: data.chatCode,
@@ -104,8 +105,10 @@ export const useSignalRStream = (
                 timestamp: new Date().toISOString()
             };
             if (data.chatCode === chatCodeRef.current) {
-                setCurrentChatStream(chunk);
+                // setCurrentChatStream(chunk);
                 addStreamChunk(chunk);
+            setIsSending(true);
+
 
             }
         });
@@ -128,7 +131,7 @@ export const useSignalRStream = (
                 code: data.botMessageCode
             };
             completeStream(event);
-            clearCurrentChatStream();
+            // clearCurrentChatStream();
             setIsSending(false);
         });
 
@@ -152,7 +155,7 @@ export const useSignalRStream = (
                 code: data.botMessageCode
             };
             setIsSending(false);
-            clearCurrentChatStream();
+            // clearCurrentChatStream();
             errorStream(event);
         });
 
@@ -180,7 +183,6 @@ export const useSignalRStream = (
             setConnection(false);
             setIsSending(false);
             const reconnectDelay = 3000;
-            console.log(`🔁 Trying to reconnect in ${reconnectDelay}ms...`);
 
             setTimeout(async () => {
                 try {
@@ -194,7 +196,7 @@ export const useSignalRStream = (
         });
 
 
-    }, [addStreamChunk, completeStream, errorStream, setConnection]);
+    }, [completeStream, errorStream, setConnection]);
 
     const mountedRef = useRef(true);
     const connectionAttemptRef = useRef<AbortController | null>(null);

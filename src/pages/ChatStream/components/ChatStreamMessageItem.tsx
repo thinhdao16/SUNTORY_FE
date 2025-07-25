@@ -11,6 +11,7 @@ import "../ChatStream.module.css"
 import { MarkdownRenderer } from "@/components/markdown/MarkdownRenderer";
 import { MessageState } from "@/types/chat-message";
 import RetryIcon from "@/icons/logo/chat/retry.svg?react";
+import removeMarkdown from "remove-markdown";
 const ChatStreamMessageItem: React.FC<{
     msg: any;
     isUser: boolean;
@@ -151,9 +152,9 @@ const ChatStreamMessageItem: React.FC<{
                                         e.stopPropagation();
                                         handleCopyToClipboard(
                                             typeof msg.text === "string"
-                                                ? msg.text
+                                                ? removeMarkdown(msg.text)
                                                 : msg.text
-                                                    ? JSON.stringify(msg.text)
+                                                    ? removeMarkdown(JSON.stringify(msg.text))
                                                     : ""
                                         );
                                     }}
@@ -169,9 +170,9 @@ const ChatStreamMessageItem: React.FC<{
                                     type="button"
                                     onClick={() => handleCopyToClipboard(
                                         typeof msg.text === "string"
-                                            ? msg.text
+                                            ? removeMarkdown(msg.text)
                                             : msg.text
-                                                ? JSON.stringify(msg.text)
+                                                ? removeMarkdown(JSON.stringify(msg.text))
                                                 : ""
                                     )}
                                     title="Copy"

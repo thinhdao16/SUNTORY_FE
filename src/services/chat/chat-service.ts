@@ -65,7 +65,6 @@ export async function getChatMessage(chatCode: string): Promise<ChatMessage[]> {
     });
     const data = res.data?.data || [];
     const messages = Array.isArray(data) ? data : [data];
-    console.log(messages);
     return messages.map((msg: any) => ({
         id: msg.id?.toString(),
         text: msg.massageText,

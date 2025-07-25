@@ -2,7 +2,6 @@
 import { create } from "zustand";
 import { TranslationLanguage } from "@/services/translation/translation-service";
 import { useToastStore } from "@/store/zustand/toast-store";
-import { t } from "@/lib/globalT";
 
 export interface Language {
   label: string;
@@ -45,6 +44,7 @@ const loadFromLocalStorage = (key: string, defaultValue: any) => {
     return defaultValue;
   }
 };
+
 const transformAPILanguages = (apiLanguages: TranslationLanguage[]): Language[] => {
   const detectLanguage: Language = {
     label: t("Detect language"),
@@ -68,7 +68,7 @@ const transformAPILanguages = (apiLanguages: TranslationLanguage[]): Language[] 
 };
 const useLanguageStore = create<LanguageStore>((set, get) => ({
   languages: [
-    { label: "Detect language", selected: true, lang: "Detect", code: null, id: -1 },
+    { label: t("Detect language"), selected: true, lang: "Detect", code: null, id: -1 },
     { label: "Tiếng Việt", selected: false, lang: "Vietnamese", code: "vi" },
     { label: "English", selected: false, lang: "English", code: "en" },
   ],
@@ -77,7 +77,7 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
     { label: "English", selected: true, lang: "English", code: "en" },
   ],
   selectedLanguageFrom: loadFromLocalStorage("selectedLanguageFrom", {
-    label: "Detect language",
+    label: t("Detect language"),
     lang: "Detect",
     code: "auto",
     id: -1,
@@ -233,7 +233,7 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
         selectedLanguageFrom: state.selectedLanguageTo,
         selectedLanguageTo: state.selectedLanguageFrom,
         reloadSwap: state.reloadSwap + 1,
-        shouldAutoTranslate: true, // Add flag to trigger auto-translate
+        shouldAutoTranslate: true,
       };
 
       localStorage.setItem("languages", JSON.stringify(newLanguages));

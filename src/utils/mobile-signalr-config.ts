@@ -69,13 +69,6 @@ export const createMobileOptimizedConnection = (
     accessTokenFactory: () => string
 ): signalR.HubConnection => {
     const config = getMobileSignalRConfig();
-
-    console.log('🔧 Creating SignalR connection with mobile-optimized config:', {
-        transport: getTransportName(config.transport),
-        timeout: config.timeout,
-        logLevel: getLogLevelName(config.logLevel)
-    });
-
     const builder = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
             accessTokenFactory,
@@ -94,36 +87,3 @@ export const createMobileOptimizedConnection = (
     return builder.build();
 };
 
-const getTransportName = (transport: signalR.HttpTransportType): string => {
-    switch (transport) {
-        case signalR.HttpTransportType.WebSockets:
-            return 'WebSockets';
-        case signalR.HttpTransportType.ServerSentEvents:
-            return 'ServerSentEvents';
-        case signalR.HttpTransportType.LongPolling:
-            return 'LongPolling';
-        default:
-            return 'Unknown';
-    }
-};
-
-const getLogLevelName = (logLevel: signalR.LogLevel): string => {
-    switch (logLevel) {
-        case signalR.LogLevel.Trace:
-            return 'Trace';
-        case signalR.LogLevel.Debug:
-            return 'Debug';
-        case signalR.LogLevel.Information:
-            return 'Information';
-        case signalR.LogLevel.Warning:
-            return 'Warning';
-        case signalR.LogLevel.Error:
-            return 'Error';
-        case signalR.LogLevel.Critical:
-            return 'Critical';
-        case signalR.LogLevel.None:
-            return 'None';
-        default:
-            return 'Unknown';
-    }
-};

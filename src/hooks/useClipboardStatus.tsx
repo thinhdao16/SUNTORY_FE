@@ -7,7 +7,6 @@ const useClipboardStatus = () => {
   const [reloadCoppy, setReloadCopy] = useState(false);
   const toggleReloadCopy = () => setReloadCopy(!reloadCoppy);
   useEffect(() => {
-    console.log("object");
     const checkClipboard = async () => {
       try {
         const { value } = await Clipboard.read();
