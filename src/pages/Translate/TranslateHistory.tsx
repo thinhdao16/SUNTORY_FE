@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
 import { Capacitor } from "@capacitor/core";
 import BackIcon from "@/icons/logo/vector_left.svg?react";
 import MoreIcon from "@/icons/logo/more.svg?react";
@@ -10,7 +10,6 @@ import 'react-swipeable-list/dist/styles.css';
 
 const TranslateHistory: React.FC = () => {
     const isNative = Capacitor.isNativePlatform();
-
 
     const {
         containerRef,
@@ -29,7 +28,7 @@ const TranslateHistory: React.FC = () => {
         t,
     } = useTranslateHistoryLogic();
 
-
+    const isBusy = isLoading || isFetching;
 
     return (
         <div className="bg-white min-h-screen pt-4">
@@ -59,7 +58,6 @@ const TranslateHistory: React.FC = () => {
                             <DeleteIcon />
                         </button>
                     </div>
-
                 </div>
             </div>
 
@@ -68,19 +66,19 @@ const TranslateHistory: React.FC = () => {
                 className={`${styles["translate-history-container"]} pb-10 ${isNative ? "max-h-[85vh]" : "max-h-[75vh] lg:max-h-[75vh] xl:max-h-[85vh]"
                     }`}
             >
-                {isLoading && (
+                {isBusy && (
                     <div className="flex justify-center items-center py-8 px-6">
                         <div className="loader border-blue-600 border-t-transparent border-4 rounded-full w-8 h-8 animate-spin"></div>
                     </div>
                 )}
 
-                {groupedHistory.length === 0 && !isLoading && (
+                {groupedHistory.length === 0 && !isBusy && (
                     <div className="text-center text-gray-500 py-8 px-6">
                         {t("No history found")}
                     </div>
                 )}
 
-                {groupedHistory.map((group, index) => (
+                {!isBusy && groupedHistory.map((group, index) => (
                     <HistoryGroup
                         key={group.label}
                         group={group}
@@ -91,12 +89,6 @@ const TranslateHistory: React.FC = () => {
                         index={index}
                     />
                 ))}
-
-                {isFetching && (
-                    <div className="flex justify-center items-center py-4">
-                        <div className="loader border-blue-600 border-t-transparent border-4 rounded-full w-6 h-6 animate-spin"></div>
-                    </div>
-                )}
             </div>
         </div>
     );
