@@ -14,9 +14,6 @@ export const testSignalREndpoint = async (baseUrl: string): Promise<ConnectionTe
     try {
         // Test basic HTTP connectivity to the negotiate endpoint
         const negotiateUrl = `${baseUrl}/chatHub/negotiate`;
-
-        console.log(`🔍 Testing SignalR endpoint: ${negotiateUrl}`);
-
         const response = await fetch(negotiateUrl, {
             method: 'POST',
             headers: {
@@ -77,20 +74,12 @@ export const testSignalREndpoint = async (baseUrl: string): Promise<ConnectionTe
 };
 
 export const runPreConnectionTests = async (baseUrl: string): Promise<void> => {
-    console.group('🧪 Pre-Connection Tests');
 
     // Test 1: Basic endpoint connectivity
     const endpointTest = await testSignalREndpoint(baseUrl);
-    console.log('Endpoint Test:', endpointTest);
-
-    // Test 2: Network status
-    console.log('Network Online:', navigator.onLine);
 
     // Test 3: Token availability
     const token = localStorage.getItem('token');
-    console.log('Auth Token:', token ? `Present (${token.substring(0, 10)}...)` : 'Missing');
-
-    console.groupEnd();
 
     if (!endpointTest.success) {
         console.warn('⚠️ Pre-connection tests detected issues:');

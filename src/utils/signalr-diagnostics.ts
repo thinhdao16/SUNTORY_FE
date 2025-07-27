@@ -72,5 +72,4 @@ export const getSignalRDiagnostics = (): SignalRDiagnostics => {
 export const logSignalRDiagnostics = (): void => {
     const diagnostics = getSignalRDiagnostics();
     console.log('Platform:', diagnostics.platform);
-
 };

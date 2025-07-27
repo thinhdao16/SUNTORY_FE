@@ -54,7 +54,7 @@ const BottomTabBar: React.FC = () => {
             classNameIcon: "h-6",
         },
         {
-            label: t("Translation"),
+            label: t("Translate"),
             icon: TranslationIcon,
             iconActive: TranslationActiveIcon,
             path: "/translate",
@@ -161,7 +161,7 @@ const BottomTabBar: React.FC = () => {
                                     } ${isActive ? "text-main" : "text-black"}`}
                             >
                                 <Icon className={tab.classNameIcon} />
-                                <span className="text-[8px] font-bold ">{t(tab.label)}</span>
+                                <span className="text-[8px] font-bold ">{tab.label}</span>
                             </button>
                         );
                     })}

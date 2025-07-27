@@ -81,6 +81,6 @@ export async function getChatMessage(chatCode: string): Promise<ChatMessage[]> {
         replyToMessageId: msg.replyToMessageId,
         status: msg.status,
         chatInfoId: msg.chatInfoId,
-        chatCode: msg.code,
+        chatCode: msg.chatInfo.code,
     }));
 }

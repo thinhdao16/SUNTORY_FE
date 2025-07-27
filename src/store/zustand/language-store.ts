@@ -2,7 +2,6 @@
 import { create } from "zustand";
 import { TranslationLanguage } from "@/services/translation/translation-service";
 import { useToastStore } from "@/store/zustand/toast-store";
-import { t } from "@/lib/globalT";
 
 export interface Language {
   label: string;
@@ -45,6 +44,7 @@ const loadFromLocalStorage = (key: string, defaultValue: any) => {
     return defaultValue;
   }
 };
+
 const transformAPILanguages = (apiLanguages: TranslationLanguage[]): Language[] => {
   const detectLanguage: Language = {
     label: t("Detect language"),
@@ -53,7 +53,7 @@ const transformAPILanguages = (apiLanguages: TranslationLanguage[]): Language[] 
     code: null,
     id: -1,
   };
-  
+
   const transformedLanguages = apiLanguages
     .sort((a, b) => a.orderView - b.orderView)
     .map((lang) => ({
@@ -63,12 +63,12 @@ const transformAPILanguages = (apiLanguages: TranslationLanguage[]): Language[] 
       code: lang.code,
       id: lang.id,
     }));
-    
+
   return [detectLanguage, ...transformedLanguages];
 };
 const useLanguageStore = create<LanguageStore>((set, get) => ({
   languages: [
-    { label: "Detect language", selected: true, lang: "Detect", code: null, id: -1 },
+    { label: t("Detect language"), selected: true, lang: "Detect", code: null, id: -1 },
     { label: "Tiếng Việt", selected: false, lang: "Vietnamese", code: "vi" },
     { label: "English", selected: false, lang: "English", code: "en" },
   ],
@@ -77,7 +77,7 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
     { label: "English", selected: true, lang: "English", code: "en" },
   ],
   selectedLanguageFrom: loadFromLocalStorage("selectedLanguageFrom", {
-    label: "Detect language",
+    label: t("Detect language"),
     lang: "Detect",
     code: "auto",
     id: -1,
@@ -177,11 +177,12 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
         (selectedLang.lang === oppositeSelected.lang && selectedLang.code === oppositeSelected.code)
       );
       if (isConflict) {
-        const oppositeSide = type === "from" ? "target language" : "source language";
-        const message = t('language_already_selected', { side: oppositeSide });;
-        showToast(message, 3000, "warning");
-        console.warn(`Language "${lang}" is already selected on the opposite side`);
-        return state;
+        const oppositeSideKey = type === "from" ? "target language" : "source language"
+        const sideLabel = t(oppositeSideKey)
+        const message = t("language_already_selected_message", { side: sideLabel })
+        showToast(message, 3000, "warning")
+        console.warn(message)
+        return state
       }
       const updated = state[key].map((item: any) =>
         item.lang === lang ? { ...item, selected: true } : { ...item, selected: false }
@@ -232,7 +233,7 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
         selectedLanguageFrom: state.selectedLanguageTo,
         selectedLanguageTo: state.selectedLanguageFrom,
         reloadSwap: state.reloadSwap + 1,
-        shouldAutoTranslate: true, // Add flag to trigger auto-translate
+        shouldAutoTranslate: true,
       };
 
       localStorage.setItem("languages", JSON.stringify(newLanguages));

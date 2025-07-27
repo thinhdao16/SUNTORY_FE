@@ -7,6 +7,7 @@ import { logSignalRDiagnostics, getSignalRDiagnostics } from '@/utils/signalr-di
 import { runPreConnectionTests } from '@/utils/signalr-connection-test';
 import { createMobileOptimizedConnection } from '@/utils/mobile-signalr-config';
 import { useChatStore } from '@/store/zustand/chat-store';
+import { useParams } from 'react-router';
 
 export interface UseSignalRStreamOptions {
     autoReconnect?: boolean;
@@ -66,18 +67,24 @@ export const useSignalRStream = (
         getStreamMessagesByChatCode,
         getActiveStreams,
         getCompletedStreams,
-        getErrorStreams
+        getErrorStreams,
+        // setCurrentChatStream,
+        // clearCurrentChatStream,
     } = useSignalRStreamStore();
+    const chatCodeRef = useRef<string | null>(null);
+    chatCodeRef.current = useSignalRStreamStore.getState().chatCode;
+
     const setIsSending = useChatStore.getState().setIsSending;
 
     const connectionFailures = useRef(0);
     const lastConnectionAttempt = useRef<Date | null>(null);
-
     useEffect(() => {
         deviceIdRef.current = deviceId;
     }, [deviceId]);
-    
     const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
+        connection.off("ReceiveStreamChunk");
+        connection.off("StreamComplete");
+        connection.off("StreamError");
         connection.on("ReceiveStreamChunk", (data: {
             botMessageCode: string;
             botMessageId: number;
@@ -87,7 +94,6 @@ export const useSignalRStream = (
             userMessageCode: string;
             userMessageId: number;
         }) => {
-            // console.log("Stream Chunk Received:", data);
             const chunk: StreamChunk = {
                 id: data.botMessageId,
                 chatCode: data.chatCode,
@@ -98,7 +104,13 @@ export const useSignalRStream = (
                 code: data.botMessageCode,
                 timestamp: new Date().toISOString()
             };
-            addStreamChunk(chunk);
+            if (data.chatCode === chatCodeRef.current) {
+                // setCurrentChatStream(chunk);
+                addStreamChunk(chunk);
+            setIsSending(true);
+
+
+            }
         });
 
         connection.on("StreamComplete", (data: {
@@ -110,7 +122,7 @@ export const useSignalRStream = (
             userMessageCode: string;
             userMessageId: number;
         }) => {
-            console.log("Stream Complete:", data);
+            // console.log("Stream Complete:", data);
             const event: StreamEvent = {
                 id: data.botMessageId,
                 chatCode: data.chatCode,
@@ -119,6 +131,7 @@ export const useSignalRStream = (
                 code: data.botMessageCode
             };
             completeStream(event);
+            // clearCurrentChatStream();
             setIsSending(false);
         });
 
@@ -132,7 +145,7 @@ export const useSignalRStream = (
             userMessageId: number;
             errorMessage: string;
         }) => {
-            console.log("Stream Error:", data);
+            // console.log("Stream Error:", data);
             const event: StreamEvent = {
                 id: data.botMessageId,
                 chatCode: data.chatCode,
@@ -142,13 +155,14 @@ export const useSignalRStream = (
                 code: data.botMessageCode
             };
             setIsSending(false);
+            // clearCurrentChatStream();
             errorStream(event);
         });
 
         connection.onreconnecting(() => {
             console.log("🔄 SignalR Stream reconnecting...");
             setConnection(false);
-            setIsSending(false);
+            // setIsSending(false);
         });
 
         connection.onreconnected(async (connectionId?: string) => {
@@ -164,14 +178,25 @@ export const useSignalRStream = (
             }
         });
 
-        connection.onclose((error?: Error) => {
-            console.log("❌ SignalR Stream connection closed:", error);
+        connection.onclose(async (error?: Error) => {
+            console.warn("❌ SignalR connection closed:", error);
             setConnection(false);
             setIsSending(false);
+            const reconnectDelay = 3000;
 
+            setTimeout(async () => {
+                try {
+                    await connection.start();
+                    console.log("✅ Reconnected SignalR successfully.");
+                    setConnection(true);
+                } catch (reconnectError) {
+                    console.error("❌ Failed to reconnect:", reconnectError);
+                }
+            }, reconnectDelay);
         });
 
-    }, [addStreamChunk, completeStream, errorStream, setConnection]);
+
+    }, [completeStream, errorStream, setConnection]);
 
     const mountedRef = useRef(true);
     const connectionAttemptRef = useRef<AbortController | null>(null);

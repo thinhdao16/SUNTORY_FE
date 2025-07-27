@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { IonTextarea } from "@ionic/react";
 
 interface EmotionModalProps {
   isOpen: boolean;
@@ -135,10 +136,10 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
   };
 
   const clearEmotionInput = () => {
+    console.log("object");
     setEmotionInput("");
     setSelected([]);
   };
-
   const clearContextInput = () => {
     setContext("");
   };
@@ -183,7 +184,7 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
           onClick={handleOverlayClick}
         >
           <div
-            className="bg-success-500 darkk:bg-dark-extra w-full h-[55%] rounded-t-4xl shadow-lg transition-transform duration-300 ease-out"
+            className="bg-success-500 w-full max-h-[95vh] rounded-t-4xl shadow-lg  transition-transform duration-300 ease-out"
             style={{
               transform: `translateY(${translateY}px)`,
               touchAction: "none",
@@ -193,68 +194,12 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
             onTouchEnd={handleTouchEnd}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-white w-full h-full rounded-t-3xl p-6 shadow-lg">
-              <div className="mb-4">
-                <div className="font-semibold mb-2">{t("Emotion")}</div>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-                  {EMOTIONS.map((e) => (
-                    <button
-                      key={e.label}
-                      type="button"
-                      className={`flex items-center gap-1 px-3 py-1 rounded-full border text-sm transition-colors whitespace-nowrap flex-shrink-0 ${selected.includes(e.label)
-                        ? "bg-blue-100 border-blue-500 text-blue-700"
-                        : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                        }`}
-                      onClick={() => handleToggle(e.label)}
-                    >
-                      <span>{e.icon}</span>
-                      <span>{t(e.label)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Emotion Input */}
-              <div className="relative mb-4">
-                <input
-                  className="w-full border border-netural-200 rounded-xl focus:outline-0 px-4 py-3 pr-10 placeholder:text-netural-200"
-                  placeholder={t("Happy, funny")}
-                  value={emotionInput || ""}
-                  onChange={(e) => handleEmotionInputChange(e.target.value)}
-                />
-                {(emotionInput && emotionInput.length > 0) && (
-                  <button
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    onClick={clearEmotionInput}
-                    type="button"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-
-              <div className="mb-2 font-semibold">{t("Context (Optional)")}</div>
-
-              {/* Context Input */}
-              <div className="relative mb-4">
-                <input
-                  className="w-full border border-netural-200 rounded-xl focus:outline-0 px-4 py-3 pr-10 placeholder:text-netural-200"
-                  placeholder={t("Office")}
-                  value={context}
-                  onChange={(e) => setContext(e.target.value)}
-                />
-                {(context && context.length > 0) && (
-                  <button
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    onClick={clearContextInput}
-                    type="button"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-
-              <div className="flex gap-4 justify-between">
+            <div
+              className="bg-white w-full h-full rounded-t-3xl px-6 shadow-lg
+                 overflow-y-auto"
+              style={{ maxHeight: 'calc(80vh - 2rem)', minHeight: '95vh' }}
+            >
+              <div className="flex gap-4 justify-between mb-4 sticky top-0 bg-white z-99 pt-6">
                 <button
                   className="border border-main text-main rounded-xl px-4 py-1.5"
                   onClick={handleCancel}
@@ -270,6 +215,93 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
                   {t("Save Setting")}
                 </button>
               </div>
+              <div className="pb-6">
+                <div className="mb-4">
+                  <div className="font-semibold mb-2">{t("Emotion")}</div>
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                    {EMOTIONS.map((e) => (
+                      <button
+                        key={e.label}
+                        type="button"
+                        className={`flex items-center gap-1 px-3 py-1 rounded-full border text-sm transition-colors whitespace-nowrap flex-shrink-0 ${selected.includes(e.label)
+                          ? "bg-blue-100 border-blue-500 text-blue-700"
+                          : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                          }`}
+                        onClick={() => handleToggle(e.label)}
+                      >
+                        <span>{e.icon}</span>
+                        <span>{t(e.label)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="relative mb-4">
+                  <IonTextarea
+                    autoGrow
+                    rows={1}
+                    placeholder={t("Happy, funny")}
+                    value={emotionInput || ""}
+                    onIonInput={e => handleEmotionInputChange(e.detail.value ?? "")}
+                    className="w-full border border-neutral-200 rounded-xl focus:outline-0 placeholder:text-neutral-200"
+                    style={{
+                      boxShadow: "none",
+                      "--highlight-color-focused": "none",
+                      height: "auto",
+                      minHeight: "44px",
+                      "--padding-top": "14px",
+                      "--padding-bottom": "14px",
+                      "--padding-start": "16px",
+                      "--padding-end": "16px",
+                    } as React.CSSProperties}
+                  />
+                  {(emotionInput && emotionInput.length > 0) && (
+                    <button
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 z-99"
+                      onClick={() => clearEmotionInput()}
+                      type="button"
+                    >
+                      x
+                    </button>
+                  )}
+
+                </div>
+
+                {/* <div className="mb-2 font-semibold">{t("Context (Optional)")}</div>
+
+                <div className="relative mb-4">
+                  <IonTextarea
+                    autoGrow
+                    rows={1}
+                    placeholder={t("Office")}
+                    value={context || ""}
+                    onIonInput={(e) => setContext(e.detail.value ?? "")}
+                    className="w-full border border-neutral-200 rounded-xl focus:outline-0 placeholder:text-neutral-200"
+                    style={{
+                      boxShadow: "none",
+                      "--highlight-color-focused": "none",
+                      height: "auto",
+                      minHeight: "44px",
+                      "--padding-top": "14px",
+                      "--padding-bottom": "14px",
+                      "--padding-start": "16px",
+                      "--padding-end": "16px",
+                    } as React.CSSProperties}
+                  />
+
+                  {(context && context.length > 0) && (
+                    <button
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 z-99"
+                      onClick={clearContextInput}
+                      type="button"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div> */}
+              </div>
+
+
             </div>
           </div>
         </motion.div>
