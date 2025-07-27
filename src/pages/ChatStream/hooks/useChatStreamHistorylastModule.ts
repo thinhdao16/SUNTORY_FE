@@ -21,7 +21,6 @@ export const useChatHistoryLastModule = (topicId: number, enabled: boolean) => {
         {
             enabled: !!userInfo?.id && enabled,
             onSuccess: (data) => {
-                console.log("History loaded:", data);
                 setChatHistory(data);
             },
             onError: () => {

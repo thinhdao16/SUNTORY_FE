@@ -37,7 +37,6 @@ export function useSignalRChat(deviceId: string) {
                 return connection.invoke("JoinChatRoom", deviceId);
             })
             .then(() => {
-                console.log("✅ OLD HOOK - Successfully joined chat room");
             })
             .catch((err) => {
                 console.error("❌ Connect error", err);

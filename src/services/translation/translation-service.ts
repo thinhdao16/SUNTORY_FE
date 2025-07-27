@@ -59,6 +59,45 @@ export interface CreateTranslationResponse {
   };
 }
 
+export interface TranslationHistoryItem {
+  id: number;
+  originalText: string;
+  translatedText: string;
+  fromLanguageId: number | null;
+  toLanguageId: number;
+  context?: string | null;
+  emotionType?: string | null;
+  reverseTranslation?: string | null;
+  aiReviewInsights?: string | null;
+  timestamp?: string;
+}
+
+export interface TranslationHistoryResponse {
+  result: number;
+  errors: string | null;
+  message: string | null;
+  data: TranslationHistoryItem[];
+}
+
+export interface TranslationHistoryPaged {
+  pageNumber: number;
+  pageSize: number;
+  firstPage: number;
+  lastPage: number;
+  totalPages: number;
+  totalRecords: number;
+  nextPage: boolean;
+  previousPage: boolean;
+  data: TranslationHistoryItem[];
+}
+
+export interface TranslationHistoryPagedResponse {
+  result: number;
+  errors: string | null;
+  message: string | null;
+  data: TranslationHistoryPaged;
+}
+
 export const fetchTranslationLanguages = async (): Promise<TranslationLanguage[]> => {
   const response = await httpClient.get<TranslationLanguagesResponse>(
     "/api/v1/translation/translation-languages"
@@ -72,4 +111,29 @@ export const createTranslation = async (payload: CreateTranslationRequest): Prom
     payload
   );
   return response.data;
+};
+
+export const fetchTranslationHistory = async (
+  pageNumber = 0,
+  pageSize = 10
+): Promise<TranslationHistoryPaged> => {
+  const response = await httpClient.get<TranslationHistoryPagedResponse>(
+    `/api/v1/translation/history?PageNumber=${pageNumber}&PageSize=${pageSize}`
+  );
+  return response.data.data;
+};
+
+export const fetchTranslationById = async (id: number): Promise<TranslationHistoryItem> => {
+  const response = await httpClient.get<{ data: TranslationHistoryItem }>(
+    `/api/v1/translation/history/${id}`
+  );
+  return response.data.data;
+};
+
+export const deleteTranslationById = async (id: number): Promise<void> => {
+  await httpClient.delete(`/api/v1/translation/${id}`);
+};
+
+export const deleteAllTranslations = async (): Promise<void> => {
+  await httpClient.delete("/api/v1/translation/all");
 };

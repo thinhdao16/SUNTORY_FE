@@ -14,6 +14,7 @@ import useAppInit from "@/hooks/useAppInit";
 import { useSignalRChat } from "@/hooks/useSignalRChat";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { useSignalRStream } from "@/hooks/useSignalRStream";
+import TranslateHistory from "@/pages/Translate/TranslateHistory";
 
 const routes = {
   Chat: lazy(() => import("@/pages/ChatStream/ChatStream")),
@@ -37,6 +38,7 @@ const routes = {
   Register: lazy(() => import("@/pages/Auth/Register/Register")),
   TakePhoto: lazy(() => import("@/pages/TakePhoto/TakePhoto")),
   Translate: lazy(() => import("@/pages/Translate/Translate")),
+  TranslateHistory: lazy(() => import("@/pages/Translate/TranslateHistory")),
 };
 
 const authRoutes = ["/login", "/register"];
@@ -83,6 +85,7 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/rate" component={routes.Rate} exact />
           <PrivateRoute path="/chat/:type?/:sessionId?" component={routes.Chat} />
           <PrivateRoute path="/translate" component={routes.Translate} exact />
+          <PrivateRoute path="/translate/history" component={TranslateHistory} exact />
           <PrivateRoute path="/profile/:section?" component={routes.Profile} exact />
           <PrivateRoute path="/change-password" component={routes.ChangePassword} exact />
           <Route exact path="/" render={() => <Redirect to="/home" />} />

@@ -26,8 +26,8 @@ export function useChatMessages(
         ["chatMessages", sessionId],
         () => (sessionId ? getChatMessages(sessionId) : []),
         {
-            enabled: !!sessionId && 
-                !hasFirstSignalRMessage && 
+            enabled: !!sessionId &&
+                !hasFirstSignalRMessage &&
                 isOnline,
             onSuccess: (data) => setMessages(data),
             onError: () => setMessages([]),
