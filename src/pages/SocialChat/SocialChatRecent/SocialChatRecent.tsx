@@ -23,7 +23,7 @@ export default function SocialChatRecent() {
     hasNextPage,
     isFetchingNextPage,
   } = useUserChatRooms();
-console.log(lastMessageByRoomId)
+
   const {
     data: listDataChatRooms,
   } = useListChatRooms();

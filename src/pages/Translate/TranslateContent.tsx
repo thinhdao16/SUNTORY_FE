@@ -180,7 +180,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
       style={{
         backgroundColor: backgroundColor,
         transition: isOpen ? "none" : "background-color 0.3s ease",
-        paddingTop: "var(--safe-area-inset-top)",
+        // paddingTop: "var(--safe-area-inset-top)",
       }}
     >
       <MotionBottomSheet

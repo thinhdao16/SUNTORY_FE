@@ -18,8 +18,7 @@ export const MessageBubble: React.FC<{
     onEdit, onRevoke, onReply, actionContainerRef, showActionsMobile
 }) => (
     <div
-        className={` w-fit  
-       
+        className={` w-fit  relative z-[9]
         ${isError && !isSend
                 ? "bg-red-50 text-red-700 border border-red-400 rounded-[16px]"
                 : isUser

@@ -40,7 +40,7 @@ const SocialChatThread: React.FC = () => {
         isNative, isDesktop,
         messageTranslate, setMessageTranslate,
         isOpenTranslateInput, setIsOpenTranslateInput,
-        translateY, setTranslateY,
+        translateY, setTranslateY,startY, startTime,
         inputValueTranslate, setInputValueTranslate,
         screenHeight, messagesEndRef, messagesContainerRef,
         pendingBarRef, messageRef, messageTranslateRef,
@@ -58,8 +58,8 @@ const SocialChatThread: React.FC = () => {
         handleTouchStart, handleTouchMove, handleTouchEnd
     } = useSocialChatModals(
         screenHeight,
-        { current: null },
-        { current: null },
+        startY,
+        startTime,
         setIsOpenTranslateInput,
         setTranslateY,
         translateY
@@ -133,7 +133,8 @@ const SocialChatThread: React.FC = () => {
         updateMessageMutation,
         revokeMessageMutation,
         replyingToMessage,
-        history
+        history,
+        clearReplyingToMessage
     });
     useEffect(() => {
         if (messagesData?.pages) {
@@ -149,27 +150,19 @@ const SocialChatThread: React.FC = () => {
     useEffect(() => {
         const isInitial = initialLoadRef.current;
         const isFirstLoad = isInitial && displayMessages.length > 0;
-        const hasNewMessage = displayMessages.length > prevMessagesLength.current;
 
         if (isFirstLoad) {
-            scrollToBottomMess();
+            // Chỉ scroll một lần khi lần đầu load
             setTimeout(() => {
                 scrollToBottomMess();
-            }, 300);
-            setTimeout(() => {
-                scrollToBottomMess();
-            }, 800);
+            }, 100); // Delay nhỏ để đảm bảo DOM đã render
 
             initialLoadRef.current = false;
-        } else if (!isInitial && hasNewMessage) {
-            if (justSentMessageRef.current) {
-                scrollToBottomMess();
-                justSentMessageRef.current = false;
-            }
         }
+        // Bỏ hết logic scroll cho tin nhắn mới
 
         prevMessagesLength.current = displayMessages.length;
-    }, [displayMessages, scrollToBottomMess]);  
+    }, [displayMessages, scrollToBottomMess]);
 
 
     useEffect(() => {
@@ -217,9 +210,9 @@ const SocialChatThread: React.FC = () => {
         >
             {({ scale, opacity, borderRadius, backgroundColor }) => (
                 <div
-                    className="bg-white"
+                    className={` ${isOpenTranslateInput ? "" : "bg-blue-100"}`}
                     style={{
-                        backgroundColor,
+                        backgroundColor: backgroundColor,
                         transition: isOpenTranslateInput ? "none" : "background-color 0.3s ease",
                         // paddingTop: "var(--safe-area-inset-top)",
                     }}
@@ -236,7 +229,7 @@ const SocialChatThread: React.FC = () => {
                                 paddingRight: 0,
                                 paddingLeft: 0,
                                 paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 60 : keyboardHeight) : 0,
-                                height: "100dvh",
+                                height: "100dvh",   
                             }}
                         >
                             <SocialChatHeader

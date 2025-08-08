@@ -27,7 +27,7 @@ interface UseRevokeSocialChatMessageOptions {
     onError?: (error: any) => void;
 }
 
-export const useUserChatRooms = (pageSize = 10) => {
+export const useUserChatRooms = (pageSize = 15) => {
     return useInfiniteQuery(
         ["chatRooms"],
         ({ pageParam = 0 }) => getUserChatRooms({ PageNumber: pageParam, PageSize: pageSize }),

@@ -38,6 +38,7 @@ interface UseSocialChatHandlersProps {
     revokeMessageMutation: UseMutationResult<any, unknown, { messageCode: string }>;
     replyingToMessage: ChatMessage | null;
     history: any;
+    clearReplyingToMessage: () => void;
 }
 
 export function useSocialChatHandlers({
@@ -64,7 +65,8 @@ export function useSocialChatHandlers({
     updateMessageMutation,
     revokeMessageMutation,
     replyingToMessage,
-    history
+    history,
+    clearReplyingToMessage
 }: UseSocialChatHandlersProps) {
     const currentUserId = useAuthStore.getState().user?.id;
     const sendMessageMutation = useSendSocialChatMessage({ roomId });
@@ -73,40 +75,41 @@ export function useSocialChatHandlers({
     // Utility function để clean duplicate URLs
     const cleanImageUrl = (url: string): string => {
         if (!url) return url;
-        
+
         // Tìm tất cả occurrences của protocol://domain
         const protocolDomainRegex = /(https?:\/\/[^\/]+)/g;
         const matches = url.match(protocolDomainRegex);
-        
+
         // Nếu có nhiều hơn 1 domain trong URL (duplicate)
         if (matches && matches.length > 1) {
             // Giữ lại protocol://domain đầu tiên, remove các duplicates
             const firstDomain = matches[0];
             const restOfUrl = url.split(matches[0]).slice(1).join('').replace(/^\/+/, '');
-            
+
             // Remove các domains duplicates khỏi phần còn lại
             let cleanedRest = restOfUrl;
             matches.slice(1).forEach(duplicateDomain => {
                 cleanedRest = cleanedRest.replace(duplicateDomain + '/', '').replace(duplicateDomain, '');
             });
-            
+
             return `${firstDomain}/${cleanedRest}`;
         }
-        
+
         return url;
     };
 
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        clearReplyingToMessage();
         const files = e.target.files;
         if (!files) return;
-        
+
         const uploadedFiles: { name: string; linkImage: string }[] = [];
         const failedFiles: string[] = [];
-        
+
         // Upload tất cả files trước, không tạo message
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            
+
             if (file.size > MAX_IMAGE_SIZE) {
                 failedFiles.push(`${file.name} (>5MB)`);
                 useToastStore.getState().showToast(
@@ -116,16 +119,16 @@ export function useSocialChatHandlers({
                 );
                 continue;
             }
-            
+
             try {
                 const uploaded = await uploadImageMutation.mutateAsync(file);
-                
+
                 if (uploaded && uploaded.length > 0) {
                     const uploadedFile = uploaded[0];
-                    
+
                     // Clean URL
                     const cleanUrl = cleanImageUrl(uploadedFile.linkImage);
-                    
+
                     uploadedFiles.push({
                         name: uploadedFile.name,
                         linkImage: cleanUrl
@@ -140,12 +143,12 @@ export function useSocialChatHandlers({
                 );
             }
         }
-        
+
         // Chỉ tạo 1 message duy nhất nếu có files upload thành công
         if (uploadedFiles.length > 0) {
             const tempId = `temp_${Date.now()}_${Math.random()}`;
             const now = dayjs.utc();
-            
+
             const finalMessage: ChatMessage = {
                 id: Date.now(),
                 tempId: tempId,
@@ -184,12 +187,12 @@ export function useSocialChatHandlers({
             };
 
             addMessage(finalMessage);
-            
+
             // Tạo payload với tất cả files - CHỈ GỬI 1 LẦN
             const payload: CreateSocialChatMessagePayload = {
                 chatCode: roomId || null,
                 messageText: "",
-                files: uploadedFiles.map(file => ({ name: file.name })), // Tất cả files trong 1 payload
+                files: uploadedFiles.map(file => ({ name: file.name })),
                 replyToMessageCode: replyingToMessage?.code !== undefined && replyingToMessage?.code !== null ? String(replyingToMessage.code) : null,
                 tempId: tempId,
             };
@@ -249,7 +252,7 @@ export function useSocialChatHandlers({
                 setLoadingMessages(false);
             }
         }
-        
+
         // Hiển thị tóm tắt kết quả
         if (failedFiles.length > 0) {
             useToastStore.getState().showToast(
@@ -258,8 +261,11 @@ export function useSocialChatHandlers({
                 "warning"
             );
         }
-        
-        scrollToBottom();
+
+
+        setTimeout(() => {
+            scrollToBottom();
+        }, 100);
         e.target.value = "";
     };
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -310,6 +316,7 @@ export function useSocialChatHandlers({
             replyToMessageCode: replyingToMessage?.code !== undefined && replyingToMessage?.code !== null ? String(replyingToMessage.code) : null,
             tempId: tempId,
         };
+        clearReplyingToMessage();
 
         const pendingMsg: ChatMessage = {
             id: 1,
@@ -475,8 +482,8 @@ export function useSocialChatHandlers({
                 });
             }
         }
-    }, [updateMessageByCode, revokeMessageMutation, displayMessages]);  
-    const handleTakePhoto = ()=>{
+    }, [updateMessageByCode, revokeMessageMutation, displayMessages]);
+    const handleTakePhoto = () => {
         localStorage.setItem("roomId", roomId);
         history.push("/social-chat/camera")
     }
@@ -489,6 +496,6 @@ export function useSocialChatHandlers({
         handleRevokeMessage,
         handleTakePhoto,
         isLoading: sendMessageMutation.isLoading,
-        
+
     };
 }

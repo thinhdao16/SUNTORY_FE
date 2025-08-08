@@ -17,7 +17,8 @@
         onSuccess: (data) => {
           const room = data?.roomChat;
           if (room) setRoomChatInfo(room);
-          history.push(`/social-chat/t/${data?.id}`);
+          console.log(room)
+          history.push(`/social-chat/t/${room?.code}`);
           options?.onSuccess?.(data);
         },
         onError: (error: any) => {

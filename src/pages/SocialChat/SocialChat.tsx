@@ -19,46 +19,48 @@ function ChatSocial() {
     }
   };
   return (
-    <div className={`${type ==="camera" ? "h-screen" : "bg-white"} `}>
-      {(type === 'search' || type === 'search-result' || type === undefined || type === "recent/search-result" || type === "list-request") && (
-        <SocialChatHeader
-          leftIcon={leftIcon}
-          rightIcon={rightIcon}
-          inputOnFocus={inputOnFocus}
-          goTo={goTo}
-          setSearch={setSearch}
-          search={search}
-          handleQR={handleQR}
-        />
-      )}
-      {(type === undefined || type === 'list-request') && (
-        <div className="px-6">
-          <div className="flex justify-center bg-netural-50 rounded-full border-[1px] border-neutral-50">
-            <motion.button
-              layout
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              onClick={() => history.push('/social-chat')}
-              className={`p-2 w-full font-semibold rounded-full mr-2 text-sm transition-colors duration-200 ${type === undefined ? 'bg-white shadow' : ''}`}
-            >
-              {t("Chat List")}
-            </motion.button>
-            <motion.button
-              layout
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              onClick={() => history.push('/social-chat/list-request')}
-              className={`p-2 w-full font-semibold rounded-full text-sm transition-colors duration-200 ${type === 'list-request' ? 'bg-white shadow' : ''}`}
-            >
-              {t("Request List")}
-            </motion.button>
+    <>
+      <div className={`${type === "camera" ? "h-screen" : "bg-white"} `}>
+        {(type === 'search' || type === 'search-result' || type === undefined || type === "recent/search-result" || type === "list-request") && (
+          <SocialChatHeader
+            leftIcon={leftIcon}
+            rightIcon={rightIcon}
+            inputOnFocus={inputOnFocus}
+            goTo={goTo}
+            setSearch={setSearch}
+            search={search}
+            handleQR={handleQR}
+          />
+        )}
+        {(type === undefined || type === 'list-request') && (
+          <div className="px-6">
+            <div className="flex justify-center bg-netural-50 rounded-full border-[1px] border-neutral-50">
+              <motion.button
+                layout
+                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                onClick={() => history.push('/social-chat')}
+                className={`p-2 w-full font-semibold rounded-full mr-2 text-sm transition-colors duration-200 ${type === undefined ? 'bg-white shadow' : ''}`}
+              >
+                {t("Chat List")}
+              </motion.button>
+              <motion.button
+                layout
+                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                onClick={() => history.push('/social-chat/list-request')}
+                className={`p-2 w-full font-semibold rounded-full text-sm transition-colors duration-200 ${type === 'list-request' ? 'bg-white shadow' : ''}`}
+              >
+                {t("Request List")}
+              </motion.button>
+            </div>
           </div>
-        </div>
-      )}
-      {contentComponent}
-    </div>
+        )}
+        {contentComponent}
+      </div>
+    </>
   );
 }
 
