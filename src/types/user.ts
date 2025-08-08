@@ -30,6 +30,7 @@ export interface Organization {
 
 export interface User {
     id: number;
+    code: string;
     firstname: string;
     lastname: string;
     name: string;

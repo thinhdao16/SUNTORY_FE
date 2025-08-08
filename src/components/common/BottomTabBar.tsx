@@ -42,7 +42,7 @@ const BottomTabBar: React.FC = () => {
             iconActive: HomeActiveIcon,
             path: "/home",
             activePath: "/home",
-            classNameIcon: "h-6",
+            classNameIcon: "",
         },
         {
             label: "JetAI",
@@ -50,8 +50,16 @@ const BottomTabBar: React.FC = () => {
             iconActive: ChatActiveIcon,
             path: `/chat/${TopicType.Chat}`,
             activePath: (pathname: string) => pathname.startsWith("/chat"),
-            className: "gap-[5px]",
-            classNameIcon: "h-6",
+            className: "",
+            classNameIcon: "",
+        },
+        {
+            label: "Messages",
+            icon: ChatIcon,
+            iconActive: ChatActiveIcon,
+            path: `/social-chat`,
+            activePath: (pathname: string) => pathname.startsWith("/social-"),
+            classNameIcon: "",
         },
         {
             label: t("Translate"),
@@ -59,7 +67,7 @@ const BottomTabBar: React.FC = () => {
             iconActive: TranslationActiveIcon,
             path: "/translate",
             activePath: (pathname: string) => pathname.startsWith("/translate"),
-            classNameIcon: "h-6",
+            classNameIcon: "",
         },
         {
             label: t("Profile"),
@@ -67,7 +75,7 @@ const BottomTabBar: React.FC = () => {
             iconActive: ProfileActiveIcon,
             path: "/profile",
             activePath: (pathname: string) => pathname.startsWith("/profile"),
-            classNameIcon: "h-6",
+            classNameIcon: "",
         },
     ];
 
@@ -157,8 +165,7 @@ const BottomTabBar: React.FC = () => {
                                     history.push(tab.path);
                                     useChatStore.getState().setIsSending(false);
                                 }}
-                                className={`flex flex-col items-center gap-2 justify-end text-sm ${tab.className
-                                    } ${isActive ? "text-main" : "text-black"}`}
+                                className={`flex flex-col items-center  justify-end text-sm ${tab.className} ${isActive ? "text-main" : "text-black"}`}
                             >
                                 <Icon className={tab.classNameIcon} />
                                 <span className="text-[8px] font-bold ">{tab.label}</span>

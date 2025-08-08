@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { TranslationLanguage } from "@/services/translation/translation-service";
 import { useToastStore } from "@/store/zustand/toast-store";
+import { useTranslation } from "react-i18next";
 
 export interface Language {
   label: string;
@@ -14,15 +15,20 @@ export interface Language {
 interface LanguageStore {
   languages: Language[];
   languagesTo: Language[];
+  languagesSocialChat: Language[];
   selectedLanguageFrom: Language;
   selectedLanguageTo: Language;
+  selectedLanguageSocialChat: Language;
   setSelectedLanguageFrom: (item: Language) => void;
   setSelectedLanguageTo: (item: Language) => void;
+  setSelectedLanguageSocialChat: (item: Language) => void;
   reloadSwap: number;
   isLoading: boolean;
-  setLanguagesFromAPI: (apiLanguages: TranslationLanguage[]) => void;
+  setLanguagesFromAPI: (apiLanguages: TranslationLanguage[], t: (key: string) => string) => void;
+  setLanguagesSocialChatFromAPI: (apiLanguages: TranslationLanguage[], t: (key: string) => string) => void;
   setLanguages: (languages: Language[]) => void;
   setLanguagesTo: (languagesTo: Language[]) => void;
+  setLanguagesSocialChat: (languagesSocialChat: Language[]) => void;
   toggleLanguage: (type: "from" | "to", lang: string) => void;
   swapLanguages: () => void;
   clipboardContentStatus: boolean;
@@ -32,6 +38,8 @@ interface LanguageStore {
   getAvailableLanguagesTo: () => Language[];
   shouldAutoTranslate: boolean;
   setShouldAutoTranslate: (value: boolean) => void;
+  onSelectSocialChat: (lang: string) => void;
+
 }
 const loadFromLocalStorage = (key: string, defaultValue: any) => {
   const storedValue = localStorage.getItem(key);
@@ -44,8 +52,10 @@ const loadFromLocalStorage = (key: string, defaultValue: any) => {
     return defaultValue;
   }
 };
-
-const transformAPILanguages = (apiLanguages: TranslationLanguage[]): Language[] => {
+const transformAPILanguages = (
+  apiLanguages: TranslationLanguage[],
+  t: (key: string) => string
+): Language[] => {
   const detectLanguage: Language = {
     label: t("Detect language"),
     selected: false,
@@ -66,9 +76,28 @@ const transformAPILanguages = (apiLanguages: TranslationLanguage[]): Language[] 
 
   return [detectLanguage, ...transformedLanguages];
 };
+const transformAPILanguagesSocialChat = (
+  apiLanguages: TranslationLanguage[],
+  t: (key: string) => string
+): Language[] => {
+
+
+  const transformedLanguages = apiLanguages
+    .sort((a, b) => a.orderView - b.orderView)
+    .map((lang) => ({
+      label: lang.nativeName,
+      selected: false,
+      lang: lang.name,
+      code: lang.code,
+      id: lang.id,
+    }));
+
+  return [ ...transformedLanguages];
+};
+
 const useLanguageStore = create<LanguageStore>((set, get) => ({
   languages: [
-    { label: t("Detect language"), selected: true, lang: "Detect", code: null, id: -1 },
+    { label: "Detect language", selected: true, lang: "Detect", code: null, id: -1 },
     { label: "Tiếng Việt", selected: false, lang: "Vietnamese", code: "vi" },
     { label: "English", selected: false, lang: "English", code: "en" },
   ],
@@ -76,13 +105,23 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
     { label: "Tiếng Việt", selected: false, lang: "Vietnamese", code: "vi" },
     { label: "English", selected: true, lang: "English", code: "en" },
   ],
+  languagesSocialChat: [
+    // { label: "Detect language", selected: true, lang: "Detect", code: null, id: -1 },
+    { label: "Tiếng Việt", selected: false, lang: "Vietnamese", code: "vi" },
+    { label: "English", selected: false, lang: "English", code: "en" },
+  ],
   selectedLanguageFrom: loadFromLocalStorage("selectedLanguageFrom", {
-    label: t("Detect language"),
+    label: "Detect language",
     lang: "Detect",
     code: "auto",
     id: -1,
   }),
   selectedLanguageTo: loadFromLocalStorage("selectedLanguageTo", {
+    label: "English",
+    lang: "English",
+    code: "en",
+  }),
+  selectedLanguageSocialChat: loadFromLocalStorage("selectedLanguageSocialChat", {
     label: "English",
     lang: "English",
     code: "en",
@@ -96,6 +135,10 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
   setSelectedLanguageTo: (item) => {
     set({ selectedLanguageTo: item });
     localStorage.setItem("selectedLanguageTo", JSON.stringify(item));
+  },
+  setSelectedLanguageSocialChat: (item) => {
+    // set({ selectedLanguageSocialChat: item });
+    localStorage.setItem("selectedLanguageSocialChat", JSON.stringify(item));
   },
   getAvailableLanguagesFrom: () => {
     const state = get();
@@ -125,8 +168,8 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
       return !isSelectedInFrom;
     });
   },
-  setLanguagesFromAPI: (apiLanguages: TranslationLanguage[]) => {
-    const transformedLanguages = transformAPILanguages(apiLanguages);
+  setLanguagesFromAPI: (apiLanguages: TranslationLanguage[], t: (key: string) => string) => {
+    const transformedLanguages = transformAPILanguages(apiLanguages, t);
     const languagesFrom = transformedLanguages.map((lang) => ({
       ...lang,
       selected: lang.lang === "Detect" && lang.code === null,
@@ -156,6 +199,26 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
     localStorage.setItem("languages", JSON.stringify(finalLanguagesFrom));
     localStorage.setItem("languagesTo", JSON.stringify(finalLanguagesTo));
   },
+  setLanguagesSocialChatFromAPI: (apiLanguages: TranslationLanguage[], t: (key: string) => string) => {
+    const transformedLanguages = transformAPILanguagesSocialChat(apiLanguages, t);
+    const languagesSocialChat = transformedLanguages.map((lang) => ({
+      ...lang,
+      // selected: lang.lang === "Detect" && lang.code === null,
+    }));
+    const currentFrom = get().selectedLanguageSocialChat;
+    const finalLanguagesFrom = languagesSocialChat.map((lang) => ({
+      ...lang,
+      selected:
+        (lang.lang === currentFrom.lang && lang.code === currentFrom.code)
+        //  ||
+        // (currentFrom.lang === "Detect" && lang.lang === "Detect" && lang.code === null),
+    }));
+
+    set({
+      languagesSocialChat: finalLanguagesFrom,
+    });
+    localStorage.setItem("languagesSocialChat", JSON.stringify(finalLanguagesFrom));
+  },
   setLoading: (loading: boolean) => set({ isLoading: loading }),
   setLanguages: (languages) => {
     set({ languages });
@@ -164,6 +227,10 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
   setLanguagesTo: (languagesTo) => {
     set({ languagesTo });
     localStorage.setItem("languagesTo", JSON.stringify(languagesTo));
+  },
+  setLanguagesSocialChat: (languagesSocialChat) => {
+    set({ languagesSocialChat });
+    localStorage.setItem("languagesSocialChat", JSON.stringify(languagesSocialChat));
   },
   toggleLanguage: (type, lang) => {
     const { showToast } = useToastStore.getState();
@@ -206,6 +273,25 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
       return newState;
     });
   },
+  onSelectSocialChat: (lang) => {
+    const currentList = get().languagesSocialChat;
+
+    const updatedLanguages = currentList.map((item) => ({
+      ...item,
+      selected: item.lang === lang,
+    }));
+
+    const selected = updatedLanguages.find((item) => item.lang === lang) ?? currentList[0];
+
+    set({
+      languagesSocialChat: updatedLanguages,
+      selectedLanguageSocialChat: selected,
+    });
+
+    localStorage.setItem("languagesSocialChat", JSON.stringify(updatedLanguages));
+    localStorage.setItem("selectedLanguageSocialChat", JSON.stringify(selected));
+  },
+
   swapLanguages: () => {
     const { showToast } = useToastStore.getState();
 

@@ -40,6 +40,7 @@ type ChatStreamMessageListProps = {
     topicType?: any;
     title?: string;
     loading?: boolean;
+    isSpending?: boolean;
 };
 
 export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
@@ -54,7 +55,8 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
     loading,
     onRetryMessage,
     isLoadingMore,
-    isAtTop
+    isAtTop,
+    isSpending,
 }) => {
         // const { text } = useSignalRStreamStore((s) => s.currentChatStream || { text: '' });
         const {
@@ -94,7 +96,6 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
         }, [allMessages]);
         return (
             <div className="flex flex-col gap-6 mx-auto pt-8">
-                {/* Loading indicator khi load tin nhắn cũ */}
                 {isLoadingMore && (
                     <div className="flex justify-center items-center py-4">
                         <div className="flex items-center gap-2 text-gray-500">
@@ -120,6 +121,8 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                         isError={msg.isError}
                         isSend={msg.isSend}
                         onRetryMessage={onRetryMessage}
+                        isSpending={isSpending}
+                        loading={loading}
                     />
                 ))}
 

@@ -223,7 +223,7 @@ export function useChatStreamHandlers({
                                     ...msg,
                                     id: serverMsg.id, // Update với real ID từ server
                                     code: serverMsg.code,
-                                    text: serverMsg.massageText || msg.text,
+                                    text: serverMsg.messageText || msg.text,
                                     createdAt: serverMsg.createDate || msg.createdAt,
                                     timeStamp: serverMsg.createDate ?
                                         generatePreciseTimestampFromDate(new Date(serverMsg.createDate)) :

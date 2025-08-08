@@ -39,7 +39,7 @@ export async function getChatMessages(sessionId: string): Promise<ChatMessage[]>
     const data = res.data?.data?.data || [];
     return data.map((msg: any) => ({
         id: msg.id?.toString(),
-        text: msg.massageText,
+        text: msg.messageText,
         isRight: msg.senderType === USER_SENDER_TYPE,
         createdAt: msg.createDate,
         timeStamp: generatePreciseTimestampFromDate(msg.createDate),
@@ -67,7 +67,7 @@ export async function getChatMessage(chatCode: string): Promise<ChatMessage[]> {
     const messages = Array.isArray(data) ? data : [data];
     return messages.map((msg: any) => ({
         id: msg.id?.toString(),
-        text: msg.massageText,
+        text: msg.messageText,
         isRight: msg.senderType === 10,
         createdAt: msg.createDate,
         timeStamp: Number(new Date(msg.createDate)),

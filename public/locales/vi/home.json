@@ -300,5 +300,13 @@
   "Today": "Hôm nay",
   "Yesterday": "Hôm qua",
   "{{n}} days ago": "{{n}} ngày trước",
-  "Last Week": "Tuần trước"
+  "Last Week": "Tuần trước",
+  "time": {
+  "now": "vừa xong",
+  "minutesAgo": "{{count}} phút trước",
+  "hoursAgo": "{{count}} giờ trước",
+  "yesterday": "Hôm qua",
+  "daysAgo": "{{count}} ngày trước"
+}
+
 }

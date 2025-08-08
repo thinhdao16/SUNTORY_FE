@@ -8,7 +8,7 @@ import CloseIcon from "@/icons/logo/close.svg?react";
 import HistoryIcon from "@/icons/logo/translate/history.svg?react";
 import DownIcon from "@/icons/logo/translate/down.svg?react";
 import SwapIcon from "@/icons/logo/translate/swap.svg?react";
-import SwapDetectedIcon from "@/icons/logo/translate/swap.svg?react";
+import SwapDetectedIcon from "@/icons/logo/translate/swap_detected.svg?react";
 import EmotionModal from "@/components/common/bottomSheet/EmotionModal";
 import SparkleIcon from "@/icons/logo/translate/sparkle.svg?react";
 import PlusIcon from "@/icons/logo/translate/plus.svg?react";
@@ -131,7 +131,6 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
   const [context, setContext] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
 
-
   const handleEmotionConfirm = (data: { emotions?: { icon: string; label: string }[]; context: string[] }) => {
     if ((data.emotions && data.emotions.length !== 0) || data.context.length !== 0) {
       setEmotionData({
@@ -155,7 +154,6 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
     setEmotionInput("");
     setSelected([]);
   };
-
   const removeContextRow = () => {
     if (!emotionData) return;
     setEmotionData({
@@ -167,7 +165,15 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
     }
     setContext("");
   };
+  useEffect(() => {
+    if (emotionData?.emotions && emotionData.emotions.length) {
+      const labelsStr = emotionData.emotions
+        .map(e => e.label)
+        .join(',');
 
+      setEmotionInput(labelsStr);
+    }
+  }, [emotionData, isOpen]);
   return (
     <div
       className={`darkk:bg-gray-700 ${isOpen ? "" : "bg-blue-100"}`}
@@ -225,11 +231,14 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                       <div className="flex items-center justify-between rounded-lg  py-2 ">
                         <div className="flex items-center gap-2 flex-wrap">
                           {emotionData.emotions.map((e, idx) => (
-                            <div key={idx} className="flex items-center gap-1">
+                            <div className="flex items-center gap-1">
                               <span className="text-lg">{e?.icon}</span>
-                              <span className="text-gray-700 text-sm">{e?.label}</span>
+                              <div className="break-all whitespace-normal text-sm text-gray-700">
+                                {e?.label}
+                              </div>
                               {idx < emotionData.emotions.length - 1 && <span className="text-gray-400">,</span>}
                             </div>
+
                           ))}
                         </div>
                         <button
@@ -277,14 +286,14 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                 >
                   <div />
                   <span className="font-semibold text-main text-center">
-                    {selectedLanguageFrom.label}
+                    {t(selectedLanguageFrom.label)}
                   </span>
                   <DownIcon />
                 </button>
                 <button
                   type="button"
                   onClick={swapLanguages}
-                  disabled={isTranslating || selectedLanguageFrom.code === null}
+                  disabled={isTranslating || selectedLanguageFrom.code === null || selectedLanguageFrom.label === "Detect language"}
                   className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isTranslating || selectedLanguageFrom.code === null
@@ -299,7 +308,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                 >
                   <div />
                   <span className="font-semibold text-main text-center">
-                    {selectedLanguageTo.label}
+                    {t(selectedLanguageTo.label)}
                   </span>
                   <DownIcon />
                 </button>
@@ -325,7 +334,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                     } as React.CSSProperties}
                   />
                 </div>
-                <div className="absolute right-3 bottom-[-30px]">
+                <div className="absolute right-3 bottom-[-35px]">
                   {
                     inputValueTranslate.input.trim().length > 0 && (
                       <button
@@ -333,17 +342,17 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                         className="text-gray-500 hover:text-main transition-colors"
                         disabled={isTranslating}
                       >
-                        <IoCopyOutline className="w-5 h-5" />
+                        <IoCopyOutline className="w-6 h-6" />
                       </button>
                     )
                   }
                   {clipboardHasData && (
                     <button
                       onClick={handlePastContent}
-                      className="text-gray-500 hover:text-main transition-colors ml-2"
+                      className="text-gray-500 hover:text-main transition-colors ml-3"
                       disabled={isTranslating}
                     >
-                      <GoPaste className="w-5 h-5" />
+                      <GoPaste className="w-6 h-6" />
                     </button>
                   )}
                 </div>

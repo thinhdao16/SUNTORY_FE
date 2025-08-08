@@ -35,9 +35,9 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
   setContext,
   setSelected,
   selected,
-  t, // Assuming you have a translation function passed as prop
+  t, 
 }) => {
-  // Sync selected buttons with input text on mount and input change
+  console.log(emotionInput)
   const EMOTIONS = [
     { label: t("Happy"), icon: "😊" },
     { label: t("Sad"), icon: "😢" },
@@ -52,11 +52,10 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
         .map(e => e.trim())
         .filter(Boolean);
 
-      // So sánh case-insensitive và giữ nguyên case từ EMOTIONS array
       const validEmotions = inputEmotions
         .map(emotion => {
           const found = EMOTIONS.find(e => e.label.toLowerCase() === emotion.toLowerCase());
-          return found ? found.label : null; // Trả về label gốc từ EMOTIONS array
+          return found ? found.label : null; 
         })
         .filter(Boolean) as string[];
 
@@ -66,7 +65,6 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
     }
   }, [emotionInput, setSelected]);
 
-  // src/components/common/bottomSheet/EmotionModal.tsx
   const handleToggle = (label: string) => {
     const newSelected = selected.includes(label)
       ? selected.filter((e) => e !== label)
@@ -74,8 +72,6 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
 
     setSelected(newSelected);
 
-    // Cập nhật emotion input nhưng giữ lại thứ tự và custom emotions
-    // Lấy current input để preserve custom emotions và thứ tự
     const currentInput = emotionInput || "";
     const currentEmotions = currentInput
       .split(",")
@@ -85,12 +81,10 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
     let updatedEmotions: string[];
 
     if (selected.includes(label)) {
-      // Removing emotion - chỉ xóa emotion đó khỏi input
       updatedEmotions = currentEmotions.filter(emotion =>
         emotion.toLowerCase() !== label.toLowerCase()
       );
     } else {
-      // Adding emotion - thêm vào cuối nếu chưa có
       const emotionExists = currentEmotions.some(emotion =>
         emotion.toLowerCase() === label.toLowerCase()
       );
@@ -105,24 +99,21 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
     setEmotionInput(updatedEmotions.join(", "));
   };
 
-  // src/components/common/bottomSheet/EmotionModal.tsx
   const handleEmotionInputChange = (value: string) => {
     setEmotionInput(value);
 
-    // Parse input and update selected buttons
     const inputEmotions = value
       .split(",")
       .map(e => e.trim())
       .filter(Boolean);
 
-    // Tách emotions thành 2 loại: có trong EMOTIONS và custom emotions
     const predefinedEmotions: string[] = [];
     const customEmotions: string[] = [];
 
     inputEmotions.forEach(emotion => {
       const found = EMOTIONS.find(e => e.label.toLowerCase() === emotion.toLowerCase());
       if (found) {
-        predefinedEmotions.push(found.label); // Giữ nguyên case từ EMOTIONS
+        predefinedEmotions.push(found.label);
       } else {
         customEmotions.push(emotion);
       }

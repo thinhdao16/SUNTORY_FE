@@ -43,6 +43,9 @@ import { IonSpinner } from "@ionic/react";
 import { mergeMessagesStream } from "@/utils/mapSignalRStreamMessage ";
 import { MessageState, StreamMsg } from "@/types/chat-message";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
+import { useToastStore } from "@/store/zustand/toast-store";
+import { useSignalRChat } from "@/hooks/useSignalRChat";
+import { useSignalRStream } from "@/hooks/useSignalRStream";
 
 dayjs.extend(utc);
 
@@ -77,6 +80,8 @@ const Chat: React.FC = () => {
     const prevMessagesLengthRef = useRef(0);
 
     // ==== Stores ====
+    const showToast = useToastStore.getState().showToast;
+
     const {
         pendingImages, pendingFiles,
         addPendingImages, addPendingFiles,
@@ -115,7 +120,7 @@ const Chat: React.FC = () => {
         return signalRMessagesBackUp.reduce((acc: any, msg: any) => {
             const messageCode = msg.code;         // key
             const chatCode = msg.chatInfo?.code ?? msg.chatInfoId;
-            const text = msg.completeText ?? msg.massageText;
+            const text = msg.completeText ?? msg.messageText;
             const time = msg.startTime ?? msg.createDate;
 
             acc[messageCode] = {
@@ -142,8 +147,13 @@ const Chat: React.FC = () => {
     const topicType: TopicType | undefined = isValidTopicType ? (topicTypeNum as TopicType) : undefined;
     const title = isValidTopicType && topicType !== undefined ? TopicTypeLabel[topicType] : undefined;
     const isWelcome = topicType === TopicType.Chat && !sessionId && pendingMessages.length === 0;
-
+    const anActivate = topicType === TopicType.MedicalSupport
     // ==== Hooks: Chat & Message ====
+    useSignalRChat(deviceInfo.deviceId || "");
+    useSignalRStream(deviceInfo.deviceId || "", {
+        autoReconnect: true,
+        logLevel: 0,
+    });
     const {
         messages,
         isLoading,
@@ -236,7 +246,6 @@ const Chat: React.FC = () => {
         pendingImages,
         pendingFiles
     );
-
     const getCodeByTopic = useMemo(() => {
         return (topicId: number): string | undefined => {
             const chatItem = chatHistory
@@ -266,6 +275,7 @@ const Chat: React.FC = () => {
     };
 
     // ==== Lifecycle Effects ====
+
     useEffect(() => {
         if (sessionId && !isLoading) {
             clearPendingMessages();
@@ -411,7 +421,6 @@ const Chat: React.FC = () => {
                     )}
                 </div>
 
-                {/* Cột giữa: Tiêu đề chiếm giữa và full chiều ngang */}
                 {(!isWelcome) && (
                     <div className="absolute left-0 right-0 flex justify-center pointer-events-none">
                         <span className="font-semibold text-main uppercase tracking-wide text-center">
@@ -420,7 +429,6 @@ const Chat: React.FC = () => {
                     </div>
                 )}
 
-                {/* Cột phải */}
                 <div className="flex items-center justify-end z-10">
                     {!isWelcome && (
                         <>
@@ -478,7 +486,7 @@ const Chat: React.FC = () => {
                                     title={title}
                                     loading={isSending || hasPendingMessages}
                                     onRetryMessage={retryMessage}
-
+                                    isSpending={isSending}
                                 />
                             )}
                             <div style={{ marginTop: pendingBarHeight }} />
@@ -530,6 +538,8 @@ const Chat: React.FC = () => {
                                     isDesktop={isDesktop}
                                     imageLoading={uploadImageMutation.isLoading}
                                     imageLoadingMany={imageLoading}
+                                    anActivate={anActivate}
+                                    showToast={showToast}
                                 />
                             </div>
                         )}

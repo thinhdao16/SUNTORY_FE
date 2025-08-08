@@ -50,7 +50,7 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
                 onClick={() => onItemClick(item)}
             >
                 <div
-                    className="text-black text-base line-clamp-2"
+                    className="text-black truncate text-base line-clamp-2 break-all whitespace-normal"
                     style={{
                         display: "-webkit-box",
                         WebkitLineClamp: 2,
@@ -62,7 +62,7 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
                     {item.originalText}
                 </div>
                 <div
-                    className="text-gray-600 text-base line-clamp-2"
+                    className="text-gray-600 text-base line-clamp-2 break-all whitespace-normal"
                     style={{
                         display: "-webkit-box",
                         WebkitLineClamp: 2,

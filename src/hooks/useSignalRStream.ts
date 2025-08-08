@@ -107,7 +107,7 @@ export const useSignalRStream = (
             if (data.chatCode === chatCodeRef.current) {
                 // setCurrentChatStream(chunk);
                 addStreamChunk(chunk);
-            setIsSending(true);
+                setIsSending(true);
 
 
             }
