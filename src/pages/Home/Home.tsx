@@ -1,42 +1,77 @@
 import { useTranslation } from 'react-i18next';
-
 import { useAuthInfo } from '../Auth/hooks/useAuthInfo';
 import { TopicType } from "@/constants/topicType";
 import useAppInit from '@/hooks/useAppInit';
 import PageContainer from '@/components/layout/PageContainer';
+import AppImage from '@/components/common/AppImage';
+
+import medicalSupportSvg from "@/icons/logo/home/medical_support.svg";
+import documentTranslationSvg from "@/icons/logo/home/document_translation.svg";
+import drugInstructionsSvg from "@/icons/logo/home/drug_instructions.svg";
+import foodDiscoverySvg from "@/icons/logo/home/food_discovery.svg";
 
 import { HomeHeader } from './components/HomeHeader';
 import { FeatureGrid } from './components/FeatureGrid';
-import { HowItWorksSection } from './components/HowItWorksSection';
-import { GetStartedButton } from './components/GetStartedButton';
-
-import MedicalSupportIcon from "@/icons/logo/home/medical_support.svg?react";
-import DocumentTranslationIcon from "@/icons/logo/home/document_translation.svg?react";
-import DrugIstrucstionsIcon from "@/icons/logo/home/drug_instructions.svg?react";
-import FoodDiscoveryIcon from "@/icons/logo/home/food_discovery.svg?react";
 
 function Home() {
-  const { t } = useTranslation();
+  const { t, ready } = useTranslation('home', { useSuspense: false });
+  if (!ready) return null;
   const { data: userInfo } = useAuthInfo();
 
   const features = [
     {
-      image: <MedicalSupportIcon className="w-full h-full object-cover flex-1 " />,
+      image: (
+        <AppImage
+          src={medicalSupportSvg}
+          alt="Medical Support"
+          className="w-full h-full object-cover flex-1 "
+          fallbackRatio={16 / 9}
+          hardHeight={0}
+          effect="blur"
+        />
+      ),
       title: t("Medical Support"),
       topic: TopicType.MedicalSupport,
     },
     {
-      image: <DocumentTranslationIcon className="w-full h-full object-cover flex-1 " />,
+      image: (
+        <AppImage
+          src={documentTranslationSvg}
+          alt="Document Translation"
+          className="w-full h-full object-cover flex-1 "
+          fallbackRatio={16 / 9}
+          hardHeight={0}
+          effect="blur"
+        />
+      ),
       title: t("Document Translation"),
       topic: TopicType.DocumentTranslation,
     },
     {
-      image: <DrugIstrucstionsIcon className="w-full h-full object-cover flex-1 " />,
+      image: (
+        <AppImage
+          src={drugInstructionsSvg}
+          alt="Drug Instructions"
+          className="w-full h-full object-cover flex-1 "
+          fallbackRatio={16 / 9}
+          hardHeight={0}
+          effect="blur"
+        />
+      ),
       title: t("Drug Instructions"),
       topic: TopicType.DrugInstructions,
     },
     {
-      image: <FoodDiscoveryIcon className="w-full h-full object-cover flex-1 " />,
+      image: (
+        <AppImage
+          src={foodDiscoverySvg}
+          alt="Food Discovery"
+          className="w-full h-full object-cover flex-1 "
+          fallbackRatio={16 / 9}
+          hardHeight={0}
+          effect="blur"
+        />
+      ),
       title: t("Food Discovery"),
       topic: TopicType.FoodDiscovery,
     },

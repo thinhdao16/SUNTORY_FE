@@ -13,6 +13,7 @@ import { ChatMessage } from "@/types/social-chat";
 import { useSendSocialChatMessage, useUpdateSocialChatMessage } from "../../hooks/useSocialChat";
 import { CreateSocialChatMessagePayload } from "@/services/social/social-chat-type";
 import { useAuthStore } from "@/store/zustand/auth-store";
+import { Language } from '@/store/zustand/language-store';
 interface UseSocialChatHandlersProps {
     addPendingImages: (images: string[]) => void;
     addPendingFiles: (files: { name: string; url: string }[]) => void;
@@ -28,7 +29,7 @@ interface UseSocialChatHandlersProps {
     updateMessageByTempId: (message: ChatMessage) => void;
     updateMessageWithServerResponse: (tempId: string, serverData: Partial<ChatMessage>) => void;
     setLoadingMessages: (loading: boolean) => void;
-    handleScroll: () => void;
+    onContainerScroll: any;
     hasNextPage?: boolean;
     isFetchingNextPage?: boolean;
     fetchNextPage: () => Promise<void>;
@@ -39,6 +40,13 @@ interface UseSocialChatHandlersProps {
     replyingToMessage: ChatMessage | null;
     history: any;
     clearReplyingToMessage: () => void;
+    hasReachedLimit?: boolean;
+    selectedLanguageSocialChat?: Language | null;
+    createTranslationMutation: any;
+    setMessageTranslate: (text: string) => void;
+    messageTranslate: string;
+    showToast: (message: string, duration?: number, type?: "success" | "error" | "warning") => void;
+    t: (key: string) => string;
 }
 
 export function useSocialChatHandlers({
@@ -56,7 +64,7 @@ export function useSocialChatHandlers({
     updateMessageWithServerResponse,
     roomId,
     setLoadingMessages,
-    handleScroll,
+    onContainerScroll,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
@@ -66,27 +74,28 @@ export function useSocialChatHandlers({
     revokeMessageMutation,
     replyingToMessage,
     history,
-    clearReplyingToMessage
+    clearReplyingToMessage,
+    hasReachedLimit,
+    selectedLanguageSocialChat,
+    createTranslationMutation,
+    setMessageTranslate,
+    messageTranslate,
+    showToast,
+    t
 }: UseSocialChatHandlersProps) {
     const currentUserId = useAuthStore.getState().user?.id;
     const sendMessageMutation = useSendSocialChatMessage({ roomId });
     const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
-    // Utility function để clean duplicate URLs
     const cleanImageUrl = (url: string): string => {
         if (!url) return url;
 
-        // Tìm tất cả occurrences của protocol://domain
         const protocolDomainRegex = /(https?:\/\/[^\/]+)/g;
         const matches = url.match(protocolDomainRegex);
 
-        // Nếu có nhiều hơn 1 domain trong URL (duplicate)
         if (matches && matches.length > 1) {
-            // Giữ lại protocol://domain đầu tiên, remove các duplicates
             const firstDomain = matches[0];
             const restOfUrl = url.split(matches[0]).slice(1).join('').replace(/^\/+/, '');
-
-            // Remove các domains duplicates khỏi phần còn lại
             let cleanedRest = restOfUrl;
             matches.slice(1).forEach(duplicateDomain => {
                 cleanedRest = cleanedRest.replace(duplicateDomain + '/', '').replace(duplicateDomain, '');
@@ -106,7 +115,6 @@ export function useSocialChatHandlers({
         const uploadedFiles: { name: string; linkImage: string }[] = [];
         const failedFiles: string[] = [];
 
-        // Upload tất cả files trước, không tạo message
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
 
@@ -126,7 +134,6 @@ export function useSocialChatHandlers({
                 if (uploaded && uploaded.length > 0) {
                     const uploadedFile = uploaded[0];
 
-                    // Clean URL
                     const cleanUrl = cleanImageUrl(uploadedFile.linkImage);
 
                     uploadedFiles.push({
@@ -144,7 +151,6 @@ export function useSocialChatHandlers({
             }
         }
 
-        // Chỉ tạo 1 message duy nhất nếu có files upload thành công
         if (uploadedFiles.length > 0) {
             const tempId = `temp_${Date.now()}_${Math.random()}`;
             const now = dayjs.utc();
@@ -176,7 +182,7 @@ export function useSocialChatHandlers({
                     fileUrl: file.linkImage,
                     fileName: file.name,
                     fileType: 1,
-                    fileSize: 0, // Không có thông tin file size sau upload
+                    fileSize: 0,
                     createDate: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
                 })),
                 chatInfo: null,
@@ -187,8 +193,6 @@ export function useSocialChatHandlers({
             };
 
             addMessage(finalMessage);
-
-            // Tạo payload với tất cả files - CHỈ GỬI 1 LẦN
             const payload: CreateSocialChatMessagePayload = {
                 chatCode: roomId || null,
                 messageText: "",
@@ -199,7 +203,6 @@ export function useSocialChatHandlers({
 
             try {
                 setLoadingMessages(true);
-                // CHỈ GỬI 1 LẦN cho tất cả files
                 const serverMsg = await sendMessageMutation.mutateAsync(payload);
 
                 if (serverMsg) {
@@ -222,7 +225,6 @@ export function useSocialChatHandlers({
                         userAvatar: serverMsg.userAvatar,
                         hasAttachment: serverMsg.hasAttachment,
                         isRead: serverMsg.isRead,
-                        // Update chatAttachments từ server response hoặc fallback
                         chatAttachments: serverMsg.chatAttachments?.length > 0 ?
                             serverMsg.chatAttachments.map((att: any) => ({
                                 id: att.id,
@@ -233,7 +235,7 @@ export function useSocialChatHandlers({
                                 fileSize: att.fileSize,
                                 createDate: att.createDate,
                             })) : finalMessage.chatAttachments,
-                        attachments: [], // Luôn để attachments rỗng
+                        attachments: [],
                     });
                 }
             } catch (error) {
@@ -253,7 +255,6 @@ export function useSocialChatHandlers({
             }
         }
 
-        // Hiển thị tóm tắt kết quả
         if (failedFiles.length > 0) {
             useToastStore.getState().showToast(
                 `${failedFiles.length} file thất bại: ${failedFiles.join(", ")}`,
@@ -293,16 +294,24 @@ export function useSocialChatHandlers({
         e.target.value = "";
     };
 
-    const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent, force?: boolean) => {
+    const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent, field: string, force?: boolean,) => {
         e.preventDefault();
 
-        const hasMessage = messageValue.trim().length > 0;
+        const hasMessage = messageValue.trim().length > 0 || messageTranslate.trim().length > 0;
         const hasFiles = pendingImages.length > 0 || pendingFiles.length > 0;
 
         if (!hasMessage && !hasFiles && !force) {
             return;
         }
-        const textToSend = hasMessage ? messageValue.trim() : "❤️";
+        if (hasReachedLimit && !force) {
+            useToastStore.getState().showToast(
+                i18n.t("You have reached the message limit for this chat."),
+                2000,
+                "warning"
+            );
+            return;
+        }
+        const textToSend = field === "inputTranslate" ? messageTranslate : messageValue.trim();
         const tempId = `temp_${Date.now()}_${Math.random()}`;
         const now = dayjs.utc();
         const filesArr = [
@@ -363,6 +372,7 @@ export function useSocialChatHandlers({
 
         addMessage(pendingMsg);
         setMessageValue('');
+        setMessageTranslate('');
         scrollToBottom();
 
         try {
@@ -410,6 +420,8 @@ export function useSocialChatHandlers({
             });
         } finally {
             setLoadingMessages(false);
+            scrollToBottom();
+
         }
     };
 
@@ -417,7 +429,7 @@ export function useSocialChatHandlers({
         const target = e.target as HTMLDivElement;
         const { scrollTop, scrollHeight, clientHeight } = target;
 
-        handleScroll();
+
 
         if (scrollTop < 100 && hasNextPage && !isFetchingNextPage) {
             const currentScrollHeight = scrollHeight;
@@ -434,7 +446,7 @@ export function useSocialChatHandlers({
                     console.error("Error fetching next page:", error);
                 });
         }
-    }, [handleScroll, hasNextPage, isFetchingNextPage, fetchNextPage]);
+    }, [onContainerScroll, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     const handleEditMessage = useCallback(async (messageCode: string | number, newText: string) => {
         try {
@@ -487,11 +499,46 @@ export function useSocialChatHandlers({
         localStorage.setItem("roomId", roomId);
         history.push("/social-chat/camera")
     }
+    const handleTranslate = useCallback(
+        async (text: string) => {
+            if (!text?.trim()) return;
+
+            setMessageTranslate("");
+
+            try {
+                const fromLanguageId = null;
+                const toLanguageId = selectedLanguageSocialChat?.id || null;
+
+                if (!toLanguageId) {
+                    showToast(t("Please select a valid target language."), 3000, "error");
+                    return;
+                }
+
+                const payload = {
+                    fromLanguageId,
+                    toLanguageId,
+                    originalText: text.trim(),
+                    context: null,
+                    emotionType: null,
+                };
+
+                const result = await createTranslationMutation.mutateAsync(payload);
+
+                if (result?.data) {
+                    setMessageTranslate(result.data.translatedText || "");
+                }
+            } catch (err) {
+                console.error("Translation failed:", err);
+            }
+        },
+        [selectedLanguageSocialChat?.id, createTranslationMutation, showToast, t, setMessageTranslate]
+    );
     return {
         handleImageChange,
         handleFileChange,
         handleSendMessage,
         handleScrollWithLoadMore,
+        handleTranslate,
         handleEditMessage,
         handleRevokeMessage,
         handleTakePhoto,

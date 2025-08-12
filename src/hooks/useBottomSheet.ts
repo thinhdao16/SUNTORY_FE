@@ -1,29 +1,30 @@
+// src/hooks/useBottomSheet.ts
+import React, { useRef, useState } from "react";
 import {
     handleTouchStart as handleTouchStartUtil,
     handleTouchMove as handleTouchMoveUtil,
     handleTouchEnd as handleTouchEndUtil,
 } from "@/utils/translate-utils";
-import React from "react";
 
-const velocityThreshold = 0.4;
+const VELOCITY_THRESHOLD = 0.4;
 
-export const useSocialChatModals = (
-    screenHeight: React.RefObject<number>,
-    startY: React.RefObject<number | null>,
-    startTime: React.RefObject<number | null>,
-    setIsOpenTranslateInput: (open: boolean) => void,
-    setTranslateY: React.Dispatch<React.SetStateAction<number>>,
-    translateY: number
-) => {
-    const openModalTranslate = () => {
-        setIsOpenTranslateInput(true);
+export function useBottomSheet() {
+    const [isOpen, setIsOpen] = useState(false);
+    const [translateY, setTranslateY] = useState(0);
+
+    const screenHeight = useRef<number>(typeof window !== "undefined" ? window.innerHeight : 0);
+    const startY = useRef<number | null>(null);
+    const startTime = useRef<number | null>(null);
+
+    const open = () => {
+        setIsOpen(true);
         setTranslateY(0);
     };
 
-    const closeModalTranslate = () => {
+    const close = () => {
         setTranslateY(screenHeight.current);
         setTimeout(() => {
-            setIsOpenTranslateInput(false);
+            setIsOpen(false);
             setTranslateY(0);
         }, 300);
     };
@@ -42,17 +43,20 @@ export const useSocialChatModals = (
             startY,
             startTime,
             screenHeight,
-            velocityThreshold,
-            closeModalTranslate,
+            VELOCITY_THRESHOLD,
+            close,
             setTranslateY
         );
     };
 
     return {
-        openModalTranslate,
-        closeModalTranslate,
+        isOpen,
+        translateY,
+        open,
+        close,
+        setTranslateY,
         handleTouchStart,
         handleTouchMove,
-        handleTouchEnd
+        handleTouchEnd,
     };
-};
+}

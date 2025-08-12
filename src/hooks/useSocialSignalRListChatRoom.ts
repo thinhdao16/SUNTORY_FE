@@ -24,7 +24,7 @@ export function useSocialSignalRListChatRoom(
     const currentRoomRef = useRef<string | null>(null);
 
     const { isAuthenticated } = useAuthStore();
-    const { addMessage, updateMessage, updateMessageByCode, updateLastMessage, getLastMessageForRoom } = useSocialChatStore();
+    const { addMessage, updateMessage, updateMessageByCode, updateLastMessage, getLastMessageForRoom,updateChatRoomFromMessage } = useSocialChatStore();
 
     const log = useCallback((message: string, ...args: any[]) => {
         if (enableDebugLogs) {
@@ -100,27 +100,72 @@ export function useSocialSignalRListChatRoom(
     const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
         connection.on("ReceiveUserMessage", (message: any) => {
             console.log("Received message:", message);
-            if (message.chatInfo.code || message.roomId) {
+            
+            if (message.chatInfo?.code || message.roomId) {
                 const roomId = message.chatInfo.code || message.roomId;
-                addMessage(roomId, message);
+                
+                // // Add message to store
+                // addMessage(roomId, message);
                 updateLastMessage(roomId, message);
+                
+                // // Update room info and sort list
+                updateChatRoomFromMessage(message);
             }
         });
 
         connection.on("UpdateUserMessage", (message: any) => {
             console.log("Updated message:", message);
-            if (message.chatCode || message.roomId) {
-                const roomId = message.chatCode || message.roomId;
-                updateMessageByCode(roomId, message.code, message);
-
-                // Also update last message if this is the latest one
-                const currentLastMessage = getLastMessageForRoom(roomId);
-                if (currentLastMessage && currentLastMessage.code === message.code) {
-                    updateLastMessage(roomId, { ...currentLastMessage, ...message });
-                }
+            
+            if (message.chatInfo?.code || message.roomId) {
+                const roomId = message.chatInfo.code || message.roomId;
+                
+                updateLastMessage(roomId, message);
+                updateChatRoomFromMessage(message);
+                // updateMessageByCode(roomId, message.code, message);
+                
+                // // Check if this is the last message và update
+                // const currentLastMessage = getLastMessageForRoom(roomId);
+                // if (currentLastMessage && currentLastMessage.code === message.code) {
+                //     updateLastMessage(roomId, { ...currentLastMessage, ...message });
+                    
+                //     // Update room info with edited message
+                //     updateChatRoomFromMessage(message);
+                // }
             }
         });
-
+        
+        connection.on("RevokeUserMessage", (message: any) => {
+            console.log("Revoke message:", message);
+            
+            if (message.chatInfo?.code || message.roomId) {
+                const roomId = message.chatInfo.code || message.roomId;
+                updateLastMessage(roomId, message);
+                updateChatRoomFromMessage(message);
+                // Update message as revoked
+                // updateMessageByCode(roomId, message.code, {
+                //     ...message,
+                //     isRevoked: 1,
+                //     messageText: "Tin nhắn đã được thu hồi"
+                // });
+                
+                // // Update last message if needed
+                // const currentLastMessage = getLastMessageForRoom(roomId);
+                // if (currentLastMessage && currentLastMessage.code === message.code) {
+                //     updateLastMessage(roomId, {
+                //         ...currentLastMessage,
+                //         ...message,
+                //         isRevoked: 1,
+                //         messageText: "Tin nhắn đã được thu hồi"
+                //     });
+                    
+                //     // Update room info
+                //     updateChatRoomFromMessage({
+                //         ...message,
+                //         messageText: "Tin nhắn đã được thu hồi"
+                //     });
+                // }
+            }
+        });
 
         connection.onreconnecting((error) => {
             log("Reconnecting...", error);
@@ -142,7 +187,7 @@ export function useSocialSignalRListChatRoom(
             log("Connection closed:", error);
             isConnectedRef.current = false;
         });
-    }, [addMessage, updateMessage, updateMessageByCode, log, joinChatRooms, joinUserNotify]);
+    }, [addMessage, updateMessage, updateMessageByCode, updateLastMessage, getLastMessageForRoom, updateChatRoomFromMessage, log, joinChatRooms, joinUserNotify]);
 
     // Send message
     const sendMessage = useCallback(async (

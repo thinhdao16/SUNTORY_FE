@@ -1,5 +1,8 @@
 // src/pages/SocialChat/SocialChatThread/components/ImageGallery.tsx
+import AppImage from "@/components/common/AppImage";
 import React, { useState, useRef, useEffect } from "react";
+import { FaRegTrashAlt } from "react-icons/fa";
+import { MdOutlineReply } from "react-icons/md";
 
 interface ImageGalleryProps {
     chatAttachments: any[];
@@ -44,7 +47,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
     onEdit,
     onRevoke,
     onReply,
-    showActionsMobile
+    showActionsMobile,
+
 }) => {
     const [showAll, setShowAll] = useState(false);
 
@@ -67,15 +71,17 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
         onImageClick(idx, allImages);
     };
 
+
     if (imageFiles.length === 0) return null;
 
     return (
-        <div className={`flex ${isUser ? "ml-auto" : "mr-auto"}`}>
-            <div className="mb-2 space-y-2 relative">
+        <div className={isUser ? "self-end w-fit" : "self-start w-fit"}>
+            <div className={`mb-2 space-y-2 relative ${isUser ? "ml-auto" : "mr-auto"} w-fit`}>
                 <div
-                    className={displayPhotos.length === 1
-                        ? "w-[250px] rounded-2xl overflow-hidden"
-                        : "grid gap-2 w-[250px] rounded-2xl overflow-hidden grid-cols-2"
+                    className={
+                        displayPhotos.length === 1
+                            ? `w-[250px] rounded-2xl overflow-hidden flex ${isUser ? "  justify-end" : "justify-start"}`
+                            : "grid gap-2 w-[250px] rounded-2xl overflow-hidden grid-cols-2"
                     }
                 >
                     {displayPhotos.map((photo: { src: string }, idx: number) => {
@@ -92,7 +98,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                     style={{ gridColumn: "1 / span 2" }}
                                     onClick={() => handleImageClick(idx)}
                                 >
-                                    <img
+                                    <AppImage
                                         src={photo.src}
                                         alt=""
                                         className="w-full h-full object-cover rounded-2xl"
@@ -114,11 +120,12 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                     className="relative object-cover rounded-2xl w-full h-full cursor-pointer overflow-hidden"
                                     onClick={() => handleImageClick(idx)}
                                 >
-                                    <img
+                                    <AppImage
                                         src={photo.src}
                                         alt=""
                                         className="w-full h-full object-cover rounded-2xl"
                                         style={{ filter: "brightness(0.7)" }}
+
                                     />
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         <span className="text-white font-bold text-2xl bg-black/50 px-4 py-2 rounded-2xl select-none pointer-events-none">
@@ -131,7 +138,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
                         if (isLastOdd) {
                             return (
-                                <img
+                                <AppImage
                                     key={idx}
                                     src={photo.src}
                                     alt=""
@@ -149,7 +156,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
                         if (isThirdLast) {
                             return (
-                                <img
+                                <AppImage
                                     key={idx}
                                     src={photo.src}
                                     alt=""
@@ -163,7 +170,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
                         if (isSecondLast) {
                             return (
-                                <img
+                                <AppImage
                                     key={idx}
                                     src={photo.src}
                                     alt=""
@@ -176,7 +183,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                         }
 
                         return (
-                            <img
+                            <AppImage
                                 key={idx}
                                 src={photo.src}
                                 alt=""
@@ -185,20 +192,18 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                 style={{ cursor: "pointer" }}
                             />
                         );
-                    })}
-                    <>
-                    
+                    })}<>
                     </>
                 </div>
                 {!isRevoked && (
                     <div ref={actionContainerRef}
-                        className={`absolute w-full top-1/2 -translate-y-1/2 ${isUser ? "-left-24" : "-right-80"} ${showActionsMobile ? "flex" : "hidden group-hover:flex"} gap-2 p-1`}
+                        className={`absolute w-full text-main  top-1/2 -translate-y-1/2 ${isUser ? "-left-24" : "-right-80"} ${showActionsMobile ? "flex" : "hidden group-hover:flex"} gap-2 p-1`}
                         style={{ pointerEvents: 'auto' }}
                     >
                         {isUser && (<>
-                            <button onClick={onRevoke}>🗑️</button>
+                            <button onClick={onRevoke}><FaRegTrashAlt className="z-99 text-2xl" /></button>
                         </>)}
-                        <button onClick={onReply}>↩️</button>
+                        <button onClick={onReply}><MdOutlineReply className="z-99 text-2xl" /></button>
                     </div>
                 )}
             </div>

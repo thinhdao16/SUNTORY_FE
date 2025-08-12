@@ -11,6 +11,7 @@ import { ImageGallery } from "./ImageGallery";
 import { MessageEditor } from "./MessageEditor";
 import { DraggableMessageContainer } from "./DraggableMessageContainer";
 import { Capacitor } from "@capacitor/core";
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded-full.svg";
 
 interface ChatMessageItemProps {
     msg: any;
@@ -23,6 +24,8 @@ interface ChatMessageItemProps {
     isEdited: boolean;
     isRevoked: boolean;
     isReply: boolean;
+    isGroup?: boolean;
+
 }
 
 const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
@@ -35,7 +38,8 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     onReplyMessage,
     isEdited,
     isRevoked,
-    isReply
+    isReply,
+    isGroup = false,
 }) => {
     const isNative = Capacitor.isNativePlatform();
 
@@ -51,7 +55,6 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
     const actionContainerRef = useRef<HTMLDivElement>(null);
 
-    // Handlers
     const handleStartEdit = () => {
         setIsEditing(true);
         setShowActions(false);
@@ -86,7 +89,6 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         setOpenModal(true);
     };
 
-    // Click outside handler
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent | TouchEvent) => {
             if (
@@ -116,7 +118,10 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             />
         );
     }
-console.log(msg)
+    const shouldShowAvatar = msg._shouldShowAvatar !== false;
+    const isFirstInSequence = msg._isFirstInSequence !== false;
+    const showSenderName = !!msg._showSenderName && !!msg.userName;
+    
     return (
         <>
             <DraggableMessageContainer
@@ -127,19 +132,23 @@ console.log(msg)
                 onLongPress={handleLongPress}
                 setShowActionsMobile={setShowActionsMobile}
             >
-                {!isUser && (
-                    <div>
-                        <BotIcon className="min-w-[30px] aspect-square object-contain" />
+                {!isUser && shouldShowAvatar && (
+                    <div className="flex flex-col items-center mr-2">
+                        <img
+                            src={msg.userAvatar || avatarFallback}
+                            alt={msg.userName || "Avatar"}
+                            className="w-[30px] aspect-square object-cover rounded-full"
+                            onError={(e) => {
+                                e.currentTarget.src = avatarFallback;
+                            }}
+                        />
                     </div>
                 )}
-                <div
-                    className="flex-1 flex flex-col items-start gap-1 relative group"
-                // onTouchStart={isNative ? handleLongPressStart : undefined}
-                // style={{
-                //     touchAction: isNative ? 'manipulation' : 'auto',
-                //     userSelect: 'none'
-                // }}
-                >
+                {!isUser && !shouldShowAvatar && <div className="w-[30px] ml-2" />}
+                <div className="flex-1 flex flex-col items-start gap-1 relative group">
+                    {isGroup && showSenderName && (
+                        <div className="text-xs text-gray-500 ml-1 mb-0.5">{msg.userName}</div>
+                    )}
                     {msg.replyToMessage && (
                         <ReplyBubble msg={msg.replyToMessage} isUser={isUser} />
                     )}

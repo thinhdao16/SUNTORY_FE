@@ -83,6 +83,8 @@ export const useAcceptFriendRequest = (
         onSuccess: () => {
             showToast("Đã chấp nhận lời mời kết bạn.", 1000, "success");
             queryClient.invalidateQueries(["searchFriendshipUsers"]);
+            queryClient.invalidateQueries(["friendshipReceivedRequests"]);
+
             onSuccessCallback?.();
         },
         onError: () => showToast("Không thể chấp nhận.", 1000, "error"),
@@ -99,6 +101,7 @@ export const useRejectFriendRequest = (
         onSuccess: () => {
             showToast("Đã từ chối lời mời kết bạn.", 1000, "success");
             queryClient.invalidateQueries(["searchFriendshipUsers"]);
+            queryClient.invalidateQueries(["friendshipReceivedRequests"]);
             onSuccessCallback?.();
         },
         onError: () => showToast("Không thể từ chối.", 1000, "error"),

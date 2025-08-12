@@ -3,3 +3,4 @@ export const ChatInfoType = {
     UserVsBot: 20,
     Group: 30
 }
+export const CountLimitChatDontFriend = 3;

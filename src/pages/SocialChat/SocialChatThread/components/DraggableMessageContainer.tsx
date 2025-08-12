@@ -68,7 +68,7 @@ export const DraggableMessageContainer: React.FC<DraggableMessageContainerProps>
     return (
         <motion.div
             key={messageId}
-            className={`flex w-full mb-4 ${isUser ? "justify-end" : "justify-start"}`}
+            className={`flex w-full  ${isUser ? "justify-end" : "justify-start"}`}
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 40 }}

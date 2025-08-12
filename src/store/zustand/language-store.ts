@@ -137,7 +137,7 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
     localStorage.setItem("selectedLanguageTo", JSON.stringify(item));
   },
   setSelectedLanguageSocialChat: (item) => {
-    // set({ selectedLanguageSocialChat: item });
+    set({ selectedLanguageSocialChat: item });
     localStorage.setItem("selectedLanguageSocialChat", JSON.stringify(item));
   },
   getAvailableLanguagesFrom: () => {

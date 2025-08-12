@@ -12,6 +12,11 @@ import { useToastStore } from "@/store/zustand/toast-store";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { ChatMessage } from "@/types/social-chat";
+import { useBottomSheet } from "@/hooks/useBottomSheet";
+import { useSocialSignalR } from "@/hooks/useSocialSignalR";
+import { useChatStreamMessages } from "./useChatStreamMessages";
+
+type SheetExpandMode = "input" | "translate" | null;
 
 export const useSocialChatThread = () => {
     const { type, roomId } = useParams<{ roomId?: string; type?: string }>();
@@ -22,25 +27,25 @@ export const useSocialChatThread = () => {
     const isOnline = useNetworkStatus();
     const isDesktop = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
     const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
+    const sheetExpand = useBottomSheet();
 
     // States
+    const [sheetExpandMode, setSheetExpandMode] = useState<SheetExpandMode>(null);
     const [messageTranslate, setMessageTranslate] = useState<string>('');
-    const [isOpenTranslateInput, setIsOpenTranslateInput] = useState(false);
-    const [translateY, setTranslateY] = useState(0);
     const [inputValueTranslate, setInputValueTranslate] = useState("");
-
+    const [inputBarHeight, setInputBarHeight] = useState(148);
     // Refs
     const screenHeight = useRef(window.innerHeight);
-    const startY = useRef<number | null>(null);
     const messageRef = useRef<any>(null);
     const messageTranslateRef = useRef<any>(null);
-    const messagesEndRef = useRef<HTMLDivElement | null>(null);
-    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef<any>(null);
+    const messagesContainerRef = useRef<any>(null);
     const pendingBarRef = useRef<HTMLDivElement>(null);
-    const startTime = useRef<number | null>(null);
     const prevMessagesLength = useRef(0);
     const initialLoadRef = useRef(true);
     const justSentMessageRef = useRef(false);
+
+
 
     const { data: translationLanguages } = useTranslationLanguages();
     const {
@@ -65,6 +70,9 @@ export const useSocialChatThread = () => {
         clearReplyingToMessage: clearReplyingToMessageStore
     } = useSocialChatStore();
 
+    const { scrollToBottom, messageValue, setMessageValue } = useChatStreamMessages(
+        messageRef, messagesEndRef, messagesContainerRef, roomId, false, true
+    );
     const imageLoading = useUploadStore.getState().imageLoading;
     const showToast = useToastStore((state) => state.showToast);
     const { data: userInfo } = useAuthInfo();
@@ -83,22 +91,25 @@ export const useSocialChatThread = () => {
         removePendingImageByUrl
     } = useImageStore();
 
-    // Set active room khi vào component
+    const translateSheet = useBottomSheet();
+    const openInputExpandSheet = () => { setSheetExpandMode("input"); sheetExpand.open(); };
+    const openTranslateExpandSheet = () => { setSheetExpandMode("translate"); sheetExpand.open(); };
+    const closeSheet = () => { sheetExpand.close(); setTimeout(() => setSheetExpandMode(null), 300); };
+
+    useSocialSignalR(deviceInfo.deviceId ?? "", { roomId: roomId ?? "" })
+
     useEffect(() => {
         if (roomId) {
             setActiveRoomId(roomId);
         }
         return () => {
-            // Cleanup khi rời khỏi component
             setActiveRoomId(null);
         };
     }, [roomId, setActiveRoomId]);
 
-    // Lấy messages và loading state cho room hiện tại
     const messages = roomId ? getMessagesForRoom(roomId) : [];
     const isLoadingMessages = roomId ? getLoadingForRoom(roomId) : false;
 
-    // Wrapper functions để tự động truyền roomId
     const setMessages = (msgs: ChatMessage[]) => {
         if (roomId) {
             setMessagesStore(roomId, msgs);
@@ -170,6 +181,10 @@ export const useSocialChatThread = () => {
     };
     const replyingToMessage = roomId ? replyingToMessageStore[roomId] || null : null;
 
+    const expandValue = sheetExpandMode === "translate" ? messageTranslate : messageValue;
+    const setExpandValue = sheetExpandMode === "translate" ? setMessageTranslate : setMessageValue;
+    const expandTitle = sheetExpandMode === "translate" ? "Expand Translation" : "Your Full Message";
+    const expandPlaceholder = sheetExpandMode === "translate" ? "Translate here..." : "Type your message...";
     return {
         // Params & routing
         type, roomId, history, queryClient,
@@ -179,13 +194,12 @@ export const useSocialChatThread = () => {
 
         // States
         messageTranslate, setMessageTranslate,
-        isOpenTranslateInput, setIsOpenTranslateInput,
-        translateY, setTranslateY,
-        inputValueTranslate, setInputValueTranslate,
 
+        inputValueTranslate, setInputValueTranslate,
+        inputBarHeight, setInputBarHeight,
         // Refs
-        screenHeight, startY, messageRef, messageTranslateRef,
-        messagesEndRef, messagesContainerRef, pendingBarRef, startTime,
+        screenHeight, messageRef, messageTranslateRef,
+        messagesEndRef, messagesContainerRef, pendingBarRef,
 
         // Store data
         translationLanguages, roomChatInfo, imageLoading,
@@ -211,6 +225,8 @@ export const useSocialChatThread = () => {
         setReplyingToMessage,
         clearReplyingToMessage,
         replyingToMessage,
+        scrollToBottom, messageValue, setMessageValue,
+        expandValue, setExpandValue, expandTitle, expandPlaceholder,
 
         // Additional functions
         updateMessageByCode: updateMessageByCodeForCurrentRoom,
@@ -220,5 +236,11 @@ export const useSocialChatThread = () => {
         // Store state gốc (nếu cần truy cập trực tiếp)
         messagesByRoomId,
         activeRoomId,
+        translateSheet,
+        sheetExpand,
+        openInputExpandSheet,
+        openTranslateExpandSheet,
+        closeSheet,
+        setSheetExpandMode, sheetExpandMode
     };
 };

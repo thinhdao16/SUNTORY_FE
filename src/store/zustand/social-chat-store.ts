@@ -2,7 +2,6 @@ import { RoomChatInfo } from "@/pages/SocialChat/hooks/useSocialChat";
 import { ChatMessage, Member } from "@/types/social-chat";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
-import { persist, createJSONStorage } from "zustand/middleware";
 
 interface SocialChatState {
     search: string;
@@ -43,6 +42,16 @@ interface SocialChatState {
     lastMessageByRoomId: Record<string, ChatMessage>;
     updateLastMessage: (roomId: string, message: ChatMessage) => void;
     getLastMessageForRoom: (roomId: string) => ChatMessage | null;
+
+    chatRooms: RoomChatInfo[];
+    setChatRooms: (rooms: RoomChatInfo[]) => void;
+    addChatRoom: (room: RoomChatInfo) => void;
+    updateChatRoom: (roomCode: string, updatedRoom: Partial<RoomChatInfo>) => void;
+    removeChatRoom: (roomCode: string) => void;
+    getChatRoomByCode: (code: string) => RoomChatInfo | undefined;
+    sortChatRoomsByDate: () => void;
+
+    updateChatRoomFromMessage: (message: any) => void;
 }
 
 export const useSocialChatStore = create<SocialChatState>()(
@@ -177,7 +186,6 @@ export const useSocialChatStore = create<SocialChatState>()(
                 const index = roomMessages.findIndex(
                     (msg) => msg.code === messageCode
                 );
-
                 if (index !== -1) {
                     const currentMessage = state.messagesByRoomId[roomId][index];
                     state.messagesByRoomId[roomId][index] = {
@@ -238,7 +246,61 @@ export const useSocialChatStore = create<SocialChatState>()(
             return get().lastMessageByRoomId[roomId] || null;
         },
         
-        // Update existing addMessage to also update lastMessage
+        chatRooms: [],
+        
+        setChatRooms: (rooms) =>
+            set((state) => {
+                state.chatRooms = [...rooms].sort((a, b) => {
+                    const dateA = new Date(a.updateDate || 0).getTime();
+                    const dateB = new Date(b.updateDate || 0).getTime();
+                    return dateB - dateA;
+                });
+            }),
+            
+        addChatRoom: (room) =>
+            set((state) => {
+                const exists = state.chatRooms.some(r => r.code === room.code);
+                if (!exists) {
+                    state.chatRooms.unshift(room); 
+                }
+            }),
+            
+        updateChatRoom: (roomCode, updatedRoom) =>
+            set((state) => {
+                const index = state.chatRooms.findIndex(r => r.code === roomCode);
+                if (index !== -1) {
+                    state.chatRooms[index] = {
+                        ...state.chatRooms[index],
+                        ...updatedRoom
+                    };
+                    
+                    state.chatRooms.sort((a, b) => {
+                        const dateA = new Date(a.updateDate || 0).getTime();
+                        const dateB = new Date(b.updateDate || 0).getTime();
+                        return dateB - dateA;
+                    });
+                }
+            }),
+            
+        removeChatRoom: (roomCode) =>
+            set((state) => {
+                state.chatRooms = state.chatRooms.filter(r => r.code !== roomCode);
+            }),
+            
+        getChatRoomByCode: (code) => {
+            const state = get();
+            return state.chatRooms.find(r => r.code === code);
+        },
+        
+        sortChatRoomsByDate: () =>
+            set((state) => {
+                state.chatRooms.sort((a, b) => {
+                    const dateA = new Date(a.updateDate || 0).getTime();
+                    const dateB = new Date(b.updateDate || 0).getTime();
+                    return dateB - dateA;
+                });
+            }),
+
         addMessage: (roomId, msg) =>
             set((state) => {
                 if (!state.messagesByRoomId[roomId]) {
@@ -253,8 +315,74 @@ export const useSocialChatStore = create<SocialChatState>()(
                 
                 if (!exists) {
                     state.messagesByRoomId[roomId].push(msg);
-                    // Update last message
                     state.lastMessageByRoomId[roomId] = msg;
+                    
+                    const roomIndex = state.chatRooms.findIndex(r => r.code === roomId);
+                    if (roomIndex !== -1) {
+                        state.chatRooms[roomIndex].updateDate = msg.createDate || new Date().toISOString();
+                        const room = state.chatRooms.splice(roomIndex, 1)[0];
+                        state.chatRooms.unshift(room);
+                    }
+                }
+            }),
+
+        updateChatRoomFromMessage: (message) =>
+            set((state) => {
+                const roomCode = message.chatInfo?.code;
+                if (!roomCode) return;
+                
+                const roomIndex = state.chatRooms.findIndex(r => r.code === roomCode);
+                
+                if (roomIndex !== -1) {
+                    const room = state.chatRooms[roomIndex];
+                    
+                    // Update room properties
+                    room.updateDate = message.createDate || new Date().toISOString();
+                    
+                    // Update last message info
+                    const displayText = message.isRevoked === 1 
+                        ? "Tin nhắn đã được thu hồi"
+                        : message.isEdited === 1 
+                            ? `${message.messageText} (đã chỉnh sửa)`
+                            : message.messageText;
+                            
+                    room.lastMessageInfo = {
+                        messageText: displayText,
+                        createDate: message.createDate,
+                        userName: message.userName,
+                        userAvatar: message.userAvatar
+                    };
+                    
+                    // Move room to top only for new messages, not edited ones
+                    if (message.isEdited !== 1) {
+                        const updatedRoom = state.chatRooms.splice(roomIndex, 1)[0];
+                        state.chatRooms.unshift(updatedRoom);
+                    }
+                    
+                } else {
+                    // Create new room if not found (only for new messages)
+                    if (message.chatInfo && message.isEdited !== 1) {
+                        const newRoom: RoomChatInfo = {
+                            id: message.chatInfo.id,
+                            code: message.chatInfo.code,
+                            title: message.chatInfo.title,
+                            avatarRoomChat: message.chatInfo.avatarRoomChat,
+                            type: message.chatInfo.type,
+                            status: message.chatInfo.status,
+                            createDate: message.chatInfo.createDate,
+                            updateDate: message.createDate || new Date().toISOString(),
+                            unreadCount: 1,
+                            lastMessageInfo: {
+                                messageText: message.messageText,
+                                createDate: message.createDate,
+                                userName: message.userName,
+                                userAvatar: message.userAvatar
+                            },
+                            topic: message.chatInfo.topic
+                        };
+                        
+                        state.chatRooms.unshift(newRoom);
+                    }
                 }
             }),
     }))

@@ -6,6 +6,9 @@ import { useAcceptFriendRequest, useFriendshipReceivedRequests, useRejectFriendR
 import AcceptFriendIcon from "@/icons/logo/social-chat/accept-friend.svg?react";
 import RejectFriendIcon from "@/icons/logo/social-chat/reject-friend.svg?react";
 import { useToastStore } from '@/store/zustand/toast-store';
+import { useSocialChatStore } from '@/store/zustand/social-chat-store';
+import { createAnonymousChatRoom } from '@/services/social/social-chat-service';
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 
 function SocialChatListRequest() {
     const history = useHistory();
@@ -19,13 +22,42 @@ function SocialChatListRequest() {
         isFetchingNextPage,
         isLoading,
     } = useFriendshipReceivedRequests(20);
-
+    console.log(data)
     const showToast = useToastStore((state) => state.showToast);
     const { mutate: acceptRequest } = useAcceptFriendRequest(showToast);
     const { mutate: rejectRequest } = useRejectFriendRequest(showToast);
+    const { setRoomChatInfo } = useSocialChatStore();
 
     const users = data?.pages.flat() ?? [];
-
+    const handleClickMessage = async (user: any) => {
+        try {
+            if (user?.roomChat?.code) {
+                setRoomChatInfo(user?.roomChat);
+                history.push(`/social-chat/t/${user?.roomChat?.code}`);
+            } else {
+                setRoomChatInfo({
+                    id: 0,
+                    code: "",
+                    title: user?.fullName || "Anonymous",
+                    avatarRoomChat: user?.avatar || "/favicon.png",
+                    type: 0,
+                    status: 0,
+                    createDate: new Date().toISOString(),
+                    updateDate: new Date().toISOString(),
+                    unreadCount: 0,
+                    lastMessageInfo: null,
+                    topic: null,
+                });
+                history.push(`/social-chat/t`);
+                const chatData = await createAnonymousChatRoom(user.fromUserId);
+                if (chatData?.chatCode) {
+                    history.replace(`/social-chat/t/${chatData.chatCode}`);
+                }
+            }
+        } catch (error) {
+            console.error("Tạo phòng chat thất bại:", error);
+        }
+    };
     useEffect(() => {
         const el = scrollRef.current;
         if (!el) return;
@@ -64,14 +96,20 @@ function SocialChatListRequest() {
                             className="py-2 flex items-center justify-between bg-white hover:bg-gray-100 border-b border-netural-50"
                         >
                             <div
-                                onClick={() => history.push(`/social-chat/t/${user.id}`)}
+                                onClick={() => handleClickMessage(user)}
                                 className="flex items-center cursor-pointer"
                             >
-                                <div className="w-[50px] h-[50px] bg-[#28B49B] rounded-2xl flex items-center justify-center">
-                                    <BsPerson className="w-full h-full text-white" />
-                                </div>
+
+                                <img
+                                    src={user?.fromUser?.avatar || avatarFallback}
+                                    alt={user?.fromUser?.name || 'User Avatar'}
+                                    className="w-[50px] h-[50px] rounded-2xl object-cover"
+                                    onError={(e) => {
+                                        e.currentTarget.src = avatarFallback;
+                                    }}
+                                />
                                 <p className="ml-3 text-base font-semibold truncate max-w-xs">
-                                    {user.fullName || user.name || 'No Name'}
+                                    {user?.fromUser?.fullName || 'No Name'}
                                 </p>
                             </div>
                             <div className="flex items-center space-x-3">

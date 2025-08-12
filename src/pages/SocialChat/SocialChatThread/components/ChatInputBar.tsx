@@ -3,8 +3,8 @@ import CameraIcon from "@/icons/logo/chat/cam.svg?react";
 import ImageIcon from "@/icons/logo/chat/image.svg?react";
 import SendIcon from "@/icons/logo/social-chat/send.svg?react";
 import SendTranslateIcon from "@/icons/logo/social-chat/send-translate.svg?react";
-import ExplandTranslateIcon from "@/icons/logo/social-chat/expland-translate.svg?react";
-import ExplandInputIcon from "@/icons/logo/social-chat/expland-input.svg?react"
+import ExpandTranslateIcon from "@/icons/logo/social-chat/expland-translate.svg?react";
+import ExpandInputIcon from "@/icons/logo/social-chat/expland-input.svg?react"
 import TranslateIcon from "@/icons/logo/social-chat/translate.svg?react";
 import TranslateFocusIcon from "@/icons/logo/social-chat/translate-focus.svg?react";
 import LanguageDropdown from "./LanguageDropdown";
@@ -12,12 +12,13 @@ import { Language } from "@/store/zustand/language-store";
 import { ChatMessage } from "@/types/social-chat";
 import ReplyMessageBar from "./ReplyMessageBar";
 import SocialChatCameraWeb from "../../SocialChatCamera/SocialChatCameraWeb";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface ChatInputBarProps {
     messageValue: string;
     setMessageValue: (v: string) => void;
     messageRef: React.RefObject<HTMLTextAreaElement>;
-    handleSendMessage: (e: any, force?: boolean) => void;
+    handleSendMessage: (e: any, field: string, force?: boolean) => void;
     handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onTakePhoto: () => void;
     uploadImageMutation: any;
@@ -34,7 +35,11 @@ interface ChatInputBarProps {
     replyingToMessage?: ChatMessage | null;
     setReplyingToMessage?: (v: ChatMessage | null) => void;
     onCancelReply?: () => void;
-
+    hasReachedLimit?: boolean;
+    openInputExpandSheet: () => void;
+    openTranslateExpandSheet: () => void;
+    onTranslate: (text: string) => Promise<void>
+    setInputBarHeight: (h: number) => void;
 }
 
 const ChatInputBar: React.FC<ChatInputBarProps> = ({
@@ -57,14 +62,22 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     replyingToMessage,
     setReplyingToMessage,
     onCancelReply,
-    messageTranslateRef
+    messageTranslateRef,
+    hasReachedLimit,
+    openInputExpandSheet,
+    openTranslateExpandSheet,
+    onTranslate,
+    setInputBarHeight
 
 }) => {
     const [focused, setFocused] = useState({ input: false, translate: false });
     // const [actionStatus, setActionStatus] = useState<boolean>(false);
     const [translateActionStatus, setTranslateActionStatus] = useState<boolean>(false);
     const [open, setOpen] = useState(false);
+
     const containerRef = useRef<HTMLDivElement>(null);
+    const sendTranslateBtnRef = useRef<HTMLButtonElement>(null);
+    const sendBtnRef = useRef<HTMLButtonElement>(null);
 
     const preventBlur = (e: React.MouseEvent) => e.preventDefault();
 
@@ -98,9 +111,10 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
     const handleChangeInput = (value: string) => {
         setMessageValue(value);
-        setMessageTranslate(value);
     };
-
+    const handleChangeTranslate = (v: string) => {
+        setMessageTranslate(v);
+    };
     const handleTranslate = () => {
         setTranslateActionStatus(!translateActionStatus);
     };
@@ -114,21 +128,38 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
             messageTranslateRef.current.style.height = 'auto';
             messageTranslateRef.current.style.height = `${messageTranslateRef.current.scrollHeight}px`;
         }
-        // setActionStatus(true);
-        setMessageTranslate(messageValue)
-    }, [messageValue, messageTranslate ,focused]);
+    }, [messageValue, messageTranslate, focused]);
+
+
+    const debouncedSource = useDebounce(messageValue, 500);
 
     useEffect(() => {
-        const onClickOutside = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-                setOpen(false);
-            }
+        if (translateActionStatus && debouncedSource.trim()) {
+            onTranslate(debouncedSource);
+        }
+    }, [translateActionStatus, debouncedSource]);
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+
+        const report = () => {
+            let h = el.offsetHeight;
+            const cs = getComputedStyle(el);
+            h += parseFloat(cs.marginTop) + parseFloat(cs.marginBottom) + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + 50;
+            setInputBarHeight(h);
         };
-        document.addEventListener('mousedown', onClickOutside);
-        return () => document.removeEventListener('mousedown', onClickOutside);
-    }, []);
+
+        const ro = new ResizeObserver(report);
+        ro.observe(el);
+        report();
+        return () => ro.disconnect();
+    }, [setInputBarHeight]);
     return (
-        <div className="pb-1  bg-white " >
+        <div
+            ref={containerRef}
+            className={`pb-1 bg-white relative ${hasReachedLimit ? "pointer-events-none opacity-50" : ""
+                }`}
+        >
             {replyingToMessage && (
                 <ReplyMessageBar
                     replyingToMessage={replyingToMessage}
@@ -136,12 +167,12 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                 />
             )}
             {translateActionStatus && (
-                <div className="flex items-end gap-4 px-6 py-2 ">
+                <div className="flex items-end gap-4 px-6 py-2 border-t-1 border-netural-50">
                     <textarea
                         placeholder={t('Translate to...')}
                         ref={messageTranslateRef}
                         value={messageTranslate}
-                        onChange={(e) => handleChangeInput(e.target.value)}
+                        onChange={(e) => handleChangeTranslate(e.target.value)}
                         rows={1}
                         className={`flex-1 min-h-[35px] ${focused.translate
                             //    &&  actionStatus
@@ -154,17 +185,22 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
-                                handleSendMessage(e, true);
+                                sendTranslateBtnRef.current?.click();
                             }
                         }}
                     />
                     <div className="pb-1 gap-4 flex items-center h-fit">
-                        <ExplandTranslateIcon />
+                        <button onClick={openTranslateExpandSheet}
+                        >
+                            <ExpandTranslateIcon />
+                        </button>
                         {messageTranslate.trim() && (
                             <button
+                                ref={sendTranslateBtnRef}
+                                disabled={hasReachedLimit}
                                 className="rounded-full p-2 flex items-center justify-center bg-chat-to"
                                 type="button"
-                                onClick={(e) => handleSendMessage(e, true)}
+                                onClick={(e) => handleSendMessage(e, "inputTranslate", true)}
                             >
                                 <SendTranslateIcon />
                             </button>
@@ -193,7 +229,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
-                            handleSendMessage(e, true);
+                            sendBtnRef.current?.click();
                         }
                     }}
                     onPaste={async (e) => {
@@ -211,20 +247,24 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     }}
                 />
                 <div className="pb-2 gap-4 flex items-end h-fit">
-                    <ExplandInputIcon />
+                    <button onClick={openInputExpandSheet}>
+                        <ExpandInputIcon />
+                    </button>
                     {messageValue.trim() && (
                         <button
+                            ref={sendBtnRef}
+                            disabled={hasReachedLimit}
                             type="button"
-                            onClick={(e) => handleSendMessage(e, true)}
+                            onClick={(e) => handleSendMessage(e, "input", true)}
                         >
                             <SendIcon />
                         </button>
                     )}
                 </div>
             </div>
-            <div className="flex items-center justify-between px-6 pt-2">
+            <div className="flex items-center justify-between px-6 pt-2"    >
                 <div className="flex  ">
-                    <div className="flex space-x-4">
+                    <button className="flex space-x-4" disabled={hasReachedLimit}>
                         {isNative || isDesktop ? (
                             <button
                                 type="button"
@@ -242,6 +282,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                                 type="file"
                                 accept="image/*"
                                 multiple
+                                disabled={hasReachedLimit}
                                 className="hidden"
                                 onChange={handleImageChange}
                             />
@@ -257,7 +298,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                                 <TranslateIcon />
                             )}
                         </button>
-                    </div>
+                    </button>
                 </div>
                 {translateActionStatus && (
                     <LanguageDropdown

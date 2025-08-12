@@ -22,18 +22,18 @@ export function useChatStreamMessages(
 ) {
     const { messages, setMessages, addMessage, clearMessages } = useChatStore();
     const [messageValue, setMessageValue] = useState("");
-    const { isLoading, refetch, isFetching } = useQuery(
-        ["chatMessages", sessionId],
-        () => (sessionId ? getChatMessages(sessionId) : []),
-        {
-            enabled: !!sessionId &&
-                !hasFirstSignalRMessage &&
-                isOnline,
-            onSuccess: (data) => setMessages(data),
-            onError: () => setMessages([]),
-            refetchOnWindowFocus: false,
-        }
-    );
+    // const { isLoading, refetch, isFetching } = useQuery(
+    //     ["chatMessages", sessionId],
+    //     () => (sessionId ? getChatMessages(sessionId) : []),
+    //     {
+    //         enabled: !!sessionId &&
+    //             !hasFirstSignalRMessage &&
+    //             isOnline,
+    //         onSuccess: (data) => setMessages(data),
+    //         onError: () => setMessages([]),
+    //         refetchOnWindowFocus: false,
+    //     }
+    // );
     const prevOnline = useRef(isOnline);
 
     const scrollToBottom = () => {
@@ -56,13 +56,13 @@ export function useChatStreamMessages(
         }
     };
 
-    useEffect(() => {
-        if (isOnline && !prevOnline.current) {
-            console.log("have connect")
-            refetch();
-        }
-        prevOnline.current = isOnline;
-    }, [isOnline, refetch, sessionId, hasFirstSignalRMessage]);
+    // useEffect(() => {
+    //     if (isOnline && !prevOnline.current) {
+    //         console.log("have connect")
+    //         refetch();
+    //     }
+    //     prevOnline.current = isOnline;
+    // }, [isOnline, refetch, sessionId, hasFirstSignalRMessage]);
 
     useEffect(() => {
         if (!sessionId) {
@@ -72,7 +72,7 @@ export function useChatStreamMessages(
 
     return {
         messages,
-        isLoading: isLoading || isFetching,
+        // isLoading: isLoading || isFetching,
         sendMessage,
         scrollToBottom,
         messageValue,

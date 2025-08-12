@@ -1,12 +1,13 @@
 import { Capacitor } from '@capacitor/core';
 import { useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
-import { RoomChatInfo, useListChatRooms, useUserChatRooms } from '../hooks/useSocialChat';
+import { useListChatRooms, useUserChatRooms } from '../hooks/useSocialChat';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { useTranslation } from 'react-i18next';
 import { formatTimeFromNow } from '@/utils/formatTime';
 import { useSocialSignalRListChatRoom } from '@/hooks/useSocialSignalRListChatRoom';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 
 export default function SocialChatRecent() {
   const { t } = useTranslation();
@@ -14,8 +15,13 @@ export default function SocialChatRecent() {
   const isNative = Capacitor.isNativePlatform();
   const deviceInfo: { deviceId: string | null } = useDeviceInfo();
   
-  // Get lastMessage function from store
-  const { setRoomChatInfo, getLastMessageForRoom,lastMessageByRoomId } = useSocialChatStore();
+  const { 
+    chatRooms,
+    setChatRooms,
+    setRoomChatInfo, 
+    getLastMessageForRoom 
+  } = useSocialChatStore();
+
   const {
     data,
     isLoading,
@@ -40,8 +46,14 @@ export default function SocialChatRecent() {
     enableDebugLogs: true
   });
 
-  const chatRooms = data?.pages?.flat() ?? [];
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (data?.pages) {
+      const allRooms = data.pages.flat();
+      setChatRooms(allRooms);
+    }
+  }, [data, setChatRooms]);
 
   const getDisplayMessageText = (room: RoomChatInfo) => {
     const storeLastMessage = getLastMessageForRoom(room.code);
@@ -50,6 +62,16 @@ export default function SocialChatRecent() {
     }
     
     return room?.lastMessageInfo?.messageText || t('No messages');
+  };
+
+  const getLatestUpdateDate = (room: RoomChatInfo) => {
+    const storeLastMessage = getLastMessageForRoom(room.code);
+    if (storeLastMessage?.createDate) {
+      const storeMessageDate = new Date(storeLastMessage.createDate).getTime();
+      const roomUpdateDate = new Date(room.updateDate || 0).getTime();
+      return storeMessageDate > roomUpdateDate ? storeLastMessage.createDate : room.updateDate;
+    }
+    return room.updateDate;
   };
 
   useEffect(() => {
@@ -77,7 +99,8 @@ export default function SocialChatRecent() {
           }`}
       >
         <div className="">
-          {chatRooms.map((room: RoomChatInfo) => (
+          {/* Use chatRooms from store instead of computed useMemo */}
+          {chatRooms.map((room) => (
             <div
               key={room.id}
               onClick={() => {
@@ -88,11 +111,11 @@ export default function SocialChatRecent() {
             >
               <div className="flex items-center">
                 <img
-                  src={room?.avatarRoomChat || '/favicon.png'}
+                  src={room?.avatarRoomChat || avatarFallback}
                   alt={room?.title}
                   className="w-[50px] h-[50px] rounded-2xl object-cover"
                   onError={(e) => {
-                    e.currentTarget.src = '/favicon.png';
+                    e.currentTarget.src = avatarFallback;
                   }}
                 />
                 <div className="ml-3">
@@ -103,7 +126,9 @@ export default function SocialChatRecent() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-xs text-gray-400">{formatTimeFromNow(room.updateDate, t)}</p>
+                <p className="text-xs text-gray-400">
+                  {formatTimeFromNow(getLatestUpdateDate(room), t)}
+                </p>
               </div>
             </div>
           ))}
@@ -112,7 +137,7 @@ export default function SocialChatRecent() {
             <div className="text-center py-4 text-gray-500 text-sm">{t('Loading...')}</div>
           )}
 
-          {!hasNextPage && !isLoading && (
+          {!hasNextPage && !isLoading && chatRooms.length === 0 && (
             <div className="text-center py-2 text-xs text-gray-400">{t('No more chats')}</div>
           )}
         </div>

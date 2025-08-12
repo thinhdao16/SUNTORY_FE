@@ -65,8 +65,8 @@ const Chat: React.FC = () => {
 
     // ==== Refs ====
     const messageRef = useRef<any>(null);
-    const messagesEndRef = useRef<HTMLDivElement | null>(null);
-    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef<any>(null);
+    const messagesContainerRef = useRef<any>(null);
     const prevSessionIdRef = useRef<string | undefined>(sessionId);
     const prevTypeRef = useRef<string | undefined>(type);
     const pendingBarRef = useRef<HTMLDivElement>(null);
@@ -113,7 +113,7 @@ const Chat: React.FC = () => {
     const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef);
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
-    const { showScrollButton, handleScroll } = useScrollButton(messagesContainerRef);
+    const { showScrollButton, onContainerScroll } = useScrollButton(messagesContainerRef , messagesEndRef);
     useAutoResizeTextarea(messageRef, messageValue);
 
     const shouldFetchHistory = useMemo(() => {
@@ -337,7 +337,7 @@ const Chat: React.FC = () => {
                             className={`flex-1 overflow-x-hidden ${!isWelcome && ("overflow-y-auto")} p-6 ${isWelcome ? "max-h-(100%) pb-40 overflow-y-hidden" : (!isNative && !keyboardResizeScreen ? ("pb-2 max-h-[calc(100dvh-218px)] overflow-hidden") : "")
                                 }`}
                             ref={messagesContainerRef}
-                            onScroll={handleScroll}
+                            onScroll={onContainerScroll}
                         >
                             {isWelcome ? (
                                 <ChatWelcomePanel

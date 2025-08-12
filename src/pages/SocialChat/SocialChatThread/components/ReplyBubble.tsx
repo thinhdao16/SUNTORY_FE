@@ -17,7 +17,7 @@ const ReplyBubble: React.FC<ReplyBubbleProps> = ({ msg, isUser }) => {
                     className={` bg-[#C8D6FB] w-fit min-w-[60px] p-[8px_12px_24px_12px]  max-w-[250px] overflow-hidden -mb-[19px]
             ${isUser
                             ? " rounded-[16px_16px_4px_16px] ml-auto text-right"
-                            : "  rounded-[4px_16px_16px_16px] mr-auto text-left"
+                            : "  rounded-[16px_16px_16px_4px] mr-auto text-left"
                         }`}
                 >
 

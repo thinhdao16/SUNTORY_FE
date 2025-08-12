@@ -1,7 +1,10 @@
 import React, { useMemo } from "react";
-import ChatMessageItem from "./ChatMessageItem";
+import { useTranslation } from "react-i18next";
 import BotIcon from "@/icons/logo/AI.svg?react";
 import { ChatMessage } from "@/types/social-chat";
+import { groupMessagesByTime } from "@/utils/group-messages-by-time";
+import { TimeGroupHeader } from "./TimeGroupHeader";
+import { MessageSequence } from "./MessageSequence";
 
 type Attachment = {
     fileName: string;
@@ -23,6 +26,9 @@ type Message = {
     isRevoked?: number;
     isReply?: number;
     replyToMessageId?: string | number | null;
+    userId?: number;
+    _shouldShowAvatar?: boolean;
+    _isFirstInSequence?: boolean;
 };
 
 type ChatMessageListProps = {
@@ -31,59 +37,60 @@ type ChatMessageListProps = {
     onEditMessage?: (messageCode: string | number, messageText: string) => void;
     onRevokeMessage: (messageCode: string | number) => void;
     onReplyMessage: (message: ChatMessage) => void;
+    isGroup?: boolean;
+    currentUserId?: number | string | null;
 };
 
-export const ChatMessageList: React.FC<ChatMessageListProps> = ({ allMessages, loading, onEditMessage, onRevokeMessage, onReplyMessage }) => {
-    const sortedMessages = useMemo(() => {
-        return [...allMessages].sort((a, b) => {
-            const aTime = a.timeStamp || (a.createDate ? new Date(a.createDate).getTime() : 0);
-            const bTime = b.timeStamp || (b.createDate ? new Date(b.createDate).getTime() : 0);
-            return aTime - bTime;
-        });
-    }, [allMessages]);
+export const ChatMessageList: React.FC<ChatMessageListProps> = ({
+    allMessages,
+    loading,
+    onEditMessage,
+    onRevokeMessage,
+    onReplyMessage,
+    isGroup = false,
+    currentUserId = null,
+}) => {
+    const { t } = useTranslation();
+
+    const messageGroups = useMemo(() => {
+        return groupMessagesByTime(allMessages, t, { isGroup, currentUserId });
+    }, [allMessages, t, isGroup, currentUserId]);
     return (
-        <div className="flex flex-col gap-6 mx-auto pt-8">
-            {sortedMessages.map((msg, idx) => {
-                let key: string | number = idx;
-                if (msg.id !== undefined && msg.id !== null) {
-                    key = msg.id as string | number;
-                } else if (msg.createdAt !== undefined && msg.createdAt !== null) {
-                    key = msg.createdAt instanceof Date ? msg.createdAt.getTime() : msg.createdAt as string | number;
-                }
-                return (
-                    <ChatMessageItem
-                        key={key}
-                        msg={msg}
-                        isUser={!!msg.isRight}
-                        isError={msg?.isError}
-                        isSend={msg?.isSend}
-                        onEditMessage={onEditMessage ?? (() => { })}
-                        onRevokeMessage={onRevokeMessage ?? (() => { })}
-                        isEdited={msg.isEdited === 1}
-                        isRevoked={msg.isRevoked === 1}
+        <div className="flex flex-col mx-auto pt-8">
+            {messageGroups.map((group, groupIndex) => (
+                <div key={group.timestamp} className="mb-6">
+                    {(messageGroups.length > 1 || groupIndex === 0) && (
+                        <TimeGroupHeader displayTime={group.displayTime} />
+                    )}
+
+                    <MessageSequence
+                        messages={group.messages}
+                        onEditMessage={onEditMessage}
+                        onRevokeMessage={onRevokeMessage}
                         onReplyMessage={onReplyMessage}
-                        isReply={msg.replyToMessageId !== undefined && msg.replyToMessageId !== null}
+                        isGroup={isGroup}
                     />
-                );
-            })}
+                </div>
+            ))}
+
             {allMessages.length > 0 && loading && (
-                <div className="flex w-full mb-4">
+                <div className="flex w-full mb-4 mt-6 px-6">
                     <div className="flex gap-2 items-start w-fit">
                         <BotIcon className="min-w-[30px] aspect-square object-contain" />
                         <div className="flex-1 flex flex-col">
                             <div className="">
-                                <span className="flex items-center gap-2 rounded-[16px_16px_16px_0px] bg-chat-to px-4 py-3">
+                                <span className="flex items-center gap-2 rounded-[16px_16px_16px_0px] bg-gray-100 px-4 py-3">
                                     <span className="inline-flex space-x-1">
                                         <span
-                                            className="w-2 h-2 bg-black rounded-full animate-[wave_1.2s_ease-in-out_infinite]"
+                                            className="w-2 h-2 bg-gray-400 rounded-full animate-[wave_1.2s_ease-in-out_infinite]"
                                             style={{ animationDelay: "0s" }}
                                         ></span>
                                         <span
-                                            className="w-2 h-2 bg-black rounded-full animate-[wave_1.2s_ease-in-out_infinite]"
+                                            className="w-2 h-2 bg-gray-400 rounded-full animate-[wave_1.2s_ease-in-out_infinite]"
                                             style={{ animationDelay: "0.15s" }}
                                         ></span>
                                         <span
-                                            className="w-2 h-2 bg-black rounded-full animate-[wave_1.2s_ease-in-out_infinite]"
+                                            className="w-2 h-2 bg-gray-400 rounded-full animate-[wave_1.2s_ease-in-out_infinite]"
                                             style={{ animationDelay: "0.3s" }}
                                         ></span>
                                     </span>

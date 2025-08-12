@@ -1,4 +1,4 @@
-import React, { act } from 'react';
+import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { TopicType } from '@/constants/topicType';
 
@@ -18,7 +18,6 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({ features }) => {
     const history = useHistory();
 
     const handleFeatureClick = (topic: TopicType) => {
-        // Điều hướng đến chat với topic, API sẽ được gọi trong Chat component
         history.push(`/chat/${topic}`, {
             actionFrom: '/home',
         });
@@ -29,13 +28,13 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({ features }) => {
             {features.map((feature) => (
                 <div
                     key={feature.title}
-                    className="bg-white rounded-2xl p-5 flex flex-col items-start justify-start w-full"
+                    className="bg-white rounded-2xl p-5 flex flex-col items-start justify-start w-full cursor-pointer hover:shadow-lg transition-shadow"
                     onClick={() => handleFeatureClick(feature.topic)}
                 >
                     <div className="flex justify-between gap-1 items-center w-full mb-3">
                         <div className="font-semibold leading-none text-[14px] mb-1">{feature.title}</div>
                         <button
-                            className="top-3 right-3 bg-main rounded-full aspect-square h-[30px] flex items-center justify-center shadow-md"
+                            className="top-3 right-3 bg-main rounded-full aspect-square h-[30px] flex items-center justify-center shadow-md hover:bg-main/90 transition-colors"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleFeatureClick(feature.topic);
@@ -44,7 +43,7 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({ features }) => {
                             <LinkToIcon />
                         </button>
                     </div>
-                    <div className='w-full'>
+                   <div className='w-full'>
                         {feature.image}
                     </div>
                 </div>

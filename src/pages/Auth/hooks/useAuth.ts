@@ -36,7 +36,7 @@ export const useLogin = () => {
         {
             onSuccess: (data: any) => {
                 const auth = data?.data?.authentication;
-                showToast(t("Login successful!"), 2000, "success");
+                showToast(t("Login successful!"), 1000, "success");
                 if (auth?.token && auth?.refreshToken) {
                     const user = {
                         ...data.data,
