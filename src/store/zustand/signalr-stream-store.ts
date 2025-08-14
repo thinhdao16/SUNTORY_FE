@@ -42,7 +42,7 @@ interface SignalRStreamStore {
     isConnected: boolean;
     connectionId?: string;
     streamMessages: Record<string, StreamMessage>;
-    completedMessages: ChatMessage[]; // Đổi tên từ allFetchedMessages
+    completedMessages: ChatMessage[];
     setConnection: (isConnected: boolean, connectionId?: string) => void;
     addStreamChunk: (chunk: StreamChunk) => void;
     completeStream: (event: StreamEvent) => void;
@@ -58,6 +58,8 @@ interface SignalRStreamStore {
     getCompletedMessages: (chatCode?: string) => ChatMessage[];
     chatCode: string;
     setChatCode: (chatCode: string) => void;
+    loadingStream : boolean;
+    setLoadingStream: (loading: boolean) => void;
 }
 
 export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
@@ -66,7 +68,9 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
     connectionId: undefined,
     streamMessages: {},
     completedMessages: [],
+    loadingStream:false,
 
+    setLoadingStream: (loading) => set({ loadingStream: loading }),
     setConnection: (isConnected, connectionId) =>
         set({ isConnected, connectionId }),
 

@@ -18,6 +18,7 @@ import { useChatStreamMessages } from "./useChatStreamMessages";
 import { useChatRoomByCode } from "../../hooks/useSocialChat";
 import { useAcceptFriendRequest, useCancelFriendRequest, useRejectFriendRequest, useSendFriendRequest, useUnfriend } from "@/pages/SocialPartner/hooks/useSocialPartner";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
+import { send } from "ionicons/icons";
 
 export type SheetExpandMode = "input" | "translate" | null;
 
@@ -112,8 +113,7 @@ export const useSocialChatThread = () => {
     const {
         pingActiveRoom,
         setInactiveInRoom,
-        joinUserNotify,
-        startConnection,
+        typing
     } = useSocialSignalR(deviceInfo.deviceId ?? "", {
         roomId: roomId ?? "",
         refetchRoomData,
@@ -232,8 +232,8 @@ export const useSocialChatThread = () => {
 
     const expandValue = sheetExpandMode === "translate" ? messageTranslate : messageValue;
     const setExpandValue = sheetExpandMode === "translate" ? setMessageTranslate : setMessageValue;
-    const expandTitle = sheetExpandMode === "translate" ? "Expand Translation" : "Your Full Message";
-    const expandPlaceholder = sheetExpandMode === "translate" ? "Translate here..." : "Type your message...";
+    const expandTitle = sheetExpandMode === "translate" ? t("Expand Translation") : t("Your Full Message");
+    const expandPlaceholder = sheetExpandMode === "translate" ? t("Translate here...") : t("Type your message...");
     return {
         // Params & routing
         type, roomId, history, queryClient,
@@ -276,7 +276,7 @@ export const useSocialChatThread = () => {
         replyingToMessage,
         scrollToBottom, messageValue, setMessageValue,
         expandValue, setExpandValue, expandTitle, expandPlaceholder,
-
+        typing,
         // Additional functions
         updateMessageByCode: updateMessageByCodeForCurrentRoom,
         removeMessage: removeMessageFromCurrentRoom,
@@ -293,6 +293,6 @@ export const useSocialChatThread = () => {
         setSheetExpandMode, sheetExpandMode,
         usePeerUserId,
         roomData, refetchRoomData, createTranslationMutation,
-        unfriendMutation, sendRequest, cancelRequest, acceptRequest, rejectRequest, actionFieldSend, isTranslating
+        unfriendMutation, sendRequest, cancelRequest, acceptRequest, rejectRequest, actionFieldSend, isTranslating,
     };
 };

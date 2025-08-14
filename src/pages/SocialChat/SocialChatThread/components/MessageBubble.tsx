@@ -47,7 +47,7 @@ export const MessageBubble: React.FC<{
                         <div className="prose prose-sm  whitespace-break-spaces break-words text-[15px] text-left">
                             {!isRevoked
                                 ? msg.messageText
-                                : <span className="text-netural-200 italic">This message has been revoked</span>}
+                                : <span className="text-netural-200 italic">{t("This message has been revoked")}</span>}
                         </div>
                         {!isRevoked && (
                             <div

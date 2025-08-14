@@ -28,6 +28,7 @@ interface SocialChatState {
     updateMessageByTempId: (roomId: string, msg: ChatMessage) => void;
     updateMessageWithServerResponse: (roomId: string, tempId: string, serverData: Partial<ChatMessage>) => void;
     updateMessageByCode: (roomId: string, messageCode: string, updatedData: Partial<ChatMessage>) => void;
+    updateMessageAndRepliesByCode: (roomId: string, messageCode: string, updatedData: Partial<ChatMessage>) => void;
     removeMessage: (roomId: string, tempId: string) => void;
     clearMessages: (roomId?: string) => void;
 
@@ -118,24 +119,40 @@ export const useSocialChatStore = create<SocialChatState>()(
         //         }
         //     }),
 
-        addMessages: (roomId, msgs) =>
-            set((state) => {
-                if (!state.messagesByRoomId[roomId]) {
-                    state.messagesByRoomId[roomId] = [];
-                }
 
-                const roomMessages = state.messagesByRoomId[roomId];
-                const uniqueMessages = msgs.filter(
-                    (newMsg) => !roomMessages.some((existing) =>
-                        existing.code === newMsg.code ||
-                        (existing.tempId && existing.tempId === newMsg.tempId)
-                    )
-                );
+addMessages: (roomId, msgs) =>
+    set((state) => {
+        if (!state.messagesByRoomId[roomId]) {
+            state.messagesByRoomId[roomId] = [];
+        }
 
-                if (uniqueMessages.length > 0) {
-                    state.messagesByRoomId[roomId] = [...roomMessages, ...uniqueMessages];
-                }
-            }),
+        const roomMessages = state.messagesByRoomId[roomId];
+
+        msgs.forEach((newMsg) => {
+            const index = roomMessages.findIndex(
+                (existing) =>
+                    existing.code === newMsg.code ||
+                    (existing.tempId && existing.tempId === newMsg.tempId)
+            );
+
+            if (index === -1) {
+                // Chưa có → thêm mới
+                roomMessages.push(newMsg);
+            } else {
+                // Đã có → merge các field mới (giữ nguyên id, code, tempId, createDate cũ)
+                const existing = roomMessages[index];
+                roomMessages[index] = {
+                    ...existing,
+                    ...newMsg,
+                    id: existing.id ?? newMsg.id,
+                    code: existing.code,
+                    tempId: existing.tempId,
+                    createDate: existing.createDate,
+                };
+            }
+        });
+    }),
+
 
         updateMessage: (roomId, updatedMsg) =>
             set((state) => {
@@ -212,6 +229,59 @@ export const useSocialChatStore = create<SocialChatState>()(
                 const last = state.lastMessageByRoomId[roomId];
                 if (last && last.code === messageCode) {
                     state.lastMessageByRoomId[roomId] = { ...last, ...next };
+                }
+            }),
+
+        updateMessageAndRepliesByCode: (roomId, messageCode, updatedData) =>
+            set((state) => {
+                const roomMessages = state.messagesByRoomId[roomId];
+                if (!roomMessages) return;
+
+                const idx = roomMessages.findIndex(m => m.code === messageCode);
+                if (idx !== -1) {
+                    const cur = roomMessages[idx];
+                    roomMessages[idx] = {
+                        ...cur,
+                        ...updatedData,
+                        id: cur.id,
+                        code: cur.code,
+                        tempId: cur.tempId,
+                        createDate: cur.createDate,
+                        timeStamp: cur.timeStamp,
+                        isEdited: updatedData.isEdited ?? 1,
+                    };
+                }
+                for (let i = 0; i < roomMessages.length; i++) {
+                    const msg = roomMessages[i];
+                    const parent = msg.replyToMessage;
+                    if (parent && parent.code === messageCode) {
+                        const mergedParent = {
+                            ...parent,
+                            ...updatedData,
+                            id: parent.id,
+                            code: parent.code,
+                            tempId: parent.tempId,
+                            createDate: parent.createDate,
+                            timeStamp: parent.timeStamp,
+                            isEdited: updatedData.isEdited ?? parent.isEdited ?? 1,
+                        };
+
+                        roomMessages[i] = {
+                            ...msg,
+                            replyToMessage: mergedParent,
+                        };
+                        if (updatedData.isRevoked === 1) {
+                            (roomMessages[i] as any).replyPreviewText = "Tin nhắn đã được thu hồi";
+                        } else if (updatedData.isEdited === 1 && typeof updatedData.messageText === "string") {
+                            (roomMessages[i] as any).replyPreviewText = `${updatedData.messageText} (đã chỉnh sửa)`;
+                        } else if (typeof updatedData.messageText === "string") {
+                            (roomMessages[i] as any).replyPreviewText = updatedData.messageText;
+                        }
+                    }
+                }
+                const last = state.lastMessageByRoomId[roomId];
+                if (last && last.code === messageCode) {
+                    state.lastMessageByRoomId[roomId] = { ...last, ...updatedData, isEdited: updatedData.isEdited ?? 1 };
                 }
             }),
 

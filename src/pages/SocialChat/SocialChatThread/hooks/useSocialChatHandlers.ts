@@ -291,7 +291,7 @@ export function useSocialChatHandlers({
             );
             return;
         }
-        const textToSend = field === "inputTranslate" ? messageTranslate : messageValue.trim();
+        const textToSend = field === "inputTranslate" ? messageTranslate.trim() : messageValue.trim();
         const tempId = `temp_${Date.now()}_${Math.random()}`;
         const now = dayjs.utc();
         const filesArr = [

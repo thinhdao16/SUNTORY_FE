@@ -47,6 +47,7 @@ export const useLogin = () => {
                 } else {
                     setAuthData(data.data);
                 }
+                history.push("/social-chat");
             },
             onError: async (error: any, variables) => {
                 const message = error?.response?.data?.message;

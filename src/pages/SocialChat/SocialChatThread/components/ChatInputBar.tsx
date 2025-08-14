@@ -14,6 +14,11 @@ import ReplyMessageBar from "./ReplyMessageBar";
 import SocialChatCameraWeb from "../../SocialChatCamera/SocialChatCameraWeb";
 import { useDebounce } from "@/hooks/useDebounce";
 
+type TypingAPI = {
+    touch: () => void;
+    off: () => void;
+    setStatus?: (s: "on" | "off") => void;
+};
 interface ChatInputBarProps {
     messageValue: string;
     setMessageValue: (v: string) => void;
@@ -41,10 +46,11 @@ interface ChatInputBarProps {
     onTranslate: (text: string) => Promise<void>
     setInputBarHeight: (h: number) => void;
     createTranslationMutation: any;
-    actionFieldSend:string;
-    isTranslating:boolean;
-    translateActionStatus:boolean;
+    actionFieldSend: string;
+    isTranslating: boolean;
+    translateActionStatus: boolean;
     setTranslateActionStatus: (value: boolean) => void
+    typing: TypingAPI;
 }
 
 const ChatInputBar: React.FC<ChatInputBarProps> = ({
@@ -77,7 +83,8 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     actionFieldSend,
     isTranslating,
     translateActionStatus,
-    setTranslateActionStatus
+    setTranslateActionStatus,
+    typing
 }) => {
     const [focused, setFocused] = useState({ input: false, translate: false });
     const [open, setOpen] = useState(false);
@@ -87,12 +94,15 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
 
+    const tAPI: TypingAPI = typing ?? { touch: () => { }, off: () => { } };
+
     const preventBlur = (e: React.SyntheticEvent) => e.preventDefault();
     const keepFocus = () => messageRef.current?.focus({ preventScroll: true });
 
     const onFocus = (field: string) => {
         if (field === "input") {
             setFocused({ ...focused, [field]: true, translate: false });
+            tAPI.touch();
             const textarea = messageRef.current;
             if (textarea) {
                 textarea.focus();
@@ -102,6 +112,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
         }
         if (field === "translate") {
             setFocused({ ...focused, [field]: true, input: false });
+            tAPI.touch();
             const textareaTranslate = messageTranslateRef.current;
             if (textareaTranslate) {
                 textareaTranslate.focus();
@@ -112,16 +123,20 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
         setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
     };
 
-    const onBlur = (field: string) => setFocused({ ...focused, [field]: false });
+    const onBlur = (field: string) => {
+        setFocused((prev) => ({ ...prev, [field]: false }));
+        tAPI.off();
+    };
 
     const handleChangeInput = (value: string) => {
         setMessageValue(value);
-        if (value.trim() === "") {
-            setMessageTranslate("");
-        }
+        tAPI.touch();
+        if (value.trim() === "") setMessageTranslate("");
     };
+
     const handleChangeTranslate = (v: string) => {
         setMessageTranslate(v);
+        tAPI.touch();
     };
     const handleTranslate = () => {
         setTranslateActionStatus(!translateActionStatus);
@@ -171,6 +186,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
         }, 300);
         return () => clearInterval(interval);
     }, [isTranslating]);
+    useEffect(() => () => tAPI.off(), []);
     return (
         <div
             ref={containerRef}
@@ -212,8 +228,8 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             value={messageTranslate}
                             onChange={(e) => handleChangeTranslate(e.target.value)}
                             rows={1}
-                            disabled={hasReachedLimit}
-                            className={`flex-1 min-h-[35px] ${focused.translate
+                            disabled={hasReachedLimit || isTranslating}
+                            className={`flex-1 w-full min-h-[35px] ${focused.translate
                                 ? "max-h-20 overflow-y-auto whitespace-normal"
                                 : "!max-h-[35px] !truncate whitespace-nowrap overflow-hidden"
                                 } min-w-0 max-w-full resize-none overflow-y-auto px-4 py-2 rounded-3xl focus:outline-none placeholder:text-netural-200`}
@@ -221,19 +237,12 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             onClick={() => onFocus("translate")}
                             onBlur={() => onBlur("translate")}
                             onKeyDown={(e) => {
-                                const event = e as unknown as {
-                                    isComposing?: boolean;
-                                    key: string;
-                                    shiftKey: boolean;
-                                    preventDefault: () => void;
-                                };
-                                if (
-                                    event.key === "Enter" &&
-                                    !event.shiftKey &&
-                                    !event.isComposing
-                                ) {
-                                    event.preventDefault();
-                                    handleSendMessage(e, actionFieldSend, true);
+                                const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
+                                tAPI.touch();
+                                if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+                                    e.preventDefault();
+                                    sendBtnRef.current?.click();
+                                    tAPI.off();
                                 }
                             }}
                         />
@@ -264,7 +273,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
             )}
             <div className="flex items-end gap-4 transition-all py-2 px-6" onMouseDown={preventBlur}>
                 <textarea
-                    placeholder="Type a message..."
+                    placeholder={t("Type a message...")}
                     ref={messageRef}
                     value={messageValue}
                     onChange={(e) => handleChangeInput(e.target.value)}
@@ -281,12 +290,15 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     onBlur={() => onBlur('input')}
                     onKeyDown={(e) => {
                         const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
+                        tAPI.touch();
                         if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
                             e.preventDefault();
                             sendBtnRef.current?.click();
+                            tAPI.off();
                         }
                     }}
                     onPaste={async (e) => {
+                        tAPI.touch();
                         const items = e.clipboardData?.items;
                         if (!items) return;
                         for (const item of items) {
@@ -313,6 +325,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             onTouchStart={preventBlur}
                             onClick={(e) => {
                                 keepFocus();
+                                tAPI.off();
                                 requestAnimationFrame(() => {
                                     handleSendMessage(e, actionFieldSend, true);
                                     requestAnimationFrame(() => keepFocus());

@@ -96,9 +96,9 @@ function SocialChatListRequest() {
                     }`}
             >
                 {isLoading ? (
-                    <p className="text-center text-gray-400">Đang tải lời mời...</p>
+                    <p className="text-center text-gray-400">{t("Loading requests...")}</p>
                 ) : users.length === 0 ? (
-                    <p className="text-center text-gray-500 mt-10">Không có lời mời nào.</p>
+                    <p className="text-center text-gray-500 mt-10">{t("No requests found.")}</p>
                 ) : (
                     users.map((user: any) => (
                         <div

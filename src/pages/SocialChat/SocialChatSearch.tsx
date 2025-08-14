@@ -62,7 +62,7 @@ const SocialChatSearch = () => {
               <div
                 key={user.id}
                 className="flex items-center gap-3 py-2"
-                onClick={() => history.push(`/social-chat/t/${user.id}`)}
+                onClick={() => history.push(`/social-chat/t/${user.code}`)}
               >
                 <div className=" flex items-center justify-center">
                   <img
@@ -77,8 +77,8 @@ const SocialChatSearch = () => {
                 <span className="text-sm font-medium">{user.title}</span>
               </div>
             ))}
-            {isFetchingNextPage && <p className="text-sm text-gray-500 text-center">Loading more...</p>}
-            {!hasNextPage && allUsers.length > 0 && <p className="text-sm text-gray-400 text-center">No more results</p>}
+            {isFetchingNextPage && <p className="text-sm text-gray-500 text-center">{t("Loading more...")}</p>}
+            {!hasNextPage && allUsers.length > 0 && <p className="text-sm text-gray-400 text-center">{t("No more results")}</p>}
           </div>
         )}
       </div>

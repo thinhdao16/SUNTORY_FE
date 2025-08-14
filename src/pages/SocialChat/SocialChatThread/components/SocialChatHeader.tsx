@@ -83,11 +83,11 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
 
     if (isFriend) {
         RightActions = (
-            <div className="relative" ref={menuRef}>
+            <div className="relative  z-50" ref={menuRef}>
                 <MoreDots onClick={() => setOpenMenu((v) => !v)} />
                 {openMenu && (
                     <div
-                        className="absolute right-0 mt-2 w-36 overflow-hidden rounded-xl  bg-white shadow-lg z-20"
+                        className="absolute right-0 mt-2 w-36 overflow-hidden rounded-xl bg-white shadow-lg z-50"
                         role="menu"
                     >
                         <button
@@ -95,13 +95,14 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
                                 setOpenMenu(false);
                                 if (targetParticipant) onUnfriend(targetParticipant.userId);
                             }}
-                            className="w-full  flex items-center gap-2 px-3 py-2 text-sm text-error-400 font-semibold hover:bg-red-50"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-error-400 font-semibold hover:bg-red-50"
                             role="menuitem"
                         >
-                            <UnFriendIcon /> Unfriend
+                            <UnFriendIcon /> {t("Unfriend")}
                         </button>
                     </div>
                 )}
+
             </div>
         );
     } else {
@@ -132,27 +133,29 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
     }
 
     return (
-        <div className="relative flex items-center justify-between px-4 sm:px-6 h-[50px]">
-            <div className="flex items-center gap-3 z-10">
-                <button onClick={onBackClick} aria-label="Back" className="p-1 rounded hover:bg-gray-100">
-                    <BackIcon />
-                </button>
+        <div className="w-full sticky top-0">
+            <div className="relative flex items-center justify-between px-4 sm:px-6 h-[50px]">
+                <div className="flex items-center gap-3 z-10">
+                    <button onClick={onBackClick} aria-label="Back" className="p-1 rounded hover:bg-gray-100">
+                        <BackIcon />
+                    </button>
 
-                <div className="flex items-center gap-2">
-                    <img
-                        src={src}
-                        alt={roomChatInfo?.title || "Avatar"}
-                        className="w-[34px] h-[34px] rounded-full object-cover"
-                        onError={handleImgError}
-                    />
-                    <span className="text-sm font-semibold text-gray-800">
-                        {roomChatInfo?.title || roomData?.title || "Chat Room"}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <img
+                            src={src}
+                            alt={roomChatInfo?.title || "Avatar"}
+                            className="w-[34px] h-[34px] rounded-full object-cover"
+                            onError={handleImgError}
+                        />
+                        <span className="text-sm font-semibold text-gray-800">
+                            {roomChatInfo?.title || roomData?.title || "Chat Room"}
+                        </span>
+                    </div>
                 </div>
+                {roomChatInfo?.type === ChatInfoType.UserVsUser && (
+                    <div className="z-10">{RightActions}</div>
+                )}
             </div>
-            {roomChatInfo?.type === ChatInfoType.UserVsUser && (
-                <div className="z-10">{RightActions}</div>
-            )}
         </div>
     );
 };

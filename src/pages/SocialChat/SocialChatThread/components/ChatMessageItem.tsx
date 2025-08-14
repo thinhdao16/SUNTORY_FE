@@ -171,7 +171,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                     <div className={`flex w-full  ${isUser ? "justify-end pr-4" : "justify-start pl-4"} gap-1 `}>
                         {isEdited && !isRevoked && !isUser && (
                             <div className={` text-xs text-main font-semibold `}>
-                                Edited
+                                {t("Edited")}
                             </div>
                         )}
                         {replyTo && (
@@ -180,18 +180,23 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                             >
                                 {isSelfReply
                                     ? (isUser
-                                        ? "You are replying to yourself"
-                                        : `${truncateName(msg.userName)} is replying to themselves`)
+                                        ? t("reply.self")
+                                        : t("reply.selfOther", { name: truncateName(msg.userName) })
+                                    )
                                     : (isUser
-                                        ? `You are replying to ${truncateName(repliedName)}`
+                                        ? t("reply.youToOther", { name: truncateName(repliedName) })
                                         : (isReplyingToMe
-                                            ? `${truncateName(msg.userName)} is replying to you`
-                                            : `${truncateName(msg.userName)} is replying to ${truncateName(repliedName)}`))}
+                                            ? t("reply.otherToYou", { name: truncateName(msg.userName) })
+                                            : t("reply.otherToOther", { name1: truncateName(msg.userName), name2: truncateName(repliedName) })
+                                        )
+                                    )
+                                }
+
                             </div>
                         )}
                         {isEdited && !isRevoked && isUser && (
                             <div className={` text-xs text-main font-semibold `}>
-                                Edited
+                                {t("Edited")}
                             </div>
                         )}
                     </div>
@@ -199,7 +204,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                         <div className="text-xs text-gray-500 ml-1 mb-0.5">{msg.userName}</div>
                     )}
                     {msg.replyToMessage && (
-                        <ReplyBubble msg={msg.replyToMessage} isUser={isUser} />
+                        <ReplyBubble msg={msg.replyToMessage} isUser={isUser} isRevoked={msg.replyToMessage.isRevoked === 1} />
                     )}
 
                     <ImageGallery

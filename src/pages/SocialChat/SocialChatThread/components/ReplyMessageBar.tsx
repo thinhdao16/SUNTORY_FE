@@ -26,9 +26,9 @@ const ReplyMessageBar: React.FC<ReplyMessageBarProps> = ({
                         :
                     </span>
                     {" "}
-                    <span className="inline-block truncate text-netural-300 align-middle">
-                        {displayText.length > 25
-                            ? `${displayText.substring(0, 25    )}...`
+                    <span className="inline-block truncate max-w-[230px] text-netural-300 align-middle">
+                        {displayText.length > 50
+                            ? `${displayText.substring(0, 50)}...`
                             : displayText}
                     </span>
                 </div>

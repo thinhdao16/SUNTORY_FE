@@ -25,19 +25,16 @@ const MessageLimitNotice: React.FC<Props> = ({ roomData, roomChatInfo, userInfo,
             <div className="max-w-[680px] w-full px-4">
                 <div className="rounded-full bg-netural-50 text-netural-500 text-sm px-5 py-3 flex items-center justify-between gap-3 shadow-sm">
                     <div className="flex-1 leading-snug text-center break-words">
-                        You’ve reached your 3-message limit.{" "}
+                        {t("chat.limitReached")}{" "}
                         {awaitingAccept ? (
                             <>
-                                Wait for{" "}
-                                <span className="font-semibold">
-                                    {otherName}
-                                </span>{" "}
-                                to accept your friend request to continue.
+                                {t("chat.waitForAccept", { name: otherName })}
                             </>
                         ) : (
-                            "Send a friend request to continue."
+                            t("chat.sendFriendRequest")
                         )}
                     </div>
+
 
 
                     {!awaitingAccept && onSendFriend && (

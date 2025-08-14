@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import BotIcon from "@/icons/logo/AI.svg?react";
 import { ChatMessage } from "@/types/social-chat";
-import { groupMessagesByTime } from "@/utils/group-messages-by-time";
+import { groupMessagesByTime, useSyncDayjsLocale } from "@/utils/group-messages-by-time";
 import { TimeGroupHeader } from "./TimeGroupHeader";
 import { MessageSequence } from "./MessageSequence";
 
@@ -57,6 +57,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     const messageGroups = useMemo(() => {
         return groupMessagesByTime(allMessages, t, { isGroup, currentUserId });
     }, [allMessages, t, isGroup, currentUserId]);
+    useSyncDayjsLocale();
     return (
         <div className="flex flex-col mx-auto pt-8">
             {messageGroups.map((group, groupIndex) => (

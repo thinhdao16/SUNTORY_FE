@@ -109,6 +109,7 @@ const Chat: React.FC = () => {
     const clearAllStreams = useSignalRStreamStore((state) => state.clearAllStreams);
     const setChatCode = useSignalRStreamStore((state) => state.setChatCode);
     const addStreamChunk = useSignalRStreamStore((state) => state.addStreamChunk);
+    const {loadingStream} = useSignalRStreamStore()
     const completedMessages = useMemo(() => {
         if (!sessionId) return [];
         return rawCompleted.filter((msg: any) => msg.chatCode === sessionId);
@@ -167,21 +168,6 @@ const Chat: React.FC = () => {
         setMessageValue,
     } = useChatStreamMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, false, isOnline);
 
-
-
-    // console.log(
-    //      (
-    //         "Xin chào, đây là câu trả lời được stream từng chữ.Xin chào, đây là câu trả lời được stream từng chữ.Xin chào, đây là câu trả lời được stream từng chữ.Xin chào, đây là câu trả lời được stream từng chữ.",
-    //         {
-    //             messageCode: "msg-001",
-    //             chatCode: "room-001",
-    //             timestamp: new Date().toISOString(),
-    //             id: "id-001",
-    //             userMessageId: "user-msg-001"
-    //         },
-    //         addStreamChunk
-    //     )
-    // )
     const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef);
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
@@ -491,7 +477,8 @@ const Chat: React.FC = () => {
                                 pendingMessages={pendingMessages}
                                 topicType={topicType}
                                 title={title}
-                                loading={isSending || hasPendingMessages}
+                                // loading={isSending || hasPendingMessages}
+                                loading={loadingStream}
                                 onRetryMessage={retryMessage}
                                 isSpending={isSending}
                             />
@@ -530,7 +517,7 @@ const Chat: React.FC = () => {
                                 messageValue={messageValue}
                                 setMessageValue={setMessageValue}
                                 // isLoading={isLoading}
-                                isLoading={false}
+                                isLoading={loadingStream}
                                 isLoadingHistory={isLoadingHistory}
                                 messageRef={messageRef}
                                 handleSendMessage={handleSendMessage}

@@ -37,7 +37,7 @@ const BottomTabBar: React.FC = () => {
 
     const tabs: TabItem[] = [
         {
-            label: "Messages",
+            label: t("Messages"),
             icon: ChatIcon,
             iconActive: ChatActiveIcon,
             path: `/social-chat`,
@@ -45,7 +45,7 @@ const BottomTabBar: React.FC = () => {
             classNameIcon: "",
         },
         {
-            label: t("Home"),
+            label: t("Assistant"),
             icon: HomeIcon,
             iconActive: HomeActiveIcon,
             path: "/home",

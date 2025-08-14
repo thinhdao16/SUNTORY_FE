@@ -38,7 +38,7 @@ export default function SocialChatRecent() {
   useSocialSignalRListChatRoom(deviceInfo.deviceId ?? '', {
     roomIds: listRoomIdChatRooms,
     autoConnect: true,
-    enableDebugLogs: true
+    enableDebugLogs: false
   });
 
   const scrollRef = useRef<HTMLDivElement | null>(null);

@@ -3,7 +3,6 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { useKeyboardResize } from "@/hooks/useKeyboardResize";
 import { useScrollButton } from "@/hooks/useScrollButton";
-import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import { useScrollToBottom } from "@/hooks/useScrollToBottom";
 import { useUploadChatFile } from "@/hooks/common/useUploadChatFile";
 import { useAppState } from "@/hooks/useAppState";
@@ -26,10 +25,6 @@ import { useSocialChatHandlers } from "./hooks/useSocialChatHandlers";
 import { ChatMessage } from "@/types/social-chat";
 import MessageLimitNotice from "./components/MessageLimitNotice";
 import ExpandInputModal from "@/components/common/bottomSheet/ExpandInputModal";
-import { useCreateTranslationChat } from "@/pages/Translate/hooks/useTranslationLanguages";
-import NativeGalleryPicker, { NativeGalleryPickerHandle } from "@/components/gallery-picker/NativeGalleryPicker";
-import { PhotoItem } from "@/components/gallery-picker/gallery.native";
-import { photoItemToFile } from "@/components/gallery-picker/gallery.toFile";
 
 dayjs.extend(utc);
 
@@ -53,7 +48,7 @@ const SocialChatThread: React.FC = () => {
         translateSheet, sheetExpand, openInputExpandSheet, openTranslateExpandSheet, closeSheet, messageValue, setMessageValue,
         unfriendMutation, sendRequest, cancelRequest, acceptRequest, rejectRequest,
         translateActionStatus, setTranslateActionStatus,
-        expandValue, setExpandValue, expandTitle, expandPlaceholder, usePeerUserId, roomData, createTranslationMutation, actionFieldSend, isTranslating, sheetExpandMode
+        expandValue, setExpandValue, expandTitle, expandPlaceholder, usePeerUserId, roomData, createTranslationMutation, actionFieldSend, isTranslating, sheetExpandMode, typing,
     } = useSocialChatThread();
 
     const updateMessageMutation = useUpdateSocialChatMessage();
@@ -63,6 +58,10 @@ const SocialChatThread: React.FC = () => {
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
     const { showScrollButton, onContainerScroll, recalc } = useScrollButton(messagesContainerRef, messagesEndRef);
 
+    const isFixedBar = !isNative && !keyboardResizeScreen && keyboardHeight === 0;
+
+    const scrollPadBottom = isFixedBar ? (inputBarHeight || 60) + 8 : 8;
+        
     const peerUserId = useMemo(() => usePeerUserId(roomData, userInfo?.id), [roomData, userInfo?.id]);
 
     const scrollToBottom = useCallback(() => {
@@ -83,7 +82,7 @@ const SocialChatThread: React.FC = () => {
     const serverMessages = useMemo(() => {
         return messagesData?.pages.flat() || [];
     }, [messagesData]);
-    const displayMessages = useMemo(() => {
+    const displayMessages = useMemo(() => { 
         return mergeSocialChatMessages(
             messages,
             userInfo?.id || 0,
@@ -97,7 +96,6 @@ const SocialChatThread: React.FC = () => {
         () => displayMessages.reduce((acc, m) => acc + (m?.isRight ? 1 : 0), 0),
         [displayMessages]
     );
-
     const hasReachedLimit = !roomData?.isFriend && userRightCount >= CountLimitChatDontFriend && roomChatInfo?.type === ChatInfoType.UserVsUser;
     const {
         handleScrollWithLoadMore,
@@ -158,7 +156,7 @@ const SocialChatThread: React.FC = () => {
             });
             addMessages(apiMessages);
         }
-    }, [messagesData, addMessages]);
+    }, [messagesData]);
     useEffect(() => {
         const isInitial = initialLoadRef.current;
         const isFirstLoad = isInitial && displayMessages.length > 0;
@@ -238,7 +236,7 @@ const SocialChatThread: React.FC = () => {
                             style={{
                                 paddingRight: 0,
                                 paddingLeft: 0,
-                                paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 60 : keyboardHeight) : (isNative ? 0 : 60),
+                                paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? keyboardHeight : keyboardHeight) : (isNative ? 0 : 60),
                                 height: "100dvh",
                             }}
                         >
@@ -254,7 +252,6 @@ const SocialChatThread: React.FC = () => {
                                     unfriendMutation.mutate({ friendUserId: peerUserId, roomCode: roomId ?? undefined });
                                 }}
                             />
-
                             <div
                                 className={`flex-1 overflow-x-hidden overflow-y-auto px-6`}
                                 style={
@@ -304,13 +301,12 @@ const SocialChatThread: React.FC = () => {
                                     // onSendFriend={awaitingAccept ? undefined : handleSendFriend}
                                     />
                                 )}
-
                                 <div ref={messagesEndRef} className="h-px" />
 
                             </div>
-                            <div className={`bg-white w-full z-2 ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
+                            <div className={`bg-white w-full z-2 pb-2 ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
                                 } ${isNative ? "bottom-0" : "bottom-0"} ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
-                                } ${keyboardResizeScreen && isNative ? "pb-4" : "pb-4"}`}>
+                                } `}>
                                 <div className="relative">
                                     {showScrollButton && (
                                         <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
@@ -352,6 +348,7 @@ const SocialChatThread: React.FC = () => {
                                         isTranslating={isTranslating}
                                         actionFieldSend={actionFieldSend}
                                         setTranslateActionStatus={setTranslateActionStatus}
+                                        typing={typing}
                                     />
                                 </div>
                             </div>

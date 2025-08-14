@@ -1,4 +1,28 @@
 import dayjs from "dayjs";
+import "dayjs/locale/vi";
+import "dayjs/locale/en";
+import "dayjs/locale/zh-cn";
+import "dayjs/locale/zh-tw";
+import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
+
+export function useSyncDayjsLocale() {
+    const { i18n } = useTranslation();
+
+    const localeMap: Record<string, string> = {
+        vi: "vi",
+        en: "en",
+        "zh-CN": "zh-cn",
+        "zh-TW": "zh-tw",
+        "zh": "zh-cn",
+    };
+
+    useEffect(() => {
+        const lang = i18n.language;
+        const dayjsLocale = localeMap[lang] || "en";
+        dayjs.locale(dayjsLocale);
+    }, [i18n.language]);
+}
 
 export interface MessageGroup {
     timestamp: string;
@@ -6,8 +30,8 @@ export interface MessageGroup {
     messages: any[];
 }
 
-const MESSAGE_GROUP_THRESHOLD = 5 * 60 * 1000; 
-const TIME_GROUP_THRESHOLD = 10 * 60 * 1000;  
+const MESSAGE_GROUP_THRESHOLD = 5 * 60 * 1000;
+const TIME_GROUP_THRESHOLD = 10 * 60 * 1000;
 
 type TFn = (key: string, options?: any) => string;
 
@@ -27,7 +51,9 @@ export function groupMessagesByTime(
     const groups: MessageGroup[] = [];
     let currentGroup: MessageGroup | null = null;
 
-    const sortedMessages = [...messages].sort((a, b) => getMessageTime(a) - getMessageTime(b));
+    const sortedMessages = [...messages].sort(
+        (a, b) => getMessageTime(a) - getMessageTime(b)
+    );
 
     sortedMessages.forEach((message) => {
         const messageTime = getMessageTime(message);
@@ -39,7 +65,8 @@ export function groupMessagesByTime(
             _isUser: isFromCurrentUser(message, currentUserId),
         };
 
-        const startNewTimeGroup = !currentGroup || shouldCreateNewTimeGroup(currentGroup, messageTime);
+        const startNewTimeGroup =
+            !currentGroup || shouldCreateNewTimeGroup(currentGroup, messageTime);
 
         if (startNewTimeGroup) {
             const displayTime = getDisplayTime(messageDayjs, t);
@@ -67,7 +94,7 @@ export function groupMessagesByTime(
         const breakSequence = senderChanged || timeDiff > MESSAGE_GROUP_THRESHOLD;
 
         normalized._isFirstInSequence = breakSequence;
-        normalized._shouldShowAvatar = breakSequence; 
+        normalized._shouldShowAvatar = breakSequence;
         normalized._showSenderName = isGroup && !normalized._isUser && breakSequence;
 
         currentGroup!.messages.push(normalized);
@@ -79,13 +106,16 @@ export function groupMessagesByTime(
 function getMessageTime(message: any): number {
     if (message.timeStamp) {
         const ts = Number(message.timeStamp);
-        return ts > 999999999999999 ? Math.floor(ts / 1000) : ts; 
+        return ts > 999999999999999 ? Math.floor(ts / 1000) : ts;
     }
     if (message.createDate) return new Date(message.createDate).getTime();
     return Date.now();
 }
 
-function shouldCreateNewTimeGroup(currentGroup: MessageGroup, newMessageTime: number): boolean {
+function shouldCreateNewTimeGroup(
+    currentGroup: MessageGroup,
+    newMessageTime: number
+): boolean {
     const last = currentGroup.messages[currentGroup.messages.length - 1];
     return newMessageTime - getMessageTime(last) > TIME_GROUP_THRESHOLD;
 }
@@ -114,7 +144,8 @@ function getSenderKey(m: any): string | number {
 }
 
 function isFromCurrentUser(m: any, currentUserId: any): boolean {
-    if (m.isRight != null) return !!m.isRight; 
-    if (m.userId != null && currentUserId != null) return String(m.userId) === String(currentUserId);
+    if (m.isRight != null) return !!m.isRight;
+    if (m.userId != null && currentUserId != null)
+        return String(m.userId) === String(currentUserId);
     return false;
 }

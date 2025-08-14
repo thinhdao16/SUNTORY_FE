@@ -125,6 +125,7 @@ const useLanguageStore = create<LanguageStore>((set, get) => ({
     label: "English",
     lang: "English",
     code: "en",
+    id: 1,
   }),
   reloadSwap: 0,
   isLoading: false,

@@ -142,10 +142,11 @@ const ChatRelationshipBanner: React.FC<Props> = ({
                                 onError={(e) => (e.currentTarget.src = avatarFallback)}
                             />
                         </div>
-                        <p className="mt-2  font-semibold text-gray-800">
-                            You and {title || "your friend"} are now friends
+                        <p className="mt-2 font-semibold text-gray-800">
+                            {t("friendship.nowFriends", { name: title || t("yourFriend") })}
                         </p>
-                        <p className="text-sm text-neutral-500">Send a hi to chat!</p>
+
+                        <p className="text-sm text-neutral-500">{t("Send a hi to chat!")}</p>
                     </div>
                 </div>
             </div>

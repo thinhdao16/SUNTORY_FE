@@ -10,26 +10,37 @@ export interface UseSocialSignalROptions {
     autoConnect?: boolean;
     enableDebugLogs?: boolean;
     refetchRoomData?: () => void;
+    onTypingUsers?: (payload: any) => void;
 }
 
-export function useSocialSignalR(
-    deviceId: string,
-    options: UseSocialSignalROptions
-) {
-    const { roomId, autoConnect = true, enableDebugLogs = false, refetchRoomData } = options;
+export function useSocialSignalR(deviceId: string, options: UseSocialSignalROptions) {
+    const {
+        roomId,
+        autoConnect = true,
+        enableDebugLogs = false,
+        refetchRoomData,
+        onTypingUsers,
+    } = options;
 
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const isConnectedRef = useRef(false);
     const currentRoomRef = useRef<string | null>(null);
 
-    const { isAuthenticated } = useAuthStore();
-    const { addMessage, updateMessageByCode } = useSocialChatStore();
+    const typingOnRef = useRef(false);
+    const typingIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const typingHardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const log = useCallback((message: string, ...args: any[]) => {
-        if (enableDebugLogs) {
-            console.log(`[SocialSignalR] ${message}`, ...args);
-        }
-    }, [enableDebugLogs]);
+    const pingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const { isAuthenticated } = useAuthStore();
+    const { addMessage, updateMessageByCode , updateMessageAndRepliesByCode} = useSocialChatStore();
+
+    const log = useCallback(
+        (message: string, ...args: any[]) => {
+            if (enableDebugLogs) console.log(`[SocialSignalR] ${message}`, ...args);
+        },
+        [enableDebugLogs]
+    );
 
     const createConnection = useCallback(() => {
         const token = localStorage.getItem("token") || "";
@@ -42,122 +53,115 @@ export function useSocialSignalR(
             .build();
     }, [deviceId]);
 
-    const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
-        connection.off("ReceiveUserMessage");
-        connection.on("ReceiveUserMessage", (message: any) => {
-            addMessage(roomId, message);
-        });
+    const startPingLoop = useCallback(
+        (rid: string) => {
+            if (pingTimerRef.current) clearInterval(pingTimerRef.current);
 
-        connection.off("UpdateUserMessage");
-        connection.on("UpdateUserMessage", (message: any) => {
-            updateMessageByCode(roomId, message.code, message);
-        });
+            const fireOnce = async () => {
+                const conn = connectionRef.current;
+                if (!conn || conn.state !== signalR.HubConnectionState.Connected) return;
 
-        connection.off("RevokeUserMessage");
-        connection.on("RevokeUserMessage", (message: any) => {
-            updateMessageByCode(roomId, message.code, message);
-        });
+                try {
+                    await conn.invoke("PingActiveRoom", rid);
+                    if (enableDebugLogs) console.log("[Ping] ok ->", rid);
+                } catch (err1) {
+                    try {
+                        await conn.invoke("PingActiveRoom", { roomId: rid });
+                        if (enableDebugLogs) console.log("[Ping:fallback] ok ->", rid);
+                    } catch (err2) {
+                        console.warn("[Ping] failed:", err1 || err2);
+                    }
+                }
+            };
 
-        connection.off("ReactUserMessage");
-        connection.on("ReactUserMessage", (reaction: any) => {
-        });
+            void fireOnce();
+            pingTimerRef.current = setInterval(() => {
+                void fireOnce();
+            }, 20000);
+        },
+        [enableDebugLogs]
+    );
 
-        connection.off("RoomChatUpdated");
-        connection.on("RoomChatUpdated", (roomInfo: any) => {
-        });
-
-        connection.off("FriendRequestEvent");
-        connection.on("FriendRequestEvent", (data: any) => {
-            // console.log("FriendRequestEvent:", data);
-            if (refetchRoomData) {
-                refetchRoomData();
-            }
-        });
-
-        connection.onreconnecting((error) => {
-            isConnectedRef.current = false;
-        });
-
-        connection.onreconnected(async (connectionId) => {
-            isConnectedRef.current = true;
-
-            if (currentRoomRef.current) {
-                await joinChatRoom(currentRoomRef.current);
-            }
-            await joinUserNotify();
-        });
-
-        connection.onclose((error) => {
-            isConnectedRef.current = false;
-        });
-    }, [addMessage, updateMessageByCode, log, refetchRoomData, roomId]);
-
-    const pingActiveRoom = useCallback(async (chatRoomId: string) => {
-        console.log("Pinging active room:", chatRoomId);
-        if (!connectionRef.current || !isConnectedRef.current) return false;
-        try {
-            await connectionRef.current.invoke("PingActiveRoom", chatRoomId);
-            return true;
-        } catch (error) {
-            return false;
+    const stopPingLoop = useCallback(() => {
+        if (pingTimerRef.current) {
+            clearInterval(pingTimerRef.current);
+            pingTimerRef.current = null;
         }
-    }, [log]);
+    }, []);
 
     const setInactiveInRoom = useCallback(async (chatRoomId: string) => {
-        console.log("unping")
-        if (!connectionRef.current || !isConnectedRef.current) return false;
+        const conn = connectionRef.current;
+        if (!conn || conn.state !== signalR.HubConnectionState.Connected) return false;
         try {
-            await connectionRef.current.invoke("SetInactiveInRoom", chatRoomId);
+            await conn.invoke("SetInactiveInRoom", chatRoomId);
             return true;
-        } catch (error) {
+        } catch {
             return false;
         }
-    }, [log]);
+    }, []);
 
-    const joinChatRoom = useCallback(async (chatRoomId: string) => {
-        if (!connectionRef.current || !isConnectedRef.current) return false;
-        try {
-            await connectionRef.current.invoke("JoinChatUserRoom", chatRoomId);
-            currentRoomRef.current = chatRoomId;
-            log(`Joined chat room: ${chatRoomId}`);
+    const sendTyping = useCallback(
+        async (status: "on" | "off") => {
+            const conn = connectionRef.current;
+            const ready =
+                !!conn &&
+                conn.state === signalR.HubConnectionState.Connected &&
+                !!roomId;
 
-            try {
-                await connectionRef.current.invoke("PingActiveRoom", chatRoomId);
-                log(`Pinged active room: ${chatRoomId}`);
-            } catch (e) {
-                log("Ping right-after-join failed:", e);
+            if (!ready) {
+                log("Typing skipped", {
+                    hasConn: !!conn,
+                    state: conn?.state,
+                    roomId,
+                });
+                return;
             }
 
-            return true;
-        } catch (error) {
-            log("Failed to join chat room:", error);
-            return false;
+            try {
+                await conn.invoke("Typing", { roomId, status });
+
+                log(`Typing ${status} -> ${roomId}`);
+            } catch (e) {
+                console.warn("Typing invoke failed:", e);
+            }
+        },
+        [roomId, log]
+    );
+
+    const typingTouch = useCallback(() => {
+        if (!typingOnRef.current) {
+            typingOnRef.current = true;
+            void sendTyping("on");
         }
-    }, [log]);
 
+        if (typingIdleTimerRef.current) clearTimeout(typingIdleTimerRef.current);
+        typingIdleTimerRef.current = setTimeout(() => {
+            typingOnRef.current = false;
+            void sendTyping("off");
+        }, 2000);
 
-    const leaveChatRoom = useCallback(async (chatRoomId?: string) => {
-        if (!connectionRef.current || !isConnectedRef.current) return false;
+        if (typingHardTimerRef.current) clearTimeout(typingHardTimerRef.current);
+        typingHardTimerRef.current = setTimeout(() => {
+            typingOnRef.current = false;
+            void sendTyping("off");
+        }, 20000);
+    }, [sendTyping]);
 
-        const roomToLeave = chatRoomId || currentRoomRef.current;
-        if (!roomToLeave) return false;
-
-        try {
-            await connectionRef.current.invoke("LeaveChatUserRoom", roomToLeave);
-            if (roomToLeave === currentRoomRef.current) currentRoomRef.current = null;
-            log(`Left chat room: ${roomToLeave}`);
-            return true;
-        } catch (error) {
-            log("Failed to leave chat room:", error);
-            return false;
+    const typingOff = useCallback(() => {
+        if (typingIdleTimerRef.current) clearTimeout(typingIdleTimerRef.current);
+        if (typingHardTimerRef.current) clearTimeout(typingHardTimerRef.current);
+        if (typingOnRef.current) {
+            typingOnRef.current = false;
+            void sendTyping("off");
         }
-    }, [log]);
+    }, [sendTyping]);
 
     const joinUserNotify = useCallback(async () => {
-        if (!connectionRef.current || !isConnectedRef.current) return false;
+        const conn = connectionRef.current;
+        if (!conn || conn.state !== signalR.HubConnectionState.Connected) return false;
         try {
-            await connectionRef.current.invoke("JoinUserNotify");
-            log("Joined user notify (no-arg) ✓");
+            await conn.invoke("JoinUserNotify");
+            log("Joined user notify ✓");
             return true;
         } catch (error) {
             log("Failed to join user notify:", error);
@@ -165,24 +169,135 @@ export function useSocialSignalR(
         }
     }, [log]);
 
-    const sendMessage = useCallback(async (
-        chatRoomId: string,
-        messageText: string,
-        additionalData?: any
-    ) => {
-        if (!connectionRef.current || !isConnectedRef.current) {
-            throw new Error("SignalR connection is not ready");
-        }
-        try {
-            const messageData = { chatCode: chatRoomId, messageText, deviceId, ...additionalData };
-            await connectionRef.current.invoke("SendUserMessage", messageData);
-            log("Message sent:", messageData);
-            return true;
-        } catch (error) {
-            log("Failed to send message:", error);
-            throw error;
-        }
-    }, [deviceId, log]);
+    const joinChatRoom = useCallback(
+        async (chatRoomId: string) => {
+            const conn = connectionRef.current;
+            if (!conn || conn.state !== signalR.HubConnectionState.Connected) return false;
+            try {
+                await conn.invoke("JoinChatUserRoom", chatRoomId);
+                currentRoomRef.current = chatRoomId;
+                log(`Joined chat room: ${chatRoomId}`);
+                startPingLoop(chatRoomId);
+                return true;
+            } catch (error) {
+                log("Failed to join chat room:", error);
+                return false;
+            }
+        },
+        [log, startPingLoop]
+    );
+
+    const leaveChatRoom = useCallback(
+        async (chatRoomId?: string) => {
+            const conn = connectionRef.current;
+            if (!conn || conn.state !== signalR.HubConnectionState.Connected) return false;
+
+            const roomToLeave = chatRoomId || currentRoomRef.current;
+            if (!roomToLeave) return false;
+
+            try {
+                stopPingLoop();
+                try {
+                    await conn.invoke("SetInactiveInRoom", roomToLeave);
+                } catch { }
+                await conn.invoke("LeaveChatUserRoom", roomToLeave);
+                if (roomToLeave === currentRoomRef.current) currentRoomRef.current = null;
+                log(`Left chat room: ${roomToLeave}`);
+                return true;
+            } catch (error) {
+                log("Failed to leave chat room:", error);
+                return false;
+            }
+        },
+        [log, stopPingLoop]
+    );
+
+    const sendMessage = useCallback(
+        async (chatRoomId: string, messageText: string, additionalData?: any) => {
+            const conn = connectionRef.current;
+            if (!conn || conn.state !== signalR.HubConnectionState.Connected) {
+                throw new Error("SignalR connection is not ready");
+            }
+            try {
+                const messageData = { chatCode: chatRoomId, messageText, deviceId, ...additionalData };
+                await conn.invoke("SendUserMessage", messageData);
+                log("Message sent:", messageData);
+                return true;
+            } catch (error) {
+                log("Failed to send message:", error);
+                throw error;
+            }
+        },
+        [deviceId, log]
+    );
+
+    const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
+        connection.off("TypingStatusChanged");
+        connection.on("TypingStatusChanged", (payload: any) => {
+            console.log("first")
+        });
+
+        const onEvt = (name: string, handler: (p: any) => void) => {
+            const lower = name.toLowerCase();
+            connection.off(name);
+            connection.on(name, handler);
+            if (lower !== name) {
+                connection.off(lower);
+                connection.on(lower, handler);
+            }
+        };
+
+        connection.off("ReceiveUserMessage");
+        connection.on("ReceiveUserMessage", (message: any) => {
+            addMessage(roomId, message);
+        });
+
+        connection.off("UpdateUserMessage");
+        connection.on("UpdateUserMessage", (message: any) => {
+            // updateMessageByCode(roomId, message.code, message);
+            updateMessageAndRepliesByCode(roomId, message.code, message);
+            
+        });
+
+        connection.off("RevokeUserMessage");
+        connection.on("RevokeUserMessage", (message: any) => {
+            // updateMessageByCode(roomId, message.code, message);
+            updateMessageAndRepliesByCode(roomId, message.code, message);
+        });
+
+        connection.off("FriendRequestEvent");
+        connection.on("FriendRequestEvent", (data: any) => {
+            if (refetchRoomData) refetchRoomData();
+        });
+
+        onEvt("UnreadCountChanged", (payload: any) => {
+        });
+
+        onEvt("TypingStatusChanged", (payload: any) => {
+            onTypingUsers?.(payload);
+        });
+
+
+        connection.onreconnecting(() => { isConnectedRef.current = false; });
+        connection.onreconnected(async () => {
+            isConnectedRef.current = true;
+            if (currentRoomRef.current) await joinChatRoom(currentRoomRef.current);
+            await joinUserNotify();
+        });
+        connection.onclose(() => {
+            isConnectedRef.current = false;
+            typingOff();
+        });
+    }, [
+        addMessage,
+        updateMessageByCode,
+        refetchRoomData,
+        onTypingUsers,
+        joinChatRoom,
+        joinUserNotify,
+        typingOff,
+        roomId,
+    ]);
 
 
     const startConnection = useCallback(async () => {
@@ -201,7 +316,6 @@ export function useSocialSignalR(
             log("SignalR Connected, Connection ID:", connection.connectionId);
 
             await joinUserNotify();
-
             if (roomId) await joinChatRoom(roomId);
 
             return true;
@@ -215,28 +329,35 @@ export function useSocialSignalR(
     const stopConnection = useCallback(async () => {
         if (connectionRef.current) {
             try {
+                stopPingLoop();
                 await connectionRef.current.stop();
             } finally {
                 connectionRef.current = null;
                 isConnectedRef.current = false;
                 currentRoomRef.current = null;
+                typingOff();
                 log("Connection stopped");
             }
         }
-    }, [log]);
+    }, [log, stopPingLoop, typingOff]);
 
-    const getConnectionStatus = useCallback(() => ({
-        isConnected: isConnectedRef.current,
-        connectionId: connectionRef.current?.connectionId,
-        currentRoom: currentRoomRef.current,
-        connectionState: connectionRef.current?.state,
-    }), []);
+    const getConnectionStatus = useCallback(
+        () => ({
+            isConnected: isConnectedRef.current,
+            connectionId: connectionRef.current?.connectionId,
+            currentRoom: currentRoomRef.current,
+            connectionState: connectionRef.current?.state,
+        }),
+        []
+    );
 
     useEffect(() => {
         if (autoConnect && isAuthenticated) {
             startConnection().catch((error) => log("Auto connection failed:", error));
         }
-        return () => { stopConnection(); };
+        return () => {
+            stopConnection();
+        };
     }, [autoConnect, isAuthenticated, startConnection, stopConnection, log]);
 
     useEffect(() => {
@@ -246,6 +367,17 @@ export function useSocialSignalR(
         }
     }, [roomId, joinChatRoom, leaveChatRoom]);
 
+    useEffect(() => {
+        return () => {
+            if (typingOnRef.current) typingOff();
+        };
+    }, [typingOff]);
+
+    const typingReady =
+        !!connectionRef.current &&
+        isConnectedRef.current &&
+        !!roomId;
+
     return {
         startConnection,
         stopConnection,
@@ -253,11 +385,22 @@ export function useSocialSignalR(
 
         joinChatRoom,
         leaveChatRoom,
-        joinUserNotify,   // <- public, nhưng no-arg
+        joinUserNotify,
         sendMessage,
 
-        pingActiveRoom,
+        pingActiveRoom: (rid: string) => {
+            const conn = connectionRef.current;
+            if (!conn || conn.state !== signalR.HubConnectionState.Connected) return Promise.resolve(false);
+            return conn.invoke("PingActiveRoom", rid).then(() => true).catch(() => false);
+        },
         setInactiveInRoom,
+
+        typing: {
+            touch: typingTouch,
+            off: typingOff,
+            setStatus: (s: "on" | "off") => sendTyping(s),
+            ready: typingReady,
+        },
 
         isConnected: isConnectedRef.current,
         currentRoom: currentRoomRef.current,

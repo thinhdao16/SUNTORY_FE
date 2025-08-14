@@ -76,7 +76,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
     return (
         <div className={isUser ? "self-end w-fit" : "self-start w-fit"}>
-            <div className={`mb-2 space-y-2 relative ${isUser ? "ml-auto" : "mr-auto"} w-fit`}>
+            <div className={`mb-2 space-y-2 relative ${isUser ? "ml-auto" : "mr-auto"} w-fit group`}>
                 <div
                     className={
                         displayPhotos.length === 1
@@ -209,9 +209,16 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                     </>
                 </div>
                 {!isRevoked && (
-                    <div ref={actionContainerRef}
-                        className={`absolute w-full text-main  top-1/2 -translate-y-1/2  ${isUser ? "right-full -mr-0" : "left-full -ml-0"} ${showActionsMobile ? "flex" : "hidden group-hover:flex"} gap-2 p-1`}
-                        style={{ pointerEvents: 'auto' }}
+                    <div
+                        ref={actionContainerRef}
+                        className={[
+                            "absolute z-10 gap-2 p-1 items-center",
+                            "top-1/2 -translate-y-1/2",
+                            showActionsMobile ? "flex" : "hidden group-hover:flex",
+                            isUser ? "-left-16" : "left-full ml-2",
+                            "w-auto text-main",
+                        ].join(" ")}
+                        style={{ pointerEvents: "auto" }}
                     >
                         {isUser && (<>
                             <button onClick={onRevoke}><FaRegTrashAlt className="z-99 text-2xl" /></button>

@@ -23,19 +23,24 @@ export function useSocialSignalRListChatRoom(
     const activeRoomsRef = useRef<string[]>([]);
     const currentRoomRef = useRef<string | null>(null);
 
+    const lastUnreadRef = useRef<Record<string, number>>({});
+
     const { isAuthenticated, user } = useAuthStore();
-    const { addMessage, updateMessage, updateMessageByCode, updateLastMessage, getLastMessageForRoom, updateChatRoomFromMessage, setRoomUnread } = useSocialChatStore();
+    const {
+        updateLastMessage,
+        updateChatRoomFromMessage,
+        setRoomUnread,
+    } = useSocialChatStore();
+
     const log = useCallback((message: string, ...args: any[]) => {
-        if (enableDebugLogs) {
-        }
+        if (enableDebugLogs) console.log(`[SignalR:List] ${message}`, ...args);
     }, [enableDebugLogs]);
 
     const createConnection = useCallback(() => {
         const token = localStorage.getItem("token") || "";
-
         return new signalR.HubConnectionBuilder()
             .withUrl(`${ENV.BE}/chatHub?deviceId=${deviceId}`, {
-                accessTokenFactory: () => token
+                accessTokenFactory: () => token,
             })
             .withAutomaticReconnect([0, 2000, 10000, 30000])
             .configureLogging(signalR.LogLevel.Warning)
@@ -43,274 +48,165 @@ export function useSocialSignalRListChatRoom(
     }, [deviceId]);
 
     const joinChatRooms = useCallback(async (chatRoomIds: string[]) => {
-        if (!connectionRef.current || !isConnectedRef.current) {
-            log("Cannot join rooms: connection not ready");
-            return false;
-        }
-
+        if (!connectionRef.current || !isConnectedRef.current) return false;
         activeRoomsRef.current = chatRoomIds;
-
-        const results = [];
         for (const roomId of chatRoomIds) {
+            if (joinedRoomsRef.current.has(roomId)) continue;
             try {
                 await connectionRef.current.invoke("JoinChatUserRoom", roomId);
                 joinedRoomsRef.current.add(roomId);
-                log(`Joined chat room: ${roomId}`);
-                results.push({ roomId, success: true });
-            } catch (error) {
-                log(`Failed to join chat room ${roomId}:`, error);
-                results.push({ roomId, success: false, error });
+                log(`Joined ${roomId}`);
+            } catch (e) {
+                log(`Join ${roomId} failed`, e);
             }
         }
-        return results;
+        return true;
     }, [log]);
 
     const leaveChatRooms = useCallback(async (chatRoomIds: string[]) => {
         if (!connectionRef.current || !isConnectedRef.current) return false;
-
-        const results = [];
         for (const roomId of chatRoomIds) {
+            if (!joinedRoomsRef.current.has(roomId)) continue;
             try {
                 await connectionRef.current.invoke("LeaveChatUserRoom", roomId);
                 joinedRoomsRef.current.delete(roomId);
-                log(`Left chat room: ${roomId}`);
-                results.push({ roomId, success: true });
-            } catch (error) {
-                log(`Failed to leave chat room ${roomId}:`, error);
-                results.push({ roomId, success: false, error });
+                log(`Left ${roomId}`);
+            } catch (e) {
+                log(`Leave ${roomId} failed`, e);
             }
         }
-        return results;
+        return true;
     }, [log]);
 
     const joinUserNotify = useCallback(async () => {
         if (!connectionRef.current || !isConnectedRef.current) return false;
-
         try {
             await connectionRef.current.invoke("JoinUserNotify");
-            log("Joined user notify room");
+            log("Joined user notify");
             return true;
-        } catch (error) {
-            log("Failed to join user notify:", error);
+        } catch (e) {
+            log("JoinUserNotify failed", e);
             return false;
         }
     }, [log]);
 
     const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
+        connection.off("ReceiveUserMessage");
         connection.on("ReceiveUserMessage", (message: any) => {
-
-            if (message.chatInfo?.code || message.roomId) {
-                const roomId = message.chatInfo.code || message.roomId;
-
-                // // Add message to store
-                // addMessage(roomId, message);
-                updateLastMessage(roomId, message);
-
-                // // Update room info and sort list
-                updateChatRoomFromMessage(message);
-            }
+            const roomId = message.chatInfo?.code || message.roomId;
+            if (!roomId) return;
+            updateLastMessage(roomId, message);
+            updateChatRoomFromMessage(message);
         });
 
+        connection.off("UpdateUserMessage");
         connection.on("UpdateUserMessage", (message: any) => {
-
-            if (message.chatInfo?.code || message.roomId) {
-                const roomId = message.chatInfo.code || message.roomId;
-
-                updateLastMessage(roomId, message);
-                updateChatRoomFromMessage(message);
-                // updateMessageByCode(roomId, message.code, message);
-
-                // // Check if this is the last message và update
-                // const currentLastMessage = getLastMessageForRoom(roomId);
-                // if (currentLastMessage && currentLastMessage.code === message.code) {
-                //     updateLastMessage(roomId, { ...currentLastMessage, ...message });
-
-                //     // Update room info with edited message
-                //     updateChatRoomFromMessage(message);
-                // }
-            }
+            const roomId = message.chatInfo?.code || message.roomId;
+            if (!roomId) return;
+            updateChatRoomFromMessage(message);
+            if(message.isNotifyRoomChat === false) return
+            updateLastMessage(roomId, message);
         });
 
+        connection.off("RevokeUserMessage");
         connection.on("RevokeUserMessage", (message: any) => {
-            if (message.chatInfo?.code || message.roomId) {
-                const roomId = message.chatInfo.code || message.roomId;
-                updateLastMessage(roomId, message);
-                updateChatRoomFromMessage(message);
-                // Update message as revoked
-                // updateMessageByCode(roomId, message.code, {
-                //     ...message,
-                //     isRevoked: 1,
-                //     messageText: "Tin nhắn đã được thu hồi"
-                // });
+            console.log("RevokeUserMessageListRoom",message)
+            const roomId = message.chatInfo?.code || message.roomId;
+            if (!roomId) return;
+            updateChatRoomFromMessage(message);
+            if(message.isNotifyRoomChat === false) return
+            updateLastMessage(roomId, message);
+        });
 
-                // // Update last message if needed
-                // const currentLastMessage = getLastMessageForRoom(roomId);
-                // if (currentLastMessage && currentLastMessage.code === message.code) {
-                //     updateLastMessage(roomId, {
-                //         ...currentLastMessage,
-                //         ...message,
-                //         isRevoked: 1,
-                //         messageText: "Tin nhắn đã được thu hồi"
-                //     });
+        const handleUnread = (data: any) => {
+            const chatCode = data?.chatCode;
+            if (!chatCode) return;
+            const myCount = data?.allUnreadCounts?.[String(user?.id)] ?? 0;
 
-                //     // Update room info
-                //     updateChatRoomFromMessage({
-                //         ...message,
-                //         messageText: "Tin nhắn đã được thu hồi"
-                //     });
-                // }
+            const prev = lastUnreadRef.current[chatCode];
+            if (prev === myCount) {
+                return;
             }
-        });
-        connection.on("UnreadCountChanged", (data) => {
-            console.log("unreadCount", data)
-            const myCount = data.allUnreadCounts[String(user?.id)] ?? 0;
-            setRoomUnread(data.chatCode, myCount);
-        });
-        connection.onreconnecting((error) => {
-            log("Reconnecting...", error);
+            lastUnreadRef.current[chatCode] = myCount;
+            setRoomUnread(chatCode, myCount);
+            if (enableDebugLogs) log(`Unread ${chatCode}: ${prev} -> ${myCount}`);
+        };
+
+        connection.off("UnreadCountChanged");
+        connection.off("unreadcountchanged");
+        connection.on("UnreadCountChanged", handleUnread);
+        connection.on("unreadcountchanged", handleUnread);
+
+        connection.onreconnecting((err) => {
             isConnectedRef.current = false;
+            log("Reconnecting...", err);
         });
 
-        connection.onreconnected(async (connectionId) => {
-            log("Reconnected with ID:", connectionId);
+        connection.onreconnected(async (id) => {
             isConnectedRef.current = true;
-
-            // Rejoin all active rooms
-            if (activeRoomsRef.current && activeRoomsRef.current.length > 0) {
-                await joinChatRooms(activeRoomsRef.current);
-            }
+            log("Reconnected:", id);
             await joinUserNotify();
+            if (activeRoomsRef.current.length) await joinChatRooms(activeRoomsRef.current);
         });
 
-        connection.onclose((error) => {
-            log("Connection closed:", error);
+        connection.onclose((err) => {
             isConnectedRef.current = false;
+            log("Closed:", err);
         });
-    }, [addMessage, updateMessage, updateMessageByCode, updateLastMessage, getLastMessageForRoom, updateChatRoomFromMessage, log, joinChatRooms, joinUserNotify]);
+    }, [updateLastMessage, updateChatRoomFromMessage, setRoomUnread, user?.id, enableDebugLogs, log, joinChatRooms, joinUserNotify]);
 
-    // Send message
-    const sendMessage = useCallback(async (
-        chatRoomId: string,
-        messageText: string,
-        additionalData?: any
-    ) => {
-        if (!connectionRef.current || !isConnectedRef.current) {
-            throw new Error("SignalR connection is not ready");
-        }
-
-        try {
-            const messageData = {
-                chatCode: chatRoomId,
-                messageText,
-                deviceId,
-                ...additionalData
-            };
-
-            await connectionRef.current.invoke("SendUserMessage", messageData);
-            log("Message sent:", messageData);
-            return true;
-        } catch (error) {
-            log("Failed to send message:", error);
-            throw error;
-        }
-    }, [deviceId, log]);
-
-    // Start connection
     const startConnection = useCallback(async () => {
         if (connectionRef.current) {
-            await connectionRef.current.stop();
+            try { await connectionRef.current.stop(); } catch { }
             connectionRef.current = null;
         }
+        const conn = createConnection();
+        connectionRef.current = conn;
+        setupEventHandlers(conn);
 
-        const connection = createConnection();
-        connectionRef.current = connection;
+        await conn.start();
+        isConnectedRef.current = true;
+        log("Connected:", conn.connectionId);
 
-        setupEventHandlers(connection);
+        await joinUserNotify();
+        if (roomIds?.length) await joinChatRooms(roomIds);
 
-        try {
-            await connection.start();
-            isConnectedRef.current = true;
-            log("SignalR Connected, Connection ID:", connection.connectionId);
-
-            // Auto join user notify
-            await joinUserNotify();
-
-            // Auto join tất cả rooms nếu có
-            if (roomIds && roomIds.length > 0) {
-                await joinChatRooms(roomIds);
-            }
-
-            return true;
-        } catch (error) {
-            log("Failed to start connection:", error);
-            isConnectedRef.current = false;
-            throw error;
-        }
+        return true;
     }, [createConnection, setupEventHandlers, joinUserNotify, joinChatRooms, roomIds, log]);
 
-    // Stop connection
     const stopConnection = useCallback(async () => {
-        if (connectionRef.current) {
-            await connectionRef.current.stop();
+        if (!connectionRef.current) return;
+        try { await connectionRef.current.stop(); } finally {
             connectionRef.current = null;
             isConnectedRef.current = false;
             currentRoomRef.current = null;
             activeRoomsRef.current = [];
             joinedRoomsRef.current.clear();
-            log("Connection stopped");
+            lastUnreadRef.current = {}; // reset cache
+            log("Stopped");
         }
     }, [log]);
 
-    // Get connection status
-    const getConnectionStatus = useCallback(() => ({
-        isConnected: isConnectedRef.current,
-        connectionId: connectionRef.current?.connectionId,
-        currentRoom: currentRoomRef.current,
-        activeRooms: activeRoomsRef.current,
-        joinedRooms: Array.from(joinedRoomsRef.current),
-        connectionState: connectionRef.current?.state
-    }), []);
-
-    // Effect để auto connect
     useEffect(() => {
         if (autoConnect && isAuthenticated) {
-            startConnection().catch((error) => {
-                log("Auto connection failed:", error);
-            });
+            startConnection().catch(e => log("Auto connect failed", e));
         }
-
-        return () => {
-            stopConnection();
-        };
+        return () => { stopConnection(); };
     }, [autoConnect, isAuthenticated, startConnection, stopConnection, log]);
 
-    // Effect để sync rooms khi roomIds thay đổi
+    // Sync join/leave khi danh sách roomIds thay đổi
     useEffect(() => {
-        if (isConnectedRef.current && roomIds) {
-            const currentJoinedRooms = Array.from(joinedRoomsRef.current);
-            const roomsToJoin = roomIds.filter(id => !joinedRoomsRef.current.has(id));
-            const roomsToLeave = currentJoinedRooms.filter(id => !roomIds.includes(id));
-
-            // Leave rooms không còn trong list
-            if (roomsToLeave.length > 0) {
-                leaveChatRooms(roomsToLeave);
-            }
-
-            // Join rooms mới
-            if (roomsToJoin.length > 0) {
-                joinChatRooms(roomsToJoin);
-            }
-        }
+        if (!isConnectedRef.current) return;
+        const current = Array.from(joinedRoomsRef.current);
+        const toJoin = roomIds.filter(id => !joinedRoomsRef.current.has(id));
+        const toLeave = current.filter(id => !roomIds.includes(id));
+        if (toLeave.length) void leaveChatRooms(toLeave);
+        if (toJoin.length) void joinChatRooms(toJoin);
     }, [roomIds, joinChatRooms, leaveChatRooms]);
 
     return {
         startConnection,
         stopConnection,
-        getConnectionStatus,
-        joinChatRooms,
-        leaveChatRooms,
-        joinUserNotify,
-        sendMessage,
         isConnected: isConnectedRef.current,
         joinedRooms: Array.from(joinedRoomsRef.current),
         activeRooms: activeRoomsRef.current,

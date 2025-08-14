@@ -11,7 +11,7 @@ import { streamText } from "@/utils/streamText";
 export function useSignalRChat(deviceId: string) {
     const setIsConnected = useSignalRChatStore((s) => s.setIsConnected);
 
-    const { addStreamChunk } = useSignalRStreamStore();
+    const { addStreamChunk, completeStream , setLoadingStream } = useSignalRStreamStore();
     const setSendMessage = useSignalRChatStore((s) => s.setSendMessage);
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const setIsSending = useChatStore.getState().setIsSending;
@@ -48,32 +48,20 @@ export function useSignalRChat(deviceId: string) {
         });
 
         const handleReceive = (msg: any) => {
-            console.log(msg)
             const fullText: string = msg?.messageText ?? "";
-            const streamId = String(msg?.code ?? msg?.id ?? Date.now());
-            const meta = {
-                streamId,
-                messageId: msg?.id,
-                code: msg?.code,
-                chatCode: msg?.chatInfo?.code ?? msg?.chatInfoId,
-                senderType: msg?.senderType,
-                botName: msg?.botName,
-                botAvatar: msg?.botAvatarUrl,
-                userName: msg?.userName,
-                userAvatar: msg?.userAvatar,
-                replyTo: msg?.replyToMessageCode ?? msg?.replyToMessage?.code ?? null,
-                createdAt: msg?.createDate,
-                raw: msg,
-            };
-            // addStreamChunk({ ...meta, chunk: "", completeText: "", isStart: true });
-            // if (!fullText) {
-            //     addStreamChunk({ ...meta, chunk: "", completeText: "", isComplete: true });
-            //     useChatStore.getState().setIsSending(false);
-            //     return;
-            // }
-            streamText(fullText, meta, addStreamChunk);
-        };
 
+            const chatCode = msg?.chatInfo?.code ?? String(msg?.chatInfoId ?? "");
+            const messageCode = msg?.code || `${chatCode}:${msg?.id}`;
+
+            const meta = {
+                id: msg?.id,
+                code: msg?.code,
+                chatCode,
+                messageCode,
+            };
+            setLoadingStream(true);
+            streamText(fullText, meta, addStreamChunk, setLoadingStream, completeStream);
+        };
         connection.on("ReceiveMessage", handleReceive);
 
         connection.onclose(() => {

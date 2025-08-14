@@ -23,7 +23,7 @@ const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, 
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Type name"
+                placeholder={t("Type name")}
                 className="bg-transparent outline-none  flex-grow"
                 onFocus={inputOnFocus}
             />
@@ -53,7 +53,7 @@ const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, 
                                     }}
                                     className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-netural-500 border-b-[0.5px] border-netural-50 transition"
                                 >
-                                    Add Partner
+                                    {t("Add Partner")}
                                     <PartnerIcon />
                                 </button>
                                 <button
@@ -63,7 +63,7 @@ const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, 
                                     }}
                                     className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-netural-500 border-b-[0.5px] border-netural-50 transition"
                                 >
-                                    Add Group
+                                    {t("Add Group")}
                                     <GroupIcon />
                                 </button>
                             </div>
