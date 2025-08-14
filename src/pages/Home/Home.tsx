@@ -7,7 +7,7 @@ import AppImage from '@/components/common/AppImage';
 
 import medicalSupportSvg from "@/icons/logo/home/medical_support.svg";
 import documentTranslationSvg from "@/icons/logo/home/document_translation.svg";
-import drugInstructionsSvg from "@/icons/logo/home/drug_instructions.svg";
+import menuTranslation from "@/icons/logo/home/document_translation.svg";
 import foodDiscoverySvg from "@/icons/logo/home/food_discovery.svg";
 
 import { HomeHeader } from './components/HomeHeader';
@@ -18,64 +18,72 @@ function Home() {
   if (!ready) return null;
   const { data: userInfo } = useAuthInfo();
 
-  const features = [
-    {
-      image: (
-        <AppImage
-          src={medicalSupportSvg}
-          alt="Medical Support"
-          className="w-full h-full object-cover flex-1 "
-          fallbackRatio={16 / 9}
-          hardHeight={0}
-          effect="blur"
-        />
-      ),
-      title: t("Medical Support"),
-      topic: TopicType.MedicalSupport,
-    },
-    {
-      image: (
-        <AppImage
-          src={documentTranslationSvg}
-          alt="Document Translation"
-          className="w-full h-full object-cover flex-1 "
-          fallbackRatio={16 / 9}
-          hardHeight={0}
-          effect="blur"
-        />
-      ),
-      title: t("Document Translation"),
-      topic: TopicType.DocumentTranslation,
-    },
-    {
-      image: (
-        <AppImage
-          src={drugInstructionsSvg}
-          alt="Drug Instructions"
-          className="w-full h-full object-cover flex-1 "
-          fallbackRatio={16 / 9}
-          hardHeight={0}
-          effect="blur"
-        />
-      ),
-      title: t("Drug Instructions"),
-      topic: TopicType.DrugInstructions,
-    },
-    {
-      image: (
-        <AppImage
-          src={foodDiscoverySvg}
-          alt="Food Discovery"
-          className="w-full h-full object-cover flex-1 "
-          fallbackRatio={16 / 9}
-          hardHeight={0}
-          effect="blur"
-        />
-      ),
-      title: t("Food Discovery"),
-      topic: TopicType.FoodDiscovery,
-    },
-  ];
+const features = [
+  {
+    image: (
+      <AppImage
+        src={medicalSupportSvg}
+        alt="Medical Report Interpretation"
+        className="w-full h-full object-contain"
+        wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
+        effect="blur"
+        hardHeight={80}
+
+      />
+    ),
+    title: t("Medical Report Interpretation"),
+    desc: t("Analyze your medical reports for diagnoses and medication"),
+    topic: TopicType.MedicalSupport,
+  },
+  {
+    image: (
+      <AppImage
+        src={documentTranslationSvg}
+        alt="Contract & Document Analysis"
+        className="w-full h-full object-contain"
+        wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
+        effect="blur"
+        hardHeight={80}
+
+      />
+    ),
+    title: t("Contract & Document Analysis"),
+    desc: t("Scan documents to find key terms and hidden risks"),
+    topic: TopicType.DocumentTranslation,
+  },
+  // {
+  //   image: (
+  //     <AppImage
+  //       src={menuTranslation}
+  //       alt="Menu Translation"
+  //       className="w-full h-full object-contain"
+  //       wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
+  //       effect="blur"
+  //       hardHeight={80}
+  //     />
+  //   ),
+  //   title: t("Menu Translation"),
+  //   desc: t("Decode any menu with a simple scan"),
+  //   topic: TopicType.DrugInstructions,
+  // },
+  {
+    image: (
+      <AppImage
+        src={foodDiscoverySvg}
+        alt="Food Label Interpretation"
+        className="w-full h-full object-contain"
+        wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
+        effect="blur"
+        hardHeight={80}
+
+      />
+    ),
+    title: t("Food Label Interpretation"),
+    desc: t("Scan food labels for instant ingredient breakdowns"),
+    topic: TopicType.FoodDiscovery,
+  },
+];
+
 
   const howItWorks = [
     {

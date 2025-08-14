@@ -17,14 +17,16 @@ export const useCreateChatGroup = (history: any) => {
                     id: chatInfo.id,
                     code: chatInfo.code,
                     title: chatInfo.title,
-                    avatarRoomChat: "", 
+                    avatarRoomChat: "",
                     type: chatInfo.type,
                     status: chatInfo.status,
                     createDate: chatInfo.createDate,
-                    updateDate: "", 
+                    updateDate: "",
                     unreadCount: 0,
                     lastMessageInfo: null,
                     topic: chatInfo.topic,
+                    participants: [],
+
                 });
                 setRoomMembers(data);
                 history.push(`/social-chat/t/${data.chatCode}`);

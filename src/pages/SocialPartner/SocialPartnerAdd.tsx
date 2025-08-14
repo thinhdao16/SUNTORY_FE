@@ -2,7 +2,7 @@ import MotionBottomSheet from '@/components/common/bottomSheet/MotionBottomSheet
 import MotionStyles from '@/components/common/bottomSheet/MotionStyles';
 import ShareQRModal from '@/components/common/bottomSheet/ShareQRModal';
 import React from 'react';
-import { FiArrowLeft,  } from 'react-icons/fi'
+import { FiArrowLeft, FiDownload, } from 'react-icons/fi'
 import { useHistory } from 'react-router';
 import {
     handleTouchStart as handleTouchStartUtil,
@@ -15,6 +15,9 @@ import { QRCodeCanvas } from "qrcode.react";
 import { useAuthStore } from '@/store/zustand/auth-store';
 import ShareQRCodeIcon from "@/icons/logo/social-chat/share-qr-code.svg?react"
 import QRCodeMainIcon from "@/icons/logo/social-chat/qr-code-main.svg?react"
+import { saveImage } from '@/utils/save-image';
+import { getPublicUrlFromCanvas } from '@/utils/get-public-url-from-canvas';
+import NativeGalleryPicker from '@/components/gallery-picker/NativeGalleryPicker';
 
 const velocityThreshold = 0.4;
 const SocialPartnerAdd = () => {
@@ -78,7 +81,7 @@ const SocialPartnerAdd = () => {
                     style={{
                         backgroundColor: backgroundColor,
                         transition: isOpen ? "none" : "background-color 0.3s ease",
-                        paddingTop: "var(--safe-area-inset-top)",
+                        // paddingTop: "var(--safe-area-inset-top)",
                     }}
                 >
                     <MotionBottomSheet
@@ -103,11 +106,15 @@ const SocialPartnerAdd = () => {
                                         <img
                                             src={user?.avatarLink || "/favicon.png"}
                                             alt={user?.name}
-                                            className="w-10 h-10 rounded-xl "
+                                            className="w-10 h-10 rounded-xl object-center"
                                         />
-                                        <div className='text-start'>
-                                            <p className="font-semibold text-sm">{user?.name}</p>
-                                            <p className="text-xs text-gray-500">{user?.email}</p>
+                                        <div className="text-start min-w-0">
+                                            <p className="font-semibold text-sm truncate" title={user?.name || ""}>
+                                                {user?.name}
+                                            </p>
+                                            <p className="text-xs text-gray-500 truncate" title={user?.email || ""}>
+                                                {user?.email}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="relative  bg-white p-9 rounded-xl border border-main">
@@ -122,12 +129,30 @@ const SocialPartnerAdd = () => {
                                         <div className="absolute bottom-6 left-6 w-7 h-7 border-b-4 border-l-4 border-black rounded-bl-md" />
                                         <div className="absolute bottom-6 right-6 w-7 h-7 border-b-4 border-r-4 border-black rounded-br-md" />
                                     </div>
-                                    <button className=" w-full  bg-main text-white text-sm px-6 py-2 rounded-full flex items-center justify-center gap-2"
+                                    <button className=" w-full  bg-main text-white text-sm font-semibold px-6 py-2 rounded-full flex items-center justify-center gap-2"
                                         onClick={() => openModal("shareQR")}
                                     >
                                         <ShareQRCodeIcon />
                                         {t("Share QR Code")}
                                     </button>
+                                    <button
+                                        className="w-full border border-main text-main text-sm font-semibold px-6 py-2 rounded-full flex items-center justify-center gap-2"
+                                        onClick={async () => {
+                                            const canvas = document.getElementById('qr-gen') as HTMLCanvasElement | null;
+                                            if (!canvas) return;
+                                            const dataUrl = canvas.toDataURL('image/png');
+
+                                            try {
+                                                await saveImage({ dataUrlOrBase64: dataUrl, fileName: 'qr-code.png' });
+                                            } catch (e) {
+                                                console.error(e);
+                                            }
+                                        }}
+                                    >
+                                        <FiDownload className="text-main text-lg" />
+                                        {t('Save Image')}
+                                    </button>
+
                                 </div>
                             </div>
                             <div className="my-6">
@@ -139,7 +164,6 @@ const SocialPartnerAdd = () => {
                                 />
                             </div>
                         </div>
-
                         <div className='px-6 border-t-[1px] border-netural-100 py-6'>
                             <div className="flex items-center gap-2 " onClick={handleQR}>
                                 <QRCodeMainIcon />
@@ -154,6 +178,7 @@ const SocialPartnerAdd = () => {
                         handleTouchStart={handleTouchStart}
                         handleTouchMove={handleTouchMove}
                         handleTouchEnd={handleTouchEnd}
+                        getPublicUrl={() => getPublicUrlFromCanvas('qr-gen', 'qr-code.png')}
                     />
                     <SearchPartnerModal
                         isOpen={isOpen.search}

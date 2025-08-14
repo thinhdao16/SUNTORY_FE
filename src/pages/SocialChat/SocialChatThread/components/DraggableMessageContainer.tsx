@@ -11,6 +11,7 @@ interface DraggableMessageContainerProps {
     onLongPress: () => void;
     messageId: string | number;
     setShowActionsMobile: (show: boolean) => void;
+    hasReachedLimit?: boolean;
 }
 
 export const DraggableMessageContainer: React.FC<DraggableMessageContainerProps> = ({
@@ -20,7 +21,8 @@ export const DraggableMessageContainer: React.FC<DraggableMessageContainerProps>
     onReply,
     onLongPress,
     messageId,
-    setShowActionsMobile
+    setShowActionsMobile,
+    hasReachedLimit
 }) => {
     const isNative = Capacitor.isNativePlatform();
     const controls = useAnimation();
@@ -76,19 +78,19 @@ export const DraggableMessageContainer: React.FC<DraggableMessageContainerProps>
         >
             <motion.div
                 className={`flex gap-2 ${isUser ? "flex-row-reverse" : ""} items-start w-full`}
-                drag="x"
+                drag={hasReachedLimit ? false : "x"}
                 dragDirectionLock
                 dragConstraints={isUser ? { left: -100, right: 0 } : { left: 0, right: 100 }}
                 dragElastic={0.2}
                 style={{
-                    touchAction: isNative ? 'pan-y' : 'auto' // ← Platform specific
+                    touchAction: isNative ? 'pan-y' : 'auto'
                 }}
                 onDrag={(e, info) => {
                     if (longPressTimer.current) {
                         clearTimeout(longPressTimer.current);
                         longPressTimer.current = null;
                     }
-                    if (!isRevoked) {
+                    if (!isRevoked && !hasReachedLimit) {
                         if (isUser && info.offset.x > 0) {
                             controls.start({ x: 0 });
                         }
@@ -98,18 +100,21 @@ export const DraggableMessageContainer: React.FC<DraggableMessageContainerProps>
                     }
                 }}
                 onDragEnd={(e, info) => {
-                    const offset = info.offset.x;
-                    const threshold = 80;
-                    const shouldTrigger =
-                        (!isUser && offset > threshold) || (isUser && offset < -threshold);
-                    if (shouldTrigger) {
-                        onReply();
+                    if (!hasReachedLimit) {
+                        const offset = info.offset.x;
+                        const threshold = 80;
+                        const shouldTrigger =
+                            (!isUser && offset > threshold) || (isUser && offset < -threshold);
+                        if (shouldTrigger) {
+                            onReply();
+                        }
                     }
                     controls.start({ x: 0 });
                 }}
                 animate={controls}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
+
                 <div
                     className="flex-1 flex  items-start gap-1 relative group"
                     onTouchStart={handleLongPressStart}

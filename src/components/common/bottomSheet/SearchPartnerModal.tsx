@@ -12,6 +12,8 @@ import { useToastStore } from "@/store/zustand/toast-store";
 import { useHistory } from "react-router";
 import { useCreateAnonymousChat } from "@/pages/SocialChat/hooks/useSocialChat";
 import { useSocialChatStore } from "@/store/zustand/social-chat-store";
+import { useSocialSignalR } from "@/hooks/useSocialSignalR";
+import useDeviceInfo from "@/hooks/useDeviceInfo";
 interface SearchPartnerModalProps {
   isOpen: boolean;
   translateY: number;
@@ -31,6 +33,9 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
 }) => {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 500);
+  
+  const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
+
   const showToast = useToastStore((state) => state.showToast);
   const { setRoomChatInfo } = useSocialChatStore();
 
@@ -49,6 +54,12 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
   const acceptRequest = useAcceptFriendRequest(showToast);
   const rejectRequest = useRejectFriendRequest(showToast);
   const { mutateAsync: createAnonymousChat } = useCreateAnonymousChat();
+  useSocialSignalR(deviceInfo.deviceId ?? "", {
+    roomId: "",
+    refetchRoomData: () => { void refetch(); },
+    autoConnect: true,
+    enableDebugLogs: false,
+  });
   const users = data?.pages.flatMap((page) => page ?? []) ?? [];
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -83,6 +94,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
           updateDate: new Date().toISOString(),
           unreadCount: 0,
           lastMessageInfo: null,
+          participants: [],
           topic: null,
         });
         history.push(`/social-chat/t`);
@@ -176,7 +188,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
                 {users.map((user) => (
                   <div
                     key={user?.id}
-                    className="flex items-center justify-between bg-blue-50 px-4 py-3 rounded-xl"
+                    className="flex items-center justify-between border border-netural-50 px-3 py-2 rounded-xl"
                   >
                     <div className="flex items-center">
                       <img

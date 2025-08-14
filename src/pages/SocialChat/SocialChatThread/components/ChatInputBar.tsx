@@ -40,6 +40,11 @@ interface ChatInputBarProps {
     openTranslateExpandSheet: () => void;
     onTranslate: (text: string) => Promise<void>
     setInputBarHeight: (h: number) => void;
+    createTranslationMutation: any;
+    actionFieldSend:string;
+    isTranslating:boolean;
+    translateActionStatus:boolean;
+    setTranslateActionStatus: (value: boolean) => void
 }
 
 const ChatInputBar: React.FC<ChatInputBarProps> = ({
@@ -67,22 +72,25 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     openInputExpandSheet,
     openTranslateExpandSheet,
     onTranslate,
-    setInputBarHeight
-
+    setInputBarHeight,
+    createTranslationMutation,
+    actionFieldSend,
+    isTranslating,
+    translateActionStatus,
+    setTranslateActionStatus
 }) => {
     const [focused, setFocused] = useState({ input: false, translate: false });
-    // const [actionStatus, setActionStatus] = useState<boolean>(false);
-    const [translateActionStatus, setTranslateActionStatus] = useState<boolean>(false);
     const [open, setOpen] = useState(false);
+    const [dots, setDots] = React.useState(".");
+
 
     const containerRef = useRef<HTMLDivElement>(null);
-    const sendTranslateBtnRef = useRef<HTMLButtonElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
 
-    const preventBlur = (e: React.MouseEvent) => e.preventDefault();
+    const preventBlur = (e: React.SyntheticEvent) => e.preventDefault();
+    const keepFocus = () => messageRef.current?.focus({ preventScroll: true });
 
     const onFocus = (field: string) => {
-        // setActionStatus(true);
         if (field === "input") {
             setFocused({ ...focused, [field]: true, translate: false });
             const textarea = messageRef.current;
@@ -105,12 +113,12 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     };
 
     const onBlur = (field: string) => setFocused({ ...focused, [field]: false });
-    // const handleOpenAction = () => {
-    //     setActionStatus(false);
-    // };
 
     const handleChangeInput = (value: string) => {
         setMessageValue(value);
+        if (value.trim() === "") {
+            setMessageTranslate("");
+        }
     };
     const handleChangeTranslate = (v: string) => {
         setMessageTranslate(v);
@@ -154,6 +162,15 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
         report();
         return () => ro.disconnect();
     }, [setInputBarHeight]);
+    useEffect(() => {
+        if (!isTranslating) return;
+        let count = 1;
+        const interval = setInterval(() => {
+            count = count % 3 + 1;
+            setDots(".".repeat(count));
+        }, 300);
+        return () => clearInterval(interval);
+    }, [isTranslating]);
     return (
         <div
             ref={containerRef}
@@ -168,43 +185,77 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
             )}
             {translateActionStatus && (
                 <div className="flex items-end gap-4 px-6 py-2 border-t-1 border-netural-50">
-                    <textarea
-                        placeholder={t('Translate to...')}
-                        ref={messageTranslateRef}
-                        value={messageTranslate}
-                        onChange={(e) => handleChangeTranslate(e.target.value)}
-                        rows={1}
-                        className={`flex-1 min-h-[35px] ${focused.translate
-                            //    &&  actionStatus
-                            ? 'max-h-20 overflow-y-auto whitespace-normal'
-                            : '!max-h-[35px]  !truncate whitespace-nowrap overflow-hidden'
-                            } min-w-0 max-w-full resize-none overflow-y-auto px-4 py-2 rounded-3xl focus:outline-none placeholder:text-netural-100-100`}
-                        onFocus={() => onFocus('translate')}
-                        onClick={() => onFocus('translate')}
-                        onBlur={() => onBlur('translate')}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                sendTranslateBtnRef.current?.click();
+                    <div className="relative flex-1">
+                        {isTranslating && !messageTranslate && (
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-netural-200 pointer-events-none flex">
+                                Translating
+                                <span className="flex">
+                                    {dots.split("").map((dot, i) => (
+                                        <span
+                                            key={i}
+                                            className="animate-bounce"
+                                            style={{ animationDelay: `${i * 0.15}s` }}
+                                        >
+                                            {dot}
+                                        </span>
+                                    ))}
+                                </span>
+                            </div>
+                        )}
+                        <textarea
+                            placeholder={
+                                isTranslating
+                                    ? ""
+                                    : t("Translate to...")
                             }
-                        }}
-                    />
+                            ref={messageTranslateRef}
+                            value={messageTranslate}
+                            onChange={(e) => handleChangeTranslate(e.target.value)}
+                            rows={1}
+                            disabled={hasReachedLimit}
+                            className={`flex-1 min-h-[35px] ${focused.translate
+                                ? "max-h-20 overflow-y-auto whitespace-normal"
+                                : "!max-h-[35px] !truncate whitespace-nowrap overflow-hidden"
+                                } min-w-0 max-w-full resize-none overflow-y-auto px-4 py-2 rounded-3xl focus:outline-none placeholder:text-netural-200`}
+                            onFocus={() => onFocus("translate")}
+                            onClick={() => onFocus("translate")}
+                            onBlur={() => onBlur("translate")}
+                            onKeyDown={(e) => {
+                                const event = e as unknown as {
+                                    isComposing?: boolean;
+                                    key: string;
+                                    shiftKey: boolean;
+                                    preventDefault: () => void;
+                                };
+                                if (
+                                    event.key === "Enter" &&
+                                    !event.shiftKey &&
+                                    !event.isComposing
+                                ) {
+                                    event.preventDefault();
+                                    handleSendMessage(e, actionFieldSend, true);
+                                }
+                            }}
+                        />
+                    </div>
                     <div className="pb-1 gap-4 flex items-center h-fit">
                         <button onClick={openTranslateExpandSheet}
                         >
                             <ExpandTranslateIcon />
                         </button>
-                        {messageTranslate.trim() && (
+
+                        {/* {messageTranslate.trim() && (
                             <button
                                 ref={sendTranslateBtnRef}
                                 disabled={hasReachedLimit}
                                 className="rounded-full p-2 flex items-center justify-center bg-chat-to"
                                 type="button"
+                                onMouseDown={(e) => e.preventDefault()}
                                 onClick={(e) => handleSendMessage(e, "inputTranslate", true)}
                             >
                                 <SendTranslateIcon />
                             </button>
-                        )}
+                        )} */}
                     </div>
                     {/* <button className="bg-chat-to rounded-full p-2 flex items-center justify-center">
                         <SendTranslateIcon />
@@ -218,6 +269,8 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     value={messageValue}
                     onChange={(e) => handleChangeInput(e.target.value)}
                     rows={1}
+                    disabled={hasReachedLimit}
+
                     className={`flex-1 min-h-[35px] ${focused.input
                         //    &&  actionStatus
                         ? 'max-h-30 overflow-y-auto whitespace-normal'
@@ -227,7 +280,8 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     onClick={() => onFocus('input')}
                     onBlur={() => onBlur('input')}
                     onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
+                        const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
+                        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
                             e.preventDefault();
                             sendBtnRef.current?.click();
                         }
@@ -253,9 +307,17 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     {messageValue.trim() && (
                         <button
                             ref={sendBtnRef}
-                            disabled={hasReachedLimit}
                             type="button"
-                            onClick={(e) => handleSendMessage(e, "input", true)}
+                            disabled={hasReachedLimit}
+                            onMouseDown={preventBlur}
+                            onTouchStart={preventBlur}
+                            onClick={(e) => {
+                                keepFocus();
+                                requestAnimationFrame(() => {
+                                    handleSendMessage(e, actionFieldSend, true);
+                                    requestAnimationFrame(() => keepFocus());
+                                });
+                            }}
                         >
                             <SendIcon />
                         </button>

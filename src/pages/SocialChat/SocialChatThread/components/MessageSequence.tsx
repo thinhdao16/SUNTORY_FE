@@ -9,6 +9,8 @@ interface MessageSequenceProps {
     onRevokeMessage: (messageCode: string | number) => void;
     onReplyMessage: (message: ChatMessage) => void;
     isGroup?: boolean;
+    currentUserId?: number | string | null;
+    hasReachedLimit?: boolean;
 }
 
 export const MessageSequence: React.FC<MessageSequenceProps> = ({
@@ -17,6 +19,8 @@ export const MessageSequence: React.FC<MessageSequenceProps> = ({
     onRevokeMessage,
     onReplyMessage,
     isGroup = false,
+    currentUserId = null,
+    hasReachedLimit = false,
 }) => {
     return (
         <div className="flex flex-col">
@@ -47,6 +51,8 @@ export const MessageSequence: React.FC<MessageSequenceProps> = ({
                             isRevoked={msg.isRevoked === 1}
                             isReply={msg.replyToMessageId !== undefined && msg.replyToMessageId !== null}
                             isGroup={isGroup}
+                            currentUserId={currentUserId}
+                            hasReachedLimit={hasReachedLimit}
                         />
                     </div>
                 );

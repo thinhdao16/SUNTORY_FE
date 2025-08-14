@@ -12,6 +12,7 @@ import { MessageEditor } from "./MessageEditor";
 import { DraggableMessageContainer } from "./DraggableMessageContainer";
 import { Capacitor } from "@capacitor/core";
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded-full.svg";
+import { useSocialChatStore } from "@/store/zustand/social-chat-store";
 
 interface ChatMessageItemProps {
     msg: any;
@@ -25,7 +26,8 @@ interface ChatMessageItemProps {
     isRevoked: boolean;
     isReply: boolean;
     isGroup?: boolean;
-
+    currentUserId?: number | string | null;
+    hasReachedLimit?: boolean;
 }
 
 const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
@@ -40,6 +42,8 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     isRevoked,
     isReply,
     isGroup = false,
+    currentUserId = null,
+    hasReachedLimit = false,
 }) => {
     const isNative = Capacitor.isNativePlatform();
 
@@ -54,6 +58,22 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     const [previewIndex, setPreviewIndex] = useState(0);
 
     const actionContainerRef = useRef<HTMLDivElement>(null);
+
+    const { roomChatInfo } = useSocialChatStore();
+    const avatarUrl = useMemo(() => {
+        // if (msg?.userAvatar) return msg.userAvatar;
+
+        const participant = roomChatInfo?.participants?.find(
+            (p: any) => p.user?.id === msg.userId
+        );
+
+        return participant?.user?.avatar || roomChatInfo?.avatarRoomChat || avatarFallback;
+    }, [msg?.userAvatar, msg?.userId, roomChatInfo]);
+
+    const replyTo = msg.replyToMessage;
+    const repliedName = replyTo?.userName ?? "";
+    const isSelfReply = !!replyTo && replyTo.userId === msg.userId;
+    const isReplyingToMe = !!replyTo && currentUserId && replyTo.userId === currentUserId;
 
     const handleStartEdit = () => {
         setIsEditing(true);
@@ -121,7 +141,8 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     const shouldShowAvatar = msg._shouldShowAvatar !== false;
     const isFirstInSequence = msg._isFirstInSequence !== false;
     const showSenderName = !!msg._showSenderName && !!msg.userName;
-    
+    const truncateName = (name: string, maxLength = 20) =>
+        name.length > maxLength ? name.slice(0, maxLength) + "…" : name;
     return (
         <>
             <DraggableMessageContainer
@@ -131,11 +152,12 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 onReply={handleStartReply}
                 onLongPress={handleLongPress}
                 setShowActionsMobile={setShowActionsMobile}
+                hasReachedLimit={hasReachedLimit}
             >
                 {!isUser && shouldShowAvatar && (
                     <div className="flex flex-col items-center mr-2">
                         <img
-                            src={msg.userAvatar || avatarFallback}
+                            src={avatarUrl || avatarFallback}
                             alt={msg.userName || "Avatar"}
                             className="w-[30px] aspect-square object-cover rounded-full"
                             onError={(e) => {
@@ -146,6 +168,33 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 )}
                 {!isUser && !shouldShowAvatar && <div className="w-[30px] ml-2" />}
                 <div className="flex-1 flex flex-col items-start gap-1 relative group">
+                    <div className={`flex w-full  ${isUser ? "justify-end pr-4" : "justify-start pl-4"} gap-1 `}>
+                        {isEdited && !isRevoked && !isUser && (
+                            <div className={` text-xs text-main font-semibold `}>
+                                Edited
+                            </div>
+                        )}
+                        {replyTo && (
+                            <div
+                                className={`text-xs text-gray-500 mb-1 ${isUser ? "text-right" : "text-left"}`}
+                            >
+                                {isSelfReply
+                                    ? (isUser
+                                        ? "You are replying to yourself"
+                                        : `${truncateName(msg.userName)} is replying to themselves`)
+                                    : (isUser
+                                        ? `You are replying to ${truncateName(repliedName)}`
+                                        : (isReplyingToMe
+                                            ? `${truncateName(msg.userName)} is replying to you`
+                                            : `${truncateName(msg.userName)} is replying to ${truncateName(repliedName)}`))}
+                            </div>
+                        )}
+                        {isEdited && !isRevoked && isUser && (
+                            <div className={` text-xs text-main font-semibold `}>
+                                Edited
+                            </div>
+                        )}
+                    </div>
                     {isGroup && showSenderName && (
                         <div className="text-xs text-gray-500 ml-1 mb-0.5">{msg.userName}</div>
                     )}
@@ -163,6 +212,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                         onRevoke={handleStartRevoke}
                         onReply={handleStartReply}
                         showActionsMobile={showActionsMobile}
+                        hasReachedLimit={hasReachedLimit}
                     />
                     {showText && (
                         <>
@@ -185,6 +235,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                                     onReply={handleStartReply}
                                     actionContainerRef={actionContainerRef}
                                     showActionsMobile={showActionsMobile}
+                                    hasReachedLimit={hasReachedLimit}
                                 />
                             </motion.div>
                         </>

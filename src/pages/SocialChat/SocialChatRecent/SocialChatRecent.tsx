@@ -8,19 +8,17 @@ import { formatTimeFromNow } from '@/utils/formatTime';
 import { useSocialSignalRListChatRoom } from '@/hooks/useSocialSignalRListChatRoom';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
+import { RoomChatInfo } from '@/types/social-chat';
+import { ChatInfoType } from '@/constants/socialChat';
+import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
 
 export default function SocialChatRecent() {
   const { t } = useTranslation();
   const history = useHistory();
   const isNative = Capacitor.isNativePlatform();
   const deviceInfo: { deviceId: string | null } = useDeviceInfo();
-  
-  const { 
-    chatRooms,
-    setChatRooms,
-    setRoomChatInfo, 
-    getLastMessageForRoom 
-  } = useSocialChatStore();
+
+  const { chatRooms, setChatRooms, setRoomChatInfo, getLastMessageForRoom, getRoomUnread, clearRoomUnread } = useSocialChatStore();
 
   const {
     data,
@@ -33,14 +31,11 @@ export default function SocialChatRecent() {
   const {
     data: listDataChatRooms,
   } = useListChatRooms();
+  const { data: userInfo } = useAuthInfo();
 
   const listRoomIdChatRooms = listDataChatRooms?.pages?.flat()?.map((room: RoomChatInfo) => room.code) || [];
-  
-  const {
-    isConnected,
-    joinedRooms,
-    getConnectionStatus
-  } = useSocialSignalRListChatRoom(deviceInfo.deviceId ?? '', {
+
+  useSocialSignalRListChatRoom(deviceInfo.deviceId ?? '', {
     roomIds: listRoomIdChatRooms,
     autoConnect: true,
     enableDebugLogs: true
@@ -54,14 +49,34 @@ export default function SocialChatRecent() {
       setChatRooms(allRooms);
     }
   }, [data, setChatRooms]);
-
-  const getDisplayMessageText = (room: RoomChatInfo) => {
-    const storeLastMessage = getLastMessageForRoom(room.code);
-    if (storeLastMessage) {
-      return storeLastMessage.messageText || "📷 Hình ảnh";
+  const getDisplayMessageText = (room: RoomChatInfo, currentUserId: number) => {
+    const storeLast = getLastMessageForRoom(room.code);
+    const last = storeLast ?? room?.lastMessageInfo;
+    if (!last) return t('No messages');
+    if (last.isRevoked === 1 || last.isRevoked === true) {
+      return t('This message was removed');
     }
-    
-    return room?.lastMessageInfo?.messageText || t('No messages');
+    const text = (last.messageText ?? '').trim();
+    const attachments = Array.isArray(last.chatAttachments) ? last.chatAttachments : [];
+    if (!text && attachments.length === 0) {
+      return t('This message was removed');
+    }
+    let content = text || `📷 ${t('Photo')}`;
+    if (room.type === ChatInfoType.UserVsUser) {
+      if (last.userId === currentUserId) {
+        content = `${t('You')}: ${content}`;
+      }
+    }
+
+    if (room.type === ChatInfoType.Group) {
+      if (last.userId !== currentUserId && last.userName) {
+        content = `${last.userName}: ${content}`;
+      } else if (last.userId === currentUserId) {
+        content = `${t('You')}: ${content}`;
+      }
+    }
+
+    return content;
   };
 
   const getLatestUpdateDate = (room: RoomChatInfo) => {
@@ -99,39 +114,53 @@ export default function SocialChatRecent() {
           }`}
       >
         <div className="">
-          {/* Use chatRooms from store instead of computed useMemo */}
-          {chatRooms.map((room) => (
-            <div
-              key={room.id}
-              onClick={() => {
-                setRoomChatInfo(room);
-                history.push(`/social-chat/t/${room.code}`);
-              }}
-              className="py-2 flex items-center justify-between bg-white hover:bg-gray-100 cursor-pointer"
-            >
-              <div className="flex items-center">
-                <img
-                  src={room?.avatarRoomChat || avatarFallback}
-                  alt={room?.title}
-                  className="w-[50px] h-[50px] rounded-2xl object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = avatarFallback;
-                  }}
-                />
-                <div className="ml-3">
-                  <p className="text-base font-semibold truncate max-w-xs">{room.title}</p>
-                  <p className="text-xs text-gray-500 truncate max-w-xs">
-                    {getDisplayMessageText(room)}
+          {chatRooms.map((room) => {
+            const unread = room.unreadCount ?? getRoomUnread(room.code) ?? 0;
+            const isUnread = unread > 0;
+            return (
+              <div
+                key={room.id}
+                onClick={() => {
+                  setRoomChatInfo(room);
+                  clearRoomUnread(room.code);
+                  history.push(`/social-chat/t/${room.code}`);
+                }}
+                className="py-2 flex items-center justify-between bg-white hover:bg-gray-100 cursor-pointer"
+              >
+                <div className="flex items-center">
+                  <img
+                    src={room?.avatarRoomChat || avatarFallback}
+                    alt={room?.title}
+                    className={`w-[50px] h-[50px] rounded-2xl object-cover `}
+                    onError={(e) => { e.currentTarget.src = avatarFallback; }}
+                  />
+                  <div className="ml-3">
+                    <p className="text-base font-semibold truncate max-w-xs">{room.title}</p>
+
+                    <p
+                      className={`text-xs max-w-xs  text-netural-300 ${isUnread && "font-semibold " } overflow-hidden text-ellipsis whitespace-nowrap`}
+                    >
+                      {(() => {
+                        const text = getDisplayMessageText(room, userInfo?.id || 0);
+                        return text.length > 38 ? text.slice(0, 38) + "..." : text;
+                      })()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right min-w-[64px] flex flex-col items-end gap-2 justify-center">
+                  <p className={`text-xs text-netural-500 ${isUnread && 'font-semibold '}`}>
+                    {formatTimeFromNow(getLatestUpdateDate(room), t)}
                   </p>
+                  {isUnread && (
+                    <button className="flex items-center justify-center min-w-[16px] aspect-square p-1 rounded-full text-white text-[8.53px] bg-main">
+                      {unread > 99 ? '99+' : unread}
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-400">
-                  {formatTimeFromNow(getLatestUpdateDate(room), t)}
-                </p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
 
           {(isLoading || isFetchingNextPage) && (
             <div className="text-center py-4 text-gray-500 text-sm">{t('Loading...')}</div>

@@ -1,16 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { RefObject, useEffect, useState, useRef } from "react";
-import { useQuery } from "react-query";
+import { RefObject, useEffect, useState, useRef, useCallback } from "react";
+import { useInfiniteQuery } from "react-query";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { getChatMessages } from "@/services/chat/chat-service";
 
-export interface ChatStreamMessage {
-    id: number;
-    text: string;
-    isRight: boolean;
-    createdAt: number;
-    [x: string]: any;
-}
+const PAGE_SIZE = 30;
 
 export function useChatStreamMessages(
     messageRef: RefObject<any>,
@@ -22,19 +16,48 @@ export function useChatStreamMessages(
 ) {
     const { messages, setMessages, addMessage, clearMessages } = useChatStore();
     const [messageValue, setMessageValue] = useState("");
-    const { isLoading, refetch, isFetching } = useQuery(
+
+    const {
+        data,
+        isLoading,
+        isFetching,
+        fetchNextPage,           
+        hasNextPage,
+        refetch,
+        isFetchingNextPage,
+    } = useInfiniteQuery(
         ["chatMessages", sessionId],
-        () => (sessionId ? getChatMessages(sessionId) : []),
+        async ({ pageParam = 0 }) => {
+            if (!sessionId) return { items: [], hasMore: false };
+            return getChatMessages(sessionId, pageParam, PAGE_SIZE);
+        },
         {
-            enabled: !!sessionId &&
-                !hasFirstSignalRMessage &&
-                isOnline,
-            onSuccess: (data) => setMessages(data),
-            onError: () => setMessages([]),
+            enabled: !!sessionId && !hasFirstSignalRMessage && isOnline,
+            getNextPageParam: (lastPage, allPages) =>
+                lastPage.hasMore ? allPages.length + 1 : undefined,
+            onSuccess: (res) => {
+                const flat = (res.pages ?? []).flatMap((p: any) => p.items ?? []);
+                setMessages(flat);
+            },
             refetchOnWindowFocus: false,
         }
     );
+
+    const lastPage = data?.pages?.[data.pages.length - 1] ?? null;
+
     const prevOnline = useRef(isOnline);
+    useEffect(() => {
+        if (isOnline && !prevOnline.current) {
+            refetch();
+        }
+        prevOnline.current = isOnline;
+    }, [isOnline, refetch]);
+
+    useEffect(() => {
+        if (!sessionId) {
+            clearMessages();
+        }
+    }, [sessionId, clearMessages]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -56,23 +79,30 @@ export function useChatStreamMessages(
         }
     };
 
-    useEffect(() => {
-        if (isOnline && !prevOnline.current) {
-            console.log("have connect")
-            refetch();
-        }
-        prevOnline.current = isOnline;
-    }, [isOnline, refetch, sessionId, hasFirstSignalRMessage]);
+    const handleScrollLoadMore = useCallback(async () => {
+        const el = messagesContainerRef.current;
+        if (!el || isFetchingNextPage || !hasNextPage) return;
 
-    useEffect(() => {
-        if (!sessionId) {
-            clearMessages();
+        if (el.scrollTop <= 150) {
+            const prevScrollHeight = el.scrollHeight;
+            const prevScrollTop = el.scrollTop;
+
+            await fetchNextPage();
+
+            requestAnimationFrame(() => {
+                const newScrollHeight = el.scrollHeight;
+                el.scrollTop = prevScrollTop + (newScrollHeight - prevScrollHeight);
+            });
         }
-    }, [sessionId, clearMessages]);
+    }, [messagesContainerRef, fetchNextPage, isFetchingNextPage, hasNextPage]);
 
     return {
         messages,
+        lastPage,
         isLoading: isLoading || isFetching,
+        isFetchingNextPage,
+        hasNextPage,
+        handleScrollLoadMore,
         sendMessage,
         scrollToBottom,
         messageValue,

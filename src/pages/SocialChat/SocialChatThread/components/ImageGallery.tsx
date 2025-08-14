@@ -14,6 +14,7 @@ interface ImageGalleryProps {
     onRevoke: () => void;
     onReply: () => void;
     showActionsMobile: boolean;
+    hasReachedLimit: boolean;
 }
 
 function useOddLastImageHeight(photoAlbumPhotos: any[]): [React.RefObject<HTMLImageElement>, React.RefObject<HTMLImageElement>, number] {
@@ -48,7 +49,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
     onRevoke,
     onReply,
     showActionsMobile,
-
+    hasReachedLimit = false
 }) => {
     const [showAll, setShowAll] = useState(false);
 
@@ -71,7 +72,6 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
         onImageClick(idx, allImages);
     };
 
-
     if (imageFiles.length === 0) return null;
 
     return (
@@ -80,8 +80,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                 <div
                     className={
                         displayPhotos.length === 1
-                            ? `w-[250px] rounded-2xl overflow-hidden flex ${isUser ? "  justify-end" : "justify-start"}`
-                            : "grid gap-2 w-[250px] rounded-2xl overflow-hidden grid-cols-2"
+                            ? `w-[70vw] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "  justify-end" : "justify-start"}`
+                            : "grid gap-2 w-[70vw] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
                     }
                 >
                     {displayPhotos.map((photo: { src: string }, idx: number) => {
@@ -89,7 +89,20 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                         const isLastOdd = displayPhotos.length % 2 === 1 && idx === displayPhotos.length - 1;
                         const isSecondLast = displayPhotos.length % 2 === 1 && idx === displayPhotos.length - 2;
                         const isThirdLast = displayPhotos.length % 2 === 1 && idx === displayPhotos.length - 3;
-
+                        if (displayPhotos.length === 1) {
+                            return (
+                                <AppImage
+                                    key={idx}
+                                    src={photo.src}
+                                    alt=""
+                                    fit="contain"
+                                    wrapperClassName="w-full  rounded-2xl overflow-hidden"
+                                    className="rounded-2xl"
+                                    onClick={() => handleImageClick(idx)}
+                                    style={{ cursor: "pointer" }}
+                                />
+                            );
+                        }
                         if (isLast && isLastOdd) {
                             return (
                                 <div
@@ -197,13 +210,15 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                 </div>
                 {!isRevoked && (
                     <div ref={actionContainerRef}
-                        className={`absolute w-full text-main  top-1/2 -translate-y-1/2 ${isUser ? "-left-24" : "-right-80"} ${showActionsMobile ? "flex" : "hidden group-hover:flex"} gap-2 p-1`}
+                        className={`absolute w-full text-main  top-1/2 -translate-y-1/2  ${isUser ? "right-full -mr-0" : "left-full -ml-0"} ${showActionsMobile ? "flex" : "hidden group-hover:flex"} gap-2 p-1`}
                         style={{ pointerEvents: 'auto' }}
                     >
                         {isUser && (<>
                             <button onClick={onRevoke}><FaRegTrashAlt className="z-99 text-2xl" /></button>
                         </>)}
-                        <button onClick={onReply}><MdOutlineReply className="z-99 text-2xl" /></button>
+                        {!hasReachedLimit && (
+                            <button onClick={onReply}><MdOutlineReply className="z-99 text-2xl" /></button>
+                        )}
                     </div>
                 )}
             </div>

@@ -1,0 +1,6 @@
+.customShadow {
+  box-shadow: 0px 5px 1.5px -4px #08080817, 0px 6px 4px -4px #0808080d,
+    0px 6px 13px 0px #08080808, 0px 24px 24px -16px #0808080a,
+    0px 2.15px 0.5px -2px #00000040;
+  backdrop-filter: blur(64px);
+}

@@ -9,33 +9,33 @@ export interface UseSocialSignalROptions {
     roomId: string;
     autoConnect?: boolean;
     enableDebugLogs?: boolean;
+    refetchRoomData?: () => void;
 }
 
 export function useSocialSignalR(
     deviceId: string,
     options: UseSocialSignalROptions
 ) {
-    const { roomId, autoConnect = true, enableDebugLogs = false } = options;
+    const { roomId, autoConnect = true, enableDebugLogs = false, refetchRoomData } = options;
 
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const isConnectedRef = useRef(false);
     const currentRoomRef = useRef<string | null>(null);
 
     const { isAuthenticated } = useAuthStore();
-    const { addMessage, updateMessage, updateMessageByCode } = useSocialChatStore();
+    const { addMessage, updateMessageByCode } = useSocialChatStore();
+
     const log = useCallback((message: string, ...args: any[]) => {
         if (enableDebugLogs) {
             console.log(`[SocialSignalR] ${message}`, ...args);
         }
     }, [enableDebugLogs]);
 
-    // Tạo connection
     const createConnection = useCallback(() => {
         const token = localStorage.getItem("token") || "";
-
         return new signalR.HubConnectionBuilder()
             .withUrl(`${ENV.BE}/chatHub?deviceId=${deviceId}`, {
-                accessTokenFactory: () => token
+                accessTokenFactory: () => token,
             })
             .withAutomaticReconnect([0, 2000, 10000, 30000])
             .configureLogging(signalR.LogLevel.Warning)
@@ -43,41 +43,44 @@ export function useSocialSignalR(
     }, [deviceId]);
 
     const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
+        connection.off("ReceiveUserMessage");
         connection.on("ReceiveUserMessage", (message: any) => {
-            console.log(message)
             addMessage(roomId, message);
         });
 
+        connection.off("UpdateUserMessage");
         connection.on("UpdateUserMessage", (message: any) => {
-            // Sử dụng updateMessageByCode với messageCode
             updateMessageByCode(roomId, message.code, message);
         });
 
+        connection.off("RevokeUserMessage");
         connection.on("RevokeUserMessage", (message: any) => {
-            console.log(message)
-
             updateMessageByCode(roomId, message.code, message);
         });
 
+        connection.off("ReactUserMessage");
         connection.on("ReactUserMessage", (reaction: any) => {
-            log("Message reaction:", reaction);
-            // Có thể cập nhật reactions của message
         });
 
+        connection.off("RoomChatUpdated");
         connection.on("RoomChatUpdated", (roomInfo: any) => {
-            log("Room chat updated:", roomInfo);
+        });
+
+        connection.off("FriendRequestEvent");
+        connection.on("FriendRequestEvent", (data: any) => {
+            // console.log("FriendRequestEvent:", data);
+            if (refetchRoomData) {
+                refetchRoomData();
+            }
         });
 
         connection.onreconnecting((error) => {
-            log("Reconnecting...", error);
             isConnectedRef.current = false;
         });
 
         connection.onreconnected(async (connectionId) => {
-            log("Reconnected with ID:", connectionId);
             isConnectedRef.current = true;
 
-            // Rejoin rooms
             if (currentRoomRef.current) {
                 await joinChatRoom(currentRoomRef.current);
             }
@@ -85,22 +88,46 @@ export function useSocialSignalR(
         });
 
         connection.onclose((error) => {
-            log("Connection closed:", error);
             isConnectedRef.current = false;
         });
-    }, [addMessage, updateMessage, log]);
+    }, [addMessage, updateMessageByCode, log, refetchRoomData, roomId]);
 
-    // Join chat room
-    const joinChatRoom = useCallback(async (chatRoomId: string) => {
-        if (!connectionRef.current || !isConnectedRef.current) {
-            log("Cannot join room: connection not ready");
+    const pingActiveRoom = useCallback(async (chatRoomId: string) => {
+        console.log("Pinging active room:", chatRoomId);
+        if (!connectionRef.current || !isConnectedRef.current) return false;
+        try {
+            await connectionRef.current.invoke("PingActiveRoom", chatRoomId);
+            return true;
+        } catch (error) {
             return false;
         }
+    }, [log]);
 
+    const setInactiveInRoom = useCallback(async (chatRoomId: string) => {
+        console.log("unping")
+        if (!connectionRef.current || !isConnectedRef.current) return false;
+        try {
+            await connectionRef.current.invoke("SetInactiveInRoom", chatRoomId);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }, [log]);
+
+    const joinChatRoom = useCallback(async (chatRoomId: string) => {
+        if (!connectionRef.current || !isConnectedRef.current) return false;
         try {
             await connectionRef.current.invoke("JoinChatUserRoom", chatRoomId);
             currentRoomRef.current = chatRoomId;
             log(`Joined chat room: ${chatRoomId}`);
+
+            try {
+                await connectionRef.current.invoke("PingActiveRoom", chatRoomId);
+                log(`Pinged active room: ${chatRoomId}`);
+            } catch (e) {
+                log("Ping right-after-join failed:", e);
+            }
+
             return true;
         } catch (error) {
             log("Failed to join chat room:", error);
@@ -108,7 +135,7 @@ export function useSocialSignalR(
         }
     }, [log]);
 
-    // Leave chat room
+
     const leaveChatRoom = useCallback(async (chatRoomId?: string) => {
         if (!connectionRef.current || !isConnectedRef.current) return false;
 
@@ -117,9 +144,7 @@ export function useSocialSignalR(
 
         try {
             await connectionRef.current.invoke("LeaveChatUserRoom", roomToLeave);
-            if (roomToLeave === currentRoomRef.current) {
-                currentRoomRef.current = null;
-            }
+            if (roomToLeave === currentRoomRef.current) currentRoomRef.current = null;
             log(`Left chat room: ${roomToLeave}`);
             return true;
         } catch (error) {
@@ -128,13 +153,11 @@ export function useSocialSignalR(
         }
     }, [log]);
 
-    // Join user notification
     const joinUserNotify = useCallback(async () => {
         if (!connectionRef.current || !isConnectedRef.current) return false;
-
         try {
             await connectionRef.current.invoke("JoinUserNotify");
-            log("Joined user notify room");
+            log("Joined user notify (no-arg) ✓");
             return true;
         } catch (error) {
             log("Failed to join user notify:", error);
@@ -142,7 +165,6 @@ export function useSocialSignalR(
         }
     }, [log]);
 
-    // Send message
     const sendMessage = useCallback(async (
         chatRoomId: string,
         messageText: string,
@@ -151,15 +173,8 @@ export function useSocialSignalR(
         if (!connectionRef.current || !isConnectedRef.current) {
             throw new Error("SignalR connection is not ready");
         }
-
         try {
-            const messageData = {
-                chatCode: chatRoomId,
-                messageText,
-                deviceId,
-                ...additionalData
-            };
-
+            const messageData = { chatCode: chatRoomId, messageText, deviceId, ...additionalData };
             await connectionRef.current.invoke("SendUserMessage", messageData);
             log("Message sent:", messageData);
             return true;
@@ -169,13 +184,12 @@ export function useSocialSignalR(
         }
     }, [deviceId, log]);
 
-    // Start connection
+
     const startConnection = useCallback(async () => {
         if (connectionRef.current) {
             await connectionRef.current.stop();
             connectionRef.current = null;
         }
-
         const connection = createConnection();
         connectionRef.current = connection;
 
@@ -186,13 +200,9 @@ export function useSocialSignalR(
             isConnectedRef.current = true;
             log("SignalR Connected, Connection ID:", connection.connectionId);
 
-            // Auto join user notify
             await joinUserNotify();
 
-            // Auto join room if provided
-            if (roomId) {
-                await joinChatRoom(roomId);
-            }
+            if (roomId) await joinChatRoom(roomId);
 
             return true;
         } catch (error) {
@@ -202,47 +212,37 @@ export function useSocialSignalR(
         }
     }, [createConnection, setupEventHandlers, joinUserNotify, joinChatRoom, roomId, log]);
 
-    // Stop connection
     const stopConnection = useCallback(async () => {
         if (connectionRef.current) {
-            await connectionRef.current.stop();
-            connectionRef.current = null;
-            isConnectedRef.current = false;
-            currentRoomRef.current = null;
-            log("Connection stopped");
+            try {
+                await connectionRef.current.stop();
+            } finally {
+                connectionRef.current = null;
+                isConnectedRef.current = false;
+                currentRoomRef.current = null;
+                log("Connection stopped");
+            }
         }
     }, [log]);
 
-    // Get connection status
     const getConnectionStatus = useCallback(() => ({
         isConnected: isConnectedRef.current,
         connectionId: connectionRef.current?.connectionId,
         currentRoom: currentRoomRef.current,
-        connectionState: connectionRef.current?.state
+        connectionState: connectionRef.current?.state,
     }), []);
 
-    // Effect để auto connect
     useEffect(() => {
         if (autoConnect && isAuthenticated) {
-            startConnection().catch((error) => {
-                log("Auto connection failed:", error);
-            });
+            startConnection().catch((error) => log("Auto connection failed:", error));
         }
+        return () => { stopConnection(); };
+    }, [autoConnect, isAuthenticated, startConnection, stopConnection, log]);
 
-        return () => {
-            stopConnection();
-        };
-    }, [autoConnect, isAuthenticated, startConnection, stopConnection]);
-
-    // Effect để switch room
     useEffect(() => {
         if (roomId && isConnectedRef.current && roomId !== currentRoomRef.current) {
-            // Leave current room if any
-            if (currentRoomRef.current) {
-                leaveChatRoom(currentRoomRef.current);
-            }
-            // Join new room
-            joinChatRoom(roomId);
+            if (currentRoomRef.current) void leaveChatRoom(currentRoomRef.current);
+            void joinChatRoom(roomId);
         }
     }, [roomId, joinChatRoom, leaveChatRoom]);
 
@@ -253,11 +253,14 @@ export function useSocialSignalR(
 
         joinChatRoom,
         leaveChatRoom,
-        joinUserNotify,
+        joinUserNotify,   // <- public, nhưng no-arg
         sendMessage,
+
+        pingActiveRoom,
+        setInactiveInRoom,
 
         isConnected: isConnectedRef.current,
         currentRoom: currentRoomRef.current,
-        connectionId: connectionRef.current?.connectionId
+        connectionId: connectionRef.current?.connectionId,
     };
 }

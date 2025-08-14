@@ -96,7 +96,7 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/translate/history" component={TranslateHistory} exact />
           <PrivateRoute path="/profile/:section?" component={routes.Profile} exact />
           <PrivateRoute path="/change-password" component={routes.ChangePassword} exact />
-          <Route exact path="/" render={() => <Redirect to="/home" />} />
+          <Route exact path="/" render={() => <Redirect to="/social-chat" />} />
           <Route path="*" component={routes.NotFound} />
         </Switch>
       </Suspense>

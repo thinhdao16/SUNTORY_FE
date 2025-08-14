@@ -262,27 +262,40 @@ const SocialChatCamera: React.FC = () => {
         }
     };
 
-    const handleCapture = async () => {
-        if (isCapturing || !videoRef.current || isUploading) return;
-        setIsCapturing(true);
-        try {
-            const canvas = document.createElement("canvas");
-            canvas.width = videoRef.current.videoWidth;
-            canvas.height = videoRef.current.videoHeight;
-            const ctx = canvas.getContext("2d");
-            if (ctx) {
-                ctx.drawImage(videoRef.current, 0, 0);
-                const imgData = canvas.toDataURL("image/png");
-                const file = base64ToFile(imgData, `captured_${Date.now()}.png`);
+const handleCapture = async () => {
+    if (isCapturing || !videoRef.current || isUploading) return;
 
-                setCapturedImage(imgData);
-                setCapturedFile(file);
-                setShowPreview(true); // Add animation
-            }
-        } finally {
-            setIsCapturing(false);
+    // 🔹 Kiểm tra quyền trước khi chụp
+    const hasPermission = await checkPermission();
+    if (!hasPermission) {
+        present({
+            message: t("You have not granted permission to use the camera. Please allow permission to take photos."),
+            duration: 3000,
+            color: "danger",
+        });
+        return;
+    }
+
+    setIsCapturing(true);
+    try {
+        const canvas = document.createElement("canvas");
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+            ctx.drawImage(videoRef.current, 0, 0);
+            const imgData = canvas.toDataURL("image/png");
+            const file = base64ToFile(imgData, `captured_${Date.now()}.png`);
+
+            setCapturedImage(imgData);
+            setCapturedFile(file);
+            setShowPreview(true);
         }
-    };
+    } finally {
+        setIsCapturing(false);
+    }
+};
+
 
     const handleChooseFromGallery = async () => {
         if (isUploading) return;

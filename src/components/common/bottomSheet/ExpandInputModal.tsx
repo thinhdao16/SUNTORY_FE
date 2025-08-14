@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IonIcon } from "@ionic/react";
 import { close } from "ionicons/icons";
+import SendIcon from "@/icons/logo/social-chat/send.svg?react";
+import { SheetExpandMode } from "@/pages/SocialChat/SocialChatThread/hooks/useSocialChatThread";
 
 interface ExpandInputModalProps {
     isOpen: boolean;
@@ -15,6 +17,11 @@ interface ExpandInputModalProps {
     value: string;
     onChange: (v: string) => void;
     placeholder?: string;
+
+    actionFieldSend: string;
+    translateActionStatus: boolean;
+    handleSendMessage: (e: any, field: string, force?: boolean) => void;
+    sheetExpandMode: string | null;
 }
 
 const ExpandInputModal: React.FC<ExpandInputModalProps> = ({
@@ -28,9 +35,16 @@ const ExpandInputModal: React.FC<ExpandInputModalProps> = ({
     value,
     onChange,
     placeholder = "Type here...",
+    actionFieldSend,
+    translateActionStatus,
+    handleSendMessage,
+    sheetExpandMode
 }) => {
     const taRef = useRef<HTMLTextAreaElement>(null);
 
+    const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (e.target === e.currentTarget) closeModal();
+    };
     useEffect(() => {
         if (isOpen && taRef.current) {
             const el = taRef.current;
@@ -41,10 +55,8 @@ const ExpandInputModal: React.FC<ExpandInputModalProps> = ({
         }
     }, [isOpen, value]);
 
-    const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target === e.currentTarget) closeModal();
-    };
     if (!isOpen) return null;
+
 
     return (
         <AnimatePresence>
@@ -57,7 +69,7 @@ const ExpandInputModal: React.FC<ExpandInputModalProps> = ({
                 onClick={handleOverlayClick}
             >
                 <div
-                    className="w-full h-[85%] rounded-t-4xl shadow-lg bg-white transition-transform duration-300 ease-out"
+                    className="w-full h-[85%] rounded-t-4xl shadow-lg bg-white transition-transform duration-300 ease-out "
                     style={{ transform: `translateY(${translateY}px)`, touchAction: "none" }}
                     onTouchStart={handleTouchStart}
                     onTouchMove={handleTouchMove}
@@ -68,21 +80,32 @@ const ExpandInputModal: React.FC<ExpandInputModalProps> = ({
                         <div className="flex items-center justify-center relative">
                             <span className="font-semibold text-netural-500">{title}</span>
                             <button
-                                className="absolute left-0 top-0 p-1 rounded-full hover:bg-gray-100"
+                                className="absolute left-2 top-0  rounded-full "
                                 onClick={closeModal}
                             >
                                 <IonIcon icon={close} className="text-xl text-gray-600" />
                             </button>
+                            <div className="absolute right-2 top-0  rounded-full ">
+                                {translateActionStatus && sheetExpandMode === "input" ? (null) : (
+                                    <button onClick={(e) => {
+                                        handleSendMessage(e, actionFieldSend, true);
+                                        closeModal();
+                                    }}>
+                                        <SendIcon />
+                                    </button>
+                                )
+                                }
+                            </div>
                         </div>
                     </div>
 
-                    <div className="px-4 pb-4 h-[calc(100%-64px)]">
+                    <div className="px-6 pb-6 h-[calc(100%-64px)] overflow-auto">
                         <textarea
                             ref={taRef}
                             value={value}
                             onChange={(e) => onChange(e.target.value)}
                             placeholder={placeholder}
-                            className="w-full h-full outline-none resize-none text-[15px] leading-relaxed"
+                            className="w-full outline-none resize-none text-[15px] leading-relaxed min-h-[100px] overflow-hidden"
                             onInput={(e) => {
                                 const el = e.currentTarget;
                                 el.style.height = "auto";
@@ -90,6 +113,7 @@ const ExpandInputModal: React.FC<ExpandInputModalProps> = ({
                             }}
                         />
                     </div>
+
                 </div>
             </motion.div>
         </AnimatePresence>

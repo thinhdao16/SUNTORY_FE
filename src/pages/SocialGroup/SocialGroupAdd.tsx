@@ -10,6 +10,8 @@ import { useCreateChatGroup } from "./hooks/useSocialGroup";
 import { Capacitor } from "@capacitor/core";
 import SearchIcon from '@/icons/logo/social-chat/search.svg?react';
 import ClearInputIcon from '@/icons/logo/social-chat/clear-input.svg?react';
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
+import avatarGrayFallback from "@/icons/logo/social-chat/avt-gray-rounded.svg";
 
 function SocialGroupAdd() {
   const isNative = Capacitor.isNativePlatform();
@@ -92,13 +94,13 @@ function SocialGroupAdd() {
             {selectedUsers.map((id) => {
               const user = users.find((u) => u.id === id);
               return (
-                <div key={id} className="relative text-center">
+                <div key={id} className="relative text-center flex flex-col gap-1 items-center justify-center">
                   <img
-                    src={user.avatar || '/favicon.png'}
+                    src={user.avatar || avatarGrayFallback}
                     alt={user.fullName}
                     className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-2xl object-cover flex-shrink-0"
                     onError={(e) => {
-                      e.currentTarget.src = '/favicon.png';
+                      e.currentTarget.src = avatarGrayFallback;
                     }}
                   />
 
@@ -108,7 +110,7 @@ function SocialGroupAdd() {
                   >
                     <HiX className="text-[14px]" />
                   </button>
-                  <p className="text-xs text-center max-w-[50px] truncate">{user?.fullName}</p>
+                  <p className="text-xs text-center max-w-[40px] truncate">{user?.fullName}</p>
                 </div>
               );
             })}
@@ -189,11 +191,11 @@ function SocialGroupAdd() {
                     )}
                   </label>
                   <img
-                    src={user.avatar || '/favicon.png'}
+                    src={user.avatar || avatarFallback}
                     alt={user.fullName}
                     className="w-[50px] h-[50px] rounded-2xl object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = '/favicon.png';
+                      e.currentTarget.src = avatarFallback;
                     }}
                   />
                   <div className="">

@@ -6,6 +6,7 @@ import {
     rejectFriendRequest,
     searchFriendshipUsers,
     sendFriendRequest,
+    unfriend,
 } from "@/services/social/social-partner-service";
 import { useInfiniteQuery, useMutation, useQueryClient } from "react-query";
 
@@ -49,11 +50,11 @@ export const useSendFriendRequest = (
 
     return useMutation((userId: number) => sendFriendRequest(userId), {
         onSuccess: () => {
-            showToast("Đã gửi lời mời kết bạn.", 1000, "success");
+            showToast(t("Friend request sent."), 1000, "success");
             queryClient.invalidateQueries(["searchFriendshipUsers"]);
             onSuccessCallback?.();
         },
-        onError: () => showToast("Không thể gửi lời mời.", 1000, "error"),
+        onError: () => showToast(t("Unable to send invitation."), 1000, "error"),
     });
 };
 
@@ -65,11 +66,11 @@ export const useCancelFriendRequest = (
 
     return useMutation((requestId: number) => cancelFriendRequest(requestId), {
         onSuccess: () => {
-            showToast("Đã hủy lời mời kết bạn.", 1000, "success");
+            showToast(t("Friend request canceled."), 1000, "error");
             queryClient.invalidateQueries(["searchFriendshipUsers"]);
             onSuccessCallback?.();
         },
-        onError: () => showToast("Hủy lời mời thất bại.", 1000, "error"),
+        onError: () => showToast(t("Failed to cancel friend request."), 1000, "error"),
     });
 };
 
@@ -81,13 +82,13 @@ export const useAcceptFriendRequest = (
 
     return useMutation((requestId: number) => acceptFriendRequest(requestId), {
         onSuccess: () => {
-            showToast("Đã chấp nhận lời mời kết bạn.", 1000, "success");
+            showToast(t("Friend request accepted."), 1000, "success");
             queryClient.invalidateQueries(["searchFriendshipUsers"]);
             queryClient.invalidateQueries(["friendshipReceivedRequests"]);
 
             onSuccessCallback?.();
         },
-        onError: () => showToast("Không thể chấp nhận.", 1000, "error"),
+        onError: () => showToast(t("Unacceptable."), 1000, "error"),
     });
 };
 
@@ -99,12 +100,12 @@ export const useRejectFriendRequest = (
 
     return useMutation((requestId: number) => rejectFriendRequest(requestId), {
         onSuccess: () => {
-            showToast("Đã từ chối lời mời kết bạn.", 1000, "success");
+            showToast(t("Friend request rejected."), 1000, "error");
             queryClient.invalidateQueries(["searchFriendshipUsers"]);
             queryClient.invalidateQueries(["friendshipReceivedRequests"]);
             onSuccessCallback?.();
         },
-        onError: () => showToast("Không thể từ chối.", 1000, "error"),
+        onError: () => showToast(t("Unable to reject."), 1000, "error"),
     });
 };
 
@@ -116,6 +117,34 @@ export const useFriendshipReceivedRequests = (pageSize = 20) => {
             getNextPageParam: (lastPage, allPages) => {
                 if (lastPage.length < pageSize) return undefined;
                 return allPages.length;
+            },
+        }
+    );
+};
+export const useUnfriend = (
+    showToast: (msg: string, dur?: number, type?: "success" | "error" | "warning") => void,
+    refetchRoomData?: () => void // (tuỳ) bạn đang có refetch ở useChatRoomByCode
+) => {
+    const queryClient = useQueryClient();
+
+    return useMutation(
+        ({ friendUserId, roomCode }: { friendUserId: number; roomCode?: string }) =>
+            unfriend(friendUserId),
+        {
+            onSuccess: (_data, variables) => {
+                showToast(t("Unfriended successfully."), 1200, "success");
+
+                // reload các list liên quan
+                queryClient.invalidateQueries(["friendshipFriends"]);
+                queryClient.invalidateQueries(["friendshipReceivedRequests"]);
+                if (variables.roomCode) {
+                    queryClient.invalidateQueries(["chatRoom", variables.roomCode]);
+                }
+                // nếu bạn truyền vào refetch từ useChatRoomByCode
+                refetchRoomData?.();
+            },
+            onError: () => {
+                showToast(t("Unable to unfriend."), 1500, "error");
             },
         }
     );

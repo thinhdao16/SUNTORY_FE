@@ -22,6 +22,8 @@ type AppImageProps = {
   animationType?: "fade" | "fadeScale";
   duration?: number;
   [key: string]: any;
+  fit?: "cover" | "contain";
+  backgroundColor?: string;
 };
 
 const AppImage: React.FC<AppImageProps> = ({
@@ -29,16 +31,20 @@ const AppImage: React.FC<AppImageProps> = ({
   alt = "",
   className = "",
   wrapperClassName = "",
+  motionClassName = "",
   placeholderSrc = "/favicon.png",
   effect = "blur",
   onLoad,
 
   fallbackRatio = 4 / 3,
-  hardHeight = 240,
+  hardHeight = 200,
 
   animate = true,
   animationType = "fadeScale",
   duration = 0.25,
+
+  fit = "contain",
+  backgroundColor = "#f3f4f6",
 
   style,
   ...props
@@ -69,9 +75,10 @@ const AppImage: React.FC<AppImageProps> = ({
     <div
       className={wrapperClassName}
       style={{
-        aspectRatio: ratio,
+        // aspectRatio: ratio,
         minHeight: hardHeight,
         position: "relative",
+        backgroundColor,
         ...style,
       }}
     >
@@ -82,7 +89,7 @@ const AppImage: React.FC<AppImageProps> = ({
             animate={{ opacity: 0.55 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 overflow-hidden rounded-2xl"
+            className={`absolute inset-0 overflow-hidden rounded-2xl ${motionClassName}`}
           >
             <div className="w-full h-full bg-gray-200" />
             <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/30 to-transparent" />
@@ -110,7 +117,8 @@ const AppImage: React.FC<AppImageProps> = ({
           style={{
             width: "100%",
             height: "100%",
-            objectFit: "cover",
+            objectFit: fit,
+            objectPosition: "center",
           }}
           decoding="async"
           loading="lazy"

@@ -9,9 +9,7 @@ interface ReplyBubbleProps {
 const ReplyBubble: React.FC<ReplyBubbleProps> = ({ msg, isUser }) => {
     return (
         <div className={`${isUser ? "ml-auto" : "mr-auto"} `}>
-            <div className="text-[12px] font-medium mb-1 text-gray-500">
-                {isUser ? "You are replying to user" : "User is replying to you"}
-            </div>
+          
             {msg.messageText ? (
                 <div
                     className={` bg-[#C8D6FB] w-fit min-w-[60px] p-[8px_12px_24px_12px]  max-w-[250px] overflow-hidden -mb-[19px]

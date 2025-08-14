@@ -17,7 +17,8 @@ const LanguageDropdown: React.FC<LanguageDropdownProps> = ({
     selected,
     setSelected,
     languagesSocialChat,
-    openModalTranslate
+    openModalTranslate,
+ 
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
 

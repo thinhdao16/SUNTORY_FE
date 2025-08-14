@@ -9,11 +9,14 @@ import { useToastStore } from '@/store/zustand/toast-store';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { createAnonymousChatRoom } from '@/services/social/social-chat-service';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
+import { useSocialSignalR } from '@/hooks/useSocialSignalR';
+import useDeviceInfo from '@/hooks/useDeviceInfo';
 
 function SocialChatListRequest() {
     const history = useHistory();
     const isNative = Capacitor.isNativePlatform();
     const scrollRef = useRef<HTMLDivElement>(null);
+    const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
 
     const {
         data,
@@ -21,13 +24,18 @@ function SocialChatListRequest() {
         hasNextPage,
         isFetchingNextPage,
         isLoading,
+        refetch
     } = useFriendshipReceivedRequests(20);
-    console.log(data)
     const showToast = useToastStore((state) => state.showToast);
     const { mutate: acceptRequest } = useAcceptFriendRequest(showToast);
     const { mutate: rejectRequest } = useRejectFriendRequest(showToast);
     const { setRoomChatInfo } = useSocialChatStore();
-
+    useSocialSignalR(deviceInfo.deviceId ?? "", {
+        roomId: "",
+        refetchRoomData: () => { void refetch(); },
+        autoConnect: true,
+        enableDebugLogs: false,
+    });
     const users = data?.pages.flat() ?? [];
     const handleClickMessage = async (user: any) => {
         try {
@@ -46,7 +54,9 @@ function SocialChatListRequest() {
                     updateDate: new Date().toISOString(),
                     unreadCount: 0,
                     lastMessageInfo: null,
+                    participants: [],
                     topic: null,
+
                 });
                 history.push(`/social-chat/t`);
                 const chatData = await createAnonymousChatRoom(user.fromUserId);

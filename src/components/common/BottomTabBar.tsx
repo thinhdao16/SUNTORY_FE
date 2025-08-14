@@ -37,23 +37,6 @@ const BottomTabBar: React.FC = () => {
 
     const tabs: TabItem[] = [
         {
-            label: t("Home"),
-            icon: HomeIcon,
-            iconActive: HomeActiveIcon,
-            path: "/home",
-            activePath: "/home",
-            classNameIcon: "",
-        },
-        {
-            label: "JetAI",
-            icon: ChatIcon,
-            iconActive: ChatActiveIcon,
-            path: `/chat/${TopicType.Chat}`,
-            activePath: (pathname: string) => pathname.startsWith("/chat"),
-            className: "",
-            classNameIcon: "",
-        },
-        {
             label: "Messages",
             icon: ChatIcon,
             iconActive: ChatActiveIcon,
@@ -61,6 +44,23 @@ const BottomTabBar: React.FC = () => {
             activePath: (pathname: string) => pathname.startsWith("/social-"),
             classNameIcon: "",
         },
+        {
+            label: t("Home"),
+            icon: HomeIcon,
+            iconActive: HomeActiveIcon,
+            path: "/home",
+            activePath: (pathname: string) => pathname.startsWith("/home") || pathname.startsWith("/chat"),
+            classNameIcon: "",
+        },
+        // {
+        //     label: "JetAI",
+        //     icon: ChatIcon,
+        //     iconActive: ChatActiveIcon,
+        //     path: `/chat/${TopicType.Chat}`,
+        //     activePath: (pathname: string) => pathname.startsWith("/chat"),
+        //     className: "",
+        //     classNameIcon: "",
+        // },
         {
             label: t("Translate"),
             icon: TranslationIcon,

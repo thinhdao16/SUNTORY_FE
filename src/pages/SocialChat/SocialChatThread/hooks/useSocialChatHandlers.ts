@@ -47,6 +47,7 @@ interface UseSocialChatHandlersProps {
     messageTranslate: string;
     showToast: (message: string, duration?: number, type?: "success" | "error" | "warning") => void;
     t: (key: string) => string;
+    recalc: () => void;
 }
 
 export function useSocialChatHandlers({
@@ -81,11 +82,12 @@ export function useSocialChatHandlers({
     setMessageTranslate,
     messageTranslate,
     showToast,
-    t
+    t,
+    recalc
 }: UseSocialChatHandlersProps) {
     const currentUserId = useAuthStore.getState().user?.id;
     const sendMessageMutation = useSendSocialChatMessage({ roomId });
-    const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+    const MAX_IMAGE_SIZE = 15 * 1024 * 1024;
 
     const cleanImageUrl = (url: string): string => {
         if (!url) return url;
@@ -106,48 +108,26 @@ export function useSocialChatHandlers({
 
         return url;
     };
-
-    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const sendPickedFiles = async (files: File[]) => {
         clearReplyingToMessage();
-        const files = e.target.files;
-        if (!files) return;
-
         const uploadedFiles: { name: string; linkImage: string }[] = [];
         const failedFiles: string[] = [];
 
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-
+        for (const file of files) {
             if (file.size > MAX_IMAGE_SIZE) {
-                failedFiles.push(`${file.name} (>5MB)`);
-                useToastStore.getState().showToast(
-                    `${file.name} quá lớn (>5MB)`,
-                    3000,
-                    "warning"
-                );
+                failedFiles.push(`${file.name} (>15MB)`);
+                useToastStore.getState().showToast(`${file.name} quá lớn (>15MB)`, 3000, "warning");
                 continue;
             }
-
             try {
                 const uploaded = await uploadImageMutation.mutateAsync(file);
-
-                if (uploaded && uploaded.length > 0) {
-                    const uploadedFile = uploaded[0];
-
-                    const cleanUrl = cleanImageUrl(uploadedFile.linkImage);
-
-                    uploadedFiles.push({
-                        name: uploadedFile.name,
-                        linkImage: cleanUrl
-                    });
+                if (uploaded?.length) {
+                    const u = uploaded[0];
+                    uploadedFiles.push({ name: u.name, linkImage: cleanImageUrl(u.linkImage) });
                 }
-            } catch (error) {
+            } catch (e) {
                 failedFiles.push(`${file.name} (upload failed)`);
-                useToastStore.getState().showToast(
-                    `Upload ${file.name} thất bại`,
-                    3000,
-                    "error"
-                );
+                useToastStore.getState().showToast(`Upload ${file.name} thất bại`, 3000, "error");
             }
         }
 
@@ -157,7 +137,7 @@ export function useSocialChatHandlers({
 
             const finalMessage: ChatMessage = {
                 id: Date.now(),
-                tempId: tempId,
+                tempId,
                 messageText: "",
                 messageType: 1,
                 senderType: 1,
@@ -169,51 +149,57 @@ export function useSocialChatHandlers({
                 chatInfoId: 1,
                 code: roomId || "",
                 status: 10,
-                attachments: [], // Bỏ attachments
+                attachments: [],
                 isSend: false,
                 isError: false,
                 hasAttachment: 1,
                 isRead: 0,
                 isRevoked: 0,
                 isEdited: 0,
-                chatAttachments: uploadedFiles.map((file, index) => ({
-                    id: Date.now() + index,
+                chatAttachments: uploadedFiles.map((f, i) => ({
+                    id: Date.now() + i,
                     chatMessageId: 0,
-                    fileUrl: file.linkImage,
-                    fileName: file.name,
+                    fileUrl: f.linkImage,
+                    fileName: f.name,
                     fileType: 1,
                     fileSize: 0,
-                    createDate: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
+                    createDate: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
                 })),
                 chatInfo: null,
                 reactions: [],
-                replyToMessageId: replyingToMessage?.id || null,
+                replyToMessageId: replyingToMessage?.id ?? null,
                 replyToMessage: replyingToMessage ?? null,
-                replyToMessageCode: replyingToMessage?.code !== undefined && replyingToMessage?.code !== null ? String(replyingToMessage.code) : null
+                replyToMessageCode:
+                    replyingToMessage?.code !== undefined && replyingToMessage?.code !== null
+                        ? String(replyingToMessage.code)
+                        : null,
             };
 
             addMessage(finalMessage);
+
             const payload: CreateSocialChatMessagePayload = {
                 chatCode: roomId || null,
                 messageText: "",
-                files: uploadedFiles.map(file => ({ name: file.name })),
-                replyToMessageCode: replyingToMessage?.code !== undefined && replyingToMessage?.code !== null ? String(replyingToMessage.code) : null,
-                tempId: tempId,
+                files: uploadedFiles.map(f => ({ name: f.name })),
+                replyToMessageCode:
+                    replyingToMessage?.code !== undefined && replyingToMessage?.code !== null
+                        ? String(replyingToMessage.code)
+                        : null,
+                tempId,
             };
 
             try {
                 setLoadingMessages(true);
                 const serverMsg = await sendMessageMutation.mutateAsync(payload);
-
                 if (serverMsg) {
                     updateMessageWithServerResponse(tempId, {
                         id: serverMsg.id,
                         code: serverMsg.code,
                         messageText: serverMsg.messageText,
                         createDate: serverMsg.createDate,
-                        timeStamp: serverMsg.createDate ?
-                            generatePreciseTimestampFromDate(new Date(serverMsg.createDate)) :
-                            finalMessage.timeStamp,
+                        timeStamp: serverMsg.createDate
+                            ? generatePreciseTimestampFromDate(new Date(serverMsg.createDate))
+                            : finalMessage.timeStamp,
                         messageType: serverMsg.messageType,
                         senderType: serverMsg.senderType,
                         replyToMessageId: serverMsg.replyToMessageId,
@@ -225,8 +211,8 @@ export function useSocialChatHandlers({
                         userAvatar: serverMsg.userAvatar,
                         hasAttachment: serverMsg.hasAttachment,
                         isRead: serverMsg.isRead,
-                        chatAttachments: serverMsg.chatAttachments?.length > 0 ?
-                            serverMsg.chatAttachments.map((att: any) => ({
+                        chatAttachments: serverMsg.chatAttachments?.length
+                            ? serverMsg.chatAttachments.map((att: any) => ({
                                 id: att.id,
                                 chatMessageId: att.chatMessageId,
                                 fileUrl: att.fileUrl,
@@ -234,22 +220,14 @@ export function useSocialChatHandlers({
                                 fileType: att.fileType,
                                 fileSize: att.fileSize,
                                 createDate: att.createDate,
-                            })) : finalMessage.chatAttachments,
+                            }))
+                            : finalMessage.chatAttachments,
                         attachments: [],
                     });
                 }
-            } catch (error) {
-                console.error('Send message failed:', error);
-                updateMessageByTempId({
-                    ...finalMessage,
-                    isError: true,
-                    messageText: "Gửi tin nhắn thất bại"
-                });
-                useToastStore.getState().showToast(
-                    "Gửi tin nhắn thất bại",
-                    3000,
-                    "error"
-                );
+            } catch (e) {
+                updateMessageByTempId({ ...finalMessage, isError: true, messageText: "Gửi tin nhắn thất bại" });
+                useToastStore.getState().showToast("Gửi tin nhắn thất bại", 3000, "error");
             } finally {
                 setLoadingMessages(false);
             }
@@ -263,10 +241,12 @@ export function useSocialChatHandlers({
             );
         }
 
+        setTimeout(() => scrollToBottom(), 100);
+    };
 
-        setTimeout(() => {
-            scrollToBottom();
-        }, 100);
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files ?? []);
+        await sendPickedFiles(files);
         e.target.value = "";
     };
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,7 +275,7 @@ export function useSocialChatHandlers({
     };
 
     const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent, field: string, force?: boolean,) => {
-        e.preventDefault();
+        // e.preventDefault();
 
         const hasMessage = messageValue.trim().length > 0 || messageTranslate.trim().length > 0;
         const hasFiles = pendingImages.length > 0 || pendingFiles.length > 0;
@@ -426,6 +406,8 @@ export function useSocialChatHandlers({
     };
 
     const handleScrollWithLoadMore = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+        onContainerScroll?.(e);
+        recalc();
         const target = e.target as HTMLDivElement;
         const { scrollTop, scrollHeight, clientHeight } = target;
 
@@ -446,7 +428,7 @@ export function useSocialChatHandlers({
                     console.error("Error fetching next page:", error);
                 });
         }
-    }, [onContainerScroll, hasNextPage, isFetchingNextPage, fetchNextPage]);
+    }, [onContainerScroll, hasNextPage, isFetchingNextPage, fetchNextPage, recalc]);
 
     const handleEditMessage = useCallback(async (messageCode: string | number, newText: string) => {
         try {
@@ -525,7 +507,7 @@ export function useSocialChatHandlers({
                 const result = await createTranslationMutation.mutateAsync(payload);
 
                 if (result?.data) {
-                    setMessageTranslate(result.data.translatedText || "");
+                    setMessageTranslate(result.data.translated_text || "");
                 }
             } catch (err) {
                 console.error("Translation failed:", err);
@@ -543,6 +525,6 @@ export function useSocialChatHandlers({
         handleRevokeMessage,
         handleTakePhoto,
         isLoading: sendMessageMutation.isLoading,
-
+        sendPickedFiles,
     };
 }

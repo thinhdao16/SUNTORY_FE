@@ -16,6 +16,14 @@ export interface RoomChatInfo {
     unreadCount: number;
     lastMessageInfo: any;
     topic: any;
+    participants: {
+        user: {
+            id: number;
+            name: string;
+            avatar: string;
+        };
+        isAdmin: boolean;
+    }[];
 }
 interface UseUpdateSocialChatMessageOptions {
     onSuccess?: (data: any, variables: UpdateSocialChatMessagePayload) => void;

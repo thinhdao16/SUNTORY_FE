@@ -28,16 +28,17 @@ export async function createChatStreamApi(payload: CreateChatStreamPayload) {
     const res = await httpClient.post("/api/v1/chat/create-stream", payload);
     return res.data;
 }
-export async function getChatMessages(sessionId: string): Promise<ChatMessage[]> {
+export async function getChatMessages(
+    sessionId: string,
+    pageNumber: number,
+    pageSize: number
+): Promise<{ items: ChatMessage[]; hasMore: boolean }> {
     const res = await httpClient.get("/api/v1/chat/messages", {
-        params: {
-            chatCode: sessionId,
-            PageNumber: 1000,
-            PageSize: 0,
-        },
+        params: { chatCode: sessionId, PageNumber: pageNumber, PageSize: pageSize },
     });
-    const data = res.data?.data?.data || [];
-    return data.map((msg: any) => ({
+
+    const list = res.data?.data?.data || [];
+    const items: ChatMessage[] = list.map((msg: any) => ({
         id: msg.id?.toString(),
         text: msg.messageText,
         isRight: msg.senderType === USER_SENDER_TYPE,
@@ -55,6 +56,8 @@ export async function getChatMessages(sessionId: string): Promise<ChatMessage[]>
         chatInfoId: msg.chatInfoId,
         chatCode: msg.code,
     }));
+
+    return { items, hasMore: items.length === pageSize };
 }
 export async function getChatHistoryModule(topicId: number): Promise<ChatHistoryLastModuleItem[]> {
     const res = await httpClient.get<ChatHistoryLastModuleResponse>("/api/v1/chat/history", { params: { topic: topicId } });

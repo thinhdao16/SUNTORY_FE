@@ -5,10 +5,13 @@ import ENV from "@/config/env";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { useAuthStore } from "@/store/zustand/auth-store";
+import { useSignalRStreamStore } from "@/store/zustand/signalr-stream-store";
+import { streamText } from "@/utils/streamText";
 
 export function useSignalRChat(deviceId: string) {
     const setIsConnected = useSignalRChatStore((s) => s.setIsConnected);
-    const addMessage = useSignalRChatStore((s) => s.addMessage);
+
+    const { addStreamChunk } = useSignalRStreamStore();
     const setSendMessage = useSignalRChatStore((s) => s.setSendMessage);
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const setIsSending = useChatStore.getState().setIsSending;
@@ -45,9 +48,30 @@ export function useSignalRChat(deviceId: string) {
         });
 
         const handleReceive = (msg: any) => {
-            console.log(msg);
-            addMessage(msg);
-            useChatStore.getState().setIsSending(false);
+            console.log(msg)
+            const fullText: string = msg?.messageText ?? "";
+            const streamId = String(msg?.code ?? msg?.id ?? Date.now());
+            const meta = {
+                streamId,
+                messageId: msg?.id,
+                code: msg?.code,
+                chatCode: msg?.chatInfo?.code ?? msg?.chatInfoId,
+                senderType: msg?.senderType,
+                botName: msg?.botName,
+                botAvatar: msg?.botAvatarUrl,
+                userName: msg?.userName,
+                userAvatar: msg?.userAvatar,
+                replyTo: msg?.replyToMessageCode ?? msg?.replyToMessage?.code ?? null,
+                createdAt: msg?.createDate,
+                raw: msg,
+            };
+            // addStreamChunk({ ...meta, chunk: "", completeText: "", isStart: true });
+            // if (!fullText) {
+            //     addStreamChunk({ ...meta, chunk: "", completeText: "", isComplete: true });
+            //     useChatStore.getState().setIsSending(false);
+            //     return;
+            // }
+            streamText(fullText, meta, addStreamChunk);
         };
 
         connection.on("ReceiveMessage", handleReceive);

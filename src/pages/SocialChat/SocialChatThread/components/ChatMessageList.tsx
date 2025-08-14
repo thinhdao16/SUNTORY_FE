@@ -39,6 +39,7 @@ type ChatMessageListProps = {
     onReplyMessage: (message: ChatMessage) => void;
     isGroup?: boolean;
     currentUserId?: number | string | null;
+    hasReachedLimit?: boolean;
 };
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
@@ -49,6 +50,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     onReplyMessage,
     isGroup = false,
     currentUserId = null,
+    hasReachedLimit = false,
 }) => {
     const { t } = useTranslation();
 
@@ -69,6 +71,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                         onRevokeMessage={onRevokeMessage}
                         onReplyMessage={onReplyMessage}
                         isGroup={isGroup}
+                        currentUserId={currentUserId}
+                        hasReachedLimit={hasReachedLimit}
                     />
                 </div>
             ))}

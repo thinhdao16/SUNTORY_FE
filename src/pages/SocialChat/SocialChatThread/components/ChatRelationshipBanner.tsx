@@ -74,7 +74,7 @@ const ChatRelationshipBanner: React.FC<Props> = ({
 
     if (isIncoming) {
         return (
-            <div className="my-4 flex justify-center">
+            <div className="my-4 flex justify-center sticky top-0 z-10">
                 <div className="w-full max-w-md rounded-2xl bg-chat-to shadow-[0px_2px_4px_2px_#0000001A] ring-1 ring-blue-100 py-2 px-3">
                     <div className="flex items-center gap-2">
                         <img

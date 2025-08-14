@@ -206,11 +206,11 @@ export function useChatStreamHandlers({
 
                 scrollToBottom();
                 let res: any
-                if (parseInt(topicType) === TopicType.Chat || parseInt(topicType) === TopicType.FoodDiscovery) {
+                // if (parseInt(topicType) === TopicType.Chat || parseInt(topicType) === TopicType.FoodDiscovery) {
                     res = await createChatApi(payload);
-                } else {
-                    res = await createChatStreamApi(payload);
-                }
+                // } else {
+                //     res = await createChatStreamApi(payload);
+                // }
                 if (timeoutId) clearTimeout(timeoutId);
 
                 // Cập nhật pending message với data từ server

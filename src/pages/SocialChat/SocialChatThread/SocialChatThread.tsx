@@ -7,7 +7,7 @@ import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import { useScrollToBottom } from "@/hooks/useScrollToBottom";
 import { useUploadChatFile } from "@/hooks/common/useUploadChatFile";
 import { useAppState } from "@/hooks/useAppState";
-import { useChatRoomByCode, useUpdateSocialChatMessage, useRevokeSocialChatMessage } from "../hooks/useSocialChat";
+import { useUpdateSocialChatMessage, useRevokeSocialChatMessage } from "../hooks/useSocialChat";
 import { useSocialChatMessages } from "../hooks/useSocialChat";
 
 import ChatInputBar from "./components/ChatInputBar";
@@ -20,14 +20,16 @@ import LanguageSelectModal from "@/components/common/bottomSheet/LanguageInutMod
 import { IoArrowDown } from "react-icons/io5";
 import { useSocialChatThread } from "./hooks/useSocialChatThread";
 import { ChatInfoType, CountLimitChatDontFriend } from "@/constants/socialChat";
-import { useAcceptFriendRequest, useCancelFriendRequest, useRejectFriendRequest, useSendFriendRequest } from "@/pages/SocialPartner/hooks/useSocialPartner";
 import { mergeSocialChatMessages } from "@/utils/mapSocialChatMessage";
 import { ChatMessageList } from "./components/ChatMessageList";
 import { useSocialChatHandlers } from "./hooks/useSocialChatHandlers";
 import { ChatMessage } from "@/types/social-chat";
 import MessageLimitNotice from "./components/MessageLimitNotice";
 import ExpandInputModal from "@/components/common/bottomSheet/ExpandInputModal";
-import { useCreateTranslation } from "@/pages/Translate/hooks/useTranslationLanguages";
+import { useCreateTranslationChat } from "@/pages/Translate/hooks/useTranslationLanguages";
+import NativeGalleryPicker, { NativeGalleryPickerHandle } from "@/components/gallery-picker/NativeGalleryPicker";
+import { PhotoItem } from "@/components/gallery-picker/gallery.native";
+import { photoItemToFile } from "@/components/gallery-picker/gallery.toFile";
 
 dayjs.extend(utc);
 
@@ -45,11 +47,13 @@ const SocialChatThread: React.FC = () => {
         setSelectedLanguageSocialChat, selectedLanguageSocialChat,
         pendingImages, pendingFiles, addPendingImages, addPendingFiles,
         removePendingImageByUrl, showToast,
-        userInfo, messages, addMessage, updateMessageByCode, updateMessageByTempId, updateMessageWithServerResponse, deviceInfo, setLoadingMessages, addMessages,
+        userInfo, messages, addMessage, updateMessageByCode, updateMessageByTempId, updateMessageWithServerResponse, setLoadingMessages, addMessages,
         replyingToMessage, setReplyingToMessage, clearReplyingToMessage,
         initialLoadRef, prevMessagesLength,
-        translateSheet, sheetExpand, openInputExpandSheet, openTranslateExpandSheet, closeSheet, sheetExpandMode, screenHeight, messageValue, setMessageValue,
-        expandValue, setExpandValue, expandTitle, expandPlaceholder,
+        translateSheet, sheetExpand, openInputExpandSheet, openTranslateExpandSheet, closeSheet, messageValue, setMessageValue,
+        unfriendMutation, sendRequest, cancelRequest, acceptRequest, rejectRequest,
+        translateActionStatus, setTranslateActionStatus,
+        expandValue, setExpandValue, expandTitle, expandPlaceholder, usePeerUserId, roomData, createTranslationMutation, actionFieldSend, isTranslating, sheetExpandMode
     } = useSocialChatThread();
 
     const updateMessageMutation = useUpdateSocialChatMessage();
@@ -57,18 +61,16 @@ const SocialChatThread: React.FC = () => {
     const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef, 0, "auto");
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
-    const { showScrollButton, onContainerScroll, setShowScrollButton, recalc } = useScrollButton(messagesContainerRef, messagesEndRef);
-    const { data: roomData, refetch: refetchRoomData } = useChatRoomByCode(roomId ?? "");
-    const sendRequest = useSendFriendRequest(showToast, refetchRoomData);
-    const cancelRequest = useCancelFriendRequest(showToast, refetchRoomData);
-    const acceptRequest = useAcceptFriendRequest(showToast, refetchRoomData);
-    const rejectRequest = useRejectFriendRequest(showToast, refetchRoomData);
-    const createTranslationMutation = useCreateTranslation();
+    const { showScrollButton, onContainerScroll, recalc } = useScrollButton(messagesContainerRef, messagesEndRef);
+
+    const peerUserId = useMemo(() => usePeerUserId(roomData, userInfo?.id), [roomData, userInfo?.id]);
+
     const scrollToBottom = useCallback(() => {
-        messagesEndRef.current?.scrollIntoView({ block: "end" });
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
         setTimeout(recalc, 0);
     }, [recalc]);
-    useAutoResizeTextarea(messageRef, messageValue);
+
+
     const {
         data: messagesData,
         fetchNextPage,
@@ -81,7 +83,6 @@ const SocialChatThread: React.FC = () => {
     const serverMessages = useMemo(() => {
         return messagesData?.pages.flat() || [];
     }, [messagesData]);
-
     const displayMessages = useMemo(() => {
         return mergeSocialChatMessages(
             messages,
@@ -90,12 +91,13 @@ const SocialChatThread: React.FC = () => {
             ...msg,
             botName: msg.botName === null ? undefined : msg.botName,
         }));
-    }, [serverMessages, messages]);
+    }, [serverMessages, messages, roomId]);
 
     const userRightCount = useMemo(
         () => displayMessages.reduce((acc, m) => acc + (m?.isRight ? 1 : 0), 0),
         [displayMessages]
     );
+
     const hasReachedLimit = !roomData?.isFriend && userRightCount >= CountLimitChatDontFriend && roomChatInfo?.type === ChatInfoType.UserVsUser;
     const {
         handleScrollWithLoadMore,
@@ -105,6 +107,7 @@ const SocialChatThread: React.FC = () => {
         handleRevokeMessage,
         handleTakePhoto,
         handleTranslate,
+        sendPickedFiles
     } = useSocialChatHandlers({
         addPendingImages,
         addPendingFiles,
@@ -138,11 +141,13 @@ const SocialChatThread: React.FC = () => {
         messageTranslate,
         showToast,
         t: (key: string) => key,
+        recalc
     });
-    const handleScroll = useCallback(() => {
-        onContainerScroll?.(); 
-        recalc();              
-    }, [onContainerScroll, recalc]);
+
+    // const handleSubmit = async (items: PhotoItem[]) => {
+    //     const files = await Promise.all(items.map(photoItemToFile));
+    //     await sendPickedFiles(files);
+    // };
     useEffect(() => {
         if (messagesData?.pages) {
             const apiMessages = messagesData.pages.flatMap(page => {
@@ -162,13 +167,11 @@ const SocialChatThread: React.FC = () => {
             setTimeout(() => {
                 scrollToBottomMess();
                 requestAnimationFrame(() => requestAnimationFrame(() => recalc()));
-            }, 100);
+            }, 200);
             initialLoadRef.current = false;
         }
         prevMessagesLength.current = displayMessages.length;
     }, [displayMessages, scrollToBottomMess, recalc]);
-
-
     useEffect(() => {
         if (roomId) {
             refetchMessages();
@@ -192,6 +195,13 @@ const SocialChatThread: React.FC = () => {
     useEffect(() => {
         recalc();
     }, [inputBarHeight, keyboardHeight]);
+    useEffect(() => {
+        if (!showScrollButton) {
+            const b = messagesEndRef.current;
+            if (b) b.scrollIntoView({ behavior: "smooth", block: "end" });
+            requestAnimationFrame(() => recalc());
+        }
+    }, [displayMessages.length, showScrollButton, recalc, messagesEndRef]);
     useAppState(() => {
         if (roomId) queryClient.invalidateQueries(["messages", roomId]);
     });
@@ -228,7 +238,7 @@ const SocialChatThread: React.FC = () => {
                             style={{
                                 paddingRight: 0,
                                 paddingLeft: 0,
-                                paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 60 : keyboardHeight) : 0,
+                                paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 60 : keyboardHeight) : (isNative ? 0 : 60),
                                 height: "100dvh",
                             }}
                         >
@@ -239,19 +249,22 @@ const SocialChatThread: React.FC = () => {
                                 onSendFriendRequest={sendRequest.mutate}
                                 onCancelFriendRequest={cancelRequest.mutate}
                                 currentUserId={userInfo?.id || 0}
-                                onUnfriend={() => { }}
+                                onUnfriend={() => {
+                                    if (!peerUserId) return;
+                                    unfriendMutation.mutate({ friendUserId: peerUserId, roomCode: roomId ?? undefined });
+                                }}
                             />
 
                             <div
-                                className={`flex-1 overflow-x-hidden overflow-y-auto p-6 ${!isNative && !keyboardResizeScreen ? "pb-2" : ""
-                                    }`}
+                                className={`flex-1 overflow-x-hidden overflow-y-auto px-6`}
                                 style={
                                     !isNative && !keyboardResizeScreen
-                                        ? { maxHeight: `calc(100dvh - ${inputBarHeight}px)` }
+                                        ? { maxHeight: `calc(100dvh - ${inputBarHeight + 10}px)` }
                                         : undefined
+
                                 }
                                 ref={messagesContainerRef}
-                                onScroll={handleScroll}
+                                onScroll={handleScrollWithLoadMore}
                             >
                                 {roomChatInfo?.type === ChatInfoType.UserVsUser && !hasNextPage && !isFetchingNextPage && !isLoadingMessages && userInfo && (
                                     <ChatRelationshipBanner
@@ -279,6 +292,7 @@ const SocialChatThread: React.FC = () => {
                                         onReplyMessage={handleReplyMessage}
                                         isGroup={roomChatInfo?.type !== ChatInfoType.UserVsUser}
                                         currentUserId={userInfo?.id}
+                                        hasReachedLimit={hasReachedLimit}
                                     />
                                 )}
                                 {hasReachedLimit && (
@@ -290,28 +304,13 @@ const SocialChatThread: React.FC = () => {
                                     // onSendFriend={awaitingAccept ? undefined : handleSendFriend}
                                     />
                                 )}
-                                <div ref={messagesEndRef} style={{ height: 1 }} />
+
+                                <div ref={messagesEndRef} className="h-px" />
+
                             </div>
                             <div className={`bg-white w-full z-2 ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
                                 } ${isNative ? "bottom-0" : "bottom-0"} ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
                                 } ${keyboardResizeScreen && isNative ? "pb-4" : "pb-4"}`}>
-
-                                {/* 
-                                <div className="">
-                                    <div ref={pendingBarRef} className="flex gap-2 flex-wrap">
-                                        <PendingImages
-                                            pendingImages={pendingImages}
-                                            imageLoading={uploadImageMutation.isLoading}
-                                            removePendingImage={removePendingImage}
-                                            imageLoadingMany={imageLoading}
-                                        />
-                                        <PendingFiles
-                                            pendingFiles={pendingFiles}
-                                            removePendingFile={removePendingFile}
-                                        />
-                                    </div>
-                                </div> */}
-
                                 <div className="relative">
                                     {showScrollButton && (
                                         <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
@@ -348,9 +347,22 @@ const SocialChatThread: React.FC = () => {
                                         openTranslateExpandSheet={openTranslateExpandSheet}
                                         onTranslate={handleTranslate}
                                         setInputBarHeight={setInputBarHeight}
+                                        createTranslationMutation={createTranslationMutation}
+                                        translateActionStatus={translateActionStatus}
+                                        isTranslating={isTranslating}
+                                        actionFieldSend={actionFieldSend}
+                                        setTranslateActionStatus={setTranslateActionStatus}
                                     />
                                 </div>
                             </div>
+
+                            {/* <NativeGalleryPicker
+                                multiSelect         
+                                showActionBar      
+                                submitLabel="Gửi"
+                                maxHeight={360}
+                                onSubmit={handleSubmit}
+                            /> */}
                         </div>
                     </MotionBottomSheet>
 
@@ -378,6 +390,10 @@ const SocialChatThread: React.FC = () => {
                         value={expandValue}
                         onChange={setExpandValue}
                         placeholder={expandPlaceholder}
+                        handleSendMessage={handleSendMessage}
+                        actionFieldSend={actionFieldSend}
+                        translateActionStatus={translateActionStatus}
+                        sheetExpandMode={sheetExpandMode}
                     />
                 </div>
             )}

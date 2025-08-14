@@ -53,3 +53,7 @@ export const rejectFriendRequest = async (friendRequestId: number) => {
   const res = await httpClient.post("/api/v1/friendship/reject-request", { friendRequestId });
   return res.data.data;
 }
+export const unfriend = async (friendUserId: number) => {
+  const res = await httpClient.post("/api/v1/friendship/unfriend", { friendUserId });
+  return res.data.data;
+};

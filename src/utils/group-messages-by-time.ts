@@ -7,7 +7,7 @@ export interface MessageGroup {
 }
 
 const MESSAGE_GROUP_THRESHOLD = 5 * 60 * 1000; 
-const TIME_GROUP_THRESHOLD = 60 * 60 * 1000;  
+const TIME_GROUP_THRESHOLD = 10 * 60 * 1000;  
 
 type TFn = (key: string, options?: any) => string;
 
