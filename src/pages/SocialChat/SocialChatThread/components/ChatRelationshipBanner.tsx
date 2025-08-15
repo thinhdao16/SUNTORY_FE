@@ -89,7 +89,7 @@ const ChatRelationshipBanner: React.FC<Props> = ({
                                     {senderName || "Name"}
                                 </span>
                                 <span className="ml-1 flex-shrink-0">
-                                    has sent you a friend request
+                                    {t("has sent you a friend request")}
                                 </span>
                             </p>
                             <div className="mt-2 flex gap-4 w-full">
@@ -98,14 +98,14 @@ const ChatRelationshipBanner: React.FC<Props> = ({
                                     disabled={!friendRequest}
                                     className="w-full  gap-1 rounded-lg bg-main px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 active:scale-[.98] transition disabled:opacity-60"
                                 >
-                                    Accept
+                                    {t("Accept")}
                                 </button>
                                 <button
                                     onClick={() => friendRequest && onRejectFriend(friendRequest.id)}
                                     disabled={!friendRequest}
                                     className="w-full  gap-1 rounded-lg bg-netural-50 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200 active:scale-[.98] transition disabled:opacity-60"
                                 >
-                                    Decline
+                                    {t("Decline")}
                                 </button>
                             </div>
                         </div>

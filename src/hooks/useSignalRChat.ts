@@ -12,6 +12,7 @@ export function useSignalRChat(deviceId: string) {
     const setIsConnected = useSignalRChatStore((s) => s.setIsConnected);
 
     const { addStreamChunk, completeStream , setLoadingStream } = useSignalRStreamStore();
+    
     const setSendMessage = useSignalRChatStore((s) => s.setSendMessage);
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const setIsSending = useChatStore.getState().setIsSending;
@@ -60,6 +61,7 @@ export function useSignalRChat(deviceId: string) {
                 messageCode,
             };
             setLoadingStream(true);
+            setIsSending(false);
             streamText(fullText, meta, addStreamChunk, setLoadingStream, completeStream);
         };
         connection.on("ReceiveMessage", handleReceive);

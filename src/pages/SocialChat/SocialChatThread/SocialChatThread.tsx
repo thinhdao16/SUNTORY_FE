@@ -200,6 +200,7 @@ const SocialChatThread: React.FC = () => {
             requestAnimationFrame(() => recalc());
         }
     }, [displayMessages.length, showScrollButton, recalc, messagesEndRef]);
+    
     useAppState(() => {
         if (roomId) queryClient.invalidateQueries(["messages", roomId]);
     });
@@ -240,6 +241,7 @@ const SocialChatThread: React.FC = () => {
                                 height: "100dvh",
                             }}
                         >
+                            
                             <SocialChatHeader
                                 onBackClick={() => history.push("/social-chat")}
                                 roomChatInfo={roomChatInfo}

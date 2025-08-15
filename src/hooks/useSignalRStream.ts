@@ -109,7 +109,6 @@ export const useSignalRStream = (
                 addStreamChunk(chunk);
                 setIsSending(true);
 
-
             }
         });
 

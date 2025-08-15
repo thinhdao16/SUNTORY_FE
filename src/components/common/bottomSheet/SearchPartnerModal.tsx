@@ -140,14 +140,14 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
             <button onClick={onClose} className="text-gray-700 text-lg">
               <FiX />
             </button>
-            <h1 className="text-sm font-semibold text-gray-900">Search</h1>
+            <h1 className="text-sm font-semibold text-gray-900">{t("Search")}</h1>
             <div className="w-5" />
           </div>
           <div className="flex items-center bg-gray-100 mx-4 rounded-full px-4 py-2 mb-4">
             <FiSearch className="text-gray-400 mr-2" />
             <input
               type="text"
-              placeholder="ID Username"
+              placeholder={t("ID Username")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="bg-transparent text-sm outline-none flex-grow"
@@ -171,7 +171,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
               </p>
             )}
             {isLoading && query && (
-              <p className="text-center text-gray-400 text-sm mt-12">Loading...</p>
+              <p className="text-center text-gray-400 text-sm mt-12">{t("Loading...")}</p>
             )}
             {query && !isLoading && users.length === 0 && (
               <div className="flex flex-col items-center justify-center mt-20 text-center text-gray-500">
@@ -179,7 +179,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
                   <FiSearch className="text-white text-xl" />
                 </div>
                 <p className="text-sm font-medium">
-                  No relevant search results found.
+                  {t("No relevant search results found.")}
                 </p>
               </div>
             )}
@@ -236,7 +236,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
                   </div>
                 ))}
                 {isFetchingNextPage && (
-                  <p className="text-center text-gray-400 text-sm mt-2">Loading more...</p>
+                  <p className="text-center text-gray-400 text-sm mt-2">{t("Loading more...")}</p>
                 )}
               </div>
             )}

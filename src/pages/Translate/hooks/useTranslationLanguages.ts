@@ -39,7 +39,6 @@ export const useCreateTranslationChat = () => {
     createTranslationChat,
     {
       onSuccess: (data) => {
-        console.log("Translation created successfully:", data);
       },
       onError: (error) => {
         console.error("Translation creation failed:", error);

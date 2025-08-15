@@ -90,7 +90,6 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     const [open, setOpen] = useState(false);
     const [dots, setDots] = React.useState(".");
 
-
     const containerRef = useRef<HTMLDivElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -160,7 +159,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
         if (translateActionStatus && debouncedSource.trim()) {
             onTranslate(debouncedSource);
         }
-    }, [translateActionStatus, debouncedSource]);
+    }, [translateActionStatus, debouncedSource ,selectedLanguageSocialChat]);
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
@@ -239,7 +238,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             onKeyDown={(e) => {
                                 const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
                                 tAPI.touch();
-                                if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+                                if (event.key === 'Enter' && !event.shiftKey && !event.isComposing &&  messageTranslate.trim().length > 0) {
                                     e.preventDefault();
                                     sendBtnRef.current?.click();
                                     tAPI.off();
@@ -291,7 +290,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     onKeyDown={(e) => {
                         const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
                         tAPI.touch();
-                        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+                        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing  ) {
                             e.preventDefault();
                             sendBtnRef.current?.click();
                             tAPI.off();
@@ -327,7 +326,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                                 keepFocus();
                                 tAPI.off();
                                 requestAnimationFrame(() => {
-                                    handleSendMessage(e, actionFieldSend, true);
+                                    handleSendMessage(e, actionFieldSend, false);
                                     requestAnimationFrame(() => keepFocus());
                                 });
                             }}

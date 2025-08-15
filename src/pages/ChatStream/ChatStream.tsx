@@ -478,7 +478,7 @@ const Chat: React.FC = () => {
                                 topicType={topicType}
                                 title={title}
                                 // loading={isSending || hasPendingMessages}
-                                loading={loadingStream}
+                                loading={loadingStream || isSending}
                                 onRetryMessage={retryMessage}
                                 isSpending={isSending}
                             />
@@ -517,7 +517,7 @@ const Chat: React.FC = () => {
                                 messageValue={messageValue}
                                 setMessageValue={setMessageValue}
                                 // isLoading={isLoading}
-                                isLoading={loadingStream}
+                                isLoading={loadingStream || isSending}
                                 isLoadingHistory={isLoadingHistory}
                                 messageRef={messageRef}
                                 handleSendMessage={handleSendMessage}

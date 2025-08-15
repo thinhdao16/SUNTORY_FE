@@ -96,7 +96,7 @@ const SocialPartnerAdd = () => {
                                     <FiArrowLeft />
                                 </button>
                                 <h1 className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
-                                    Add Partner
+                                    {t("Add Partner")}
                                 </h1>
                                 <div className="w-5" />
                             </div>
@@ -158,7 +158,7 @@ const SocialPartnerAdd = () => {
                             <div className="my-6">
                                 <input
                                     type="text"
-                                    placeholder="ID Username"
+                                    placeholder={t("ID Username")}
                                     className="w-full rounded-lg px-4 py-2 text-sm bg-chat-to focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     onFocus={() => openModal("search")}
                                 />

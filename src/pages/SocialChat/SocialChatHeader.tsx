@@ -23,7 +23,7 @@ const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, 
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("Type name")}
+                placeholder={t("Search")}
                 className="bg-transparent outline-none  flex-grow"
                 onFocus={inputOnFocus}
             />

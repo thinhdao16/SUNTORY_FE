@@ -275,15 +275,19 @@ export function useSocialChatHandlers({
     };
 
     const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent, field: string, force?: boolean,) => {
-        // e.preventDefault();
+        e.preventDefault();
 
-        const hasMessage = messageValue.trim().length > 0 || messageTranslate.trim().length > 0;
+        const isEmptyText = (text: string) => {
+            return text.replace(/\s/g, "").length === 0;
+        };
+        const hasMessage = !isEmptyText(messageValue) || !isEmptyText(messageTranslate);
+        console.log(hasMessage)
         const hasFiles = pendingImages.length > 0 || pendingFiles.length > 0;
 
-        if (!hasMessage && !hasFiles && !force) {
+        if (!hasMessage && !hasFiles) {
             return;
         }
-        if (hasReachedLimit && !force) {
+        if (hasReachedLimit) {
             useToastStore.getState().showToast(
                 i18n.t("You have reached the message limit for this chat."),
                 2000,

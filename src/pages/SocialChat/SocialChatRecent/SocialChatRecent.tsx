@@ -136,7 +136,6 @@ export default function SocialChatRecent() {
                   />
                   <div className="ml-3">
                     <p className="text-base font-semibold truncate max-w-xs">{room.title}</p>
-
                     <p
                       className={`text-xs max-w-xs  text-netural-300 ${isUnread && "font-semibold " } overflow-hidden text-ellipsis whitespace-nowrap`}
                     >
@@ -153,7 +152,7 @@ export default function SocialChatRecent() {
                     {formatTimeFromNow(getLatestUpdateDate(room), t)}
                   </p>
                   {isUnread && (
-                    <button className="flex items-center justify-center min-w-[16px] aspect-square p-1 rounded-full text-white text-[8.53px] bg-main">
+                    <button className="flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px] bg-main">
                       {unread > 99 ? '99+' : unread}
                     </button>
                   )}
@@ -167,7 +166,7 @@ export default function SocialChatRecent() {
           )}
 
           {!hasNextPage && !isLoading && chatRooms.length === 0 && (
-            <div className="text-center py-2 text-xs text-gray-400">{t('No more chats')}</div>
+            <div className="text-center py-2  text-gray-400">{t('No more chats')}</div>
           )}
         </div>
       </div>

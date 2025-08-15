@@ -82,13 +82,11 @@ function SocialGroupAdd() {
           <button onClick={() => history.goBack()} className="text-gray-500">
             <FiArrowLeft className="text-xl" />
           </button>
-          <h2 className="text-blue-600 font-semibold">ADD GROUP</h2>
+          <h2 className="text-blue-600 font-semibold uppercase">  {t("Add Group")}</h2>
           <button onClick={handleCreateGroup} disabled={creating}>
             {selectedUsers.length > 0 ? <SendIcon /> : <SendEmptyIcon />}
           </button>
-
         </div>
-
         {selectedUsers.length > 0 && (
           <div className="flex gap-[15px] mb-3  overflow-x-auto w-full">
             {selectedUsers.map((id) => {
@@ -103,7 +101,6 @@ function SocialGroupAdd() {
                       e.currentTarget.src = avatarGrayFallback;
                     }}
                   />
-
                   <button
                     onClick={() => removeSelected(id)}
                     className="absolute -top-1 -right-1 bg-success-500 text-black rounded-full w-5 h-5 flex items-center justify-center"
@@ -116,23 +113,21 @@ function SocialGroupAdd() {
             })}
           </div>
         )}
-
         <div className="">
           <input
             type="text"
-            placeholder="Group name (optional)"
+            placeholder={t("Group name (optional)")}
             className="w-full border-none text-netural-300 outline-none"
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
           />
         </div>
-
         <div className="flex items-center bg-chat-to rounded-lg px-4 py-2 ">
           <SearchIcon className="text-gray-400 mr-2" />
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search"
+            placeholder={t("Search")}
             className="flex-grow bg-transparent text-sm focus:outline-none"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -145,10 +140,8 @@ function SocialGroupAdd() {
               }}
             />
           )}
-
         </div>
       </div>
-
       <div className={`px-6 mt-4 overflow-y-auto pb-28 ${isNative
         ? "max-h-[75vh]"
         : "max-h-[65vh] lg:max-h-[65vh] xl:max-h-[75vh]"
@@ -159,13 +152,13 @@ function SocialGroupAdd() {
 
         <div ref={scrollRef} className={`space-y-3  `}>
           {isLoading ? (
-            <p className="text-center text-gray-400">Loading...</p>
+            <p className="text-center text-gray-400">{t("Loading...")}</p>
           ) : filteredUsers.length === 0 ? (
             <div className="flex flex-col items-center text-center text-gray-500 mt-20">
               <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center text-white text-xl mb-3">
                 <FiSearch />
               </div>
-              <p>No relevant search results found.</p>
+              <p>{t("No relevant search results found.")}</p>
             </div>
           ) : (
             filteredUsers.map((user) => (
@@ -181,11 +174,7 @@ function SocialGroupAdd() {
                   <label
                     htmlFor={`checkbox-${user.id}`}
                     className={`w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center cursor-pointer
-    ${selectedUsers.includes(user.id)
-                        ? "bg-main border-main"
-                        : "border-neutral-300 bg-white"}
-  `}
-                  >
+                    ${selectedUsers.includes(user.id) ? "bg-main border-main" : "border-neutral-300 bg-white"}`}>
                     {selectedUsers.includes(user.id) && (
                       <CheckboxSelectIcon />
                     )}
@@ -206,7 +195,7 @@ function SocialGroupAdd() {
             ))
           )}
           {isFetchingNextPage && (
-            <p className="text-center text-gray-400 text-sm">Loading more...</p>
+            <p className="text-center text-gray-400 text-sm">{t("Loading more...")}</p>
           )}
         </div>
       </div>

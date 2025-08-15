@@ -98,7 +98,7 @@ function SocialChatListRequest() {
                 {isLoading ? (
                     <p className="text-center text-gray-400">{t("Loading requests...")}</p>
                 ) : users.length === 0 ? (
-                    <p className="text-center text-gray-500 mt-10">{t("No requests found.")}</p>
+                    <p className="text-center py-2  text-gray-400">{t("No requests found.")}</p>
                 ) : (
                     users.map((user: any) => (
                         <div
