@@ -60,9 +60,10 @@ export function useSignalRChat(deviceId: string) {
                 chatCode,
                 messageCode,
             };
-            setLoadingStream(true);
+            setLoadingStream("think", false);
+            setLoadingStream("loading", true);
             setIsSending(false);
-            streamText(fullText, meta, addStreamChunk, setLoadingStream, completeStream);
+            streamText(fullText, meta, addStreamChunk, (loading: boolean) => setLoadingStream("loading", loading), completeStream);
         };
         connection.on("ReceiveMessage", handleReceive);
 

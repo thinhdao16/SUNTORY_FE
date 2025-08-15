@@ -83,7 +83,7 @@ const ExpandInputModal: React.FC<ExpandInputModalProps> = ({
                                 className="absolute left-2 top-0  rounded-full "
                                 onClick={closeModal}
                             >
-                                <IonIcon icon={close} className="text-xl text-gray-600" />
+                                <IonIcon icon={close} className="text-3xl text-black" />
                             </button>
                             <div className="absolute right-2 top-0  rounded-full ">
                                 {translateActionStatus && sheetExpandMode === "input" ? (null) : (

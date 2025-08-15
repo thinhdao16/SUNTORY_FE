@@ -58,8 +58,8 @@ interface SignalRStreamStore {
     getCompletedMessages: (chatCode?: string) => ChatMessage[];
     chatCode: string;
     setChatCode: (chatCode: string) => void;
-    loadingStream : boolean;
-    setLoadingStream: (loading: boolean) => void;
+    loadingStream : { [key: string]: boolean };
+    setLoadingStream: (think: string, loading: boolean) => void;
 }
 
 export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
@@ -68,9 +68,15 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
     connectionId: undefined,
     streamMessages: {},
     completedMessages: [],
-    loadingStream:false,
+    loadingStream: { think: false, loading: false },
 
-    setLoadingStream: (loading) => set({ loadingStream: loading }),
+    setLoadingStream: (key: string, loading: boolean) =>
+        set((state) => ({
+            loadingStream: {
+                ...state.loadingStream,
+                [key]: loading
+            }
+        })),
     setConnection: (isConnected, connectionId) =>
         set({ isConnected, connectionId }),
 

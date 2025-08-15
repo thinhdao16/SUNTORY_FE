@@ -16,7 +16,7 @@ interface EmotionModalProps {
   setContext: (value: string) => void;
   setSelected: React.Dispatch<React.SetStateAction<string[]>>;
   selected: string[];
-  t: (key: string) => string; // Translation function
+  t: (key: string) => string; 
 }
 
 
@@ -35,7 +35,7 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
   setContext,
   setSelected,
   selected,
-  t, 
+  t,
 }) => {
   console.log(emotionInput)
   const EMOTIONS = [
@@ -55,7 +55,7 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
       const validEmotions = inputEmotions
         .map(emotion => {
           const found = EMOTIONS.find(e => e.label.toLowerCase() === emotion.toLowerCase());
-          return found ? found.label : null; 
+          return found ? found.label : null;
         })
         .filter(Boolean) as string[];
 
@@ -186,8 +186,7 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              className="bg-white w-full h-full rounded-t-3xl px-6 shadow-lg
-                 overflow-y-auto"
+              className="bg-white w-full h-full rounded-t-3xl px-6 shadow-lg overflow-y-auto"
               style={{ maxHeight: 'calc(80vh - 2rem)', minHeight: '95vh' }}
             >
               <div className="flex gap-4 justify-between mb-4 sticky top-0 bg-white z-99 pt-6">
@@ -258,7 +257,7 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
 
                 </div>
 
-                {/* <div className="mb-2 font-semibold">{t("Context (Optional)")}</div>
+                <div className="mb-2 font-semibold">{t("Context (Optional)")}</div>
 
                 <div className="relative mb-4">
                   <IonTextarea
@@ -289,7 +288,7 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
                       ✕
                     </button>
                   )}
-                </div> */}
+                </div>
               </div>
 
 

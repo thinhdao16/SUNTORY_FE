@@ -103,28 +103,20 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
     const handleSendWithDebounce = (e: any, field: string, force?: boolean) => {
         const now = Date.now();
-        // Giảm debounce xuống 150ms để tránh giật lag
-        if (now - lastSentTimeRef.current < 150) {
+        if (now - lastSentTimeRef.current < 5) {
             return;
         }
-        
-        if (isSending) {
-            return;
-        }
-
+        if (isSending) {return;}
         setIsSending(true);
         lastSentTimeRef.current = now;
-        
         try {
             handleSendMessage(e, field, force);
         } finally {
-            // Reset sau 50ms để responsive hơn
             setTimeout(() => {
                 setIsSending(false);
-            }, 50);
+            }, 1);
         }
     };
-
     const onFocus = (field: string) => {
         if (field === "input") {
             setFocused({ ...focused, [field]: true, translate: false });
@@ -266,22 +258,13 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                                 const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
                                 tAPI.touch();
                                 
-                                // Cải thiện xử lý Enter để tránh duplicate trên macOS  
                                 if (event.key === 'Enter' && !event.shiftKey) {
-                                    // Kiểm tra composition state để tránh duplicate
-                                    if (event.isComposing) {
-                                        return;
-                                    }
-                                    
+                                    if (event.isComposing) {return;}
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    
-                                    // Chỉ gửi tin nhắn khi có nội dung
                                     if (messageTranslate.trim().length > 0 && !isSending) {
                                         handleSendWithDebounce(e, "inputTranslate", true);
                                     }
-                                    
-                                    // Luôn clear translate input
                                     setMessageTranslate("");
                                     tAPI.off();
                                 }
@@ -368,11 +351,11 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                         }
                     }}
                 />
-                <div className="pb-2 gap-4 flex items-end h-fit">
+                <div className="pb-2 gap-4 flex items-center h-fit">
                     <button onClick={openInputExpandSheet}>
                         <ExpandInputIcon />
                     </button>
-                    {messageValue.trim().length > 0 && (
+                    {(messageValue.trim().length > 0  || messageTranslate.trim().length > 0) && (
                         <button
                             ref={sendBtnRef}
                             type="button"
@@ -381,15 +364,11 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             onTouchStart={preventBlur}
                             onClick={(e) => {
                                 if (isSending) return;
-                                
-                                // Chỉ gửi khi có nội dung
-                                if (messageValue.trim().length === 0) return;
-                                
+                                if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
                                 keepFocus();
                                 tAPI.off();
                                 requestAnimationFrame(() => {
                                     handleSendWithDebounce(e, actionFieldSend, false);
-                                    // Đảm bảo input được clear sau khi gửi
                                     requestAnimationFrame(() => {
                                         setMessageValue("");
                                         keepFocus();

@@ -115,11 +115,11 @@ export const useTranslateHistoryLogic = () => {
     }, []);
 
     const handleSwipeEnd = useCallback((item: TranslationHistoryItem) => {
-        if (swipeThreshold > 75) {
-            const el = document.getElementById(`delete-swipe-${item.id}`);
-            el?.click();
-            // handleDelete(item.id);
-        }
+        // if (swipeThreshold > 75) {
+        //     const el = document.getElementById(`delete-swipe-${item.id}`);
+        //     el?.click();
+        //     // handleDelete(item.id);
+        // }
     }, [swipeThreshold, handleDelete]);
 
     const handleBack = useCallback(() => {

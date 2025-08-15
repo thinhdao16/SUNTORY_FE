@@ -68,6 +68,7 @@ const Translate: React.FC = () => {
     setEmotionData,
     inputValueTranslate,
     setInputValueTranslate,
+    clearInputValueTranslate,
   } = useTranslationStore();
   const { getDisplayName, getModelList, setModel } = useModelStore();
   const modelSelect = getDisplayName();
@@ -392,6 +393,7 @@ const Translate: React.FC = () => {
             isAiInsightsCollapsed={isAiInsightsCollapsed}
             setIsReverseCollapsed={setIsReverseCollapsed}
             setIsAiInsightsCollapsed={setIsAiInsightsCollapsed}
+            clearInputValueTranslate={clearInputValueTranslate}
           />
         )}
       </MotionStyles>

@@ -18,6 +18,7 @@ import { GoPaste } from "react-icons/go";
 import ReactMarkdown from 'react-markdown';
 import { useHistory } from "react-router-dom";
 import BackIcon from "@/icons/logo/vector_left.svg?react";
+import { IoIosClose } from "react-icons/io";
 
 interface TranslateContentProps {
   isOpen: { emotion: boolean; language: boolean };
@@ -76,6 +77,7 @@ interface TranslateContentProps {
   setIsReverseCollapsed?: React.Dispatch<React.SetStateAction<boolean>>;
   isAiInsightsCollapsed?: boolean;
   setIsAiInsightsCollapsed?: React.Dispatch<React.SetStateAction<boolean>>;
+  clearInputValueTranslate: () => void;
 }
 
 const TranslateContent: React.FC<TranslateContentProps> = ({
@@ -124,6 +126,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
   setIsReverseCollapsed = () => { },
   isAiInsightsCollapsed = false,
   setIsAiInsightsCollapsed = () => { },
+  clearInputValueTranslate
 }) => {
   const history = useHistory();
 
@@ -316,6 +319,9 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
 
               <div className="relative mb-4">
                 <div className="items-center flex flex-col border border-neutral-200 rounded-2xl ">
+                  <button type="button" className="absolute top-3 right-3 z-9" onClick={() => { clearInputValueTranslate(); }}>
+                    <IoIosClose className="text-4xl"/>
+                  </button>
                   <IonTextarea
                     autoGrow={true}
                     ref={textareaRef}
@@ -324,7 +330,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                     value={inputValueTranslate.input}
                     onIonInput={(e: any) => handleInputTranslate(e)}
                     disabled={isTranslating}
-                    className="placeholder:text-gray-500 w-full px-4 pb-2 focus:outline-none resize-none overflow-hidden"
+                    className="placeholder:text-gray-500 w-full pl-4 pr-10 pb-2  focus:outline-none resize-none overflow-hidden"
                     style={{
                       border: "none",
                       boxShadow: "none",
@@ -397,7 +403,6 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                       </div>
                     )}
 
-                    {/* Reverse Translation - Có thể collapse */}
                     {translationResult.reverseTranslation && (
                       <div className="border-t border-main pt-2 h-full">
                         <div
@@ -415,7 +420,6 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                           </div>
                         </div>
 
-                        {/* Collapsible Content */}
                         <div
                           className={`h-full transition-all duration-300 ease-in-out ${!isReverseCollapsed ? 'max-h-0 opacity-0' : 'opacity-100'}`}
                         >
@@ -467,7 +471,6 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                             <div className="prose prose-sm max-w-none space-y-3">
                               <ReactMarkdown
                                 components={{
-                                  // Custom styling cho các elements
                                   strong: ({ children }) => (
                                     <strong className="font-bold text-gray-900">{children}</strong>
                                   ),

@@ -61,7 +61,7 @@ const SocialChatThread: React.FC = () => {
     const isFixedBar = !isNative && !keyboardResizeScreen && keyboardHeight === 0;
 
     const scrollPadBottom = isFixedBar ? (inputBarHeight || 60) + 8 : 8;
-        
+
     const peerUserId = useMemo(() => usePeerUserId(roomData, userInfo?.id), [roomData, userInfo?.id]);
 
     const scrollToBottom = useCallback(() => {
@@ -82,7 +82,7 @@ const SocialChatThread: React.FC = () => {
     const serverMessages = useMemo(() => {
         return messagesData?.pages.flat() || [];
     }, [messagesData]);
-    const displayMessages = useMemo(() => { 
+    const displayMessages = useMemo(() => {
         return mergeSocialChatMessages(
             messages,
             userInfo?.id || 0,
@@ -200,7 +200,7 @@ const SocialChatThread: React.FC = () => {
             requestAnimationFrame(() => recalc());
         }
     }, [displayMessages.length, showScrollButton, recalc, messagesEndRef]);
-    
+
     useAppState(() => {
         if (roomId) queryClient.invalidateQueries(["messages", roomId]);
     });
@@ -211,6 +211,30 @@ const SocialChatThread: React.FC = () => {
     const handleCancelReply = useCallback(() => {
         clearReplyingToMessage();
     }, [clearReplyingToMessage]);
+    const lastScrollPosRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (keyboardHeight > 0) {
+            if (messagesContainerRef.current) {
+                lastScrollPosRef.current = messagesContainerRef.current.scrollTop;
+            }
+            setTimeout(() => {
+                if (messagesContainerRef.current) {
+                    messagesContainerRef.current.scrollTo({
+                        top: messagesContainerRef.current.scrollTop + keyboardHeight,
+                        behavior: "smooth"
+                    });
+                }
+            }, 50);
+
+        } else {
+            if (lastScrollPosRef.current !== null && messagesContainerRef.current) {
+                messagesContainerRef.current.scrollTop = lastScrollPosRef.current;
+                lastScrollPosRef.current = null;
+            }
+        }
+    }, [keyboardHeight]);
+
     return (
         <MotionStyles
             isOpen={translateSheet.isOpen || sheetExpand.isOpen}
@@ -237,11 +261,10 @@ const SocialChatThread: React.FC = () => {
                             style={{
                                 paddingRight: 0,
                                 paddingLeft: 0,
-                                paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? keyboardHeight : keyboardHeight) : (isNative ? 0 : 60),
+                                paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 90 : 60) : (isNative ? 0 : 60),
                                 height: "100dvh",
                             }}
                         >
-                            
                             <SocialChatHeader
                                 onBackClick={() => history.push("/social-chat")}
                                 roomChatInfo={roomChatInfo}
@@ -258,9 +281,11 @@ const SocialChatThread: React.FC = () => {
                                 className={`flex-1 overflow-x-hidden overflow-y-auto px-6`}
                                 style={
                                     !isNative && !keyboardResizeScreen
-                                        ? { maxHeight: `calc(100dvh - ${inputBarHeight + 10}px)` }
+                                        ? {
+                                            maxHeight: `calc(100dvh - ${inputBarHeight + 10}px)`,
+                                            paddingBottom: keyboardHeight > 0 ? keyboardHeight : 0
+                                        }
                                         : undefined
-
                                 }
                                 ref={messagesContainerRef}
                                 onScroll={handleScrollWithLoadMore}

@@ -109,7 +109,7 @@ const Chat: React.FC = () => {
     const clearAllStreams = useSignalRStreamStore((state) => state.clearAllStreams);
     const setChatCode = useSignalRStreamStore((state) => state.setChatCode);
     const addStreamChunk = useSignalRStreamStore((state) => state.addStreamChunk);
-    const {loadingStream} = useSignalRStreamStore()
+    const { loadingStream } = useSignalRStreamStore()
     const completedMessages = useMemo(() => {
         if (!sessionId) return [];
         return rawCompleted.filter((msg: any) => msg.chatCode === sessionId);
@@ -149,7 +149,7 @@ const Chat: React.FC = () => {
     const isValidTopicType = topicTypeNum !== undefined && Object.values(TopicType).includes(topicTypeNum as TopicType);
     const topicType: TopicType | undefined = isValidTopicType ? (topicTypeNum as TopicType) : undefined;
     const title = isValidTopicType && topicType !== undefined ? TopicTypeLabel[topicType] : undefined;
-    const anActivate = topicType === TopicType.MedicalSupport
+    const anActivate = topicType === TopicType.MedicalSupport || topicType === TopicType.DocumentTranslation || topicType === TopicType.FoodDiscovery;
     // ==== Hooks: Chat & Message ====
     useSignalRChat(deviceInfo.deviceId || "");
     // useSignalRStream(deviceInfo.deviceId || "", {
@@ -464,7 +464,7 @@ const Chat: React.FC = () => {
                 ) : (
                     <>
                         <div
-                            className={`flex-1 overflow-x-hidden overflow-y-auto p-6 ${!isNative && !keyboardResizeScreen ? "pb-2 max-h-[calc(100dvh-218px)] overflow-hidden" : ""}`}
+                            className={`flex-1 overflow-x-hidden overflow-y-auto p-6 ${!isNative && !keyboardResizeScreen ? `pb-2 max-h-[calc(100dvh-${anActivate ? 155 : 218}px)] overflow-hidden` : ""}`}
                             ref={messagesContainerRef}
                             onScroll={(e) => {
                                 onContainerScroll?.();
@@ -478,62 +478,67 @@ const Chat: React.FC = () => {
                                 topicType={topicType}
                                 title={title}
                                 // loading={isSending || hasPendingMessages}
-                                loading={loadingStream || isSending}
+                                loading={loadingStream.loading || isSending}
                                 onRetryMessage={retryMessage}
                                 isSpending={isSending}
+                                thinkLoading={loadingStream.think}
                             />
                             <div style={{ marginTop: pendingBarHeight }} />
-                            <div ref={messagesEndRef} className="mt-4" />
+                            <div ref={messagesEndRef} className="" />
                         </div>
                         <div className={`bg-white w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
                             } ${isNative ? "bottom-0" : "bottom-[60px]"
                             } ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
                             } ${keyboardResizeScreen && isNative ? "pb-4" : "pb-4"}`}>
-                            {showScrollButton && (
-                                <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
-                                    <button
-                                        className="p-2.5 rounded-full shadow bg-white"
-                                        onClick={scrollToBottom}
-                                    >
-                                        <IoArrowDown />
-                                    </button>
+                            <div className="relative">
+
+                                {showScrollButton && (
+                                    <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
+                                        <button
+                                            className="p-2.5 rounded-full shadow bg-white"
+                                            onClick={scrollToBottom}
+                                        >
+                                            <IoArrowDown />
+                                        </button>
+                                    </div>
+                                )}
+                                <div className="pt-4 px-6">
+                                    <div ref={pendingBarRef} className="flex  gap-2 flex-wrap">
+                                        <PendingImages
+                                            pendingImages={pendingImages}
+                                            imageLoading={uploadImageMutation.isLoading}
+                                            removePendingImage={removePendingImage}
+                                            imageLoadingMany={imageLoading}
+                                        />
+                                        <PendingFiles
+                                            pendingFiles={pendingFiles}
+                                            removePendingFile={removePendingFile}
+                                        />
+                                    </div>
                                 </div>
-                            )}
-                            <div className="pt-4 px-6">
-                                <div ref={pendingBarRef} className="flex  gap-2 flex-wrap">
-                                    <PendingImages
-                                        pendingImages={pendingImages}
-                                        imageLoading={uploadImageMutation.isLoading}
-                                        removePendingImage={removePendingImage}
-                                        imageLoadingMany={imageLoading}
-                                    />
-                                    <PendingFiles
-                                        pendingFiles={pendingFiles}
-                                        removePendingFile={removePendingFile}
-                                    />
-                                </div>
+                                <ChatInputBar
+                                    messageValue={messageValue}
+                                    setMessageValue={setMessageValue}
+                                    // isLoading={isLoading}
+                                    isLoading={loadingStream.loading || isSending}
+                                    isLoadingHistory={isLoadingHistory}
+                                    messageRef={messageRef}
+                                    handleSendMessage={handleSendMessage}
+                                    handleImageChange={handleImageChange}
+                                    handleFileChange={handleFileChange}
+                                    onTakePhoto={() => history.push("/camera")}
+                                    isSpending={false}
+                                    uploadImageMutation={uploadImageMutation}
+                                    addPendingImages={addPendingImages}
+                                    isNative={isNative}
+                                    isDesktop={isDesktop}
+                                    imageLoading={uploadImageMutation.isLoading}
+                                    imageLoadingMany={imageLoading}
+                                    anActivate={anActivate}
+                                    showToast={showToast}
+                                />
                             </div>
-                            <ChatInputBar
-                                messageValue={messageValue}
-                                setMessageValue={setMessageValue}
-                                // isLoading={isLoading}
-                                isLoading={loadingStream || isSending}
-                                isLoadingHistory={isLoadingHistory}
-                                messageRef={messageRef}
-                                handleSendMessage={handleSendMessage}
-                                handleImageChange={handleImageChange}
-                                handleFileChange={handleFileChange}
-                                onTakePhoto={() => history.push("/camera")}
-                                isSpending={false}
-                                uploadImageMutation={uploadImageMutation}
-                                addPendingImages={addPendingImages}
-                                isNative={isNative}
-                                isDesktop={isDesktop}
-                                imageLoading={uploadImageMutation.isLoading}
-                                imageLoadingMany={imageLoading}
-                                anActivate={anActivate}
-                                showToast={showToast}
-                            />
+
                         </div>
                     </>
                 )

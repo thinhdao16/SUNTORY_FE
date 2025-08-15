@@ -6,7 +6,6 @@ import DeleteIcon from "@/icons/logo/trash.svg?react";
 import HistoryGroup from "./components/HistoryGroup";
 import { useTranslateHistoryLogic } from "./hooks/useTranslateHistoryLogic";
 import styles from "./Translate.module.css";
-import "react-swipeable-list/dist/styles.css";
 
 const TranslateHistory: React.FC = () => {
   const isNative = Capacitor.isNativePlatform();
