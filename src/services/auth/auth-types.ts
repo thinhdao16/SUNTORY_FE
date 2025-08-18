@@ -1,7 +1,10 @@
 export interface LoginRequest {
     email: string;
     password: string;
+    deviceId: string | null;
+    firebaseToken?: string;
 }
+
 export interface LoginRequestWithDeviceId {
     token?: string;
     ipAddress?: string;

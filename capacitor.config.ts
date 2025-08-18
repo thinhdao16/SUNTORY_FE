@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     cleartext: true,
-    url: "https://a8a811df4499.ngrok-free.app"
+    url: "https://eb996001dfdd.ngrok-free.app"
   },
   plugins: {
     SplashScreen: {

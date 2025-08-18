@@ -17,7 +17,8 @@ import ShareQRCodeIcon from "@/icons/logo/social-chat/share-qr-code.svg?react"
 import QRCodeMainIcon from "@/icons/logo/social-chat/qr-code-main.svg?react"
 import { saveImage } from '@/utils/save-image';
 import { getPublicUrlFromCanvas } from '@/utils/get-public-url-from-canvas';
-import NativeGalleryPicker from '@/components/gallery-picker/NativeGalleryPicker';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share as CapShare } from "@capacitor/share";
 
 const velocityThreshold = 0.4;
 const SocialPartnerAdd = () => {
@@ -67,6 +68,42 @@ const SocialPartnerAdd = () => {
             closeModal,
             setTranslateY
         );
+    };
+    const handleShareSystem = async () => {
+        const canvas = document.getElementById("qr-gen") as HTMLCanvasElement | null;
+        if (!canvas) return;
+
+        const dataUrl = canvas.toDataURL("image/png");
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], "qr-code.png", { type: "image/png" });
+
+        if (Capacitor.isNativePlatform()) {
+            const arrBuf = await file.arrayBuffer();
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(arrBuf)));
+            const writeRes = await Filesystem.writeFile({
+                path: file.name,
+                data: base64,
+                directory: Directory.Cache,
+            });
+
+            await CapShare.share({
+                title: "Share QR",
+                url: writeRes.uri,
+            });
+        } else {
+            const navAny = navigator as any;
+
+            if (navAny?.canShare && navAny.canShare({ files: [file] })) {
+                await navAny.share({
+                    files: [file],
+                    title: file.name,
+                    text: "Scan my QR!",
+                });
+            } else {
+                openModal("shareQR");
+            }
+        }
     };
 
     return (
@@ -130,7 +167,8 @@ const SocialPartnerAdd = () => {
                                         <div className="absolute bottom-6 right-6 w-7 h-7 border-b-4 border-r-4 border-black rounded-br-md" />
                                     </div>
                                     <button className=" w-full  bg-main text-white text-sm font-semibold px-6 py-2 rounded-full flex items-center justify-center gap-2"
-                                        onClick={() => openModal("shareQR")}
+                                        // onClick={() => openModal("shareQR")}
+                                        onClick={handleShareSystem}
                                     >
                                         <ShareQRCodeIcon />
                                         {t("Share QR Code")}

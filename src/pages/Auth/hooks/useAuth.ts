@@ -23,6 +23,8 @@ import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
 import { useUpdateNewDevice } from "@/hooks/device/useDevice";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
+import { Preferences } from "@capacitor/preferences";
+import { FCM_KEY } from "@/constants/global";
 
 const showToast = useToastStore.getState().showToast;
 
@@ -31,8 +33,13 @@ export const useLogin = () => {
     const history = useHistory();
 
     return useMutation(
-        (credentials: { email: string; password: string; deviceId: string | null; firebaseToken?: string }) =>
-            login(credentials),
+        async (credentials: { email: string; password: string; deviceId: string | null }) => {
+            const storedToken = (await Preferences.get({ key: FCM_KEY })).value;
+            return login({
+                ...credentials,
+                firebaseToken: storedToken || undefined,
+            });
+        },
         {
             onSuccess: (data: any) => {
                 const auth = data?.data?.authentication;
@@ -199,18 +206,25 @@ export const useGoogleLogin = () => {
             const idToken = credentialResponse.credential;
             const data = await loginAuthGoogle({ token: idToken });
             const auth = data?.data;
+
             if (auth?.token && auth?.refreshToken) {
                 setAuthData({
                     ...data.data,
                     token: auth.token,
                     refreshToken: auth.refreshToken,
                 });
-                updateNewDeviceMutation.mutate({
-                    deviceId: deviceInfo.deviceId,
-                });
+
+                const storedToken = (await Preferences.get({ key: FCM_KEY })).value;
+                if (storedToken) {
+                    updateNewDeviceMutation.mutate({
+                        deviceId: deviceInfo.deviceId,
+                        fcmToken: storedToken,
+                    });
+                }
             } else {
                 setAuthData(data.data);
             }
+
             showToast(t("Login successful!"), 2000, "success");
         } catch (err) {
             showToast("Login failed. Please try again.", 3000, "error");
@@ -225,25 +239,31 @@ export const useGoogleLogin = () => {
                 token: user.authentication?.idToken,
             });
             const auth = data?.data;
+
             if (auth?.token && auth?.refreshToken) {
                 setAuthData({
                     ...data.data,
                     token: auth.token,
                     refreshToken: auth.refreshToken,
                 });
-                updateNewDeviceMutation.mutate({
-                    deviceId: deviceInfo.deviceId,
-                });
+
+                const storedToken = (await Preferences.get({ key: FCM_KEY })).value;
+                if (storedToken) {
+                    updateNewDeviceMutation.mutate({
+                        deviceId: deviceInfo.deviceId,
+                        fcmToken: storedToken,
+                    });
+                }
             } else {
                 setAuthData(data.data);
             }
+
             showToast(t("Login successful!"), 2000, "success");
             return user;
         } catch (err: any) {
             console.error("Google Native Sign-In Error (FULL):", JSON.stringify(err));
             showToast("Login failed. Please try again.", 3000, "error");
         }
-
     };
 
     return { handleGoogleWebLogin, nativeLogin, isWeb };

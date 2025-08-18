@@ -43,7 +43,7 @@ export const MessageBubble: React.FC<{
                 }}
             >
                 <div className="flex ">
-                    <div className="w-full px-3 py-2 min-w-[60px] lg:max-w-[250px] xl:max-w-[250px] relative">
+                    <div className="w-full px-3 py-2 min-w-[40px] lg:max-w-[250px] xl:max-w-[250px] relative">
                         <div className="prose prose-sm  whitespace-break-spaces break-words text-[15px] text-left">
                             {!isRevoked
                                 ? msg.messageText

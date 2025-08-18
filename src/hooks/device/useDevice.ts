@@ -6,7 +6,6 @@ export const useUpdateNewDevice = () => {
     const showToast = useToastStore.getState().showToast;
     return useMutation(updateNewDevice, {
         onSuccess: () => {
-            // showToast("Thiết bị đã được cập nhật!", 2000, "success");
         },
         onError: (err: any) => {
             showToast(

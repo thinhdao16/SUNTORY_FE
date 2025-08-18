@@ -177,6 +177,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
       setEmotionInput(labelsStr);
     }
   }, [emotionData, isOpen]);
+
   return (
     <div
       className={`darkk:bg-gray-700 ${isOpen ? "" : "bg-blue-100"}`}
@@ -320,7 +321,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
               <div className="relative mb-4">
                 <div className="items-center flex flex-col border border-neutral-200 rounded-2xl ">
                   <button type="button" className="absolute top-3 right-3 z-9" onClick={() => { clearInputValueTranslate(); }}>
-                    <IoIosClose className="text-4xl"/>
+                    <IoIosClose className="text-4xl" />
                   </button>
                   <IonTextarea
                     autoGrow={true}

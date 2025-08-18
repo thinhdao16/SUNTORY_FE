@@ -15,7 +15,7 @@ const ReplyBubble: React.FC<ReplyBubbleProps> = ({ msg, isUser, isRevoked }) => 
                 <>
                     {msg.messageText ? (
                         <div
-                            className={` bg-[#C8D6FB] w-fit min-w-[60px] p-[8px_12px_24px_12px]  max-w-[250px] overflow-hidden 
+                            className={` bg-[#C8D6FB] w-fit min-w-[40px] p-[8px_12px_24px_12px]  max-w-[250px] overflow-hidden 
             ${isUser
                                     ? " rounded-[16px_16px_4px_16px] ml-auto text-right"
                                     : "  rounded-[16px_16px_16px_4px] mr-auto text-left"

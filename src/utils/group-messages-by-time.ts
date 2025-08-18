@@ -8,14 +8,16 @@ import { useEffect } from "react";
 
 export function useSyncDayjsLocale() {
     const { i18n } = useTranslation();
-
     const localeMap: Record<string, string> = {
         vi: "vi",
+        "vi-VN": "vi",
         en: "en",
+        "en-US": "en",
         "zh-CN": "zh-cn",
         "zh-TW": "zh-tw",
-        "zh": "zh-cn",
+        zh: "zh-cn",
     };
+
 
     useEffect(() => {
         const lang = i18n.language;

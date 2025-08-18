@@ -106,7 +106,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
         if (now - lastSentTimeRef.current < 5) {
             return;
         }
-        if (isSending) {return;}
+        if (isSending) { return; }
         setIsSending(true);
         lastSentTimeRef.current = now;
         try {
@@ -178,7 +178,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
         if (translateActionStatus && debouncedSource.trim()) {
             onTranslate(debouncedSource);
         }
-    }, [translateActionStatus, debouncedSource ,selectedLanguageSocialChat]);
+    }, [translateActionStatus, debouncedSource, selectedLanguageSocialChat]);
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
@@ -257,9 +257,9 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             onKeyDown={(e) => {
                                 const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
                                 tAPI.touch();
-                                
+
                                 if (event.key === 'Enter' && !event.shiftKey) {
-                                    if (event.isComposing) {return;}
+                                    if (event.isComposing) { return; }
                                     e.preventDefault();
                                     e.stopPropagation();
                                     if (messageTranslate.trim().length > 0 && !isSending) {
@@ -289,6 +289,30 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                                 <SendTranslateIcon />
                             </button>
                         )} */}
+                        {(messageValue.trim().length > 0 || messageTranslate.trim().length > 0) && translateActionStatus && (
+                            <button
+                                ref={sendBtnRef}
+                                type="button"
+                                disabled={hasReachedLimit || isSending}
+                                onMouseDown={preventBlur}
+                                onTouchStart={preventBlur}
+                                onClick={(e) => {
+                                    if (isSending) return;
+                                    if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
+                                    keepFocus();
+                                    tAPI.off();
+                                    requestAnimationFrame(() => {
+                                        handleSendWithDebounce(e, actionFieldSend, false);
+                                        requestAnimationFrame(() => {
+                                            setMessageValue("");
+                                            keepFocus();
+                                        });
+                                    });
+                                }}
+                            >
+                                <SendIcon />
+                            </button>
+                        )}
                     </div>
                     {/* <button className="bg-chat-to rounded-full p-2 flex items-center justify-center">
                         <SendTranslateIcon />
@@ -315,23 +339,18 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     onKeyDown={(e) => {
                         const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
                         tAPI.touch();
-                        
-                        // Cải thiện xử lý Enter để tránh duplicate trên macOS
+
                         if (event.key === 'Enter' && !event.shiftKey) {
-                            // Kiểm tra composition state để tránh duplicate
                             if (event.isComposing) {
                                 return;
                             }
-                            
+
                             e.preventDefault();
                             e.stopPropagation();
-                            
-                            // Chỉ gửi tin nhắn khi có nội dung
+
                             if (messageValue.trim().length > 0 && !isSending) {
                                 handleSendWithDebounce(e, actionFieldSend, false);
                             }
-                            
-                            // Luôn clear input và reset focus
                             setMessageValue("");
                             tAPI.off();
                         }
@@ -355,7 +374,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     <button onClick={openInputExpandSheet}>
                         <ExpandInputIcon />
                     </button>
-                    {(messageValue.trim().length > 0  || messageTranslate.trim().length > 0) && (
+                    {(messageValue.trim().length > 0 || messageTranslate.trim().length > 0) && !translateActionStatus && (
                         <button
                             ref={sendBtnRef}
                             type="button"
@@ -365,7 +384,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             onClick={(e) => {
                                 if (isSending) return;
                                 if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
-                                keepFocus();
+                                // keepFocus();
                                 tAPI.off();
                                 requestAnimationFrame(() => {
                                     handleSendWithDebounce(e, actionFieldSend, false);

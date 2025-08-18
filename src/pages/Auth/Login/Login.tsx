@@ -35,7 +35,7 @@ const Login: React.FC = () => {
 
     const onSubmit = (data: LoginFormValues) => {
         loginMutate(
-            { email: data.emailOrPhone, password: data.password, deviceId: deviceInfo.deviceId, firebaseToken: "" },
+            { email: data.emailOrPhone, password: data.password, deviceId: deviceInfo.deviceId },
         );
     };
 
