@@ -6,45 +6,32 @@ export function useKeyboardResize() {
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [keyboardResizeScreen, setKeyboardResizeScreen] = useState(false);
 
+    // Xử lý resize mode cho Android/iOS
     useEffect(() => {
-        // ✅ Chỉ setup Capacitor keyboard cho native
-        if (Capacitor.isNativePlatform()) {
-            if (Capacitor.getPlatform() === "android") {
-                Keyboard.setResizeMode({ mode: KeyboardResize.Body });
-            } else {
-                Keyboard.setResizeMode({ mode: KeyboardResize.None });
-            }
-
-            const onKeyboardShow = (event: any) => {
-                setKeyboardHeight(event.keyboardHeight || 0);
-            };
-
-            const onKeyboardHide = () => {
-                setKeyboardHeight(0);
-            };
-
-            Keyboard.addListener("keyboardWillShow", onKeyboardShow);
-            Keyboard.addListener("keyboardDidShow", onKeyboardShow);
-            Keyboard.addListener("keyboardWillHide", onKeyboardHide);
-            Keyboard.addListener("keyboardDidHide", onKeyboardHide);
-
-            return () => {
-                Keyboard.removeAllListeners();
-            };
+        if (Capacitor.getPlatform() === "android") {
+            Keyboard.setResizeMode({ mode: KeyboardResize.Body });
+        } else {
+            Keyboard.setResizeMode({ mode: KeyboardResize.None });
         }
+
+        const onKeyboardShow = (event: any) => {
+            setKeyboardHeight(event.keyboardHeight || 0);
+        };
+
+        const onKeyboardHide = () => {
+            setKeyboardHeight(0);
+        };
+
+        Keyboard.addListener("keyboardWillShow", onKeyboardShow);
+        Keyboard.addListener("keyboardDidShow", onKeyboardShow);
+        Keyboard.addListener("keyboardWillHide", onKeyboardHide);
+        Keyboard.addListener("keyboardDidHide", onKeyboardHide);
+        return () => {
+            Keyboard.removeAllListeners();
+        };
     }, []);
 
     useEffect(() => {
-        // ❌ BỎ logic này cho mobile web để tránh đẩy screen
-        // if (Capacitor.isNativePlatform()) return; // Chỉ chạy trên web
-
-        // ✅ THAY BẰNG: Không handle viewport resize trên mobile web
-        if (!Capacitor.isNativePlatform()) {
-            // Trên mobile web, để browser tự xử lý keyboard
-            return;
-        }
-
-        // Chỉ giữ logic viewport cho native nếu cần
         let lastHeight = window.visualViewport?.height || window.innerHeight;
         const handleResize = () => {
             const currentHeight = window.visualViewport?.height || window.innerHeight;
@@ -55,9 +42,20 @@ export function useKeyboardResize() {
             }
             lastHeight = currentHeight;
         };
-
         window.visualViewport?.addEventListener("resize", handleResize);
         window.addEventListener("resize", handleResize);
+
+        setTimeout(() => {
+            const initialHeight = window.visualViewport?.height || window.innerHeight;
+            const fullHeight = window.innerHeight;
+            if (fullHeight - initialHeight > 100) {
+                setKeyboardResizeScreen(true);
+                setKeyboardHeight(fullHeight - initialHeight);
+            } else {
+                setKeyboardResizeScreen(false);
+                setKeyboardHeight(0);
+            }
+        }, 100);
 
         return () => {
             window.visualViewport?.removeEventListener("resize", handleResize);
