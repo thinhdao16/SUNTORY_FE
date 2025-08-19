@@ -61,7 +61,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     }, [allMessages, t, isGroup, currentUserId]);
     useSyncDayjsLocale();
     return (
-        <div className={`flex flex-col mx-auto pt-8  ${isNative ? "pb-0" : "pb-26"}`}>
+        <div className={`flex flex-col mx-auto pt-8  `}>
             {messageGroups.map((group, groupIndex) => (
                 <div key={group.timestamp} className="mb-6">
                     {(messageGroups.length > 1 || groupIndex === 0) && (

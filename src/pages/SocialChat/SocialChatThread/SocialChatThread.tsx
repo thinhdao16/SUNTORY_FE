@@ -238,7 +238,6 @@ const SocialChatThread: React.FC = () => {
             }
         }
     }, [keyboardHeight]);
-
     return (
         <MotionStyles
             isOpen={translateSheet.isOpen || sheetExpand.isOpen}
@@ -284,9 +283,9 @@ const SocialChatThread: React.FC = () => {
                             <div
                                 className={`flex-1 overflow-x-hidden overflow-y-auto px-6`}
                                 style={
-                                    !isNative && !keyboardResizeScreen
+                                    !isNative 
                                         ? {
-                                            height: `calc(100vh - ${inputBarHeight}px)`,
+                                            maxHeight: `calc(100vh - ${inputBarHeight + 10}px)`,
                                             paddingBottom: keyboardHeight > 0 ? keyboardHeight : 0
                                         }
                                         : undefined
@@ -321,7 +320,6 @@ const SocialChatThread: React.FC = () => {
                                         isGroup={roomChatInfo?.type !== ChatInfoType.UserVsUser}
                                         currentUserId={userInfo?.id}
                                         hasReachedLimit={hasReachedLimit}
-                                        isNative={isNative}
 
                                     />
                                 )}
@@ -334,6 +332,7 @@ const SocialChatThread: React.FC = () => {
                                     // onSendFriend={awaitingAccept ? undefined : handleSendFriend}
                                     />
                                 )}
+                                {!isNative &&(<div className="h-20 xl:h-0" />)}
                                 <div ref={messagesEndRef} className="h-px" />
 
                             </div>
