@@ -30,6 +30,7 @@ function ChatSocial() {
             setSearch={setSearch}
             search={search}
             handleQR={handleQR}
+            type={type || "recent"}
           />
         )}
         {(type === undefined || type === 'list-request') && (

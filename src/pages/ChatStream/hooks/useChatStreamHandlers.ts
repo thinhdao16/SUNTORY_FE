@@ -62,7 +62,7 @@ export function useChatStreamHandlers({
 }: UseChatStreamHandlersProps) {
     const scrollToBottom = useScrollToBottom(messagesEndRef);
     const queryClient = useQueryClient();
-    const MAX_IMAGE_SIZE =  20 * 1024 * 1024;
+    const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
@@ -136,7 +136,12 @@ export function useChatStreamHandlers({
         addPendingFiles(arr);
         e.target.value = "";
     };
+    function extractName(img: string | undefined, idx: number) {
+        if (!img) return `image_${idx}`;
 
+        const match = img.match(/(Develop_[^/]+.*)$/i);
+        return match ? match[1] : img.split("/").pop() || `image_${idx}`;
+    }
     const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent,) => {
         e.preventDefault();
         useChatStore.getState().setStopMessages(false);
@@ -158,7 +163,7 @@ export function useChatStreamHandlers({
                 const filesArr = [
                     ...pendingFiles.map(f => ({ name: f.name })),
                     ...pendingImages.map((img, idx) => ({
-                        name: typeof img === "string" ? img.split("/").pop() || `image_${idx}` : `image_${idx}`
+                        name: extractName(typeof img === "string" ? img : undefined, idx)
                     }))
                 ];
 
@@ -187,13 +192,12 @@ export function useChatStreamHandlers({
                     })),
                 ];
 
-                // Tạo temporary ID
                 const tempId = `temp_${Date.now()}`;
 
                 setPendingMessages((prev: any) => [
                     ...prev,
                     {
-                        id: tempId, // Add temporary ID
+                        id: tempId,
                         text: messageValue.trim() || messageRetry.trim(),
                         createdAt: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
                         timeStamp: generatePreciseTimestampFromDate(now.toDate()),
@@ -207,7 +211,7 @@ export function useChatStreamHandlers({
                 scrollToBottom();
                 let res: any
                 // if (parseInt(topicType) === TopicType.Chat || parseInt(topicType) === TopicType.FoodDiscovery) {
-                    res = await createChatApi(payload);
+                res = await createChatApi(payload);
                 // } else {
                 //     res = await createChatStreamApi(payload);
                 // }

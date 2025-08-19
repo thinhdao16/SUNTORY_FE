@@ -60,14 +60,18 @@ const SocialChatThread: React.FC = () => {
 
     const isFixedBar = !isNative && !keyboardResizeScreen && keyboardHeight === 0;
 
-    const scrollPadBottom = isFixedBar ? (inputBarHeight || 60) + 8 : 8;
 
     const peerUserId = useMemo(() => usePeerUserId(roomData, userInfo?.id), [roomData, userInfo?.id]);
 
-    const scrollToBottom = useCallback(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-        setTimeout(recalc, 0);
-    }, [recalc]);
+  const scrollToBottom = useCallback(() => {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      recalc();
+    });
+  });
+}, [recalc]);
+
 
 
     const {
@@ -234,7 +238,7 @@ const SocialChatThread: React.FC = () => {
             }
         }
     }, [keyboardHeight]);
-
+    
     return (
         <MotionStyles
             isOpen={translateSheet.isOpen || sheetExpand.isOpen}

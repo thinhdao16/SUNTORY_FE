@@ -281,7 +281,6 @@ export function useSocialChatHandlers({
             return text.replace(/\s/g, "").length === 0;
         };
         const hasMessage = !isEmptyText(messageValue) || !isEmptyText(messageTranslate);
-        console.log(hasMessage)
         const hasFiles = pendingImages.length > 0 || pendingFiles.length > 0;
 
         if (!hasMessage && !hasFiles) {
@@ -357,7 +356,9 @@ export function useSocialChatHandlers({
         addMessage(pendingMsg);
         setMessageValue('');
         setMessageTranslate('');
-        scrollToBottom();
+        
+        // ❌ REMOVE THIS - Không scroll ngay sau khi gửi
+        // scrollToBottom();
 
         try {
             setLoadingMessages(true);
@@ -396,7 +397,6 @@ export function useSocialChatHandlers({
 
         } catch (error) {
             console.error('Send message failed:', error);
-
             updateMessageByTempId({
                 ...pendingMsg,
                 isError: true,
@@ -404,8 +404,16 @@ export function useSocialChatHandlers({
             });
         } finally {
             setLoadingMessages(false);
-            scrollToBottom();
-
+            
+            // ✅ Chỉ scroll sau khi hoàn thành và có delay
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            if (isIOS) {
+                // Trên iOS, chờ keyboard đóng hoặc ít nhất 300ms
+                setTimeout(() => scrollToBottom(), 300);
+            } else {
+                // Trên Android/Desktop có thể scroll sớm hơn
+                setTimeout(() => scrollToBottom(), 100);
+            }
         }
     };
 

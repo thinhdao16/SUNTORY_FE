@@ -4,7 +4,7 @@ import SocialChatThread from './SocialChatThread/SocialChatThread';
 import SocialChatListRequest from './SocialChatListRequest';
 import SearchIcon from '@/icons/logo/social-chat/search.svg?react';
 import ClearInputIcon from '@/icons/logo/social-chat/clear-input.svg?react';
-import BackInputIcon from '@/icons/logo/social-chat/back-input.svg?react';
+import BackInputIcon from '@/icons/logo/vector_left.svg?react';
 import SocialChatCamera from './SocialChatCamera/SocialChatCamera';
 import SocialChatCameraWeb from './SocialChatCamera/SocialChatCameraWeb';
 
