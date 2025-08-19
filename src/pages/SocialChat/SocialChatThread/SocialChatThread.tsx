@@ -286,7 +286,7 @@ const SocialChatThread: React.FC = () => {
                                 style={
                                     !isNative && !keyboardResizeScreen
                                         ? {
-                                            maxHeight: `calc(100vh - ${inputBarHeight + 10}px)`,
+                                            height: `calc(100vh - ${inputBarHeight}px)`,
                                             paddingBottom: keyboardHeight > 0 ? keyboardHeight : 0
                                         }
                                         : undefined
@@ -321,6 +321,8 @@ const SocialChatThread: React.FC = () => {
                                         isGroup={roomChatInfo?.type !== ChatInfoType.UserVsUser}
                                         currentUserId={userInfo?.id}
                                         hasReachedLimit={hasReachedLimit}
+                                        isNative={isNative}
+
                                     />
                                 )}
                                 {hasReachedLimit && (
