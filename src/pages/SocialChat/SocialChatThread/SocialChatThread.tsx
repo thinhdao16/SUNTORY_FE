@@ -63,14 +63,14 @@ const SocialChatThread: React.FC = () => {
 
     const peerUserId = useMemo(() => usePeerUserId(roomData, userInfo?.id), [roomData, userInfo?.id]);
 
-  const scrollToBottom = useCallback(() => {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-      recalc();
-    });
-  });
-}, [recalc]);
+    const scrollToBottom = useCallback(() => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+                recalc();
+            });
+        });
+    }, [recalc]);
 
 
 
@@ -238,7 +238,7 @@ const SocialChatThread: React.FC = () => {
             }
         }
     }, [keyboardHeight]);
-    
+
     return (
         <MotionStyles
             isOpen={translateSheet.isOpen || sheetExpand.isOpen}
@@ -266,7 +266,7 @@ const SocialChatThread: React.FC = () => {
                                 paddingRight: 0,
                                 paddingLeft: 0,
                                 paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 90 : 60) : (isNative ? 0 : 60),
-                                height: "100dvh",
+                                height: "100vh",
                             }}
                         >
                             <SocialChatHeader
@@ -286,7 +286,7 @@ const SocialChatThread: React.FC = () => {
                                 style={
                                     !isNative && !keyboardResizeScreen
                                         ? {
-                                            maxHeight: `calc(100dvh - ${inputBarHeight + 10}px)`,
+                                            maxHeight: `calc(100vh - ${inputBarHeight + 10}px)`,
                                             paddingBottom: keyboardHeight > 0 ? keyboardHeight : 0
                                         }
                                         : undefined

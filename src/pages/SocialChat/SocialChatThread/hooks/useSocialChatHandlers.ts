@@ -356,9 +356,8 @@ export function useSocialChatHandlers({
         addMessage(pendingMsg);
         setMessageValue('');
         setMessageTranslate('');
-        
-        // ❌ REMOVE THIS - Không scroll ngay sau khi gửi
-        // scrollToBottom();
+
+        scrollToBottom();
 
         try {
             setLoadingMessages(true);
@@ -404,16 +403,9 @@ export function useSocialChatHandlers({
             });
         } finally {
             setLoadingMessages(false);
-            
-            // ✅ Chỉ scroll sau khi hoàn thành và có delay
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            if (isIOS) {
-                // Trên iOS, chờ keyboard đóng hoặc ít nhất 300ms
-                setTimeout(() => scrollToBottom(), 300);
-            } else {
-                // Trên Android/Desktop có thể scroll sớm hơn
-                setTimeout(() => scrollToBottom(), 100);
-            }
+
+            scrollToBottom();
+
         }
     };
 
