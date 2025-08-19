@@ -32,7 +32,6 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
     languageLoading,
     handleLanguageChange,
 }) => {
-    // ✅ Thêm logic xử lý short language code
     const shortLang = i18n.language?.split("-")[0] || "en";
     const currentLang = languages.find(opt => opt.code === shortLang)?.label || shortLang;
 

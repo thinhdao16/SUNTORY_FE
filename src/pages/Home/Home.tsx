@@ -1,46 +1,89 @@
 import { useTranslation } from 'react-i18next';
-
 import { useAuthInfo } from '../Auth/hooks/useAuthInfo';
 import { TopicType } from "@/constants/topicType";
 import useAppInit from '@/hooks/useAppInit';
 import PageContainer from '@/components/layout/PageContainer';
+import AppImage from '@/components/common/AppImage';
+
+import medicalSupportSvg from "@/icons/logo/home/medical_support.svg";
+import documentTranslationSvg from "@/icons/logo/home/document_translation.svg";
+import menuTranslation from "@/icons/logo/home/document_translation.svg";
+import foodDiscoverySvg from "@/icons/logo/home/food_discovery.svg";
 
 import { HomeHeader } from './components/HomeHeader';
 import { FeatureGrid } from './components/FeatureGrid';
-import { HowItWorksSection } from './components/HowItWorksSection';
-import { GetStartedButton } from './components/GetStartedButton';
-
-import MedicalSupportIcon from "@/icons/logo/home/medical_support.svg?react";
-import DocumentTranslationIcon from "@/icons/logo/home/document_translation.svg?react";
-import DrugIstrucstionsIcon from "@/icons/logo/home/drug_instructions.svg?react";
-import FoodDiscoveryIcon from "@/icons/logo/home/food_discovery.svg?react";
 
 function Home() {
-  const { t } = useTranslation();
+  const { t, ready } = useTranslation('home', { useSuspense: false });
+  if (!ready) return null;
   const { data: userInfo } = useAuthInfo();
 
-  const features = [
-    {
-      image: <MedicalSupportIcon className="w-full h-full object-cover flex-1 " />,
-      title: t("Medical Support"),
-      topic: TopicType.MedicalSupport,
-    },
-    {
-      image: <DocumentTranslationIcon className="w-full h-full object-cover flex-1 " />,
-      title: t("Document Translation"),
-      topic: TopicType.DocumentTranslation,
-    },
-    {
-      image: <DrugIstrucstionsIcon className="w-full h-full object-cover flex-1 " />,
-      title: t("Drug Instructions"),
-      topic: TopicType.DrugInstructions,
-    },
-    {
-      image: <FoodDiscoveryIcon className="w-full h-full object-cover flex-1 " />,
-      title: t("Food Discovery"),
-      topic: TopicType.FoodDiscovery,
-    },
-  ];
+const features = [
+  {
+    image: (
+      <AppImage
+        src={medicalSupportSvg}
+        alt="Medical Report Interpretation"
+        className="w-full h-full object-contain"
+        wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
+        effect="blur"
+        hardHeight={80}
+
+      />
+    ),
+    title: t("Medical Report Interpretation"),
+    desc: t("Analyze your medical reports for diagnoses and medication"),
+    topic: TopicType.MedicalSupport,
+  },
+  {
+    image: (
+      <AppImage
+        src={documentTranslationSvg}
+        alt="Contract & Document Analysis"
+        className="w-full h-full object-contain"
+        wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
+        effect="blur"
+        hardHeight={80}
+
+      />
+    ),
+    title: t("Contract & Document Analysis"),
+    desc: t("Scan documents to find key terms and hidden risks"),
+    topic: TopicType.DocumentTranslation,
+  },
+  // {
+  //   image: (
+  //     <AppImage
+  //       src={menuTranslation}
+  //       alt="Menu Translation"
+  //       className="w-full h-full object-contain"
+  //       wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
+  //       effect="blur"
+  //       hardHeight={80}
+  //     />
+  //   ),
+  //   title: t("Menu Translation"),
+  //   desc: t("Decode any menu with a simple scan"),
+  //   topic: TopicType.DrugInstructions,
+  // },
+  {
+    image: (
+      <AppImage
+        src={foodDiscoverySvg}
+        alt="Food Label Interpretation"
+        className="w-full h-full object-contain"
+        wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
+        effect="blur"
+        hardHeight={80}
+
+      />
+    ),
+    title: t("Food Label Interpretation"),
+    desc: t("Scan food labels for instant ingredient breakdowns"),
+    topic: TopicType.FoodDiscovery,
+  },
+];
+
 
   const howItWorks = [
     {

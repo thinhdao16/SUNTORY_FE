@@ -53,7 +53,7 @@ export function mapSignalRStreamMessage(
 
     const base = {
         id: msg.id?.toString(),
-        text: msg.massageText,
+        text: msg.messageText,
         isRight: msg.senderType === 10,
         createdAt: msg.createDate,
         timeStamp: generatePreciseTimestampFromDate(msg.createDate),
@@ -73,7 +73,7 @@ export function mapSignalRStreamMessage(
     if (msg.userChatMessage) {
         const userMsg = {
             id: msg.userChatMessage.id?.toString(),
-            text: msg.userChatMessage.massageText,
+            text: msg.userChatMessage.messageText,
             isRight: true,
             createdAt: msg.userChatMessage.createDate,
             timeStamp: generatePreciseTimestampFromDate(msg.userChatMessage.createDate),

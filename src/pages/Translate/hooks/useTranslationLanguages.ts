@@ -5,7 +5,8 @@ import {
   createTranslation, 
   TranslationLanguage,
   CreateTranslationRequest,
-  CreateTranslationResponse 
+  CreateTranslationResponse, 
+  createTranslationChat
 } from "@/services/translation/translation-service";
 
 export const useTranslationLanguages = () => {
@@ -26,6 +27,18 @@ export const useCreateTranslation = () => {
     {
       onSuccess: (data) => {
         console.log("Translation created successfully:", data);
+      },
+      onError: (error) => {
+        console.error("Translation creation failed:", error);
+      },
+    }
+  );
+};
+export const useCreateTranslationChat = () => {
+  return useMutation<CreateTranslationResponse, Error, { toLanguageId: number, originalText: string }>(
+    createTranslationChat,
+    {
+      onSuccess: (data) => {
       },
       onError: (error) => {
         console.error("Translation creation failed:", error);

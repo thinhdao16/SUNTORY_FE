@@ -8,6 +8,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     cleartext: true,
+    url: "https://eb996001dfdd.ngrok-free.app"
   },
   plugins: {
     SplashScreen: {
@@ -34,6 +35,9 @@ const config: CapacitorConfig = {
     EdgeToEdge: {
       backgroundColor: "#ffffff",
     },
+    Media: {
+      androidGalleryMode: true
+    }
   },
   android: {
     adjustMarginsForEdgeToEdge: "force"

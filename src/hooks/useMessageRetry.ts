@@ -13,7 +13,7 @@ export const useMessageRetry = (
 
 ) => {
     const setPendingMessages = useChatStore((s) => s.setPendingMessages);
-
+    const [retryId, setRetryId] = useState<string | undefined>();
     const retryMessage = useCallback(async (msgId: string) => {
         const targetMessage = mergeMessages.find((msg: any) =>
             String(msg.id) === String(msgId) ||
@@ -43,10 +43,14 @@ export const useMessageRetry = (
             if (images.length > 0) addPendingImages(images);
         }
         setMessageRetry(targetMessage.text || "");
-        setTimeout(() => {
-            handleSendMessage(new MouseEvent("click") as any);
-        }, 50);
+        setMessageValue(targetMessage.text || "");
+        setRetryId(msgId);
     }, [setPendingMessages, setMessageRetry, addPendingFiles, addPendingImages, handleSendMessage, mergeMessages]);
-
+    useEffect(() => {
+        if ( retryId) {
+            handleSendMessage(new MouseEvent("click") as any);
+            setRetryId(undefined); // reset
+        }
+    }, [retryId]);
     return { retryMessage };
 };

@@ -88,6 +88,9 @@ export const useTranslateHistoryLogic = () => {
     const handleDelete = useCallback(async (itemId: number) => {
         try {
             await deleteTranslationMutation.mutateAsync(itemId);
+            useTranslationStore.setState((state) => ({
+            history: state.history.filter((item) => item.id !== itemId)
+            }));
         } catch (error) {
             console.error("Delete failed:", error);
         }
@@ -112,11 +115,11 @@ export const useTranslateHistoryLogic = () => {
     }, []);
 
     const handleSwipeEnd = useCallback((item: TranslationHistoryItem) => {
-        if (swipeThreshold > 75) {
-            const el = document.getElementById(`delete-swipe-${item.id}`);
-            el?.click();
-            handleDelete(item.id);
-        }
+        // if (swipeThreshold > 75) {
+        //     const el = document.getElementById(`delete-swipe-${item.id}`);
+        //     el?.click();
+        //     // handleDelete(item.id);
+        // }
     }, [swipeThreshold, handleDelete]);
 
     const handleBack = useCallback(() => {

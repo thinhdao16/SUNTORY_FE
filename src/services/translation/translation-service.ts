@@ -112,6 +112,13 @@ export const createTranslation = async (payload: CreateTranslationRequest): Prom
   );
   return response.data;
 };
+export const createTranslationChat = async (payload: { toLanguageId: number, originalText: string }): Promise<CreateTranslationResponse> => {
+  const response = await httpClient.post<CreateTranslationResponse>(
+    "/api/v1/translation/chat",
+    payload
+  );
+  return response.data;
+};
 
 export const fetchTranslationHistory = async (
   pageNumber = 0,

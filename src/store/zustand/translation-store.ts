@@ -45,6 +45,7 @@ interface TranslationStore {
   setInputValueTranslate: React.Dispatch<
     React.SetStateAction<{ input: string; output: string }>
   >;
+  clearInputValueTranslate: () => void;
 }
 
 export const useTranslationStore = create<TranslationStore>()(
@@ -105,6 +106,9 @@ export const useTranslationStore = create<TranslationStore>()(
             : action;
         return { inputValueTranslate: newValue };
       }),
+      
+    clearInputValueTranslate: () =>
+      set({ inputValueTranslate: { input: "", output: "" } }),
   }),
 
 );

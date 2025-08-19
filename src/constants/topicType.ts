@@ -9,10 +9,10 @@ export enum TopicType {
 }
 
 export const TopicTypeLabel: Record<TopicType, string> = {
-    [TopicType.MedicalSupport]: t("Medical Support"),
-    [TopicType.DocumentTranslation]: t("Document Translation"),
+    [TopicType.MedicalSupport]: t("Medical Report Interpretation"),
+    [TopicType.DocumentTranslation]: t("Contract & Document Analysis"),
     // [TopicType.ProductInformation]: t("Product Information"),
     [TopicType.DrugInstructions]: t("Drug Instructions"),
-    [TopicType.FoodDiscovery]: t("Food Discovery"),
+    [TopicType.FoodDiscovery]: t("Food Label Interpretation"),
     [TopicType.Chat]: t("JetAI"),
 };
