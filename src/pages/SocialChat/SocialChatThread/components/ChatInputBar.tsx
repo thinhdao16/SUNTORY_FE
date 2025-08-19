@@ -381,19 +381,17 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             disabled={hasReachedLimit || isSending}
                             onMouseDown={preventBlur}
                             onTouchStart={preventBlur}
-                            onClick={(e) => {
-                                if (isSending) return;
-                                if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
-                                // keepFocus();
-                                tAPI.off();
-                                requestAnimationFrame(() => {
-                                    handleSendWithDebounce(e, actionFieldSend, false);
-                                    requestAnimationFrame(() => {
-                                        setMessageValue("");
-                                        keepFocus();
-                                    });
-                                });
-                            }}
+                          onClick={(e) => {
+    if (isSending) return;
+    if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
+    tAPI.off();
+    requestAnimationFrame(() => {
+        handleSendWithDebounce(e, actionFieldSend, false);
+        requestAnimationFrame(() => {
+            setMessageValue("");
+        });
+    });
+}}
                         >
                             <SendIcon />
                         </button>

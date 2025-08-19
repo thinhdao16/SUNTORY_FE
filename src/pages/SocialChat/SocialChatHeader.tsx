@@ -13,12 +13,19 @@ interface SocialChatHeaderProps {
     setSearch: (value: string) => void;
     search: string;
     handleQR: () => void;
+    type: string
 }
 
-const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, search, handleQR }: SocialChatHeaderProps) => (
+const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, search, handleQR, type }: SocialChatHeaderProps) => (
     <div className="flex items-center justify-between p-6">
+        {type === "search" && (
+                <>
+                {leftIcon}
+                </>
+        )}
+
         <div className="flex items-center flex-grow bg-chat-to rounded-lg px-4 py-2 mr-2 gap-2">
-            {leftIcon}
+            {type !== "search" && leftIcon}
             <input
                 type="text"
                 value={search}

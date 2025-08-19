@@ -15,27 +15,29 @@ export function useFcmToken(mutate?: (data: { fcmToken: string }) => void) {
             }
         });
 
-        const unsubscribe = onMessage(messaging, (payload) => {
-            console.log("🔥 Received payload22:", payload);
+        let unsubscribe = () => {};
+        if (messaging) {
+            unsubscribe = onMessage(messaging, (payload) => {
+                console.log("🔥 Received payload22:", payload);
 
-            if (payload.notification) {
-                addNotification({
-                    type: "message",
-                    title: payload.notification.title || "No title",
-                    body: payload.notification.body || "No body",
-                });
-            }
-
-            if (payload.data?.data) {
-                try {
-                    const warning = JSON.parse(payload.data.data) as Warning;
-                    console.log("🔥 Parsed warning:", warning);
-                } catch (e) {
-                    console.error("❌ Failed to parse warning:", e);
+                if (payload.notification) {
+                    addNotification({
+                        type: "message",
+                        title: payload.notification.title || "No title",
+                        body: payload.notification.body || "No body",
+                    });
                 }
-            }
-        });
 
+                if (payload.data?.data) {
+                    try {
+                        const warning = JSON.parse(payload.data.data) as Warning;
+                        console.log("🔥 Parsed warning:", warning);
+                    } catch (e) {
+                        console.error("❌ Failed to parse warning:", e);
+                    }
+                }
+            });
+        }
 
         return () => unsubscribe();
     }, [mutate]);

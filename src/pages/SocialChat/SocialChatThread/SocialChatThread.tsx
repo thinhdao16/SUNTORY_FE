@@ -60,14 +60,18 @@ const SocialChatThread: React.FC = () => {
 
     const isFixedBar = !isNative && !keyboardResizeScreen && keyboardHeight === 0;
 
-    const scrollPadBottom = isFixedBar ? (inputBarHeight || 60) + 8 : 8;
 
     const peerUserId = useMemo(() => usePeerUserId(roomData, userInfo?.id), [roomData, userInfo?.id]);
 
     const scrollToBottom = useCallback(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-        setTimeout(recalc, 0);
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+                recalc();
+            });
+        });
     }, [recalc]);
+
 
 
     const {
@@ -262,7 +266,7 @@ const SocialChatThread: React.FC = () => {
                                 paddingRight: 0,
                                 paddingLeft: 0,
                                 paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 90 : 60) : (isNative ? 0 : 60),
-                                height: "100dvh",
+                                height: "100vh",
                             }}
                         >
                             <SocialChatHeader
@@ -282,7 +286,7 @@ const SocialChatThread: React.FC = () => {
                                 style={
                                     !isNative && !keyboardResizeScreen
                                         ? {
-                                            maxHeight: `calc(100dvh - ${inputBarHeight + 10}px)`,
+                                            height: `calc(100vh - ${inputBarHeight}px)`,
                                             paddingBottom: keyboardHeight > 0 ? keyboardHeight : 0
                                         }
                                         : undefined
@@ -317,6 +321,8 @@ const SocialChatThread: React.FC = () => {
                                         isGroup={roomChatInfo?.type !== ChatInfoType.UserVsUser}
                                         currentUserId={userInfo?.id}
                                         hasReachedLimit={hasReachedLimit}
+                                        isNative={isNative}
+
                                     />
                                 )}
                                 {hasReachedLimit && (
