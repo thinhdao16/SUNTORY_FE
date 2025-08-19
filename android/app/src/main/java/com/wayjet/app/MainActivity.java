@@ -1,18 +1,19 @@
 package com.wayjet.app;
 
 import android.os.Bundle;
+import android.view.WindowManager;                    
 import com.getcapacitor.BridgeActivity;
-import com.codetrixstudio.capacitor.GoogleAuth.GoogleAuth; // <-- thêm dòng này
-
+import com.codetrixstudio.capacitor.GoogleAuth.GoogleAuth; 
 public class MainActivity extends BridgeActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    // Đăng ký plugin GoogleAuth (QUAN TRỌNG)
     registerPlugin(GoogleAuth.class);
 
-    // Tuỳ chọn: xử lý bàn phím đẩy view lên
-    getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    getWindow().setSoftInputMode(
+      WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+      | WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED
+    );
   }
 }

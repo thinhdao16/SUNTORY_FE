@@ -281,7 +281,6 @@ export function useSocialChatHandlers({
             return text.replace(/\s/g, "").length === 0;
         };
         const hasMessage = !isEmptyText(messageValue) || !isEmptyText(messageTranslate);
-        console.log(hasMessage)
         const hasFiles = pendingImages.length > 0 || pendingFiles.length > 0;
 
         if (!hasMessage && !hasFiles) {
@@ -357,6 +356,7 @@ export function useSocialChatHandlers({
         addMessage(pendingMsg);
         setMessageValue('');
         setMessageTranslate('');
+
         scrollToBottom();
 
         try {
@@ -396,7 +396,6 @@ export function useSocialChatHandlers({
 
         } catch (error) {
             console.error('Send message failed:', error);
-
             updateMessageByTempId({
                 ...pendingMsg,
                 isError: true,
@@ -404,6 +403,7 @@ export function useSocialChatHandlers({
             });
         } finally {
             setLoadingMessages(false);
+
             scrollToBottom();
 
         }

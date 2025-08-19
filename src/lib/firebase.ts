@@ -1,6 +1,15 @@
 import ENV from "@/config/env";
 import { initializeApp } from "firebase/app";
+import type { Messaging } from "firebase/messaging";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
+
+function isLan192(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;       
+  return /^192\.168(?:\.\d{1,3}){2}$/.test(host);
+}
+
+const DISABLE_FCM = isLan192();
 
 const firebaseConfig = {
   apiKey: ENV.FIREBASE_API_KEY,
@@ -12,15 +21,21 @@ const firebaseConfig = {
   measurementId: ENV.FIREBASE_MEASUREMENT_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+const app = !DISABLE_FCM ? initializeApp(firebaseConfig) : undefined;
+const messaging: Messaging | undefined = !DISABLE_FCM && app ? getMessaging(app) : undefined;
 
 export { app, messaging };
 
 export const requestForToken = async () => {
-  const permission = await Notification?.requestPermission();
+  if (DISABLE_FCM) {
+    console.info("[FCM] Skipped on 192.168.x.x");
+    return undefined;
+  }
+
+  const permission = await Notification?.requestPermission?.();
   if (permission === "granted") {
     try {
+      if (!messaging) return undefined;
       const token = await getToken(messaging, {
         vapidKey: ENV.FIREBASE_VAPID_KEY,
       });
@@ -31,10 +46,15 @@ export const requestForToken = async () => {
   } else if (permission === "denied") {
     console.log("You denied the notification permission");
   }
+  return undefined;
 };
 
 export const onMessageListener = () =>
   new Promise((resolve) => {
+    if (!messaging || DISABLE_FCM) {
+      resolve(undefined);
+      return;
+    }
     onMessage(messaging, (payload) => {
       resolve(payload);
     });

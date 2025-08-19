@@ -4,6 +4,7 @@ import { useSocialChatLayout } from './useSocialChatLayout';
 import { motion } from "framer-motion";
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { Capacitor } from '@capacitor/core';
+import { useKeyboardResize } from '@/hooks/useKeyboardResize';
 function ChatSocial() {
   const history = useHistory();
   const { type } = useParams<{ type?: string }>();
@@ -18,6 +19,7 @@ function ChatSocial() {
       history.push('/social-qr-web');
     }
   };
+  
   return (
     <>
       <div className={`${type === "camera" ? "h-screen" : "bg-white"} `}>
@@ -30,6 +32,7 @@ function ChatSocial() {
             setSearch={setSearch}
             search={search}
             handleQR={handleQR}
+            type={type || "recent"}
           />
         )}
         {(type === undefined || type === 'list-request') && (

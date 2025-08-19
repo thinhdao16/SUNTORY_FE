@@ -6,7 +6,6 @@ export function useKeyboardResize() {
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [keyboardResizeScreen, setKeyboardResizeScreen] = useState(false);
 
-    // Xử lý resize mode cho Android/iOS
     useEffect(() => {
         if (Capacitor.getPlatform() === "android") {
             Keyboard.setResizeMode({ mode: KeyboardResize.Body });
