@@ -8,7 +8,7 @@ import CloseIcon from "@/icons/logo/close.svg?react";
 import HistoryIcon from "@/icons/logo/translate/history.svg?react";
 import DownIcon from "@/icons/logo/translate/down.svg?react";
 import SwapIcon from "@/icons/logo/translate/swap.svg?react";
-import SwapDetectedIcon from "@/icons/logo/translate/swap.svg?react";
+import SwapDetectedIcon from "@/icons/logo/translate/swap_detected.svg?react";
 import EmotionModal from "@/components/common/bottomSheet/EmotionModal";
 import SparkleIcon from "@/icons/logo/translate/sparkle.svg?react";
 import PlusIcon from "@/icons/logo/translate/plus.svg?react";
@@ -18,6 +18,7 @@ import { GoPaste } from "react-icons/go";
 import ReactMarkdown from 'react-markdown';
 import { useHistory } from "react-router-dom";
 import BackIcon from "@/icons/logo/vector_left.svg?react";
+import { IoIosClose } from "react-icons/io";
 
 interface TranslateContentProps {
   isOpen: { emotion: boolean; language: boolean };
@@ -76,6 +77,7 @@ interface TranslateContentProps {
   setIsReverseCollapsed?: React.Dispatch<React.SetStateAction<boolean>>;
   isAiInsightsCollapsed?: boolean;
   setIsAiInsightsCollapsed?: React.Dispatch<React.SetStateAction<boolean>>;
+  clearInputValueTranslate: () => void;
 }
 
 const TranslateContent: React.FC<TranslateContentProps> = ({
@@ -124,13 +126,13 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
   setIsReverseCollapsed = () => { },
   isAiInsightsCollapsed = false,
   setIsAiInsightsCollapsed = () => { },
+  clearInputValueTranslate
 }) => {
   const history = useHistory();
 
   const [emotionInput, setEmotionInput] = useState(undefined as string | undefined);
   const [context, setContext] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
-
 
   const handleEmotionConfirm = (data: { emotions?: { icon: string; label: string }[]; context: string[] }) => {
     if ((data.emotions && data.emotions.length !== 0) || data.context.length !== 0) {
@@ -155,7 +157,6 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
     setEmotionInput("");
     setSelected([]);
   };
-
   const removeContextRow = () => {
     if (!emotionData) return;
     setEmotionData({
@@ -167,6 +168,15 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
     }
     setContext("");
   };
+  useEffect(() => {
+    if (emotionData?.emotions && emotionData.emotions.length) {
+      const labelsStr = emotionData.emotions
+        .map(e => e.label)
+        .join(',');
+
+      setEmotionInput(labelsStr);
+    }
+  }, [emotionData, isOpen]);
 
   return (
     <div
@@ -174,7 +184,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
       style={{
         backgroundColor: backgroundColor,
         transition: isOpen ? "none" : "background-color 0.3s ease",
-        paddingTop: "var(--safe-area-inset-top)",
+        // paddingTop: "var(--safe-area-inset-top)",
       }}
     >
       <MotionBottomSheet
@@ -225,11 +235,14 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                       <div className="flex items-center justify-between rounded-lg  py-2 ">
                         <div className="flex items-center gap-2 flex-wrap">
                           {emotionData.emotions.map((e, idx) => (
-                            <div key={idx} className="flex items-center gap-1">
+                            <div className="flex items-center gap-1">
                               <span className="text-lg">{e?.icon}</span>
-                              <span className="text-gray-700 text-sm">{e?.label}</span>
+                              <div className="break-all whitespace-normal text-sm text-gray-700">
+                                {e?.label}
+                              </div>
                               {idx < emotionData.emotions.length - 1 && <span className="text-gray-400">,</span>}
                             </div>
+
                           ))}
                         </div>
                         <button
@@ -277,14 +290,14 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                 >
                   <div />
                   <span className="font-semibold text-main text-center">
-                    {selectedLanguageFrom.label}
+                    {t(selectedLanguageFrom.label)}
                   </span>
                   <DownIcon />
                 </button>
                 <button
                   type="button"
                   onClick={swapLanguages}
-                  disabled={isTranslating || selectedLanguageFrom.code === null}
+                  disabled={isTranslating || selectedLanguageFrom.code === null || selectedLanguageFrom.label === "Detect language"}
                   className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isTranslating || selectedLanguageFrom.code === null
@@ -299,7 +312,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                 >
                   <div />
                   <span className="font-semibold text-main text-center">
-                    {selectedLanguageTo.label}
+                    {t(selectedLanguageTo.label)}
                   </span>
                   <DownIcon />
                 </button>
@@ -307,6 +320,9 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
 
               <div className="relative mb-4">
                 <div className="items-center flex flex-col border border-neutral-200 rounded-2xl ">
+                  <button type="button" className="absolute top-3 right-3 z-9" onClick={() => { clearInputValueTranslate(); }}>
+                    <IoIosClose className="text-4xl" />
+                  </button>
                   <IonTextarea
                     autoGrow={true}
                     ref={textareaRef}
@@ -315,7 +331,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                     value={inputValueTranslate.input}
                     onIonInput={(e: any) => handleInputTranslate(e)}
                     disabled={isTranslating}
-                    className="placeholder:text-gray-500 w-full px-4 pb-2 focus:outline-none resize-none overflow-hidden"
+                    className="placeholder:text-gray-500 w-full pl-4 pr-10 pb-2  focus:outline-none resize-none overflow-hidden"
                     style={{
                       border: "none",
                       boxShadow: "none",
@@ -325,7 +341,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                     } as React.CSSProperties}
                   />
                 </div>
-                <div className="absolute right-3 bottom-[-30px]">
+                <div className="absolute right-3 bottom-[-35px]">
                   {
                     inputValueTranslate.input.trim().length > 0 && (
                       <button
@@ -333,17 +349,17 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                         className="text-gray-500 hover:text-main transition-colors"
                         disabled={isTranslating}
                       >
-                        <IoCopyOutline className="w-5 h-5" />
+                        <IoCopyOutline className="w-6 h-6" />
                       </button>
                     )
                   }
                   {clipboardHasData && (
                     <button
                       onClick={handlePastContent}
-                      className="text-gray-500 hover:text-main transition-colors ml-2"
+                      className="text-gray-500 hover:text-main transition-colors ml-3"
                       disabled={isTranslating}
                     >
-                      <GoPaste className="w-5 h-5" />
+                      <GoPaste className="w-6 h-6" />
                     </button>
                   )}
                 </div>
@@ -388,7 +404,6 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                       </div>
                     )}
 
-                    {/* Reverse Translation - Có thể collapse */}
                     {translationResult.reverseTranslation && (
                       <div className="border-t border-main pt-2 h-full">
                         <div
@@ -406,7 +421,6 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                           </div>
                         </div>
 
-                        {/* Collapsible Content */}
                         <div
                           className={`h-full transition-all duration-300 ease-in-out ${!isReverseCollapsed ? 'max-h-0 opacity-0' : 'opacity-100'}`}
                         >
@@ -458,7 +472,6 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                             <div className="prose prose-sm max-w-none space-y-3">
                               <ReactMarkdown
                                 components={{
-                                  // Custom styling cho các elements
                                   strong: ({ children }) => (
                                     <strong className="font-bold text-gray-900">{children}</strong>
                                   ),

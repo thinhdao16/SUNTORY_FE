@@ -165,12 +165,11 @@ const ChatWelcomePanel: React.FC<{
                                 className="flex items-center gap-4 p-4 rounded-3xl w-full  bg-white shadow-[0px_2px_2px_2px_#0000001A] transition hover:shadow-md"
                                 onClick={() => history.push(getItemLink(), {
                                     actionFrom: '/chat/50',
-                                })}
-                            >
+                                })}>
                                 <span className="inline-flex items-center justify-center rounded-full ">
                                     {Icon ? <Icon className="w-[30px] h-[30px]" /> : null}
                                 </span>
-                                <span className="font-semibold text-main text-left leading-none break-words line-clamp-2">
+                                <span className="font-semibold text-main text-left ">
                                     {t(item.label)}
                                 </span>
                             </button>

@@ -42,10 +42,9 @@ interface SignalRStreamStore {
     isConnected: boolean;
     connectionId?: string;
     streamMessages: Record<string, StreamMessage>;
-    completedMessages: ChatMessage[]; // Đổi tên từ allFetchedMessages
+    completedMessages: ChatMessage[];
     setConnection: (isConnected: boolean, connectionId?: string) => void;
     addStreamChunk: (chunk: StreamChunk) => void;
-    startTyping: (chatCode: string, messageCode: string) => void;
     completeStream: (event: StreamEvent) => void;
     errorStream: (event: StreamEvent) => void;
     clearStream: (messageCode: string) => void;
@@ -57,27 +56,27 @@ interface SignalRStreamStore {
     getCompletedStreams: () => StreamMessage[];
     getErrorStreams: () => StreamMessage[];
     getCompletedMessages: (chatCode?: string) => ChatMessage[];
-    // currentChatStream: {
-    //     messageCode: string;
-    //     text: string;
-    //     isComplete?: boolean;
-    // };
-    // setCurrentChatStream: any;
-    // clearCurrentChatStream: () => void;
     chatCode: string;
     setChatCode: (chatCode: string) => void;
+    loadingStream : { [key: string]: boolean };
+    setLoadingStream: (think: string, loading: boolean) => void;
 }
 
 export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
+
     isConnected: false,
     connectionId: undefined,
     streamMessages: {},
     completedMessages: [],
-    // currentChatStream: {
-    //     messageCode: '',
-    //     text: '',
-    //     isComplete: false,
-    // },
+    loadingStream: { think: false, loading: false },
+
+    setLoadingStream: (key: string, loading: boolean) =>
+        set((state) => ({
+            loadingStream: {
+                ...state.loadingStream,
+                [key]: loading
+            }
+        })),
     setConnection: (isConnected, connectionId) =>
         set({ isConnected, connectionId }),
 
@@ -87,12 +86,10 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
                 const existing = state.streamMessages[chunk.messageCode];
                 const fullText = chunk.completeText;
 
-                // Nếu đã có entry cho message này
                 if (existing) {
                     const prevText = existing.completeText || "";
                     const delta = fullText.slice(prevText.length);
 
-                    // Không có gì mới thì không update
                     if (!delta) {
                         return {};
                     }
@@ -102,9 +99,7 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
                             ...state.streamMessages,
                             [chunk.messageCode]: {
                                 ...existing,
-                                // Append object chunk vào mảng chunks nếu bạn vẫn cần giữ history
                                 chunks: [...existing.chunks, chunk],
-                                // Cập nhật completeText lên fullText mới nhất
                                 completeText: fullText,
                                 isStreaming: true,
                                 isComplete: false,
@@ -113,8 +108,6 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
                         }
                     };
                 }
-
-                // Lần đầu tạo mới entry
                 return {
                     streamMessages: {
                         ...state.streamMessages,
@@ -136,32 +129,6 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
             });
         }, 0),
 
-    startTyping: (chatCode, messageCode) =>
-        set((state) => {
-            if (state.streamMessages[messageCode]) {
-                return state;
-            }
-
-            return {
-                streamMessages: {
-                    ...state.streamMessages,
-                    [messageCode]: {
-                        messageCode,
-                        chatCode,
-                        chunks: [],
-                        isStreaming: true,
-                        isComplete: false,
-                        hasError: false,
-                        completeText: '',
-                        startTime: new Date().toISOString(),
-                        code: messageCode,
-                        id: Date.now(),
-                        userMessageId: -1
-                    }
-                }
-            };
-        }),
-
     completeStream: (event) => {
         set((state) => {
             const existing = state.streamMessages[event.messageCode];
@@ -180,16 +147,13 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
                 }
             };
         });
-
         getChatMessage(event.code)
             .then((data) => {
                 set((state) => {
-                    // Merge completed messages, loại bỏ duplicate
                     const existingMessages = state.completedMessages;
                     const newMessages = data.filter(newMsg =>
                         !existingMessages.some(existing => existing.id === newMsg.id)
                     );
-
                     return {
                         completedMessages: [...existingMessages, ...newMessages]
                     };

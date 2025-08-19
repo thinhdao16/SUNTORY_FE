@@ -33,7 +33,6 @@ import ChatInputBar from "./components/ChatStreamInputBar";
 import PendingFiles from "./components/PendingFiles";
 import PendingImages from "./components/PendingImages";
 import { ChatStreamMessageList } from "./components/ChatStreamMessageList";
-import ChatWelcomePanel from "./components/ChatStreamWelcomePanel";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 
 import "./ChatStream.module.css";
@@ -43,6 +42,9 @@ import { IonSpinner } from "@ionic/react";
 import { mergeMessagesStream } from "@/utils/mapSignalRStreamMessage ";
 import { MessageState, StreamMsg } from "@/types/chat-message";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
+import { useToastStore } from "@/store/zustand/toast-store";
+import { useSignalRChat } from "@/hooks/useSignalRChat";
+import { streamText } from "@/utils/streamText";
 
 dayjs.extend(utc);
 
@@ -69,14 +71,20 @@ const Chat: React.FC = () => {
 
     // ==== Refs ====
     const messageRef = useRef<any>(null);
-    const messagesEndRef = useRef<HTMLDivElement | null>(null);
-    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef<any>(null);
+    const messagesContainerRef = useRef<any>(null);
     const prevSessionIdRef = useRef<string | undefined>(sessionId);
     const prevTypeRef = useRef<string | undefined>(type);
     const pendingBarRef = useRef<HTMLDivElement>(null);
     const prevMessagesLengthRef = useRef(0);
 
+    const initialAutoScrollRef = useRef(true);
+    const prependPrevHRef = useRef<number | null>(null);
+    const prependPrevTRef = useRef<number | null>(null);
+    const prevFetchingRef = useRef(false);
     // ==== Stores ====
+    const showToast = useToastStore.getState().showToast;
+
     const {
         pendingImages, pendingFiles,
         addPendingImages, addPendingFiles,
@@ -100,7 +108,8 @@ const Chat: React.FC = () => {
     const rawCompleted = useSignalRStreamStore(state => state.completedMessages);
     const clearAllStreams = useSignalRStreamStore((state) => state.clearAllStreams);
     const setChatCode = useSignalRStreamStore((state) => state.setChatCode);
-
+    const addStreamChunk = useSignalRStreamStore((state) => state.addStreamChunk);
+    const { loadingStream } = useSignalRStreamStore()
     const completedMessages = useMemo(() => {
         if (!sessionId) return [];
         return rawCompleted.filter((msg: any) => msg.chatCode === sessionId);
@@ -110,12 +119,11 @@ const Chat: React.FC = () => {
         allSignalRMessages.filter((msg: any) => msg.chatInfo?.code === sessionId || msg.code === sessionId),
         [allSignalRMessages, sessionId]
     );
-
     const dataBackUpMap = useMemo<Record<string, StreamMsg>>(() => {
         return signalRMessagesBackUp.reduce((acc: any, msg: any) => {
-            const messageCode = msg.code;         // key
+            const messageCode = msg.code;
             const chatCode = msg.chatInfo?.code ?? msg.chatInfoId;
-            const text = msg.completeText ?? msg.massageText;
+            const text = msg.completeText ?? msg.messageText;
             const time = msg.startTime ?? msg.createDate;
 
             acc[messageCode] = {
@@ -141,37 +149,42 @@ const Chat: React.FC = () => {
     const isValidTopicType = topicTypeNum !== undefined && Object.values(TopicType).includes(topicTypeNum as TopicType);
     const topicType: TopicType | undefined = isValidTopicType ? (topicTypeNum as TopicType) : undefined;
     const title = isValidTopicType && topicType !== undefined ? TopicTypeLabel[topicType] : undefined;
-    const isWelcome = topicType === TopicType.Chat && !sessionId && pendingMessages.length === 0;
-
+    const anActivate = topicType === TopicType.MedicalSupport || topicType === TopicType.DocumentTranslation || topicType === TopicType.FoodDiscovery;
     // ==== Hooks: Chat & Message ====
+    useSignalRChat(deviceInfo.deviceId || "");
+    // useSignalRStream(deviceInfo.deviceId || "", {
+    //     autoReconnect: true,
+    //     logLevel: 0,
+    // });
     const {
+        lastPage,
         messages,
         isLoading,
+        isFetchingNextPage,
+        hasNextPage,
+        handleScrollLoadMore,
         scrollToBottom,
         messageValue,
-        setMessageValue
+        setMessageValue,
     } = useChatStreamMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, false, isOnline);
-
 
     const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef);
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
-    const { showScrollButton, handleScroll } = useScrollButton(messagesContainerRef);
-    useAutoResizeTextarea(messageRef, messageValue);
+    const { showScrollButton, onContainerScroll, recalc } = useScrollButton(messagesContainerRef, messagesEndRef);
+
 
     const shouldFetchHistory = useMemo(() => {
-        if (isWelcome || sessionId) {
+        if (sessionId) {
             return false;
         }
         return true;
-    }, [isWelcome, sessionId]);
+    }, [sessionId]);
 
     const { chatHistory, isLoading: isLoadingHistory } = useChatHistoryLastModule(
         parseInt(type || "0", 10),
         shouldFetchHistory
     );
-
-    // ===== Handlers =====
 
     const {
         handleImageChange,
@@ -236,7 +249,6 @@ const Chat: React.FC = () => {
         pendingImages,
         pendingFiles
     );
-
     const getCodeByTopic = useMemo(() => {
         return (topicId: number): string | undefined => {
             const chatItem = chatHistory
@@ -265,73 +277,93 @@ const Chat: React.FC = () => {
         useSignalRStreamStore.getState().clearAllStreams();
     };
 
-    // ==== Lifecycle Effects ====
-    useEffect(() => {
-        if (sessionId && !isLoading) {
-            clearPendingMessages();
-            clearAllStreams();
+    const forceScrollToBottomNow = useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    }, []);
+
+    const autoScrollIfNeeded = useCallback(() => {
+        if (!showScrollButton) {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }
-    }, [isLoading]);
+    }, [showScrollButton]);
+    // ==== Lifecycle Effects ====
+
+    // useEffect(() => {
+    //     if (sessionId && !isLoading) {
+    //         clearPendingMessages();
+    //         clearAllStreams();
+    //     }
+    // }, [isLoading]);
 
     useEffect(() => {
         if (!isValidTopicType) history.push("/home");
-        if (messagesEndRef.current) {
-            scrollToBottomMess();
-        }
-    }, [isValidTopicType, history, messages, debouncedLoading]);
+    }, [isValidTopicType, history]);
 
+    useEffect(() => {
+        if (prevSessionIdRef.current !== sessionId) {
+            initialAutoScrollRef.current = true;
+            prevSessionIdRef.current = sessionId;
+        }
+    }, [sessionId]);
+
+    useEffect(() => {
+        if (!sessionId) return;
+        if (!initialAutoScrollRef.current) return;
+
+        const ready = !isLoading && mergedMessages.length > 0;
+        if (!ready) return;
+
+        forceScrollToBottomNow();
+        setTimeout(forceScrollToBottomNow, 0);
+
+        initialAutoScrollRef.current = false;
+    }, [sessionId, isLoading, mergedMessages.length, forceScrollToBottomNow]);
+
+    useEffect(() => {
+        autoScrollIfNeeded();
+    }, [mergedMessages, autoScrollIfNeeded]);
+
+    useEffect(() => {
+        autoScrollIfNeeded();
+    }, [signalRMessages, autoScrollIfNeeded]);
 
     useEffect(() => {
         if (messages.length === 0 || messages.length === prevMessagesLengthRef.current) {
             prevMessagesLengthRef.current = messages.length;
             return;
         }
-
         prevMessagesLengthRef.current = messages.length;
-
-        setPendingMessages((prev) =>
-            prev.filter((pending) =>
-                !messages.some((msg) =>
-                    msg.text?.trim() === pending.text?.trim() &&
-                    Math.abs(dayjs(msg.createdAt).valueOf() - dayjs(pending.createdAt).valueOf()) < 5000
-                )
-            )
-        );
     }, [messages]);
 
     useEffect(() => {
-        if (messagesEndRef.current) scrollToBottomMess();
-    }, [type, pendingBarHeight, scrollToBottomMess]);
+        autoScrollIfNeeded();
+    }, [type, pendingBarHeight, autoScrollIfNeeded]);
 
     useEffect(() => {
-        if (
-            prevSessionIdRef.current !== sessionId &&
-            prevSessionIdRef.current && sessionId &&
-            prevSessionIdRef.current.split("/")[0] !== sessionId.split("/")[0]
-        ) {
-            clearPendingMessages();
-            clearAllStreams();
-            setSignalRMessagesBackUp?.([]);
+        const c = messagesContainerRef.current as HTMLElement | null;
+        const wasFetching = prevFetchingRef.current;
+        const nowFetching = !!isFetchingNextPage;
+        if (!wasFetching && nowFetching) {
+            if (c) {
+                prependPrevHRef.current = c.scrollHeight;
+                prependPrevTRef.current = c.scrollTop;
+            }
         }
-
-        prevSessionIdRef.current = sessionId;
-        prevTypeRef.current = type;
-        if (sessionId) {
-            setChatCode(sessionId);
-        } else {
-            setChatCode('');
+        if (wasFetching && !nowFetching) {
+            requestAnimationFrame(() => {
+                const c2 = messagesContainerRef.current as HTMLElement | null;
+                if (c2 && prependPrevHRef.current != null && prependPrevTRef.current != null) {
+                    const newH = c2.scrollHeight;
+                    const delta = newH - prependPrevHRef.current;
+                    c2.scrollTop = prependPrevTRef.current + delta;
+                }
+                prependPrevHRef.current = null;
+                prependPrevTRef.current = null;
+                recalc();
+            });
         }
-        return () => {
-            useChatStore.getState().setIsSending(false);
-            clearSession();
-        };
-    }, [sessionId, type]);
-
-    useEffect(() => {
-        if (pendingBarRef.current) {
-            setPendingBarHeight(pendingBarRef.current.offsetHeight + 20);
-        }
-    }, [pendingImages, pendingFiles]);
+        prevFetchingRef.current = nowFetching;
+    }, [isFetchingNextPage, recalc]);
 
     useEffect(() => {
         if (topicType === TopicType.Chat) {
@@ -339,37 +371,38 @@ const Chat: React.FC = () => {
             return;
         }
         const currentPath = window.location.pathname;
-        const isNavigationFromTopicOnly = currentPath.includes('/chat/') &&
-            currentPath.split('/').length === 4 &&
+        const isNavigationFromTopicOnly =
+            currentPath.includes("/chat/") &&
+            currentPath.split("/").length === 4 &&
             chatHistory.length > 0;
 
         if (!sessionId) {
             const timer = setTimeout(() => {
                 setDebouncedLoading(false);
                 if (mergedMessages.length > 0 && !isNavigationFromTopicOnly) {
-                    setTimeout(() => scrollToBottomMess(), 100);
+                    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
                 }
             }, 100);
             if (!sessionId && chatHistory.length > 0) {
                 const code = getCodeByTopic(parseInt(type || "0", 10));
                 if (code) {
                     const expectedPath = `/chat/${type}/${code}`;
-                    const currentPath = window.location.pathname;
-                    if (currentPath !== expectedPath && currentPath === `/chat/${type}`) {
+                    const currentPath2 = window.location.pathname;
+                    if (currentPath2 !== expectedPath && currentPath2 === `/chat/${type}`) {
                         history.replace(expectedPath);
                     }
                 }
             }
-
             return () => clearTimeout(timer);
         }
-    }, [isLoadingHistory, isLoading, type,]);
+    }, [isLoadingHistory, isLoading, type]);
 
     useEffect(() => {
         if (!!location.state?.actionFrom) {
             setActionFrom(location.state.actionFrom);
         }
     }, [location.state?.actionFrom]);
+
 
     useAppState(() => {
         if (sessionId) queryClient.invalidateQueries(["messages", sessionId]);
@@ -381,54 +414,41 @@ const Chat: React.FC = () => {
             style={{
                 paddingRight: 0,
                 paddingLeft: 0,
-                paddingBottom: !isWelcome ? (keyboardHeight > 0 ? (keyboardResizeScreen ? 60 : keyboardHeight) : 60) : 0,
+                paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 60 : keyboardHeight) : 60,
                 height: "100dvh",
                 // paddingTop: "var(--safe-area-inset-top, 0px)",
             }}
         >
             <div className="relative flex items-center justify-between px-6 h-[50px]">
-                {/* Cột trái */}
                 <div className="flex items-center gap-4 z-10">
-                    {!isWelcome && (
-                        <button
-                            onClick={() => {
-                                clearAllMessages();
-                                if (!!actionFrom) {
-                                    history.push(actionFrom);
-                                } else {
-                                    history.goBack();
-                                }
-                            }}
-                            aria-label="Back"
-                        >
-                            <IoArrowBack size={20} className="text-blue-600" />
-                        </button>
-                    )}
-                    {isWelcome && (
+                    <button
+                        onClick={() => {
+                            clearAllMessages();
+                            if (!!actionFrom) {
+                                history.push(actionFrom);
+                            } else {
+                                history.goBack();
+                            }
+                        }}
+                        aria-label="Back"
+                    >
+                        <IoArrowBack size={20} className="text-blue-600" />
+                    </button>
+
+                </div>
+
+                <div className="absolute left-0 right-0 flex justify-center pointer-events-none">
+                    <span className="font-semibold text-main uppercase tracking-wide text-center">
+                        {t(title || "")}
+                    </span>
+                </div>
+
+                <div className="flex items-center justify-end z-10">
+                    <>
                         <button onClick={() => openSidebarWithAuthCheck()} aria-label="Sidebar">
                             <NavBarHomeHistoryIcon />
                         </button>
-                    )}
-                </div>
-
-                {/* Cột giữa: Tiêu đề chiếm giữa và full chiều ngang */}
-                {(!isWelcome) && (
-                    <div className="absolute left-0 right-0 flex justify-center pointer-events-none">
-                        <span className="font-semibold text-main uppercase tracking-wide text-center">
-                            {t(title || "")}
-                        </span>
-                    </div>
-                )}
-
-                {/* Cột phải */}
-                <div className="flex items-center justify-end z-10">
-                    {!isWelcome && (
-                        <>
-                            <button onClick={() => openSidebarWithAuthCheck()} aria-label="Sidebar">
-                                <NavBarHomeHistoryIcon />
-                            </button>
-                        </>
-                    )}
+                    </>
                 </div>
             </div>
             {
@@ -444,51 +464,34 @@ const Chat: React.FC = () => {
                 ) : (
                     <>
                         <div
-                            className={`flex-1 overflow-x-hidden ${!isWelcome && ("overflow-y-auto")} p-6 ${isWelcome ? "max-h-(100%) pb-40 overflow-y-hidden" : (!isNative && !keyboardResizeScreen ? ("pb-2 max-h-[calc(100dvh-218px)] overflow-hidden") : "")
-                                }`}
+                            className={`flex-1 overflow-x-hidden overflow-y-auto p-6 ${!isNative && !keyboardResizeScreen ? `pb-2 max-h-[calc(100dvh-${anActivate ? 155 : 218}px)] overflow-hidden` : ""}`}
                             ref={messagesContainerRef}
-                            onScroll={handleScroll}
+                            onScroll={(e) => {
+                                onContainerScroll?.();
+                                handleScrollLoadMore();
+                            }}
                         >
-                            {isWelcome ? (
-                                <ChatWelcomePanel
-                                    pendingImages={pendingImages}
-                                    pendingFiles={pendingFiles}
-                                    uploadImageMutation={uploadImageMutation}
-                                    removePendingImage={removePendingImage}
-                                    removePendingFile={removePendingFile}
-                                    messageValue={messageValue}
-                                    setMessageValue={setMessageValue}
-                                    isLoading={isLoading}
-                                    isSending={isSending}
-                                    handleImageChange={handleImageChange}
-                                    handleFileChange={handleFileChange}
-                                    handleSendMessage={handleSendMessage}
-                                    history={history}
-                                    messageRef={messageRef}
-                                    addPendingImages={addPendingImages}
-                                    isNative={isNative}
-                                    isDesktop={isDesktop}
-                                    uploadLoading={imageLoading}
-                                />
-                            ) : (
-                                <ChatStreamMessageList
-                                    allMessages={mergedMessages}
-                                    pendingMessages={pendingMessages}
-                                    topicType={topicType}
-                                    title={title}
-                                    loading={isSending || hasPendingMessages}
-                                    onRetryMessage={retryMessage}
-
-                                />
-                            )}
+                            <ChatStreamMessageList
+                                lastPage={lastPage}
+                                allMessages={mergedMessages}
+                                pendingMessages={pendingMessages}
+                                topicType={topicType}
+                                title={title}
+                                // loading={isSending || hasPendingMessages}
+                                loading={loadingStream.loading || isSending}
+                                onRetryMessage={retryMessage}
+                                isSpending={isSending}
+                                thinkLoading={loadingStream.think}
+                            />
                             <div style={{ marginTop: pendingBarHeight }} />
-                            <div ref={messagesEndRef} className="mt-4" />
+                            <div ref={messagesEndRef} className="" />
                         </div>
-                        {!isWelcome && (
-                            <div className={`bg-white w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
-                                } ${isNative ? "bottom-0" : "bottom-[60px]"
-                                } ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
-                                } ${keyboardResizeScreen && isNative ? "pb-4" : "pb-4"}`}>
+                        <div className={`bg-white w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
+                            } ${isNative ? "bottom-0" : "bottom-[60px]"
+                            } ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
+                            } ${keyboardResizeScreen && isNative ? "pb-4" : "pb-4"}`}>
+                            <div className="relative">
+
                                 {showScrollButton && (
                                     <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
                                         <button
@@ -516,23 +519,27 @@ const Chat: React.FC = () => {
                                 <ChatInputBar
                                     messageValue={messageValue}
                                     setMessageValue={setMessageValue}
-                                    isLoading={isLoading || hasPendingMessages}
+                                    // isLoading={isLoading}
+                                    isLoading={loadingStream.loading || isSending}
                                     isLoadingHistory={isLoadingHistory}
                                     messageRef={messageRef}
                                     handleSendMessage={handleSendMessage}
                                     handleImageChange={handleImageChange}
                                     handleFileChange={handleFileChange}
                                     onTakePhoto={() => history.push("/camera")}
-                                    isSpending={isSending}
+                                    isSpending={false}
                                     uploadImageMutation={uploadImageMutation}
                                     addPendingImages={addPendingImages}
                                     isNative={isNative}
                                     isDesktop={isDesktop}
                                     imageLoading={uploadImageMutation.isLoading}
                                     imageLoadingMany={imageLoading}
+                                    anActivate={anActivate}
+                                    showToast={showToast}
                                 />
                             </div>
-                        )}
+
+                        </div>
                     </>
                 )
             }

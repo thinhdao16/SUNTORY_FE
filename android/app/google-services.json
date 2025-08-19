@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1035773008541",
+    "project_id": "wayjet-bbbac",
+    "storage_bucket": "wayjet-bbbac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1035773008541:android:6efead29114a347dfdd274",
+        "android_client_info": {
+          "package_name": "com.wayjet.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCo7XTu5X-ODS_amvOjLKmOyC1LHxthKOI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

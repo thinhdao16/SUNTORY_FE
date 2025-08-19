@@ -24,12 +24,12 @@ export function useChatMessages(
 
     const { isLoading, refetch, isFetching } = useQuery(
         ["chatMessages", sessionId],
-        () => (sessionId ? getChatMessages(sessionId) : []),
+        () => (sessionId ? getChatMessages(sessionId, 0, 50) : Promise.resolve({ items: [], hasMore: false })),
         {
             enabled: !!sessionId &&
                 !hasFirstSignalRMessage &&
                 isOnline,
-            onSuccess: (data) => setMessages(data),
+            onSuccess: (data) => setMessages(data.items),
             onError: () => setMessages([]),
         }
     );

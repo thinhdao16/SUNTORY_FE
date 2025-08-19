@@ -17,8 +17,10 @@ const ChatStreamMessageItem: React.FC<{
     isUser: boolean;
     isError?: boolean;
     isSend?: boolean;
+    isSpending?: boolean;
+    loading?: boolean;
     onRetryMessage?: (msgId: string) => void;
-}> = ({ msg, isUser, isError, isSend, onRetryMessage }) => {
+}> = ({ msg, isUser, isError, isSend, onRetryMessage, isSpending, loading }) => {
     const [showCopy, setShowCopy] = useState(false);
     const [previewImg, setPreviewImg] = useState<string | null>(null);
     const handleBubbleClick = () => {
@@ -108,11 +110,14 @@ const ChatStreamMessageItem: React.FC<{
                                     </div>
                                     <RetryIcon
                                         className="cursor-pointer hover:scale-110 transition-transform"
+
                                         onClick={async () => {
-                                            try {
-                                                await onRetryMessage?.(msg.replyToMessageId);
-                                            } catch (error) {
-                                                console.error('Retry failed:', error);
+                                            if (!loading || !isSpending) {
+                                                try {
+                                                    await onRetryMessage?.(msg.replyToMessageId);
+                                                } catch (error) {
+                                                    console.error('Retry failed:', error);
+                                                }
                                             }
                                         }}
                                     />
@@ -140,53 +145,59 @@ const ChatStreamMessageItem: React.FC<{
                                 </div>
                             )
                         )}
+
                         {isUser || msg.text === MessageState.FAILED || msg.text === MessageState.PENDING ? (
-                            <div className="flex justify-end mt-1">
-                                <button
-                                    className={`bottom-2 right-2 p-1 rounded hover:bg-gray-100 transition
+                            <>
+                                {!isSpending && (
+                                    <div className="flex justify-end mt-1">
+                                        <button
+                                            className={`bottom-2 right-2 p-1 rounded hover:bg-gray-100 transition
                                                 opacity-0 group-hover:opacity-100 group-active:opacity-100
                                                 ${showCopy ? "opacity-100" : ""}
                                             `}
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCopyToClipboard(
-                                            typeof msg.text === "string"
-                                                ? removeMarkdown(msg.text)
-                                                : msg.text
-                                                    ? removeMarkdown(JSON.stringify(msg.text))
-                                                    : ""
-                                        );
-                                    }}
-                                    title="Copy"
-                                >
-                                    <CopyIcon />
-                                </button>
-                            </div>
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCopyToClipboard(
+                                                    typeof msg.text === "string"
+                                                        ? removeMarkdown(msg.text)
+                                                        : msg.text
+                                                            ? removeMarkdown(JSON.stringify(msg.text))
+                                                            : ""
+                                                );
+                                            }}
+                                            title="Copy"
+                                        >
+                                            <CopyIcon />
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         ) : (
-                            <div className="flex justify-end mt-1">
-                                <button
-                                    className="bottom-2 right-2 p-1 rounded hover:bg-gray-100 transition"
-                                    type="button"
-                                    onClick={() => handleCopyToClipboard(
-                                        typeof msg.text === "string"
-                                            ? removeMarkdown(msg.text)
-                                            : msg.text
-                                                ? removeMarkdown(JSON.stringify(msg.text))
-                                                : ""
-                                    )}
-                                    title="Copy"
-                                >
-                                    <CopyIcon />
-                                </button>
-                            </div>
+                            <>
+                                {!isSpending && (
+                                    <div className="flex justify-end mt-1">
+                                        <button
+                                            className="bottom-2 right-2 p-1 rounded hover:bg-gray-100 transition"
+                                            type="button"
+                                            onClick={() => handleCopyToClipboard(
+                                                typeof msg.text === "string"
+                                                    ? removeMarkdown(msg.text)
+                                                    : msg.text
+                                                        ? removeMarkdown(JSON.stringify(msg.text))
+                                                        : ""
+                                            )}
+                                            title="Copy"
+                                        >
+                                            <CopyIcon />
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
-
-
                     </div>
                 </div>
             </motion.div>
-            {/* Modal xem trước ảnh */}
             <AvatarPreviewModal
                 open={!!previewImg}
                 src={previewImg || ""}

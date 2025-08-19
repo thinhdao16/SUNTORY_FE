@@ -11,10 +11,8 @@ import RouteLoading from "./RouteLoading";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import ChatSidebarLayout from "@/components/layout/ChatSidebarLayout";
 import useAppInit from "@/hooks/useAppInit";
-import { useSignalRChat } from "@/hooks/useSignalRChat";
-import useDeviceInfo from "@/hooks/useDeviceInfo";
-import { useSignalRStream } from "@/hooks/useSignalRStream";
 import TranslateHistory from "@/pages/Translate/TranslateHistory";
+import SocialQRWeb from "@/pages/SocialQR/SocialQRWeb/SocialQRWeb";
 
 const routes = {
   Chat: lazy(() => import("@/pages/ChatStream/ChatStream")),
@@ -36,29 +34,31 @@ const routes = {
   ProfileMedicineInfo: lazy(() => import("@/pages/Profile/HealthInformationEdit/MedicineInfo/MedicineInfo")),
   Rate: lazy(() => import("@/pages/Rate/Rate")),
   Register: lazy(() => import("@/pages/Auth/Register/Register")),
+  SocialChatPrivate: lazy(() => import("@/pages/SocialChat/SocialChatThread/SocialChatThread")),
+  SocialChatRecent: lazy(() => import("@/pages/SocialChat/SocialChat")),
+  SocialGroup: lazy(() => import("@/pages/SocialGroup/SocialGroup")),
+  SocialQRNative: lazy(() => import("@/pages/SocialQR/SocialQRNative/SocialQRNative")),
+  SocialQRWeb: lazy(() => import("@/pages/SocialQR/SocialQRWeb/SocialQRWeb")),
+  SocialPartner: lazy(() => import("@/pages/SocialPartner/SocialPartner")),
   TakePhoto: lazy(() => import("@/pages/TakePhoto/TakePhoto")),
   Translate: lazy(() => import("@/pages/Translate/Translate")),
   TranslateHistory: lazy(() => import("@/pages/Translate/TranslateHistory")),
 };
 
 const authRoutes = ["/login", "/register"];
-const authRoutesDontShowTabBar = ["/camera"];
+const authRoutesDontShowTabBar = ["/camera", "/social-qr-web", "/social-qr-native", "/social-chat/camera", "/social-chat/camera-web", "/social-chat/t"];
 const ignoreRoutes = ["/forgot-password", "/otp", "/new-password", "/change-password"];
 
 const AppRoutes: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
-  const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
   const showTabBar =
-    !authRoutes.includes(location.pathname) &&
-    !ignoreRoutes.includes(location.pathname) &&
-    !authRoutesDontShowTabBar.includes(location.pathname);
+    !authRoutes.some(path => location.pathname.startsWith(path)) &&
+    !ignoreRoutes.some(path => location.pathname.startsWith(path)) &&
+    !authRoutesDontShowTabBar.some(path => location.pathname.startsWith(path));
+
   useAppInit();
-  useSignalRChat(deviceInfo.deviceId || "");
-  useSignalRStream(deviceInfo.deviceId || "", {
-    autoReconnect: true,
-    logLevel: 0,
-  });
+
   if (isAuthenticated && authRoutes.includes(location.pathname)) {
     return <Redirect to="/home" />;
   }
@@ -84,11 +84,19 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/health-information/medicine-info" component={routes.ProfileMedicineInfo} exact />
           <PrivateRoute path="/rate" component={routes.Rate} exact />
           <PrivateRoute path="/chat/:type?/:sessionId?" component={routes.Chat} />
+          <PrivateRoute path="/social-chat/:type?/:roomId?" component={routes.SocialChatRecent} exact />
+          {/* <PrivateRoute path="/social-chat" component={() => <Redirect to="/social-chat" />}/> */}
+          <PrivateRoute path="/social-group/add" component={routes.SocialGroup} exact />
+          <PrivateRoute path="/social-group" component={() => <Redirect to="/social-group/add" />} />
+          <PrivateRoute path="/social-partner/add" component={routes.SocialPartner} exact />
+          <PrivateRoute path="/social-partner" component={() => <Redirect to="/social-partner/add" />} />
+          <PrivateRoute path="/social-qr-web" component={routes.SocialQRWeb} exact />
+          <PrivateRoute path="/social-qr-native" component={routes.SocialQRNative} exact />
           <PrivateRoute path="/translate" component={routes.Translate} exact />
           <PrivateRoute path="/translate/history" component={TranslateHistory} exact />
           <PrivateRoute path="/profile/:section?" component={routes.Profile} exact />
           <PrivateRoute path="/change-password" component={routes.ChangePassword} exact />
-          <Route exact path="/" render={() => <Redirect to="/home" />} />
+          <Route exact path="/" render={() => <Redirect to="/social-chat" />} />
           <Route path="*" component={routes.NotFound} />
         </Switch>
       </Suspense>

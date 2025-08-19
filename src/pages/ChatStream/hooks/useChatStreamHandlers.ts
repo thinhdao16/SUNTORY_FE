@@ -62,15 +62,15 @@ export function useChatStreamHandlers({
 }: UseChatStreamHandlersProps) {
     const scrollToBottom = useScrollToBottom(messagesEndRef);
     const queryClient = useQueryClient();
-    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+    const MAX_IMAGE_SIZE =  20 * 1024 * 1024;
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
         const totalCount = pendingFiles.length + pendingImages.length;
         const selectedCount = files.length;
-        if (totalCount + selectedCount > 3) {
+        if (totalCount + selectedCount > 2) {
             useToastStore.getState().showToast(
-                t("You can only send up to 3 images and files in total!"),
+                t("You can only send up to 2 images and files in total!"),
                 2000,
                 "warning"
             );
@@ -206,11 +206,11 @@ export function useChatStreamHandlers({
 
                 scrollToBottom();
                 let res: any
-                if (parseInt(topicType) === TopicType.Chat || parseInt(topicType) === TopicType.FoodDiscovery) {
+                // if (parseInt(topicType) === TopicType.Chat || parseInt(topicType) === TopicType.FoodDiscovery) {
                     res = await createChatApi(payload);
-                } else {
-                    res = await createChatStreamApi(payload);
-                }
+                // } else {
+                //     res = await createChatStreamApi(payload);
+                // }
                 if (timeoutId) clearTimeout(timeoutId);
 
                 // Cập nhật pending message với data từ server
@@ -223,7 +223,7 @@ export function useChatStreamHandlers({
                                     ...msg,
                                     id: serverMsg.id, // Update với real ID từ server
                                     code: serverMsg.code,
-                                    text: serverMsg.massageText || msg.text,
+                                    text: serverMsg.messageText || msg.text,
                                     createdAt: serverMsg.createDate || msg.createdAt,
                                     timeStamp: serverMsg.createDate ?
                                         generatePreciseTimestampFromDate(new Date(serverMsg.createDate)) :

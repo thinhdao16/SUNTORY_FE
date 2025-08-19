@@ -1,0 +1,428 @@
+import React, { useEffect, useMemo, useCallback } from "react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import { useKeyboardResize } from "@/hooks/useKeyboardResize";
+import { useScrollButton } from "@/hooks/useScrollButton";
+import { useScrollToBottom } from "@/hooks/useScrollToBottom";
+import { useUploadChatFile } from "@/hooks/common/useUploadChatFile";
+import { useAppState } from "@/hooks/useAppState";
+import { useUpdateSocialChatMessage, useRevokeSocialChatMessage } from "../hooks/useSocialChat";
+import { useSocialChatMessages } from "../hooks/useSocialChat";
+
+import ChatInputBar from "./components/ChatInputBar";
+import SocialChatHeader from "./components/SocialChatHeader";
+import ChatRelationshipBanner from "./components/ChatRelationshipBanner";
+import MotionStyles from "@/components/common/bottomSheet/MotionStyles";
+import MotionBottomSheet from "@/components/common/bottomSheet/MotionBottomSheet";
+import LanguageSelectModal from "@/components/common/bottomSheet/LanguageInutModal";
+
+import { IoArrowDown } from "react-icons/io5";
+import { useSocialChatThread } from "./hooks/useSocialChatThread";
+import { ChatInfoType, CountLimitChatDontFriend } from "@/constants/socialChat";
+import { mergeSocialChatMessages } from "@/utils/mapSocialChatMessage";
+import { ChatMessageList } from "./components/ChatMessageList";
+import { useSocialChatHandlers } from "./hooks/useSocialChatHandlers";
+import { ChatMessage } from "@/types/social-chat";
+import MessageLimitNotice from "./components/MessageLimitNotice";
+import ExpandInputModal from "@/components/common/bottomSheet/ExpandInputModal";
+
+dayjs.extend(utc);
+
+const SocialChatThread: React.FC = () => {
+    const {
+        type, roomId, history, queryClient,
+        isNative, isDesktop,
+        messageTranslate, setMessageTranslate,
+        inputValueTranslate, setInputValueTranslate,
+        inputBarHeight, setInputBarHeight,
+        messagesEndRef, messagesContainerRef,
+        messageRef, messageTranslateRef,
+        translationLanguages, roomChatInfo,
+        languagesSocialChat, onSelectSocialChat, setLanguagesSocialChatFromAPI,
+        setSelectedLanguageSocialChat, selectedLanguageSocialChat,
+        pendingImages, pendingFiles, addPendingImages, addPendingFiles,
+        removePendingImageByUrl, showToast,
+        userInfo, messages, addMessage, updateMessageByCode, updateMessageByTempId, updateMessageWithServerResponse, setLoadingMessages, addMessages,
+        replyingToMessage, setReplyingToMessage, clearReplyingToMessage,
+        initialLoadRef, prevMessagesLength,
+        translateSheet, sheetExpand, openInputExpandSheet, openTranslateExpandSheet, closeSheet, messageValue, setMessageValue,
+        unfriendMutation, sendRequest, cancelRequest, acceptRequest, rejectRequest,
+        translateActionStatus, setTranslateActionStatus,
+        expandValue, setExpandValue, expandTitle, expandPlaceholder, usePeerUserId, roomData, createTranslationMutation, actionFieldSend, isTranslating, sheetExpandMode, typing,
+    } = useSocialChatThread();
+
+    const updateMessageMutation = useUpdateSocialChatMessage();
+    const revokeMessageMutation = useRevokeSocialChatMessage();
+    const uploadImageMutation = useUploadChatFile();
+    const scrollToBottomMess = useScrollToBottom(messagesEndRef, 0, "auto");
+    const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
+    const { showScrollButton, onContainerScroll, recalc } = useScrollButton(messagesContainerRef, messagesEndRef);
+
+    const isFixedBar = !isNative && !keyboardResizeScreen && keyboardHeight === 0;
+
+    const scrollPadBottom = isFixedBar ? (inputBarHeight || 60) + 8 : 8;
+
+    const peerUserId = useMemo(() => usePeerUserId(roomData, userInfo?.id), [roomData, userInfo?.id]);
+
+    const scrollToBottom = useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        setTimeout(recalc, 0);
+    }, [recalc]);
+
+
+    const {
+        data: messagesData,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading: isLoadingMessages,
+        refetch: refetchMessages,
+    } = useSocialChatMessages(roomId || "", 40);
+
+    const serverMessages = useMemo(() => {
+        return messagesData?.pages.flat() || [];
+    }, [messagesData]);
+    const displayMessages = useMemo(() => {
+        return mergeSocialChatMessages(
+            messages,
+            userInfo?.id || 0,
+        ).map((msg) => ({
+            ...msg,
+            botName: msg.botName === null ? undefined : msg.botName,
+        }));
+    }, [serverMessages, messages, roomId]);
+
+    const userRightCount = useMemo(
+        () => displayMessages.reduce((acc, m) => acc + (m?.isRight ? 1 : 0), 0),
+        [displayMessages]
+    );
+    const hasReachedLimit = !roomData?.isFriend && userRightCount >= CountLimitChatDontFriend && roomChatInfo?.type === ChatInfoType.UserVsUser;
+    const {
+        handleScrollWithLoadMore,
+        handleSendMessage,
+        handleImageChange,
+        handleEditMessage,
+        handleRevokeMessage,
+        handleTakePhoto,
+        handleTranslate,
+        sendPickedFiles
+    } = useSocialChatHandlers({
+        addPendingImages,
+        addPendingFiles,
+        pendingImages,
+        pendingFiles,
+        messageValue,
+        setMessageValue,
+        uploadImageMutation,
+        removePendingImageByUrl,
+        scrollToBottom,
+        addMessage,
+        updateMessageByTempId,
+        updateMessageWithServerResponse,
+        roomId: roomId ?? "",
+        setLoadingMessages,
+        onContainerScroll,
+        hasNextPage,
+        isFetchingNextPage,
+        fetchNextPage: async () => { await fetchNextPage(); },
+        updateMessageByCode,
+        displayMessages,
+        updateMessageMutation,
+        revokeMessageMutation,
+        replyingToMessage,
+        history,
+        clearReplyingToMessage,
+        hasReachedLimit,
+        selectedLanguageSocialChat,
+        createTranslationMutation,
+        setMessageTranslate,
+        messageTranslate,
+        showToast,
+        t: (key: string) => key,
+        recalc
+    });
+
+    // const handleSubmit = async (items: PhotoItem[]) => {
+    //     const files = await Promise.all(items.map(photoItemToFile));
+    //     await sendPickedFiles(files);
+    // };
+    useEffect(() => {
+        if (messagesData?.pages) {
+            const apiMessages = messagesData.pages.flatMap(page => {
+                if (page && typeof page === 'object' && Array.isArray(page)) {
+                    return page;
+                }
+                return [];
+            });
+            addMessages(apiMessages);
+        }
+    }, [messagesData]);
+    useEffect(() => {
+        const isInitial = initialLoadRef.current;
+        const isFirstLoad = isInitial && displayMessages.length > 0;
+
+        if (isFirstLoad) {
+            setTimeout(() => {
+                scrollToBottomMess();
+                requestAnimationFrame(() => requestAnimationFrame(() => recalc()));
+            }, 200);
+            initialLoadRef.current = false;
+        }
+        prevMessagesLength.current = displayMessages.length;
+    }, [displayMessages, scrollToBottomMess, recalc]);
+    useEffect(() => {
+        if (roomId) {
+            refetchMessages();
+        }
+    }, [roomId, refetchMessages]);
+
+    useEffect(() => {
+        if (messagesEndRef.current) scrollToBottomMess();
+    }, [type, scrollToBottomMess]);
+    useEffect(() => {
+        if (translationLanguages && translationLanguages.length > 0) {
+            setLanguagesSocialChatFromAPI(translationLanguages, t);
+        }
+    }, [translationLanguages, setLanguagesSocialChatFromAPI]);
+    useEffect(() => {
+        recalc();
+    }, []);
+    useEffect(() => {
+        recalc();
+    }, [displayMessages.length]);
+    useEffect(() => {
+        recalc();
+    }, [inputBarHeight, keyboardHeight]);
+    useEffect(() => {
+        if (!showScrollButton) {
+            const b = messagesEndRef.current;
+            if (b) b.scrollIntoView({ behavior: "smooth", block: "end" });
+            requestAnimationFrame(() => recalc());
+        }
+    }, [displayMessages.length, showScrollButton, recalc, messagesEndRef]);
+
+    useAppState(() => {
+        if (roomId) queryClient.invalidateQueries(["messages", roomId]);
+    });
+    const handleReplyMessage = useCallback((message: ChatMessage) => {
+        setReplyingToMessage(message);
+    }, [setReplyingToMessage]);
+
+    const handleCancelReply = useCallback(() => {
+        clearReplyingToMessage();
+    }, [clearReplyingToMessage]);
+    const lastScrollPosRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (keyboardHeight > 0) {
+            if (messagesContainerRef.current) {
+                lastScrollPosRef.current = messagesContainerRef.current.scrollTop;
+            }
+            setTimeout(() => {
+                if (messagesContainerRef.current) {
+                    messagesContainerRef.current.scrollTo({
+                        top: messagesContainerRef.current.scrollTop + keyboardHeight,
+                        behavior: "smooth"
+                    });
+                }
+            }, 50);
+
+        } else {
+            if (lastScrollPosRef.current !== null && messagesContainerRef.current) {
+                messagesContainerRef.current.scrollTop = lastScrollPosRef.current;
+                lastScrollPosRef.current = null;
+            }
+        }
+    }, [keyboardHeight]);
+
+    return (
+        <MotionStyles
+            isOpen={translateSheet.isOpen || sheetExpand.isOpen}
+            translateY={translateSheet.translateY || sheetExpand.translateY}
+            screenHeight={window.innerHeight}
+        >
+            {({ scale, opacity, borderRadius, backgroundColor }) => (
+                <div
+                    className={` ${translateSheet.isOpen || sheetExpand.isOpen ? "" : "bg-blue-100"}`}
+                    style={{
+                        backgroundColor: backgroundColor,
+                        transition: translateSheet.isOpen || sheetExpand.isOpen ? "none" : "background-color 0.3s ease",
+                        // paddingTop: "var(--safe-area-inset-top)",
+                    }}
+                >
+                    <MotionBottomSheet
+                        isOpen={translateSheet.isOpen || sheetExpand.isOpen}
+                        scale={scale}
+                        opacity={opacity}
+                        borderRadius={borderRadius}
+                    >
+                        <div
+                            className="relative flex flex-col bg-white"
+                            style={{
+                                paddingRight: 0,
+                                paddingLeft: 0,
+                                paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 90 : 60) : (isNative ? 0 : 60),
+                                height: "100dvh",
+                            }}
+                        >
+                            <SocialChatHeader
+                                onBackClick={() => history.push("/social-chat")}
+                                roomChatInfo={roomChatInfo}
+                                roomData={roomData}
+                                onSendFriendRequest={sendRequest.mutate}
+                                onCancelFriendRequest={cancelRequest.mutate}
+                                currentUserId={userInfo?.id || 0}
+                                onUnfriend={() => {
+                                    if (!peerUserId) return;
+                                    unfriendMutation.mutate({ friendUserId: peerUserId, roomCode: roomId ?? undefined });
+                                }}
+                            />
+                            <div
+                                className={`flex-1 overflow-x-hidden overflow-y-auto px-6`}
+                                style={
+                                    !isNative && !keyboardResizeScreen
+                                        ? {
+                                            maxHeight: `calc(100dvh - ${inputBarHeight + 10}px)`,
+                                            paddingBottom: keyboardHeight > 0 ? keyboardHeight : 0
+                                        }
+                                        : undefined
+                                }
+                                ref={messagesContainerRef}
+                                onScroll={handleScrollWithLoadMore}
+                            >
+                                {roomChatInfo?.type === ChatInfoType.UserVsUser && !hasNextPage && !isFetchingNextPage && !isLoadingMessages && userInfo && (
+                                    <ChatRelationshipBanner
+                                        roomData={roomData}
+                                        onAcceptFriend={acceptRequest.mutate}
+                                        onRejectFriend={rejectRequest.mutate}
+                                        currentUserId={userInfo.id}
+                                        userInfo={userInfo}
+                                    />
+                                )}
+                                {isFetchingNextPage && (
+                                    <div className="flex justify-center py-2">
+                                        <div className="text-sm text-gray-500">Đang tải thêm tin nhắn...</div>
+                                    </div>
+                                )}
+                                {isLoadingMessages ? (
+                                    <div className="flex justify-center py-4">
+                                        <div className="text-sm text-gray-500">Đang tải tin nhắn...</div>
+                                    </div>
+                                ) : (
+                                    <ChatMessageList
+                                        allMessages={displayMessages}
+                                        onEditMessage={handleEditMessage}
+                                        onRevokeMessage={handleRevokeMessage}
+                                        onReplyMessage={handleReplyMessage}
+                                        isGroup={roomChatInfo?.type !== ChatInfoType.UserVsUser}
+                                        currentUserId={userInfo?.id}
+                                        hasReachedLimit={hasReachedLimit}
+                                    />
+                                )}
+                                {hasReachedLimit && (
+                                    <MessageLimitNotice
+                                        roomData={roomData}
+                                        roomChatInfo={roomChatInfo}
+                                        userInfo={userInfo}
+                                        isFriend={roomData?.isFriend}
+                                    // onSendFriend={awaitingAccept ? undefined : handleSendFriend}
+                                    />
+                                )}
+                                <div ref={messagesEndRef} className="h-px" />
+
+                            </div>
+                            <div className={`bg-white w-full z-2 pb-2 ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
+                                } ${isNative ? "bottom-0" : "bottom-0"} ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
+                                } `}>
+                                <div className="relative">
+                                    {showScrollButton && (
+                                        <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
+                                            <button
+                                                className="p-2.5 rounded-full shadow bg-white"
+                                                onClick={scrollToBottom}
+                                            >
+                                                <IoArrowDown />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <ChatInputBar
+                                        messageValue={messageValue}
+                                        setMessageValue={setMessageValue}
+                                        messageRef={messageRef}
+                                        handleSendMessage={handleSendMessage}
+                                        handleImageChange={handleImageChange}
+                                        onTakePhoto={handleTakePhoto}
+                                        uploadImageMutation={uploadImageMutation}
+                                        addPendingImages={addPendingImages}
+                                        isNative={isNative}
+                                        isDesktop={isDesktop}
+                                        messageTranslateRef={messageTranslateRef}
+                                        messageTranslate={messageTranslate}
+                                        setMessageTranslate={setMessageTranslate}
+                                        openModalTranslate={translateSheet.open}
+                                        languagesSocialChat={languagesSocialChat}
+                                        selectedLanguageSocialChat={selectedLanguageSocialChat}
+                                        setSelectedLanguageSocialChat={setSelectedLanguageSocialChat}
+                                        replyingToMessage={replyingToMessage}
+                                        onCancelReply={handleCancelReply}
+                                        hasReachedLimit={hasReachedLimit}
+                                        openInputExpandSheet={openInputExpandSheet}
+                                        openTranslateExpandSheet={openTranslateExpandSheet}
+                                        onTranslate={handleTranslate}
+                                        setInputBarHeight={setInputBarHeight}
+                                        createTranslationMutation={createTranslationMutation}
+                                        translateActionStatus={translateActionStatus}
+                                        isTranslating={isTranslating}
+                                        actionFieldSend={actionFieldSend}
+                                        setTranslateActionStatus={setTranslateActionStatus}
+                                        typing={typing}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* <NativeGalleryPicker
+                                multiSelect         
+                                showActionBar      
+                                submitLabel="Gửi"
+                                maxHeight={360}
+                                onSubmit={handleSubmit}
+                            /> */}
+                        </div>
+                    </MotionBottomSheet>
+
+                    <LanguageSelectModal
+                        isOpen={translateSheet.isOpen}
+                        translateY={translateSheet.translateY}
+                        handleTouchStart={translateSheet.handleTouchStart}
+                        handleTouchMove={translateSheet.handleTouchMove}
+                        handleTouchEnd={translateSheet.handleTouchEnd}
+                        closeModal={translateSheet.close}
+                        inputValue={inputValueTranslate}
+                        setInputValue={setInputValueTranslate}
+                        languagesSocialChat={languagesSocialChat}
+                        onSelect={onSelectSocialChat}
+                        handleInputSearch={(e) => setInputValueTranslate(e.target.value)}
+                    />
+                    <ExpandInputModal
+                        isOpen={sheetExpand.isOpen}
+                        translateY={sheetExpand.translateY}
+                        closeModal={closeSheet}
+                        handleTouchStart={sheetExpand.handleTouchStart}
+                        handleTouchMove={sheetExpand.handleTouchMove}
+                        handleTouchEnd={sheetExpand.handleTouchEnd}
+                        title={expandTitle}
+                        value={expandValue}
+                        onChange={setExpandValue}
+                        placeholder={expandPlaceholder}
+                        handleSendMessage={handleSendMessage}
+                        actionFieldSend={actionFieldSend}
+                        translateActionStatus={translateActionStatus}
+                        sheetExpandMode={sheetExpandMode}
+                    />
+                </div>
+            )}
+        </MotionStyles>
+    );
+};
+
+export default SocialChatThread;

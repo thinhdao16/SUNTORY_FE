@@ -1,5 +1,6 @@
 import React from "react";
 import { SwipeableList, Type as ListType } from 'react-swipeable-list';
+import "react-swipeable-list/dist/styles.css";
 import { HistoryGroup as HistoryGroupType, TranslationHistoryItem } from "@/types/translate-history";
 import HistoryItem from "./HistoryItem";
 import styles from "../Translate.module.css";
@@ -29,7 +30,6 @@ const HistoryGroup: React.FC<HistoryGroupProps> = ({
             >
                 {group.label}
             </div>
-            <SwipeableList type={ListType.IOS} scrollStartThreshold={20}>
                 {group.items.map((item, idx) => (
                     <HistoryItem
                         key={item.id || idx}
@@ -40,7 +40,6 @@ const HistoryGroup: React.FC<HistoryGroupProps> = ({
                         onSwipeEnd={onSwipeEnd}
                     />
                 ))}
-            </SwipeableList>
         </div>
     );
 };

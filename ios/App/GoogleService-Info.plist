@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyBt8f6M7F5jb1NUualNQ5qLmyowI3XGfcw</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1035773008541</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.wayjet.app</string>
+	<key>PROJECT_ID</key>
+	<string>wayjet-bbbac</string>
+	<key>STORAGE_BUCKET</key>
+	<string>wayjet-bbbac.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1035773008541:ios:a7e36b4b9c859c16fdd274</string>
+</dict>
+</plist>

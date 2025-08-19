@@ -4,7 +4,6 @@ import ImageIcon from "@/icons/logo/chat/image.svg?react";
 // import FileIcon from "@/icons/logo/chat/file.svg?react";
 import SendIcon from "@/icons/logo/chat/send.svg?react";
 import CameraWeb from "@/pages/Camera/CameraWeb";
-import MicIcon from "@/icons/logo/chat/mic.svg?react"; // Nếu cần dùng mic
 
 interface ChatStreamInputBarProps {
     messageValue: string;
@@ -19,10 +18,12 @@ interface ChatStreamInputBarProps {
     isSpending?: boolean;
     uploadImageMutation: any;
     addPendingImages: (images: string[]) => void;
-    isNative?: boolean; // Thêm prop này nếu cần phân biệt native
-    isDesktop?: boolean; // Thêm prop này nếu cần phân biệt desktop
-    imageLoading?: boolean; // Thêm prop này để kiểm soát trạng thái tải ảnh
-    imageLoadingMany?: boolean; // Thêm prop này nếu cần phân biệt trạng thái tải nhiều ảnh
+    isNative?: boolean;
+    isDesktop?: boolean;
+    imageLoading?: boolean;
+    imageLoadingMany?: boolean;
+    anActivate: boolean;
+    showToast: (message: string,duration?: number, type?: "success" | "error" | "info") => void;
 }
 
 const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
@@ -41,7 +42,9 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
     isNative,
     isDesktop,
     imageLoading,
-    imageLoadingMany
+    imageLoadingMany,
+    anActivate,
+    showToast,
 }) => {
     const isLoadingBtn = useMemo(() => {
         return isSpending || isLoading || imageLoading || imageLoadingMany || isLoadingHistory;
@@ -49,7 +52,8 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
 
     return (
         <>
-            <div className="flex items-center px-6 pt-4 pb-6">
+        {!anActivate &&(
+                <div className="flex items-center px-6 pt-4 pb-6">
                 <textarea
                     placeholder={t("Enter your message...")}
                     ref={messageRef}
@@ -91,6 +95,7 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
                     }}
                 />
             </div>
+        )}
             <div className="flex justify-between items-center px-6">
                 <div className="flex gap-6">
                     {isNative || isDesktop ? (

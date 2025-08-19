@@ -30,6 +30,7 @@ export interface Organization {
 
 export interface User {
     id: number;
+    code: string;
     firstname: string;
     lastname: string;
     name: string;
@@ -59,4 +60,5 @@ export interface User {
     groupedMedications: any;
     groupedAllergies: any;
     birthDay: string | null;
+    firebaseToken: string | null;
 }

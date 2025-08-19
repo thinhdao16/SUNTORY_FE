@@ -23,9 +23,10 @@ import useClipboardStatus from "@/hooks/useClipboardStatus";
 import useModelStore from "@/store/zustand/model-store";
 import useDropdown from "@/hooks/useDropdown";
 import { useTranslationLanguages, useCreateTranslation } from "./hooks/useTranslationLanguages";
-import { t } from "@/lib/globalT";
+import { useTranslation } from "react-i18next";
 
 const Translate: React.FC = () => {
+  const { t } = useTranslation();
   const { isKeyboardVisible, heightKeyBoard } = useKeyboardManager();
   const { clipboardHasData, clipboardContent, toggleReloadCopy } = useClipboardStatus();
   const modelDropdown = useDropdown();
@@ -67,6 +68,7 @@ const Translate: React.FC = () => {
     setEmotionData,
     inputValueTranslate,
     setInputValueTranslate,
+    clearInputValueTranslate,
   } = useTranslationStore();
   const { getDisplayName, getModelList, setModel } = useModelStore();
   const modelSelect = getDisplayName();
@@ -264,7 +266,7 @@ const Translate: React.FC = () => {
   };
   useEffect(() => {
     if (translationLanguages && translationLanguages.length > 0) {
-      setLanguagesFromAPI(translationLanguages);
+      setLanguagesFromAPI(translationLanguages, t);
       const autoLang = translationLanguages.find(lang => lang.code === "auto" || lang.name.toLowerCase() === "auto");
       const englishLang = translationLanguages.find(lang => lang.code === "en" || lang.name.toLowerCase().includes("english"));
 
@@ -280,16 +282,16 @@ const Translate: React.FC = () => {
   }, [isLoadingLanguages, setLoading]);
 
   useEffect(() => {
-    const focusTextarea = async () => {
-      if (location.pathname === "/translate" && !hasFocused) {
-        setTimeout(async () => {
-          const el: any = await textareaRef.current?.getInputElement();
-          el?.focus();
-          el?.click();
-          setHasFocused(true);
-        }, 300);
-      }
-    };
+    // const focusTextarea = async () => {
+    //   if (location.pathname === "/translate" && !hasFocused) {
+    //     setTimeout(async () => {
+    //       const el: any = await textareaRef.current?.getInputElement();
+    //       el?.focus();
+    //       el?.click();
+    //       setHasFocused(true);
+    //     }, 300);
+    //   }
+    // };
 
     if (clipboardContent && clipboardContentStatus) {
       setInputValueTranslate((prev) => ({
@@ -297,7 +299,7 @@ const Translate: React.FC = () => {
         input: clipboardContent,
       }));
     }
-    focusTextarea();
+    // focusTextarea();
   }, [location, hasFocused, clipboardContent, clipboardContentStatus]);
 
   useEffect(() => {
@@ -391,6 +393,7 @@ const Translate: React.FC = () => {
             isAiInsightsCollapsed={isAiInsightsCollapsed}
             setIsReverseCollapsed={setIsReverseCollapsed}
             setIsAiInsightsCollapsed={setIsAiInsightsCollapsed}
+            clearInputValueTranslate={clearInputValueTranslate}
           />
         )}
       </MotionStyles>

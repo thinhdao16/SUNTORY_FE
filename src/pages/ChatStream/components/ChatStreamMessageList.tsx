@@ -1,14 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import ChatMessageItem from "./ChatStreamMessageItem";
-import StreamingMessageItemComponent from "./StreamingMessageItem";
 import BotIcon from "@/icons/logo/AI.svg?react";
 import SparklesIcon from "@/icons/logo/AI_thinking.svg?react";
 import ChatStreamIntroMessage from "./ChatStreamIntroMessage";
-import styles from "./StreamingMessage.module.css";
-import { useSignalRStreamStore } from "@/store/zustand/signalr-stream-store";
-import StreamingMessageChunk from "./StreamingMessageChunk";
+import ThinkingStatus from "./ThinkingStatus";
 
 type Attachment = {
     fileName: string;
@@ -40,6 +37,9 @@ type ChatStreamMessageListProps = {
     topicType?: any;
     title?: string;
     loading?: boolean;
+    isSpending?: boolean;
+    lastPage: { hasMore: boolean } | null;
+    thinkLoading?: boolean;
 };
 
 export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
@@ -54,7 +54,10 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
     loading,
     onRetryMessage,
     isLoadingMore,
-    isAtTop
+    isAtTop,
+    isSpending,
+    lastPage,
+    thinkLoading
 }) => {
         // const { text } = useSignalRStreamStore((s) => s.currentChatStream || { text: '' });
         const {
@@ -94,7 +97,6 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
         }, [allMessages]);
         return (
             <div className="flex flex-col gap-6 mx-auto pt-8">
-                {/* Loading indicator khi load tin nhắn cũ */}
                 {isLoadingMore && (
                     <div className="flex justify-center items-center py-4">
                         <div className="flex items-center gap-2 text-gray-500">
@@ -103,8 +105,9 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                         </div>
                     </div>
                 )}
-
-                <ChatStreamIntroMessage topicType={topicType} />
+                {(!lastPage || lastPage.hasMore === false) && (
+                    <ChatStreamIntroMessage topicType={topicType} />
+                )}
 
                 {allMessages.map((msg, idx) => (
                     <ChatMessageItem
@@ -120,6 +123,8 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                         isError={msg.isError}
                         isSend={msg.isSend}
                         onRetryMessage={onRetryMessage}
+                        isSpending={isSpending}
+                        loading={loading}
                     />
                 ))}
 
@@ -129,7 +134,7 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                 {/* {streamingMessage && (
                 <StreamingMessageItemComponent msg={streamingMessage} />
             )} */}
-                {isWaitingForFirstChunk && (
+                {thinkLoading && (
                     <motion.div
                         key="thinking-bubble"
                         initial={{ scaleX: 0 }}
@@ -141,36 +146,9 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                     >
                         <div className="flex gap-2 items-start w-fit">
                             <BotIcon className="min-w-[30px] aspect-square object-contain" />
-                            <div className="flex-1">
-                                <div
-                                    className="
-          inline-flex items-center gap-2
-          bg-white/30 backdrop-blur-sm
-          px-4 py-3
-          rounded-tl-0 rounded-tr-[16px]
-          rounded-bl-[16px] rounded-br-[16px]
-        "
-                                >
-                                    <SparklesIcon className="w-5 h-5 text-blue-400" />
-                                    <motion.span
-                                        className="font-medium text-gray-700 relative -top-1"
-                                        initial={{ opacity: 0.2 }}
-                                        animate={{ opacity: 0.8 }}
-                                        transition={{
-                                            duration: 1.2,
-                                            repeat: Infinity,
-                                            repeatType: 'reverse',
-                                            ease: 'easeInOut',
-                                        }}
-                                    >
-                                        {t(" Thinking…")}
-                                    </motion.span>
-                                </div>
-                            </div>
+                            <ThinkingStatus />
                         </div>
                     </motion.div>
-
-
                 )}
                 {loading && !isWaitingForFirstChunk && !streamingMessage && (
                     <motion.div
@@ -184,32 +162,7 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                     >
                         <div className="flex gap-2 items-start w-fit">
                             <BotIcon className="min-w-[30px] aspect-square object-contain" />
-                            <div className="flex-1">
-                                <div
-                                    className="
-          inline-flex items-center gap-2
-          bg-white/30 backdrop-blur-sm
-          px-4 py-3
-          rounded-tl-0 rounded-tr-[16px]
-          rounded-bl-[16px] rounded-br-[16px]
-        "
-                                >
-                                    <SparklesIcon className="w-5 h-5 text-blue-400" />
-                                    <motion.span
-                                        className="font-medium text-gray-700 relative -top-1"
-                                        initial={{ opacity: 0.2 }}
-                                        animate={{ opacity: 0.8 }}
-                                        transition={{
-                                            duration: 1.2,
-                                            repeat: Infinity,
-                                            repeatType: 'reverse',
-                                            ease: 'easeInOut',
-                                        }}
-                                    >
-                                        {t(" Thinking…")}
-                                    </motion.span>
-                                </div>
-                            </div>
+                            <ThinkingStatus />
                         </div>
                     </motion.div>
                 )}

@@ -1,12 +1,13 @@
-import React, { act } from 'react';
+// FeatureGrid.tsx
+import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { TopicType } from '@/constants/topicType';
-
-import LinkToIcon from "@/icons/logo/link_to.svg?react";
-
+import LinkToIcon from "@/icons/logo/vector_right_white.svg?react";
+import style from '../Home.module.css';
 interface Feature {
     image: React.ReactElement;
     title: string;
+    desc: string;              
     topic: TopicType;
 }
 
@@ -16,37 +17,39 @@ interface FeatureGridProps {
 
 export const FeatureGrid: React.FC<FeatureGridProps> = ({ features }) => {
     const history = useHistory();
-
     const handleFeatureClick = (topic: TopicType) => {
-        // Điều hướng đến chat với topic, API sẽ được gọi trong Chat component
-        history.push(`/chat/${topic}`, {
-            actionFrom: '/home',
-        });
+        history.push(`/chat/${topic}`, { actionFrom: '/home' });
     };
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 gap-4 relative z-9">
+        <div className="grid grid-cols-1 gap-4 relative z-9">
             {features.map((feature) => (
                 <div
                     key={feature.title}
-                    className="bg-white rounded-2xl p-5 flex flex-col items-start justify-start w-full"
+                    className={`bg-white rounded-3xl p-3 flex items-center gap-4 w-full cursor-pointer transition-shadow ${style.customShadow}`}
                     onClick={() => handleFeatureClick(feature.topic)}
+                    
                 >
-                    <div className="flex justify-between gap-1 items-center w-full mb-3">
-                        <div className="font-semibold leading-none text-[14px] mb-1">{feature.title}</div>
-                        <button
-                            className="top-3 right-3 bg-main rounded-full aspect-square h-[30px] flex items-center justify-center shadow-md"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleFeatureClick(feature.topic);
-                            }}
-                        >
-                            <LinkToIcon />
-                        </button>
+                    {feature.image}
+
+                    <div className="flex-1 min-w-0">
+                        <div className="text-[14px] font-semibold text-gray-900 truncate">
+                            {feature.title}
+                        </div>
+                        <div className="text-[12px] text-gray-500 mt-1 line-clamp-2">
+                            {feature.desc}
+                        </div>
                     </div>
-                    <div className='w-full'>
-                        {feature.image}
-                    </div>
+                    <button
+                        className="shrink-0 bg-main rounded-full h-8 w-8 grid place-items-center shadow-md hover:bg-main/90 transition-colors"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleFeatureClick(feature.topic);
+                        }}
+                        aria-label="Open"
+                    >
+                        <LinkToIcon />
+                    </button>
                 </div>
             ))}
         </div>

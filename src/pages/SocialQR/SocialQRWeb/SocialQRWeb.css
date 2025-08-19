@@ -1,0 +1,12 @@
+#html5qr-code-region {
+  /* height: 100vh !important; */
+}
+
+#html5qr-code-region video {
+  /* object-fit: contain; */
+  height: 100%;
+}
+
+#html5qr-code-region #qr-shaded-region {
+  border-width: calc(50% - 100px) !important;
+}
