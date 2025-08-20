@@ -21,11 +21,11 @@ export function useFcmToken(mutate?: (data: { fcmToken: string }) => void) {
                 console.log("🔥 Received payload22:", payload);
 
                 if (payload.notification) {
-                    addNotification({
-                        type: "message",
-                        title: payload.notification.title || "No title",
-                        body: payload.notification.body || "No body",
-                    });
+                    // addNotification({
+                    //     type: "message",
+                    //     title: payload.notification.title || "No title",
+                    //     body: payload.notification.body || "No body",
+                    // });
                 }
 
                 if (payload.data?.data) {

@@ -84,7 +84,7 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/health-information/medicine-info" component={routes.ProfileMedicineInfo} exact />
           <PrivateRoute path="/rate" component={routes.Rate} exact />
           <PrivateRoute path="/chat/:type?/:sessionId?" component={routes.Chat} />
-          <PrivateRoute path="/social-chat/:type?/:roomId?" component={routes.SocialChatRecent} exact />
+          <PrivateRoute path="/social-chat/:type?/:roomId?/:infoRoom?" component={routes.SocialChatRecent} exact />
           {/* <PrivateRoute path="/social-chat" component={() => <Redirect to="/social-chat" />}/> */}
           <PrivateRoute path="/social-group/add" component={routes.SocialGroup} exact />
           <PrivateRoute path="/social-group" component={() => <Redirect to="/social-group/add" />} />

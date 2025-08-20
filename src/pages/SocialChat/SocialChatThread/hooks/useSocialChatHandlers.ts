@@ -356,8 +356,8 @@ export function useSocialChatHandlers({
         addMessage(pendingMsg);
         setMessageValue('');
         setMessageTranslate('');
-
         scrollToBottom();
+
 
         try {
             setLoadingMessages(true);

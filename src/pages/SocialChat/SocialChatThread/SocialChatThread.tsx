@@ -238,6 +238,7 @@ const SocialChatThread: React.FC = () => {
             }
         }
     }, [keyboardHeight]);
+    console.log(inputBarHeight)
     return (
         <MotionStyles
             isOpen={translateSheet.isOpen || sheetExpand.isOpen}
@@ -281,11 +282,12 @@ const SocialChatThread: React.FC = () => {
                                 }}
                             />
                             <div
-                                className={`flex-1 overflow-x-hidden overflow-y-auto px-6`}
+                                className={`flex-1 overflow-x-hidden overflow-y-auto px-6 min-h-0`}
                                 style={
-                                    !isNative 
+                                    !isNative
                                         ? {
-                                            maxHeight: `calc(100vh - ${inputBarHeight + 10}px)`,
+                                            position: "relative",
+                                            height: `calc(100vh - ${inputBarHeight - 40}px)`,
                                             paddingBottom: keyboardHeight > 0 ? keyboardHeight : 0
                                         }
                                         : undefined
@@ -304,12 +306,12 @@ const SocialChatThread: React.FC = () => {
                                 )}
                                 {isFetchingNextPage && (
                                     <div className="flex justify-center py-2">
-                                        <div className="text-sm text-gray-500">Đang tải thêm tin nhắn...</div>
+                                        <div className="text-sm text-gray-500">{t("Loading more messages...")}</div>
                                     </div>
                                 )}
                                 {isLoadingMessages ? (
                                     <div className="flex justify-center py-4">
-                                        <div className="text-sm text-gray-500">Đang tải tin nhắn...</div>
+                                        <div className="text-sm text-gray-500">{t("Loading messages...")}</div>
                                     </div>
                                 ) : (
                                     <ChatMessageList
@@ -332,9 +334,8 @@ const SocialChatThread: React.FC = () => {
                                     // onSendFriend={awaitingAccept ? undefined : handleSendFriend}
                                     />
                                 )}
-                                {!isNative &&(<div className="h-20 xl:h-0" />)}
-                                <div ref={messagesEndRef} className="h-px" />
-
+                                {!isNative && (<div className={`h-30 lg:h-0 xl:h-20`} />)}
+                                <div ref={messagesEndRef} className="h-px mt-auto shrink-0" />
                             </div>
                             <div className={`bg-white w-full z-2 pb-2 ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
                                 } ${isNative ? "bottom-0" : "bottom-0"} ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
