@@ -147,7 +147,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
             <FiSearch className="text-gray-400 mr-2" />
             <input
               type="text"
-              placeholder={t("ID Username")}
+              placeholder={t("Username")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="bg-transparent text-sm outline-none flex-grow"

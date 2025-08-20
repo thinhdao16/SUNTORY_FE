@@ -88,11 +88,11 @@ function SocialGroupAdd() {
           </button>
         </div>
         {selectedUsers.length > 0 && (
-          <div className="flex gap-[15px] mb-3  overflow-x-auto w-full">
+          <div className="flex gap-[15px] mb-3  overflow-x-auto w-full pt-2">
             {selectedUsers.map((id) => {
               const user = users.find((u) => u.id === id);
               return (
-                <div key={id} className="relative text-center flex flex-col gap-1 items-center justify-center">
+                <div key={id} className="relative z-9 text-center flex flex-col gap-1 items-center justify-center">
                   <img
                     src={user.avatar || avatarGrayFallback}
                     alt={user.fullName}
@@ -103,9 +103,12 @@ function SocialGroupAdd() {
                   />
                   <button
                     onClick={() => removeSelected(id)}
-                    className="absolute -top-1 -right-1 bg-success-500 text-black rounded-full w-5 h-5 flex items-center justify-center"
+                    className="absolute z-20 -top-1 -right-1"
                   >
+                    <div className=" bg-success-500 text-black rounded-full w-5 h-5 flex items-center justify-center">
                     <HiX className="text-[14px]" />
+                    
+                    </div>
                   </button>
                   <p className="text-xs text-center max-w-[40px] truncate">{user?.fullName}</p>
                 </div>

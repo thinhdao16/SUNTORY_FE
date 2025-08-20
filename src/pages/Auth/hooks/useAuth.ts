@@ -35,6 +35,7 @@ export const useLogin = () => {
     return useMutation(
         async (credentials: { email: string; password: string; deviceId: string | null }) => {
             const storedToken = (await Preferences.get({ key: FCM_KEY })).value;
+            console.log(storedToken)
             return login({
                 ...credentials,
                 firebaseToken: storedToken || undefined,

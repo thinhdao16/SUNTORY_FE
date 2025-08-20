@@ -19,6 +19,7 @@ import { saveImage } from '@/utils/save-image';
 import { getPublicUrlFromCanvas } from '@/utils/get-public-url-from-canvas';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share as CapShare } from "@capacitor/share";
+import { QR_PREFIX } from '@/constants/global';
 
 const velocityThreshold = 0.4;
 const SocialPartnerAdd = () => {
@@ -30,7 +31,7 @@ const SocialPartnerAdd = () => {
     const history = useHistory();
     const isNative = Capacitor.isNativePlatform();
     const { user } = useAuthStore()
-    const valueQr = user?.code || "default-code";
+    const valueQr = `${QR_PREFIX}${user?.code || "default-code"}`;
 
     const handleQR = () => {
         if (isNative) {
@@ -196,7 +197,7 @@ const SocialPartnerAdd = () => {
                             <div className="my-6">
                                 <input
                                     type="text"
-                                    placeholder={t("ID Username")}
+                                    placeholder={t("Username")}
                                     className="w-full rounded-lg px-4 py-2 text-sm bg-chat-to focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     onFocus={() => openModal("search")}
                                 />
@@ -205,7 +206,7 @@ const SocialPartnerAdd = () => {
                         <div className='px-6 border-t-[1px] border-netural-100 py-6'>
                             <div className="flex items-center gap-2 " onClick={handleQR}>
                                 <QRCodeMainIcon />
-                                <span>Scan QR Code</span>
+                                <span>{t("Scan QR Code")}</span>
                             </div>
                         </div>
                     </MotionBottomSheet>

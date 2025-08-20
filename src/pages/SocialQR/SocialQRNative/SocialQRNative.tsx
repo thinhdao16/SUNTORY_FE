@@ -17,6 +17,7 @@ import UploadImgIcon from "@/icons/logo/social-chat/qr-upload-img.svg?react";
 import YourQRIcon from "@/icons/logo/social-chat/qr-your-qr-code.svg?react";
 
 import { useCreateFriendshipByCode } from "@/pages/SocialChat/hooks/useSocialQR";
+import { QR_PREFIX } from "@/constants/global";
 
 
 const SocialQRNative: React.FC = () => {
@@ -26,16 +27,17 @@ const SocialQRNative: React.FC = () => {
 
     const [flashOn, setFlashOn] = useState(false);
     const [isDecoding, setIsDecoding] = useState(false);
+    const [hasScanned, setHasScanned] = useState(false);
+    const [isCreatingFriendship, setIsCreatingFriendship] = useState(false); // ✅ Thêm state này
 
     const toastShownRef = useRef(false);
     const wasGrantedRef = useRef(false);
     const startingRef = useRef(false);
+    const scannedRef = useRef(false);
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const readerRef = useRef<BrowserQRCodeReader | null>(null);
     const liveActiveRef = useRef(false);
-
-    const { mutate: createFriendship } = useCreateFriendshipByCode();
     const platform = Capacitor.getPlatform();
 
     const base64ToFile = (base64: string, filename: string): File => {
@@ -45,6 +47,50 @@ const SocialQRNative: React.FC = () => {
         const u8arr = new Uint8Array(bstr.length);
         for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
         return new File([u8arr], filename, { type: mime });
+    };
+
+    const { mutate: createFriendship, isLoading } = useCreateFriendshipByCode({
+        onSuccess: (data) => {
+            setIsCreatingFriendship(false);
+
+        },
+        onError: (error) => {
+
+            scannedRef.current = false;
+            setHasScanned(false);
+            setIsCreatingFriendship(false);
+
+            if (!liveActiveRef.current) {
+                startLiveScan();
+            }
+        },
+
+    });
+
+    const handleQRScanResult = (text: string) => {
+        if (!text.startsWith(QR_PREFIX)) {
+            console.log('Not a WayJet QR code:', text);
+            present({ message: t("Invalid QR code format"), duration: 2000, color: "warning" });
+            return;
+        }
+
+        if (scannedRef.current || hasScanned || isCreatingFriendship || isLoading) {
+            console.log('Already processing or scanned, ignoring:', text);
+            return;
+        }
+
+        scannedRef.current = true;
+        setHasScanned(true);
+        setIsCreatingFriendship(true);
+
+        const userCode = text.replace(QR_PREFIX, '');
+        console.log('QR scanned from camera, user code:', userCode);
+
+        stopLiveScan();
+
+
+
+        createFriendship({ toUserCode: userCode, inviteMessage: "" });
     };
 
     const ensureVideoPlays = (video: HTMLVideoElement) =>
@@ -88,7 +134,7 @@ const SocialQRNative: React.FC = () => {
     };
 
     const startLiveScan = async () => {
-        if (!videoRef.current || startingRef.current) return;
+        if (!videoRef.current || startingRef.current || hasScanned || isCreatingFriendship || isLoading) return;
         startingRef.current = true;
 
         try {
@@ -115,9 +161,10 @@ const SocialQRNative: React.FC = () => {
 
             readerRef.current.decodeFromVideoDevice(undefined, videoRef.current, (result) => {
                 if (!liveActiveRef.current) return;
+
                 if (result) {
                     const text = result.getText();
-                    createFriendship({ toUserCode: text, inviteMessage: "" });
+                    handleQRScanResult(text);
                 }
             });
         } catch (e) {
@@ -166,7 +213,7 @@ const SocialQRNative: React.FC = () => {
                     dismiss();
                     toastShownRef.current = false;
                 }
-                await startLiveScan(); 
+                await startLiveScan();
             }
 
             return true;
@@ -327,9 +374,10 @@ const SocialQRNative: React.FC = () => {
     };
 
     const handleChooseFromGallery = async () => {
-        if (isDecoding) return;
+        if (isDecoding || hasScanned || isCreatingFriendship || isLoading) return;
         setIsDecoding(true);
         let blob: Blob | null = null;
+
         try {
             const photo = await Camera.getPhoto({
                 source: CameraSource.Photos,
@@ -338,6 +386,7 @@ const SocialQRNative: React.FC = () => {
                 correctOrientation: true,
                 allowEditing: false,
             });
+
             if (photo.base64String) {
                 const dataUrl = `data:image/jpeg;base64,${photo.base64String}`;
                 blob = base64ToFile(dataUrl, "gallery.jpg");
@@ -354,8 +403,29 @@ const SocialQRNative: React.FC = () => {
 
             const text = await decodeQRFromBlob(blob);
             if (text) {
+                if (!text.startsWith(QR_PREFIX)) {
+                    present({ message: t("Invalid QR code format"), duration: 2000, color: "warning" });
+                    await startLiveScan();
+                    return;
+                }
+
                 present({ message: t("QR code found!"), duration: 1200, color: "success" });
-                createFriendship({ toUserCode: text, inviteMessage: "" });
+
+                if (!scannedRef.current && !hasScanned && !isCreatingFriendship) {
+                    scannedRef.current = true;
+                    setHasScanned(true);
+                    setIsCreatingFriendship(true);
+
+                    const userCode = text.replace(QR_PREFIX, '');
+
+                    present({
+                        message: t("Sending friend request..."),
+                        duration: 2000,
+                        color: "medium"
+                    });
+
+                    createFriendship({ toUserCode: userCode, inviteMessage: "" });
+                }
             } else {
                 present({ message: t("No QR code found in image"), duration: 2000, color: "warning" });
                 await startLiveScan();
@@ -368,6 +438,19 @@ const SocialQRNative: React.FC = () => {
             setIsDecoding(false);
         }
     };
+
+    useEffect(() => {
+        return () => {
+            scannedRef.current = false;
+            setHasScanned(false);
+            setIsCreatingFriendship(false);
+            stopLiveScan();
+            if (toastShownRef.current) {
+                dismiss();
+                toastShownRef.current = false;
+            }
+        };
+    }, []);
 
     useEffect(() => {
         let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -383,7 +466,7 @@ const SocialQRNative: React.FC = () => {
         };
 
         (async () => {
-            const ok = await checkPermission({ silent: false }); 
+            const ok = await checkPermission({ silent: false });
             if (!ok) intervalId = setInterval(checkAndStart, 5000);
         })();
 
@@ -401,7 +484,7 @@ const SocialQRNative: React.FC = () => {
     useEffect(() => {
         const sub = App.addListener("appStateChange", async ({ isActive }) => {
             if (!isActive) return;
-            await checkPermission({ silent: true }); 
+            await checkPermission({ silent: true });
         });
 
         const onFocus = async () => {
@@ -441,11 +524,25 @@ const SocialQRNative: React.FC = () => {
 
     return (
         <div className="h-full relative bg-black grid items-center px-6">
+            {(isCreatingFriendship || isLoading) && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-4 flex flex-col items-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
+                        <span className="text-sm text-black">{t("Sending friend request...")}</span>
+                    </div>
+                </div>
+            )}
+
             <div className="fixed top-6 left-0 right-0 z-10 p-6 flex items-center justify-between">
-                <button onClick={handleToggleFlash}>
+                <button
+                    onClick={handleToggleFlash}
+                    disabled={isCreatingFriendship || isLoading}
+                >
                     {flashOn ? <FlashOnIcon aria-label="Flash On" /> : <FlashOffIcon aria-label="Flash Off" />}
                 </button>
-                <button onClick={stopAndBack}>
+                <button
+                    onClick={stopAndBack}
+                >
                     <CloseIcon aria-label="Đóng" />
                 </button>
             </div>
@@ -465,17 +562,23 @@ const SocialQRNative: React.FC = () => {
                 <div className="flex justify-around items-end">
                     <button
                         onClick={handleChooseFromGallery}
-                        className="bg-white text-netural-300 gap-[6px] flex flex-col items-center justify-center text-sm cursor-pointer font-medium"
-                        disabled={isDecoding}
+                        className={`bg-white text-netural-300 gap-[6px] flex flex-col items-center justify-center text-sm cursor-pointer font-medium ${isDecoding || hasScanned || isCreatingFriendship || isLoading ? 'opacity-50 pointer-events-none' : ''
+                            }`}
+                        disabled={isDecoding || hasScanned || isCreatingFriendship || isLoading}
                     >
                         <GalleryIcon />
                         <UploadImgIcon className="block" aria-label="Upload Image" />
-                        {isDecoding ? t("Processing...") : t("Upload Image")}
+                        {isCreatingFriendship || isLoading ? t("Sending...") :
+                            hasScanned ? t("Scanned") :
+                                isDecoding ? t("Processing...") :
+                                    t("Upload Image")}
                     </button>
 
                     <button
-                        className="bg-white text-netural-300 gap-[6px] flex flex-col items-center justify-center text-sm cursor-pointer font-medium"
+                        className={`bg-white text-netural-300 gap-[6px] flex flex-col items-center justify-center text-sm cursor-pointer font-medium ${hasScanned || isCreatingFriendship || isLoading ? 'opacity-50 pointer-events-none' : ''
+                            }`}
                         onClick={() => history.push("/social-partner/add")}
+                        disabled={hasScanned || isCreatingFriendship || isLoading}
                     >
                         <YourQRIcon className="block" />
                         {t("Your QR Code")}

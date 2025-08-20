@@ -1,44 +1,118 @@
+// useNativePush.ts
 import { useEffect } from "react";
-import { PushNotifications } from "@capacitor/push-notifications";
+import { Capacitor, PluginListenerHandle } from "@capacitor/core";
+import {
+  PushNotifications,
+  Token,
+  PushNotificationSchema,
+  ActionPerformed,
+} from "@capacitor/push-notifications";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { saveFcmToken } from "@/utils/save-fcm-token";
-import { useNotificationStore } from "@/store/zustand/notify-store";
+
+const ANDROID_CHANNEL_ID = "messages_v2"; 
 
 export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
-    const { addNotification } = useNotificationStore.getState();
 
-    useEffect(() => {
-        PushNotifications.requestPermissions().then((result) => {
-            if (result.receive === "granted") {
-                PushNotifications.register();
-            } else {
-                console.warn("Push permission not granted");
-            }
-        });
+  useEffect(() => {
 
-        PushNotifications.addListener("registration", async (token) => {
-            console.log("✅ Registered token:", token.value);
-            await saveFcmToken(token.value);
-            mutate?.({ fcmToken: token.value });
-        });
+    if (!Capacitor.isNativePlatform()) return;
 
-        PushNotifications.addListener("registrationError", (err) => {
-            console.error("❌ Registration error:", err);
-        });
+    (async () => {
+      if (Capacitor.getPlatform() === "ios") {
+        try {
+          await (PushNotifications as any).setPresentationOptions?.({
+            alert: true,
+            sound: true,
+            badge: true,
+          });
+        } catch {}
+      }
 
-        PushNotifications.addListener("pushNotificationReceived", (notification) => {
-            console.log("🔥 Notification received:", notification);
-            if (notification) {
-                addNotification({
-                    type: "message",
-                    title: notification.title || "No title",
-                    body: notification.body || "No body",
-                });
-            }
-        });
+      const pushPerm = await PushNotifications.requestPermissions();
+      if (pushPerm.receive === "granted") {
+        await PushNotifications.register();
+      } else {
+        console.warn("Push permission not granted");
+      }
 
-        PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
-            console.log("➡️ User tapped notification:", notification);
-        });
+      const localPerm = await LocalNotifications.requestPermissions();
+      if (localPerm.display !== "granted") {
+        console.warn("LocalNotifications permission not granted");
+      }
 
-    }, [mutate]);
+      if (Capacitor.getPlatform() === "android") {
+        try {
+          await LocalNotifications.createChannel({
+            id: ANDROID_CHANNEL_ID,
+            name: "Messages",
+            description: "Message notifications",
+            importance: 5,   
+            visibility: 1,  
+            sound: "default",
+            vibration: true,
+            lights: true,
+          });
+        } catch (e) {
+          console.warn("createChannel error", e);
+        }
+      }
+    })();
+
+    let regHandle: PluginListenerHandle | undefined;
+    let regErrHandle: PluginListenerHandle | undefined;
+    let recvHandle: PluginListenerHandle | undefined;
+    let actHandle: PluginListenerHandle | undefined;
+
+    (async () => {
+      regHandle = await PushNotifications.addListener("registration", async (token: Token) => {
+        console.log("✅ Registered token:", token.value);
+        await saveFcmToken(token.value);
+        mutate?.({ fcmToken: token.value });
+      });
+
+      regErrHandle = await PushNotifications.addListener("registrationError", (err) => {
+        console.error("❌ Registration error:", err);
+      });
+
+      recvHandle = await PushNotifications.addListener(
+        "pushNotificationReceived",
+        async (n: PushNotificationSchema) => {
+       
+
+          try {
+            await LocalNotifications.schedule({
+              notifications: [{
+                id: Date.now() % 2147483647,
+                title: n.title || "WayJet",
+                body: n.body || "",
+                channelId: ANDROID_CHANNEL_ID,
+                  smallIcon: "ic_stat_name",     
+                  sound: "default",
+                  extra: n.data || {},
+                  schedule: { at: new Date(Date.now() + 50) },
+                },
+              ],
+            });
+          } catch (e) {
+            console.warn("LocalNotifications.schedule error", e);
+          }
+        }
+      );
+
+      actHandle = await PushNotifications.addListener(
+        "pushNotificationActionPerformed",
+        (action: ActionPerformed) => {
+          console.log("➡️ Tapped:", action);
+        }
+      );
+    })();
+
+    return () => {
+      regHandle?.remove();
+      regErrHandle?.remove();
+      recvHandle?.remove();
+      actHandle?.remove();
+    };
+  }, [mutate]);
 }

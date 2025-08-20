@@ -91,22 +91,22 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const quickAccessItems = [
     {
       icon: MedicalSupportIcon,
-      label: "Medical Support",
+      label:  t("Medical Report Interpretation"),
       topicType: TopicType.MedicalSupport,
     },
     {
       icon: DocumentTranslationIcon,
-      label: "Document Translation",
+      label: t("Contract & Document Analysis"),
       topicType: TopicType.DocumentTranslation,
     },
-    {
-      icon: DrugInstructionsIcon,
-      label: "Drug Instructions",
-      topicType: TopicType.DrugInstructions,
-    },
+    // {
+    //   icon: DrugInstructionsIcon,
+    //   label: "Drug Instructions",
+    //   topicType: TopicType.DrugInstructions,
+    // },
     {
       icon: FoodDiscoveryIcon,
-      label: "Food Discovery",
+      label: t("Food Label Interpretation"),
       topicType: TopicType.FoodDiscovery,
     },
 
@@ -124,7 +124,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           style={{ paddingTop: "var(--safe-area-inset-top)" }}
           onAnimationComplete={() => setShowAvatar(true)}
         >
-          {/* Fixed Header Section */}
           <div className="flex-shrink-0 px-4 py-5">
             <div className="flex gap-2 mb-4">
               <div className="flex-1 flex items-center bg-[#EDF1FC] rounded-lg pl-3">
@@ -137,9 +136,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   className="bg-transparent outline-none flex-1 py-2 placeholder:text-netural-300"
                 />
               </div>
-              <button onClick={onNewChat}>
+              {/* <button onClick={onNewChat}>
                 <NewChatIcon className="w-7 h-7" aria-label={t("new chat")} />
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -147,7 +146,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <div className="flex-1 overflow-y-auto px-4">
             <div className="flex flex-col gap-2">
               {/* JETAI Button with expand/collapse */}
-              <div className="w-full">
+              {/* <div className="w-full">
                 <button
                   className={`flex items-center justify-between text-left w-full px-1 py-2 rounded-md transition ${String(TopicType.Chat) === String(currentTopicType) ? "bg-chat-to" : "bg-white hover:bg-gray-50"
                     }`}
@@ -159,7 +158,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     <BotIcon className="flex-shrink-0 w-[30px] h-[30px]" />
                     <span className="font-medium uppercase">{t("JETAI")}</span>
                   </div>
-                  {/* Collapse/Expand Arrow */}
                   <svg
                     className={`w-4 h-4 transition-transform duration-200 ${isJetAIExpanded ? 'rotate-180' : ''
                       }`}
@@ -171,7 +169,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   </svg>
                 </button>
 
-                {/* Collapsible Chat History */}
                 {isJetAIExpanded && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
@@ -216,7 +213,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     </div>
                   </motion.div>
                 )}
-              </div>
+              </div> */}
 
               {/* Other Quick Access Items */}
               {quickAccessItems.map((item) => {
