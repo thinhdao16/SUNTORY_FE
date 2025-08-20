@@ -61,4 +61,8 @@ export interface User {
     groupedAllergies: any;
     birthDay: string | null;
     firebaseToken: string | null;
+    devices: {
+        deviceId: string | null;
+        firebaseToken: string | null;
+    }[]
 }

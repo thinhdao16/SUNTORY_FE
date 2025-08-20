@@ -54,7 +54,7 @@ export function useKeyboardResize() {
                 setKeyboardResizeScreen(false);
                 setKeyboardHeight(0);
             }
-        }, 100);
+        }, 200);
 
         return () => {
             window.visualViewport?.removeEventListener("resize", handleResize);

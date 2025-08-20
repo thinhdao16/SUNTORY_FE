@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     cleartext: true,
-
+    url:"https://2a6b82dcb34a.ngrok-free.app"
   },
   plugins: {
     SplashScreen: {
@@ -37,6 +37,11 @@ const config: CapacitorConfig = {
     },
     Media: {
       androidGalleryMode: true
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_notify',    
+      iconColor: '#0A6EBD',          
+      sound: 'default'               
     }
   },
   android: {
