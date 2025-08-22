@@ -8,11 +8,15 @@ import { runPreConnectionTests } from '@/utils/signalr-connection-test';
 import { createMobileOptimizedConnection } from '@/utils/mobile-signalr-config';
 import { useChatStore } from '@/store/zustand/chat-store';
 import { useParams } from 'react-router';
+import { streamMonitor } from '@/utils/stream-monitor';
 
 export interface UseSignalRStreamOptions {
     autoReconnect?: boolean;
     logLevel?: signalR.LogLevel;
     reconnectDelays?: number[];
+    sendTimeout?: number; // Thêm tùy chọn timeout có thể config
+    maxRetries?: number; // Thêm tùy chọn max retries
+    enableMonitoring?: boolean; // Thêm option để enable/disable monitoring
 }
 
 export interface UseSignalRStreamReturn {
@@ -33,13 +37,22 @@ export interface UseSignalRStreamReturn {
         failures: number;
         lastAttempt: Date | null;
         isRetrying: boolean;
+        connectionState: string;
+        isHealthy: boolean;
     };
     streamStats: {
         total: number;
         active: number;
         completed: number;
         errors: number;
+        successRate: number;
+        avgChunksPerStream: number;
     };
+    // Optional monitoring utilities (only when enableMonitoring = true)
+    getPerformanceReport?: () => any;
+    exportLogs?: () => string;
+    clearOldMetrics?: (ms?: number) => void;
+    streamMonitor?: any;
 }
 
 export const useSignalRStream = (
@@ -49,9 +62,19 @@ export const useSignalRStream = (
     const {
         autoReconnect = true,
         logLevel = signalR.LogLevel.Warning,
+        sendTimeout = 10000, // Giảm timeout từ 30s xuống 10s để UX tốt hơn
+        maxRetries = 3,
+        enableMonitoring = true, // Enable monitoring by default
     } = options;
 
     const connectionRef = useRef<signalR.HubConnection | null>(null);
+    // Thêm debouncing cho reconnection
+    const reconnectTimeoutRef = useRef<number | null>(null);
+    const lastReconnectAttempt = useRef<number>(0);
+    
+    // Thêm batching cho stream chunks
+    const chunkBuffer = useRef<StreamChunk[]>([]);
+    const batchTimeoutRef = useRef<number | null>(null);
 
     const {
         isConnected,
@@ -77,10 +100,45 @@ export const useSignalRStream = (
     const connectionFailures = useRef(0);
     const lastConnectionAttempt = useRef<Date | null>(null);
     const { type, sessionId } = useParams<{ sessionId?: string; type?: string }>();
+
+    // Thêm function để process batch chunks
+    const processBatchedChunks = useCallback(() => {
+        if (chunkBuffer.current.length > 0) {
+            chunkBuffer.current.forEach(chunk => {
+                addStreamChunk(chunk);
+            });
+            chunkBuffer.current = [];
+        }
+    }, [addStreamChunk]);
+
+    // Debounced reconnection
+    const debouncedReconnect = useCallback((delay: number = 1000) => {
+        const now = Date.now();
+        if (now - lastReconnectAttempt.current < 1000) {
+            // Prevent too frequent reconnection attempts
+            return;
+        }
+        
+        if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+        }
+        
+        reconnectTimeoutRef.current = setTimeout(async () => {
+            lastReconnectAttempt.current = Date.now();
+            try {
+                await connect();
+            } catch (error) {
+                console.error("❌ Debounced reconnection failed:", error);
+            }
+        }, delay);
+    }, []);
+
     const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
+        // Đảm bảo remove all existing handlers trước khi add mới
         connection.off("ReceiveStreamChunk");
         connection.off("StreamComplete");
         connection.off("StreamError");
+        
         connection.on("ReceiveStreamChunk", (data: {
             botMessageCode: string;
             botMessageId: number;
@@ -100,12 +158,25 @@ export const useSignalRStream = (
                 code: data.botMessageCode,
                 timestamp: new Date().toISOString()
             };
+            
             if (data.chatCode === sessionId) {
-                // setCurrentChatStream(chunk);
-                console.log("first")
-                addStreamChunk(chunk);
-                setIsSending(true);
-
+                // Track chunk in monitor
+                if (enableMonitoring) {
+                    streamMonitor.addChunk(data.userMessageCode, data.chunk);
+                }
+                
+                // Sử dụng batching để cải thiện performance
+                chunkBuffer.current.push(chunk);
+                
+                if (batchTimeoutRef.current) {
+                    clearTimeout(batchTimeoutRef.current);
+                }
+                
+                // Process batch sau 16ms (tương đương 60fps)
+                batchTimeoutRef.current = setTimeout(() => {
+                    processBatchedChunks();
+                    setIsSending(true);
+                }, 16);
             }
         });
 
@@ -118,7 +189,17 @@ export const useSignalRStream = (
             userMessageCode: string;
             userMessageId: number;
         }) => {
-            // console.log("Stream Complete:", data);
+            // Process any remaining batched chunks before completing
+            if (batchTimeoutRef.current) {
+                clearTimeout(batchTimeoutRef.current);
+                processBatchedChunks();
+            }
+            
+            // Track completion in monitor
+            if (enableMonitoring) {
+                streamMonitor.completeStream(data.userMessageCode);
+            }
+            
             const event: StreamEvent = {
                 id: data.botMessageId,
                 chatCode: data.chatCode,
@@ -127,7 +208,6 @@ export const useSignalRStream = (
                 code: data.botMessageCode
             };
             completeStream(event);
-            // clearCurrentChatStream();
             setIsSending(false);
         });
 
@@ -141,7 +221,17 @@ export const useSignalRStream = (
             userMessageId: number;
             errorMessage: string;
         }) => {
-            // console.log("Stream Error:", data);
+            // Clear any pending batched chunks on error
+            if (batchTimeoutRef.current) {
+                clearTimeout(batchTimeoutRef.current);
+                chunkBuffer.current = [];
+            }
+            
+            // Track error in monitor
+            if (enableMonitoring) {
+                streamMonitor.errorStream(data.userMessageCode, data.errorMessage);
+            }
+            
             const event: StreamEvent = {
                 id: data.botMessageId,
                 chatCode: data.chatCode,
@@ -151,14 +241,12 @@ export const useSignalRStream = (
                 code: data.botMessageCode
             };
             setIsSending(false);
-            // clearCurrentChatStream();
             errorStream(event);
         });
 
         connection.onreconnecting(() => {
             console.log("🔄 SignalR Stream reconnecting...");
             setConnection(false);
-            // setIsSending(false);
         });
 
         connection.onreconnected(async (connectionId?: string) => {
@@ -166,11 +254,24 @@ export const useSignalRStream = (
                 await connection.invoke("JoinChatRoom", deviceId);
                 setConnection(true, connectionId || undefined);
                 setIsSending(false);
-
+                // Reset failure count on successful reconnection
+                connectionFailures.current = 0;
+                
+                // Track successful reconnection
+                if (enableMonitoring) {
+                    streamMonitor.recordConnectionSuccess();
+                }
             } catch (error) {
                 console.error("❌ Failed to rejoin chat room:", error);
                 setIsSending(false);
-
+                
+                // Track connection failure
+                if (enableMonitoring) {
+                    streamMonitor.recordConnectionFailure();
+                }
+                
+                // Trigger debounced reconnect if rejoin fails
+                debouncedReconnect(3000);
             }
         });
 
@@ -178,26 +279,32 @@ export const useSignalRStream = (
             console.warn("❌ SignalR connection closed:", error);
             setConnection(false);
             setIsSending(false);
-            const reconnectDelay = 3000;
-
-            setTimeout(async () => {
-                try {
-                    await connection.start();
-                    console.log("✅ Reconnected SignalR successfully.");
-                    setConnection(true);
-                } catch (reconnectError) {
-                    console.error("❌ Failed to reconnect:", reconnectError);
-                }
-            }, reconnectDelay);
+            
+            // Clear any pending batched chunks
+            if (batchTimeoutRef.current) {
+                clearTimeout(batchTimeoutRef.current);
+                chunkBuffer.current = [];
+            }
+            
+            // Use debounced reconnection instead of direct setTimeout
+            if (autoReconnect && connectionFailures.current < 5) {
+                const delay = Math.min(3000 * (connectionFailures.current + 1), 15000);
+                debouncedReconnect(delay);
+            }
         });
 
-
-    }, [completeStream, errorStream, setConnection]);
+    }, [completeStream, errorStream, setConnection, sessionId, processBatchedChunks, setIsSending, deviceId, autoReconnect, debouncedReconnect, enableMonitoring]);
 
     const mountedRef = useRef(true);
     const connectionAttemptRef = useRef<AbortController | null>(null);
 
     const connect = useCallback(async () => {
+        // Clear any pending reconnection
+        if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+            reconnectTimeoutRef.current = null;
+        }
+        
         if (connectionRef.current) {
             try {
                 await connectionRef.current.stop();
@@ -232,7 +339,6 @@ export const useSignalRStream = (
             setupEventHandlers(connection);
 
             let retryCount = 0;
-            const maxRetries = 3;
 
             while (retryCount < maxRetries) {
                 try {
@@ -251,17 +357,18 @@ export const useSignalRStream = (
                         throw startError;
                     }
 
-                    await new Promise(resolve => setTimeout(resolve, retryCount * 1000));
+                    // Exponential backoff với jitter
+                    const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+                    const jitter = Math.random() * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay + jitter));
                 }
             }
-
-            // if (!mountedRef.current || connectionAttemptRef.current?.signal.aborted) return;
 
             await connection.invoke("JoinChatRoom", deviceId);
 
             setConnection(true, connection.connectionId || undefined);
             connectionFailures.current = 0;
-
+            console.log("✅ SignalR connected successfully");
 
         } catch (error) {
             console.error("❌ SignalR Stream connection failed:", error);
@@ -280,17 +387,13 @@ export const useSignalRStream = (
                 if (autoReconnect && connectionFailures.current < 5) {
                     const retryDelay = Math.min(5000 * connectionFailures.current, 30000);
                     console.log(`🔄 Auto-retrying SignalR connection in ${retryDelay}ms (attempt ${connectionFailures.current + 1})`);
-                    setTimeout(() => {
-                        if (mountedRef.current) {
-                            connect();
-                        }
-                    }, retryDelay);
+                    debouncedReconnect(retryDelay);
                 } else if (connectionFailures.current >= 5) {
                     console.error("🛑 Maximum connection attempts reached. Manual retry required.");
                 }
             }
         }
-    }, [deviceId, autoReconnect, logLevel, setupEventHandlers, setConnection]);
+    }, [deviceId, autoReconnect, logLevel, setupEventHandlers, setConnection, maxRetries, debouncedReconnect, enableMonitoring]);
 
     useEffect(() => {
         mountedRef.current = true;
@@ -298,23 +401,32 @@ export const useSignalRStream = (
         connect();
         return () => {
             mountedRef.current = false;
+            
+            // Cleanup all timeouts
             if (connectionAttemptRef.current) {
                 connectionAttemptRef.current.abort();
             }
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
+            }
+            if (batchTimeoutRef.current) {
+                clearTimeout(batchTimeoutRef.current);
+            }
+            
             if (connectionRef.current) {
                 connectionRef.current.stop();
                 connectionRef.current = null;
             }
             setConnection(false);
         };
-    }, [connect]);
+    }, [connect, setConnection]);
 
     const sendStreamMessage = useCallback(async (
         chatCode: string,
         message: string,
         additionalData?: any
     ): Promise<string> => {
-        // ✅ Better connection state validation
+        // Kiểm tra connection state tốt hơn
         if (!connectionRef.current) {
             console.error("❌ No SignalR connection available");
             throw new Error("SignalR connection is not available");
@@ -326,13 +438,13 @@ export const useSignalRStream = (
         if (connectionState !== signalR.HubConnectionState.Connected) {
             console.error("❌ SignalR not connected, current state:", connectionState);
             
-            // ✅ Attempt to reconnect if disconnected
+            // Cải thiện reconnection logic
             if (connectionState === signalR.HubConnectionState.Disconnected) {
                 console.log("🔄 Attempting to reconnect...");
                 try {
                     await connect();
-                    // Wait a bit for connection to stabilize
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Wait shorter time cho connection stability
+                    await new Promise(resolve => setTimeout(resolve, 500));
                     
                     if (!connectionRef.current || connectionRef.current.state !== signalR.HubConnectionState.Connected) {
                         throw new Error("Failed to reconnect");
@@ -359,9 +471,14 @@ export const useSignalRStream = (
         try {
             console.log("📤 Sending stream message:", { chatCode, messageCode, payloadSize: JSON.stringify(payload).length });
             
-            // ✅ Shorter timeout và better error handling
+            // Track stream start in monitor
+            if (enableMonitoring) {
+                streamMonitor.startStream(messageCode, chatCode);
+            }
+            
+            // Sử dụng timeout ngắn hơn và có thể config
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error(`SendStreamMessage timeout after 30s for message: ${messageCode}`)), 30000)
+                setTimeout(() => reject(new Error(`SendStreamMessage timeout after ${sendTimeout}ms for message: ${messageCode}`)), sendTimeout)
             );
 
             const sendPromise = connectionRef.current.invoke("SendStreamMessage", payload);
@@ -374,17 +491,17 @@ export const useSignalRStream = (
         } catch (error) {
             console.error("❌ Failed to send stream message:", error);
             
-            // ✅ Check if connection is still valid after error
+            // Improved error recovery
             if (connectionRef.current && connectionRef.current.state !== signalR.HubConnectionState.Connected) {
                 console.warn("⚠️ Connection lost during send, attempting to reconnect...");
                 setConnection(false);
-                // Trigger reconnection
-                setTimeout(() => connect(), 1000);
+                // Use debounced reconnection
+                debouncedReconnect(1000);
             }
             
             throw error;
         }
-    }, [deviceId, connect, setConnection]);
+    }, [deviceId, connect, setConnection, sendTimeout, debouncedReconnect, enableMonitoring]);
 
 
     const isStreamActive = useCallback((messageCode: string) => {
@@ -411,14 +528,18 @@ export const useSignalRStream = (
         console.log("🔄 Manual retry requested");
         connectionFailures.current = 0;
         connect();
-    }, []);
+    }, [connect]);
 
+    // Enhanced connection health monitoring
     const getConnectionStats = useCallback(() => ({
         failures: connectionFailures.current,
         lastAttempt: lastConnectionAttempt.current,
-        isRetrying: connectionFailures.current > 0 && connectionFailures.current < 5
-    }), []);
+        isRetrying: connectionFailures.current > 0 && connectionFailures.current < 5,
+        connectionState: connectionRef.current?.state || 'Disconnected',
+        isHealthy: isConnected && connectionFailures.current === 0
+    }), [isConnected]);
 
+    // Enhanced stream statistics với performance metrics
     const streamStats = useMemo(() => {
         const activeStreams = getActiveStreams();
         const completedStreams = getCompletedStreams();
@@ -428,10 +549,54 @@ export const useSignalRStream = (
             total: activeStreams.length + completedStreams.length + errorStreams.length,
             active: activeStreams.length,
             completed: completedStreams.length,
-            errors: errorStreams.length
+            errors: errorStreams.length,
+            successRate: completedStreams.length > 0 ? 
+                (completedStreams.length / (completedStreams.length + errorStreams.length)) * 100 : 
+                100,
+            avgChunksPerStream: activeStreams.length > 0 ? 
+                activeStreams.reduce((sum, stream) => sum + (stream.chunks?.length || 0), 0) / activeStreams.length : 
+                0
         };
     }, [getActiveStreams, getCompletedStreams, getErrorStreams]);
 
+    // Connection health check với auto-healing
+    useEffect(() => {
+        if (!isConnected || !connectionRef.current) return;
+
+        const healthCheckInterval = setInterval(async () => {
+            try {
+                // Ping server để check connection health
+                if (connectionRef.current && connectionRef.current.state === signalR.HubConnectionState.Connected) {
+                    // Simple ping to keep connection alive
+                    await connectionRef.current.invoke("Ping").catch(() => {
+                        console.warn("⚠️ Health check ping failed, connection may be stale");
+                        // Connection might be stale, trigger reconnection
+                        debouncedReconnect(1000);
+                    });
+                }
+            } catch (error) {
+                console.warn("⚠️ Health check failed:", error);
+            }
+        }, 30000); // Check every 30 seconds
+
+        return () => clearInterval(healthCheckInterval);
+    }, [isConnected, debouncedReconnect]);
+
+    // Cleanup effect để đảm bảo no memory leaks
+    useEffect(() => {
+        return () => {
+            // Clear all pending chunks
+            chunkBuffer.current = [];
+            
+            // Clear all timeouts
+            if (batchTimeoutRef.current) {
+                clearTimeout(batchTimeoutRef.current);
+            }
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
+            }
+        };
+    }, []);
 
     return {
         // Connection status
@@ -458,9 +623,15 @@ export const useSignalRStream = (
         manualRetry,
         getConnectionStats,
 
-        // Debug helpers
+        // Enhanced stats với performance metrics
+        streamStats,
 
-        // Stats
-        streamStats
+        // Monitoring utilities (chỉ available khi enableMonitoring = true)
+        ...(enableMonitoring && {
+            getPerformanceReport: () => streamMonitor.getPerformanceReport(),
+            exportLogs: () => streamMonitor.exportLogs(),
+            clearOldMetrics: (ms?: number) => streamMonitor.clearOldMetrics(ms),
+            streamMonitor: streamMonitor
+        })
     };
 };
