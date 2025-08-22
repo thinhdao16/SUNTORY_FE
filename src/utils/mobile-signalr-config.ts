@@ -14,6 +14,7 @@ export interface MobileSignalRConfig {
     automaticReconnect: number[];
     enableReconnect: boolean;
     logLevel: signalR.LogLevel;
+    fallbackTransports?: signalR.HttpTransportType[]; // Thêm fallback transports
 }
 
 export const getMobileSignalRConfig = (): MobileSignalRConfig => {
@@ -28,11 +29,14 @@ export const getMobileSignalRConfig = (): MobileSignalRConfig => {
             skipNegotiation: false, // Keep negotiation for proper setup
             headers: {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
             },
             automaticReconnect: [0, 2000, 10000, 30000, 60000], // Aggressive reconnection
             enableReconnect: true,
-            logLevel: signalR.LogLevel.Information // More detailed logging for debugging
+            logLevel: signalR.LogLevel.Information, // More detailed logging for debugging
+            fallbackTransports: [
+                signalR.HttpTransportType.ServerSentEvents,
+                signalR.HttpTransportType.LongPolling
+            ]
         };
     } else if (isMobile) {
         // Configuration for mobile browsers
@@ -46,7 +50,11 @@ export const getMobileSignalRConfig = (): MobileSignalRConfig => {
             },
             automaticReconnect: [0, 2000, 10000, 30000],
             enableReconnect: true,
-            logLevel: signalR.LogLevel.Warning
+            logLevel: signalR.LogLevel.Warning,
+            fallbackTransports: [
+                signalR.HttpTransportType.ServerSentEvents,
+                signalR.HttpTransportType.LongPolling
+            ]
         };
     } else {
         // Desktop/web configuration
@@ -58,22 +66,29 @@ export const getMobileSignalRConfig = (): MobileSignalRConfig => {
             headers: {},
             automaticReconnect: [0, 2000, 10000],
             enableReconnect: true,
-            logLevel: signalR.LogLevel.Warning
+            logLevel: signalR.LogLevel.Warning,
+            fallbackTransports: [
+                signalR.HttpTransportType.ServerSentEvents,
+                signalR.HttpTransportType.LongPolling
+            ]
         };
     }
 };
 
 export const createMobileOptimizedConnection = (
     hubUrl: string,
-    accessTokenFactory: () => string
+    accessTokenFactory: () => string,
+    transportOverride?: signalR.HttpTransportType
 ): signalR.HubConnection => {
     const config = getMobileSignalRConfig();
+    const transport = transportOverride || config.transport;
+    
     const builder = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
             accessTokenFactory,
-            transport: config.transport,
+            transport,
             timeout: config.timeout,
-            withCredentials: true,
+            withCredentials: config.withCredentials, // Sử dụng config.withCredentials thay vì hardcode true
             skipNegotiation: config.skipNegotiation,
             headers: config.headers
         })
@@ -84,5 +99,44 @@ export const createMobileOptimizedConnection = (
     }
 
     return builder.build();
+};
+
+// Thêm helper function để thử các transport khác nhau khi gặp lỗi
+export const createConnectionWithFallback = async (
+    hubUrl: string,
+    accessTokenFactory: () => string
+): Promise<signalR.HubConnection> => {
+    const config = getMobileSignalRConfig();
+    const transportsToTry = [config.transport, ...(config.fallbackTransports || [])];
+    
+    let lastError: Error | null = null;
+    
+    for (const transport of transportsToTry) {
+        try {
+            console.log(`🔄 Thử kết nối với transport: ${signalR.HttpTransportType[transport]}`);
+            
+            const connection = createMobileOptimizedConnection(hubUrl, accessTokenFactory, transport);
+            
+            // Test connection
+            await connection.start();
+            console.log(`✅ Kết nối thành công với transport: ${signalR.HttpTransportType[transport]}`);
+            
+            return connection;
+        } catch (error: any) {
+            lastError = error;
+            console.warn(`❌ Transport ${signalR.HttpTransportType[transport]} failed:`, error.message);
+            
+            // Specific error handling
+            if (error.message.includes('CORS') || error.message.includes('cross-origin')) {
+                console.warn('🚫 CORS error detected, trying next transport...');
+            } else if (error.message.includes('504') || error.message.includes('Gateway Timeout')) {
+                console.warn('⏰ Gateway timeout detected, trying next transport...');
+            }
+        }
+    }
+    
+    // Nếu tất cả transport đều fail
+    console.error('🚨 Tất cả transport options đều thất bại');
+    throw lastError || new Error('Không thể kết nối với bất kỳ transport nào');
 };
 

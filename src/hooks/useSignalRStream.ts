@@ -4,11 +4,10 @@ import * as signalR from "@microsoft/signalr";
 import ENV from "@/config/env";
 import { useSignalRStreamStore, StreamChunk, StreamEvent } from '@/store/zustand/signalr-stream-store';
 import { logSignalRDiagnostics, getSignalRDiagnostics } from '@/utils/signalr-diagnostics';
-import { runPreConnectionTests } from '@/utils/signalr-connection-test';
-import { createMobileOptimizedConnection } from '@/utils/mobile-signalr-config';
+import { createMobileOptimizedConnection, createConnectionWithFallback } from '@/utils/mobile-signalr-config';
 import { useChatStore } from '@/store/zustand/chat-store';
 import { useParams } from 'react-router';
-import { streamMonitor } from '@/utils/stream-monitor';
+import { streamMonitor } from '../utils/stream-monitor';
 
 export interface UseSignalRStreamOptions {
     autoReconnect?: boolean;
@@ -321,62 +320,155 @@ export const useSignalRStream = (
         connectionAttemptRef.current = new AbortController();
 
         try {
-            await runPreConnectionTests(ENV.BE);
-
             logSignalRDiagnostics();
-
             const diagnostics = getSignalRDiagnostics();
-
-            const connection = createMobileOptimizedConnection(
-                ENV.BE + "/chatHub",
-                () => localStorage.getItem("token") || ""
-            );
 
             console.log(`🔧 Using ${diagnostics.suggestedTransport} transport for ${diagnostics.platform} platform`);
 
-            connectionRef.current = connection;
+            let connection: signalR.HubConnection;
+            let usedFallback = false;
 
-            setupEventHandlers(connection);
+            // Cải thiện connection strategy với fallback mechanism
+            try {
+                // First try: Sử dụng createConnectionWithFallback để tự động thử các transport
+                console.log("🚀 Attempting connection with fallback mechanism...");
+                connection = await createConnectionWithFallback(
+                    ENV.BE + "/chatHub",
+                    () => localStorage.getItem("token") || ""
+                );
+                usedFallback = true;
+                console.log("✅ Connected successfully with fallback mechanism");
+            } catch (fallbackError: any) {
+                console.warn("⚠️ Fallback mechanism failed, trying manual connection:", fallbackError.message);
+                
+                // Fallback to manual connection
+                connection = createMobileOptimizedConnection(
+                    ENV.BE + "/chatHub",
+                    () => localStorage.getItem("token") || "",
+                    signalR.HttpTransportType.LongPolling
+                );
 
-            let retryCount = 0;
+                // Manual retry logic với improved error handling
+                let retryCount = 0;
+                while (retryCount < maxRetries) {
+                    try {
+                        if (connectionAttemptRef.current?.signal.aborted) {
+                            console.log("🛑 Connection attempt was aborted");
+                            return;
+                        }
 
-            while (retryCount < maxRetries) {
-                try {
-                    if (connectionAttemptRef.current?.signal.aborted) {
-                        console.log("🛑 Connection attempt was aborted");
-                        return;
+                        await connection.start();
+                        console.log("✅ Manual connection succeeded");
+                        break;
+                    } catch (startError: any) {
+                        retryCount++;
+                        console.warn(`⚠️ SignalR connection attempt ${retryCount} failed:`, startError.message);
+
+                        // Specific error handling
+                        if (startError.message.includes('CORS') || startError.message.includes('cross-origin')) {
+                            console.error('🚫 CORS error detected. Server CORS configuration cần được kiểm tra.');
+                            
+                            // Gợi ý cho user
+                            if (window.location.protocol === 'http:' && ENV.BE.includes('https:')) {
+                                console.warn('⚠️ Mixed content issue: trying to connect HTTPS from HTTP');
+                            }
+                            
+                            // Suggest fallback for CORS issues
+                            if (retryCount === 1) {
+                                console.log('🔄 Trying with different transport for CORS issue...');
+                                connection = createMobileOptimizedConnection(
+                                    ENV.BE + "/chatHub",
+                                    () => localStorage.getItem("token") || "",
+                                    signalR.HttpTransportType.LongPolling
+                                );
+                                continue;
+                            }
+                        } else if (startError.message.includes('504') || startError.message.includes('Gateway Timeout')) {
+                            console.error('⏰ Gateway Timeout detected. Server có thể đang overloaded hoặc có vấn đề network.');
+                            
+                            // Increase delay for timeout issues
+                            const timeoutDelay = Math.min(5000 * retryCount, 20000);
+                            console.log(`⏰ Waiting ${timeoutDelay}ms before retry due to timeout...`);
+                            await new Promise(resolve => setTimeout(resolve, timeoutDelay));
+                        } else if (startError.message.includes('Failed to fetch') || startError.message.includes('TypeError')) {
+                            console.error('🌐 Network connectivity issue detected.');
+                            
+                            // Check if device is online
+                            if (!navigator.onLine) {
+                                console.error('📱 Device appears to be offline');
+                                throw new Error('Device is offline');
+                            }
+                        }
+
+                        if (retryCount >= maxRetries) {
+                            throw startError;
+                        }
+
+                        // Exponential backoff với jitter
+                        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+                        const jitter = Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay + jitter));
                     }
-
-                    await connection.start();
-                    break;
-                } catch (startError) {
-                    retryCount++;
-                    console.warn(`⚠️ SignalR connection attempt ${retryCount} failed:`, startError);
-
-                    if (retryCount >= maxRetries) {
-                        throw startError;
-                    }
-
-                    // Exponential backoff với jitter
-                    const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
-                    const jitter = Math.random() * 1000;
-                    await new Promise(resolve => setTimeout(resolve, delay + jitter));
                 }
             }
 
-            await connection.invoke("JoinChatRoom", deviceId);
+            connectionRef.current = connection;
+            setupEventHandlers(connection);
+
+            // Join chat room
+            try {
+                await connection.invoke("JoinChatRoom", deviceId);
+                console.log("✅ Successfully joined chat room");
+            } catch (joinError: any) {
+                console.error("❌ Failed to join chat room:", joinError.message);
+                // Still proceed với connection nếu join fail
+            }
 
             setConnection(true, connection.connectionId || undefined);
             connectionFailures.current = 0;
-            console.log("✅ SignalR connected successfully");
+            console.log("✅ SignalR connected successfully" + (usedFallback ? " (with fallback)" : ""));
 
-        } catch (error) {
+            // Track successful connection in monitor
+            if (enableMonitoring) {
+                streamMonitor.recordConnectionSuccess();
+            }
+
+        } catch (error: any) {
             console.error("❌ SignalR Stream connection failed:", error);
             connectionFailures.current++;
             lastConnectionAttempt.current = new Date();
 
+            // Track connection failure in monitor
+            if (enableMonitoring) {
+                streamMonitor.recordConnectionFailure();
+            }
+
             if (mountedRef.current && !connectionAttemptRef.current?.signal.aborted) {
                 setConnection(false);
+
+                // Enhanced error reporting
+                if (error.message.includes('CORS')) {
+                    console.error(`
+🚫 CORS Error Analysis:
+   - Current origin: ${window.location.origin}
+   - Target server: ${ENV.BE}
+   - Suggestion: Kiểm tra server CORS configuration
+   - Mixed content: ${window.location.protocol !== ENV.BE.split(':')[0] + ':' ? 'YES' : 'NO'}
+                    `);
+                } else if (error.message.includes('504') || error.message.includes('Gateway Timeout')) {
+                    console.error(`
+⏰ Gateway Timeout Analysis:
+   - Server: ${ENV.BE}
+   - Suggestion: Server có thể đang busy hoặc có vấn đề infrastructure
+   - Retry recommended với longer delays
+                    `);
+                } else if (error.message.includes('Failed to fetch')) {
+                    console.error(`
+🌐 Network Error Analysis:
+   - Device online: ${navigator.onLine ? 'YES' : 'NO'}
+   - Suggestion: Kiểm tra network connectivity và firewall
+                    `);
+                }
 
                 if (connectionFailures.current === 1) {
                     console.warn("⚠️ First connection attempt failed. This is common on mobile devices.");
@@ -385,11 +477,24 @@ export const useSignalRStream = (
                 }
 
                 if (autoReconnect && connectionFailures.current < 5) {
-                    const retryDelay = Math.min(5000 * connectionFailures.current, 30000);
+                    // Adaptive retry delay based on error type
+                    let retryDelay = Math.min(5000 * connectionFailures.current, 30000);
+                    
+                    if (error.message.includes('504') || error.message.includes('Gateway Timeout')) {
+                        retryDelay = Math.min(10000 * connectionFailures.current, 60000); // Longer delay for timeouts
+                    } else if (error.message.includes('CORS')) {
+                        retryDelay = Math.min(2000 * connectionFailures.current, 10000); // Shorter delay for CORS (likely config issue)
+                    }
+                    
                     console.log(`🔄 Auto-retrying SignalR connection in ${retryDelay}ms (attempt ${connectionFailures.current + 1})`);
                     debouncedReconnect(retryDelay);
                 } else if (connectionFailures.current >= 5) {
                     console.error("🛑 Maximum connection attempts reached. Manual retry required.");
+                    console.error("💡 Suggestions:");
+                    console.error("   1. Kiểm tra network connectivity");
+                    console.error("   2. Verify server is running");
+                    console.error("   3. Check CORS configuration");
+                    console.error("   4. Try manual retry");
                 }
             }
         }
