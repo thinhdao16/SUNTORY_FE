@@ -9,13 +9,14 @@ export interface UseSocialSignalRListChatRoomOptions {
     roomIds: string[];
     autoConnect?: boolean;
     enableDebugLogs?: boolean;
+    refetchUserChatRooms: () => void;
 }
 
 export function useSocialSignalRListChatRoom(
     deviceId: string,
     options: UseSocialSignalRListChatRoomOptions
 ) {
-    const { roomIds, autoConnect = true, enableDebugLogs = false } = options;
+    const { roomIds, autoConnect = true, enableDebugLogs = false, refetchUserChatRooms } = options;
 
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const isConnectedRef = useRef(false);
@@ -30,6 +31,7 @@ export function useSocialSignalRListChatRoom(
         updateLastMessage,
         updateChatRoomFromMessage,
         setRoomUnread,
+        setNotificationCounts,
     } = useSocialChatStore();
 
     const log = useCallback((message: string, ...args: any[]) => {
@@ -48,12 +50,12 @@ export function useSocialSignalRListChatRoom(
     }, [deviceId]);
 
     const joinChatRooms = useCallback(async (chatRoomIds: string[]) => {
-        if (!connectionRef.current || !isConnectedRef.current) return false;
+        // if (!connectionRef.current || !isConnectedRef.current) return false;
         activeRoomsRef.current = chatRoomIds;
         for (const roomId of chatRoomIds) {
             if (joinedRoomsRef.current.has(roomId)) continue;
             try {
-                await connectionRef.current.invoke("JoinChatUserRoom", roomId);
+                await connectionRef?.current?.invoke("JoinChatUserRoom", roomId);
                 joinedRoomsRef.current.add(roomId);
                 log(`Joined ${roomId}`);
             } catch (e) {
@@ -64,11 +66,11 @@ export function useSocialSignalRListChatRoom(
     }, [log]);
 
     const leaveChatRooms = useCallback(async (chatRoomIds: string[]) => {
-        if (!connectionRef.current || !isConnectedRef.current) return false;
+        // if (!connectionRef.current || !isConnectedRef.current) return false;
         for (const roomId of chatRoomIds) {
             if (!joinedRoomsRef.current.has(roomId)) continue;
             try {
-                await connectionRef.current.invoke("LeaveChatUserRoom", roomId);
+                await connectionRef?.current?.invoke("LeaveChatUserRoom", roomId);
                 joinedRoomsRef.current.delete(roomId);
                 log(`Left ${roomId}`);
             } catch (e) {
@@ -79,9 +81,9 @@ export function useSocialSignalRListChatRoom(
     }, [log]);
 
     const joinUserNotify = useCallback(async () => {
-        if (!connectionRef.current || !isConnectedRef.current) return false;
+        // if (!connectionRef.current || !isConnectedRef.current) return false;
         try {
-            await connectionRef.current.invoke("JoinUserNotify");
+            await connectionRef?.current?.invoke("JoinUserNotify");
             log("Joined user notify");
             return true;
         } catch (e) {
@@ -104,18 +106,60 @@ export function useSocialSignalRListChatRoom(
             const roomId = message.chatInfo?.code || message.roomId;
             if (!roomId) return;
             updateChatRoomFromMessage(message);
-            if(message.isNotifyRoomChat === false) return
+            if (message.isNotifyRoomChat === false) return
             updateLastMessage(roomId, message);
         });
 
         connection.off("RevokeUserMessage");
         connection.on("RevokeUserMessage", (message: any) => {
-            console.log("RevokeUserMessageListRoom",message)
             const roomId = message.chatInfo?.code || message.roomId;
             if (!roomId) return;
             updateChatRoomFromMessage(message);
-            if(message.isNotifyRoomChat === false) return
+            if (message.isNotifyRoomChat === false) return
             updateLastMessage(roomId, message);
+        });
+
+        connection.off("GroupChatCreated");
+        connection.on("GroupChatCreated", (message: any) => {
+            console.log(message);
+
+            refetchUserChatRooms();
+        });
+
+        connection.off("UserVsUserChatCreated");
+        connection.on("UserVsUserChatCreated", (message: any) => {
+            refetchUserChatRooms();
+        });
+
+        let lastReceivedTime = 0;
+        const THROTTLE_DELAY = 1000;
+        connection.off("RoomChatAndFriendRequestReceived");
+        connection.on("RoomChatAndFriendRequestReceived", (message: any) => {
+            const currentTime = Date.now();
+            if (currentTime - lastReceivedTime < THROTTLE_DELAY) {
+                log("RoomChatAndFriendRequestReceived throttled - too frequent");
+                return;
+            }
+            lastReceivedTime = currentTime;
+            log("Received RoomChatAndFriendRequestReceived:", message);
+            if (message && typeof message === 'object') {
+                const currentCounts = useSocialChatStore.getState().notificationCounts;
+                const newCounts = {
+                    userId: message.userId || 0,
+                    unreadRoomsCount: message.unreadRoomsCount || 0,
+                    pendingFriendRequestsCount: message.pendingFriendRequestsCount || 0,
+                };
+                if (
+                    currentCounts.userId !== newCounts.userId ||
+                    currentCounts.unreadRoomsCount !== newCounts.unreadRoomsCount ||
+                    currentCounts.pendingFriendRequestsCount !== newCounts.pendingFriendRequestsCount
+                ) {
+                    setNotificationCounts(newCounts);
+                    log("Updated notification counts from SignalR:", newCounts);
+                } else {
+                    log("Notification counts unchanged, skipping update");
+                }
+            }
         });
 
         const handleUnread = (data: any) => {
@@ -147,13 +191,18 @@ export function useSocialSignalRListChatRoom(
             log("Reconnected:", id);
             await joinUserNotify();
             if (activeRoomsRef.current.length) await joinChatRooms(activeRoomsRef.current);
+            try {
+                await connection.invoke("GetRoomChatAndFriendRequestReceived");
+                log("Re-invoked GetRoomChatAndFriendRequestReceived after reconnect");
+            } catch (error) {
+                log("Failed to invoke GetRoomChatAndFriendRequestReceived on reconnect:", error);
+            }
         });
-
         connection.onclose((err) => {
             isConnectedRef.current = false;
             log("Closed:", err);
         });
-    }, [updateLastMessage, updateChatRoomFromMessage, setRoomUnread, user?.id, enableDebugLogs, log, joinChatRooms, joinUserNotify]);
+    }, [updateLastMessage, updateChatRoomFromMessage, setRoomUnread, setNotificationCounts, user?.id, enableDebugLogs, log, joinChatRooms, joinUserNotify, refetchUserChatRooms]);
 
     const startConnection = useCallback(async () => {
         if (connectionRef.current) {
@@ -171,6 +220,13 @@ export function useSocialSignalRListChatRoom(
         await joinUserNotify();
         if (roomIds?.length) await joinChatRooms(roomIds);
 
+        try {
+            await conn.invoke("GetRoomChatAndFriendRequestReceived");
+            log("Invoked GetRoomChatAndFriendRequestReceived");
+        } catch (error) {
+            log("Failed to invoke GetRoomChatAndFriendRequestReceived:", error);
+        }
+
         return true;
     }, [createConnection, setupEventHandlers, joinUserNotify, joinChatRooms, roomIds, log]);
 
@@ -182,7 +238,7 @@ export function useSocialSignalRListChatRoom(
             currentRoomRef.current = null;
             activeRoomsRef.current = [];
             joinedRoomsRef.current.clear();
-            lastUnreadRef.current = {}; // reset cache
+            lastUnreadRef.current = {};
             log("Stopped");
         }
     }, [log]);
@@ -194,7 +250,6 @@ export function useSocialSignalRListChatRoom(
         return () => { stopConnection(); };
     }, [autoConnect, isAuthenticated, startConnection, stopConnection, log]);
 
-    // Sync join/leave khi danh sách roomIds thay đổi
     useEffect(() => {
         if (!isConnectedRef.current) return;
         const current = Array.from(joinedRoomsRef.current);

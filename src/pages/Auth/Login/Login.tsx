@@ -12,6 +12,7 @@ import useDeviceInfo from "@/hooks/useDeviceInfo";
 import LogoIcon from "@/icons/logo/logo.svg?react";
 import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
 import CloseIcon from "@/icons/logo/close.svg?react";
+import { useTranslation } from "react-i18next";
 
 interface LoginFormValues {
     emailOrPhone: string;
@@ -22,7 +23,7 @@ interface LoginFormValues {
 
 const Login: React.FC = () => {
     const deviceInfo: { deviceId: string | null } = useDeviceInfo();
-
+    const {t} = useTranslation()
     const { mutate: loginMutate, isLoading, error } = useLogin();
 
     const {
@@ -45,7 +46,7 @@ const Login: React.FC = () => {
         <AuthCardLayout title={t("Sign In")}>
             <CustomButton
                 icon={<CloseIcon aria-label={t("Close")} />}
-                className="fixed top-6 left-6"
+                className="fixed top-6 right-6 left-6"
                 navigateTo="/home"
             />
             <form onSubmit={handleSubmit(onSubmit)}>

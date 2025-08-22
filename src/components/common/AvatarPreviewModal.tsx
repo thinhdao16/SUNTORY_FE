@@ -12,7 +12,7 @@ const AvatarPreviewModal: React.FC<AvatarPreviewModalProps> = ({ open, src, alt,
     <AnimatePresence>
         {open && (
             <motion.div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+                className="fixed inset-0 z-999 flex items-center justify-center bg-black/70"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -21,7 +21,7 @@ const AvatarPreviewModal: React.FC<AvatarPreviewModalProps> = ({ open, src, alt,
                 <motion.img
                     src={src}
                     alt={alt || "Avatar Preview"}
-                    className="max-w-[200px] max-h-[80vh]"
+                    className="max-w-[350px] max-h-[80vh]"
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.8, opacity: 0 }}

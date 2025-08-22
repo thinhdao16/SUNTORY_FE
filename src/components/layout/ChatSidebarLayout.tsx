@@ -61,7 +61,7 @@ const ChatSidebarLayout: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.2 } }}
           >
-            <div className="absolute top-12 right-6">
+            {/* <div className="absolute top-12 right-6">
               <div
               // style={{
               //   paddingTop: "var(--safe-area-inset-top, 0px)",
@@ -73,7 +73,7 @@ const ChatSidebarLayout: React.FC = () => {
                   <NavBarHomeHistoryIcon />
                 )}
               </div>
-            </div>
+            </div> */}
             <div
               className="absolute inset-0 bg-[#f0f0f0]/85"
               onClick={closeChatSidebar}

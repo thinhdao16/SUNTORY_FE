@@ -80,8 +80,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                 <div
                     className={
                         displayPhotos.length === 1
-                            ? `w-[70vw] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "  justify-end" : "justify-start"}`
-                            : "grid gap-2 w-[70vw] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
+                            ? `w-[70vw]  lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "  justify-end" : "justify-start"}`
+                            : "grid gap-2 w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
                     }
                 >
                     {displayPhotos.map((photo: { src: string }, idx: number) => {

@@ -108,7 +108,7 @@ export const useTranslationStore = create<TranslationStore>()(
       }),
       
     clearInputValueTranslate: () =>
-      set({ inputValueTranslate: { input: "", output: "" } }),
+      set({ inputValueTranslate: { input: "", output: "" , } ,currentResult: null }),
   }),
 
 );

@@ -3,6 +3,7 @@ import { createAnonymousChatRoom, createSocialChatMessageApi, getChatRoomByCode,
 import { useSocialChatStore } from "@/store/zustand/social-chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
 import { CreateSocialChatMessagePayload, RevokeSocialChatMessagePayload, UpdateSocialChatMessagePayload } from "@/services/social/social-chat-type";
+import { ChatInfo } from "@/types/social-chat";
 
 export interface RoomChatInfo {
     id: number;
@@ -24,6 +25,12 @@ export interface RoomChatInfo {
         };
         isAdmin: boolean;
     }[];
+    chatInfo: ChatInfo | null;
+    isFriend?: boolean;
+    friendRequest?: {
+        fromUserId: number;
+        toUserId: number;
+    };
 }
 interface UseUpdateSocialChatMessageOptions {
     onSuccess?: (data: any, variables: UpdateSocialChatMessagePayload) => void;

@@ -14,6 +14,7 @@ import useDeviceInfo from "@/hooks/useDeviceInfo";
 import LogoIcon from "@/icons/logo/logo.svg?react";
 import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
 import CloseIcon from "@/icons/logo/close.svg?react";
+import { useTranslation } from "react-i18next";
 
 interface RegisterFormValues {
     firstName: string;
@@ -65,12 +66,13 @@ const Register: React.FC = () => {
             setLoading(false);
         }
     };
+    const {t} = useTranslation()
 
     return (
         <AuthCardLayout title={t("Sign Up")}>
             <CustomButton
                 icon={<CloseIcon aria-label={t("Close")} />}
-                className="fixed top-6 left-6"
+                className="fixed top-6 left-6 right-6"
                 navigateTo="/home"
             />
             <form onSubmit={handleSubmit(onSubmit)}>

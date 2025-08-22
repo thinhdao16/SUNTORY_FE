@@ -12,11 +12,12 @@ const PageContainer: React.FC<PageContainerProps> = ({
     bgColor = "bg-white",
 }) => {
     return (
-        <div className={`min-h-screen flex flex-col ${bgColor} pb-20 ${className}`}>
+        <div className={`min-h-screen overflow-y-auto flex flex-col ${bgColor} pb-20 ${className}`}>
             <div className="flex-1 overflow-y-auto">
                 {children}
             </div>
         </div>
+
     );
 };
 

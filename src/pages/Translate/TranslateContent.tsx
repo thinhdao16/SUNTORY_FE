@@ -168,16 +168,23 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
     }
     setContext("");
   };
-  useEffect(() => {
-    if (emotionData?.emotions && emotionData.emotions.length) {
-      const labelsStr = emotionData.emotions
-        .map(e => e.label)
-        .join(',');
+useEffect(() => {
+  const labelsStr = emotionData?.emotions?.map(e => e.label).join(", ") || "";
+  const contextStr = emotionData?.context?.join(", ") || "";
 
-      setEmotionInput(labelsStr);
-    }
-  }, [emotionData, isOpen]);
-
+  setEmotionInput(labelsStr);
+  setContext(contextStr);
+  setInputValue("")
+  setSelected(
+    emotionData?.emotions?.map(e => {
+      const label = e.label.toLowerCase();
+      const found = ["happy", "sad", "angry", "love", "afraid"].find(
+        k => t(k).toLowerCase() === label || k === label
+      );
+      return found || "";
+    }).filter(Boolean) || []
+  );
+}, [emotionData, isOpen, t]);
   return (
     <div
       className={`darkk:bg-gray-700 ${isOpen ? "" : "bg-blue-100"}`}
@@ -216,6 +223,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
             </button>
           </div>
           <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[85dvh] px-6 pt-10">
+            <div className={`relative ${isTranslating ? "pointer-events-none " : ""}`}>
             <div className="flex flex-col gap-6 pb-6">
               {emotionData ? (
                 <div className="rounded-2xl bg-chat-to">
@@ -301,8 +309,8 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                   className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isTranslating || selectedLanguageFrom.code === null
-                    ? <SwapDetectedIcon />
-                    : <SwapIcon />}
+                    ? <SwapDetectedIcon className="w-5 h-5"/>
+                    : <SwapIcon  />}
                 </button>
 
                 <button
@@ -320,7 +328,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
 
               <div className="relative mb-4">
                 <div className="items-center flex flex-col border border-neutral-200 rounded-2xl ">
-                  <button type="button" className="absolute top-3 right-3 z-9" onClick={() => { clearInputValueTranslate(); }}>
+                  <button disabled={isTranslating} type="button" className="absolute top-3 right-3 z-9" onClick={() => { clearInputValueTranslate(); }}>
                     <IoIosClose className="text-4xl" />
                   </button>
                   <IonTextarea
@@ -519,6 +527,7 @@ const TranslateContent: React.FC<TranslateContentProps> = ({
                 //   </div>
                 // )
               }
+            </div>
             </div>
           </div>
         </div>

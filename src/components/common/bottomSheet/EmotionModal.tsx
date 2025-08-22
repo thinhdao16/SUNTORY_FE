@@ -210,7 +210,7 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
   };
 
   if (!isOpen) return null;
-
+console.log(emotionInput)
   return (
     <AnimatePresence>
       <motion.div
@@ -247,7 +247,49 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
                 {t("Save")}
               </button>
             </div>
+ <div className="mb-2 font-semibold">{t("Context (Optional)")}</div>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {CONTEXT_PRESETS.map(c => (
+                <Chip
+                  key={c}
+                  active={contextPicked.includes(c)}
+                  onClick={() => toggleContext(c)}
+                >
+                  {c}
+                </Chip>
+              ))}
+            </div>
 
+            <div className="relative mt-3 mb-4">
+              <IonTextarea
+                autoGrow
+                rows={1}
+                placeholder={t("Add more context (comma separated)…")}
+                value={contextText}
+                onIonInput={(e) => { setContextText(e.detail.value ?? ""); setContext(e.detail.value ?? ""); }}
+                className="w-full border border-neutral-200 rounded-xl focus:outline-0 placeholder:text-neutral-400"
+                style={{
+                  boxShadow: "none",
+                  "--highlight-color-focused": "none",
+                  height: "auto",
+                  minHeight: "44px",
+                  "--padding-top": "14px",
+                  "--padding-bottom": "14px",
+                  "--padding-start": "16px",
+                  "--padding-end": "16px",
+                } as React.CSSProperties}
+                readonly
+              />
+              {contextText && (
+                <button
+                  className="absolute z-2 right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={clearContext}
+                  type="button"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
             <div className="mb-2 font-semibold">{t("Emotion")}</div>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {EMOTIONS.map((e) => (
@@ -293,49 +335,7 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
               )}
             </div>
 
-            <div className="mb-2 font-semibold">{t("Context (Optional)")}</div>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {CONTEXT_PRESETS.map(c => (
-                <Chip
-                  key={c}
-                  active={contextPicked.includes(c)}
-                  onClick={() => toggleContext(c)}
-                >
-                  {c}
-                </Chip>
-              ))}
-            </div>
-
-            <div className="relative mt-3 mb-8">
-              <IonTextarea
-                autoGrow
-                rows={1}
-                placeholder={t("Add more context (comma separated)…")}
-                value={contextText}
-                onIonInput={(e) => { setContextText(e.detail.value ?? ""); setContext(e.detail.value ?? ""); }}
-                className="w-full border border-neutral-200 rounded-xl focus:outline-0 placeholder:text-neutral-400"
-                style={{
-                  boxShadow: "none",
-                  "--highlight-color-focused": "none",
-                  height: "auto",
-                  minHeight: "44px",
-                  "--padding-top": "14px",
-                  "--padding-bottom": "14px",
-                  "--padding-start": "16px",
-                  "--padding-end": "16px",
-                } as React.CSSProperties}
-                readonly
-              />
-              {contextText && (
-                <button
-                  className="absolute z-2 right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={clearContext}
-                  type="button"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+           
           </div>
         </div>
       </motion.div>

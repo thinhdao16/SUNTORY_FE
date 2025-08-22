@@ -58,6 +58,17 @@ interface SocialChatState {
     getRoomUnread: (roomCode: string) => number;
 
     updateChatRoomFromMessage: (message: any) => void;
+
+    notificationCounts: {
+        userId: number;
+        unreadRoomsCount: number;
+        pendingFriendRequestsCount: number;
+    };
+    setNotificationCounts: (counts: { userId: number; unreadRoomsCount: number; pendingFriendRequestsCount: number }) => void;
+    updateUnreadRoomsCount: (count: number) => void;
+    updatePendingFriendRequestsCount: (count: number) => void;
+    getTotalNotificationCount: () => number;
+    resetNotificationCounts: () => void;
 }
 const toTs = (d?: string | null) => (d ? new Date(d).getTime() : 0);
 const pickLocalOnly = (r: RoomChatInfo | undefined) => r ? ({
@@ -484,7 +495,8 @@ addMessages: (roomId, msgs) =>
                                 userAvatar: message.userAvatar
                             },
                             participants: message.chatInfo.participants || [],
-                            topic: message.chatInfo.topic
+                            topic: message.chatInfo.topic,
+                            chatInfo: null
                         };
 
                         state.chatRooms.unshift(newRoom);
@@ -511,5 +523,44 @@ addMessages: (roomId, msgs) =>
             const st = get();
             return st.unreadByRoom[roomCode] ?? 0;
         },
+
+        notificationCounts: {
+            userId: 0,
+            unreadRoomsCount: 0,
+            pendingFriendRequestsCount: 0,
+        },
+
+        setNotificationCounts: (counts) =>
+            set((state) => {
+                state.notificationCounts = {
+                    userId: counts.userId || 0,
+                    unreadRoomsCount: Math.max(0, counts.unreadRoomsCount || 0),
+                    pendingFriendRequestsCount: Math.max(0, counts.pendingFriendRequestsCount || 0),
+                };
+            }),
+
+        updateUnreadRoomsCount: (count) =>
+            set((state) => {
+                state.notificationCounts.unreadRoomsCount = Math.max(0, count);
+            }),
+
+        updatePendingFriendRequestsCount: (count) =>
+            set((state) => {
+                state.notificationCounts.pendingFriendRequestsCount = Math.max(0, count);
+            }),
+
+        getTotalNotificationCount: () => {
+            const state = get();
+            return state.notificationCounts.unreadRoomsCount + state.notificationCounts.pendingFriendRequestsCount;
+        },
+
+        resetNotificationCounts: () =>
+            set((state) => {
+                state.notificationCounts = {
+                    userId: 0,
+                    unreadRoomsCount: 0,
+                    pendingFriendRequestsCount: 0,
+                };
+            }),
     }))
 );

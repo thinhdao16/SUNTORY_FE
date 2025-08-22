@@ -21,10 +21,9 @@ export const getMobileSignalRConfig = (): MobileSignalRConfig => {
     const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || isCapacitor;
 
     if (isCapacitor) {
-        // Optimized configuration for Capacitor apps
         return {
             transport: signalR.HttpTransportType.LongPolling, // Most reliable for mobile
-            timeout: 60000, // 60 seconds for slower mobile networks
+            timeout: 600000, // 60 seconds for slower mobile networks
             withCredentials: false, // Avoid CORS issues
             skipNegotiation: false, // Keep negotiation for proper setup
             headers: {

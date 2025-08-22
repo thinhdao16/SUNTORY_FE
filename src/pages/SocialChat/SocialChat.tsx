@@ -9,7 +9,7 @@ function ChatSocial() {
   const history = useHistory();
   const { type } = useParams<{ type?: string }>();
   const goTo = (path: string) => history.push(path);
-  const { setSearch, clearSearch, search } = useSocialChatStore();
+  const { setSearch, clearSearch, search, notificationCounts } = useSocialChatStore();
   const { contentComponent, leftIcon, rightIcon, inputOnFocus } = useSocialChatLayout(type, goTo, clearSearch);
   const isNative = Capacitor.isNativePlatform();
   const handleQR = () => {
@@ -19,7 +19,6 @@ function ChatSocial() {
       history.push('/social-qr-web');
     }
   };
-  
   return (
     <>
       <div className={`${type === "camera" ? "h-screen" : "bg-white"} `}>
@@ -44,21 +43,33 @@ function ChatSocial() {
                 whileHover={{ scale: 1.05 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 onClick={() => history.push('/social-chat')}
-                className={`p-2 w-full font-semibold rounded-full mr-2 text-sm transition-colors duration-200 ${type === undefined ? 'bg-white shadow' : ''}`}
+                className={`p-2 w-full flex  justify-center items-center gap-2 font-semibold rounded-full text-sm transition-colors duration-200 ${type === undefined ? 'bg-white shadow' : ''}`}
               >
-                {t("Chat List")}
+                {t("Chats")}
+                {notificationCounts.unreadRoomsCount > 0 && (
+                  <button className={` ${type === undefined ? 'bg-error-500' : 'bg-netural-100'} flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px]`}>
+                    {notificationCounts.unreadRoomsCount > 99 ? '99+' : notificationCounts.unreadRoomsCount}
+                  </button>
+                )}
               </motion.button>
+
               <motion.button
                 layout
                 whileTap={{ scale: 0.95 }}
                 whileHover={{ scale: 1.05 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 onClick={() => history.push('/social-chat/list-request')}
-                className={`p-2 w-full font-semibold rounded-full text-sm transition-colors duration-200 ${type === 'list-request' ? 'bg-white shadow' : ''}`}
+                className={` p-2 w-full flex  justify-center items-center gap-2 font-semibold rounded-full text-sm transition-colors duration-200 ${type === 'list-request' ? 'bg-white shadow' : ''}`}
               >
-                {t("Request List")}
+                {t("Friend request")}
+                {notificationCounts.pendingFriendRequestsCount > 0 && (
+                  <button className={` ${type === "list-request" ? 'bg-error-500' : 'bg-netural-100'} flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px]`}>
+                    {notificationCounts.pendingFriendRequestsCount > 99 ? '99+' : notificationCounts.pendingFriendRequestsCount}
+                  </button>
+                )}
               </motion.button>
             </div>
+
           </div>
         )}
         {contentComponent}

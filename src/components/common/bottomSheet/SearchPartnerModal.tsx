@@ -96,6 +96,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
           lastMessageInfo: null,
           participants: [],
           topic: null,
+          chatInfo: null,
         });
         history.push(`/social-chat/t`);
         const chatData = await createAnonymousChat(user.id);
@@ -167,7 +168,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
           >
             {!query && (
               <p className="text-gray-400 text-sm text-center mt-12">
-                Enter a username to search
+                {t('Enter a username to search')}
               </p>
             )}
             {isLoading && query && (

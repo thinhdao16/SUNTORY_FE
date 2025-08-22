@@ -22,12 +22,12 @@ export default defineConfig(({ mode }) => {
             "react-router-dom": ["Route", "Redirect", "RouteProps"],
             "react": ["useState", "useEffect", "useContext", "useRef", "useMemo", "useCallback", "React"],
           },
-          "react", // Tự động import toàn bộ React
+          "react", 
         ],
-        dts: "./auto-imports.d.ts", // Tạo file auto-imports.d.ts
+        dts: "./auto-imports.d.ts", 
         eslintrc: {
-          enabled: true, // Tự động cấu hình ESLint
-          filepath: "./.eslintrc-auto-import.json", // File ESLint config
+          enabled: true, 
+          filepath: "./.eslintrc-auto-import.json",
           globalsPropValue: true,
         },
       }),

@@ -52,7 +52,6 @@ export const useSignalRStream = (
     } = options;
 
     const connectionRef = useRef<signalR.HubConnection | null>(null);
-    const deviceIdRef = useRef(deviceId);
 
     const {
         isConnected,
@@ -71,16 +70,13 @@ export const useSignalRStream = (
         // setCurrentChatStream,
         // clearCurrentChatStream,
     } = useSignalRStreamStore();
-    const chatCodeRef = useRef<string | null>(null);
-    chatCodeRef.current = useSignalRStreamStore.getState().chatCode;
+    const chatCode= useSignalRStreamStore.getState().chatCode;
 
     const setIsSending = useChatStore.getState().setIsSending;
 
     const connectionFailures = useRef(0);
     const lastConnectionAttempt = useRef<Date | null>(null);
-    useEffect(() => {
-        deviceIdRef.current = deviceId;
-    }, [deviceId]);
+    const { type, sessionId } = useParams<{ sessionId?: string; type?: string }>();
     const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
         connection.off("ReceiveStreamChunk");
         connection.off("StreamComplete");
@@ -104,8 +100,9 @@ export const useSignalRStream = (
                 code: data.botMessageCode,
                 timestamp: new Date().toISOString()
             };
-            if (data.chatCode === chatCodeRef.current) {
+            if (data.chatCode === sessionId) {
                 // setCurrentChatStream(chunk);
+                console.log("first")
                 addStreamChunk(chunk);
                 setIsSending(true);
 
@@ -166,7 +163,7 @@ export const useSignalRStream = (
 
         connection.onreconnected(async (connectionId?: string) => {
             try {
-                await connection.invoke("JoinChatRoom", deviceIdRef.current);
+                await connection.invoke("JoinChatRoom", deviceId);
                 setConnection(true, connectionId || undefined);
                 setIsSending(false);
 
@@ -258,9 +255,9 @@ export const useSignalRStream = (
                 }
             }
 
-            if (!mountedRef.current || connectionAttemptRef.current?.signal.aborted) return;
+            // if (!mountedRef.current || connectionAttemptRef.current?.signal.aborted) return;
 
-            await connection.invoke("JoinChatRoom", deviceIdRef.current);
+            await connection.invoke("JoinChatRoom", deviceId);
 
             setConnection(true, connection.connectionId || undefined);
             connectionFailures.current = 0;
@@ -317,30 +314,78 @@ export const useSignalRStream = (
         message: string,
         additionalData?: any
     ): Promise<string> => {
-        if (!connectionRef.current || connectionRef.current.state !== signalR.HubConnectionState.Connected) {
+        // ✅ Better connection state validation
+        if (!connectionRef.current) {
+            console.error("❌ No SignalR connection available");
             throw new Error("SignalR connection is not available");
         }
 
+        const connectionState = connectionRef.current.state;
+        console.log("🔍 Connection state before send:", connectionState);
+
+        if (connectionState !== signalR.HubConnectionState.Connected) {
+            console.error("❌ SignalR not connected, current state:", connectionState);
+            
+            // ✅ Attempt to reconnect if disconnected
+            if (connectionState === signalR.HubConnectionState.Disconnected) {
+                console.log("🔄 Attempting to reconnect...");
+                try {
+                    await connect();
+                    // Wait a bit for connection to stabilize
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    if (!connectionRef.current || connectionRef.current.state !== signalR.HubConnectionState.Connected) {
+                        throw new Error("Failed to reconnect");
+                    }
+                } catch (reconnectError) {
+                    console.error("❌ Reconnection failed:", reconnectError);
+                    throw new Error("SignalR connection failed to reconnect");
+                }
+            } else {
+                throw new Error(`SignalR connection is not ready (state: ${connectionState})`);
+            }
+        }
+
         const messageCode = `stream_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const payload = {
+            deviceId: deviceId,
+            chatCode,
+            messageCode,
+            message,
+            timestamp: new Date().toISOString(),
+            ...additionalData
+        };
 
         try {
-            await connectionRef.current.invoke("SendStreamMessage", {
-                deviceId: deviceIdRef.current,
-                chatCode,
-                messageCode,
-                message,
-                timestamp: new Date().toISOString(),
-                ...additionalData
-            });
+            console.log("📤 Sending stream message:", { chatCode, messageCode, payloadSize: JSON.stringify(payload).length });
+            
+            // ✅ Shorter timeout và better error handling
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error(`SendStreamMessage timeout after 30s for message: ${messageCode}`)), 30000)
+            );
 
-            console.log("📤 Stream message sent:", { chatCode, messageCode, message });
+            const sendPromise = connectionRef.current.invoke("SendStreamMessage", payload);
+            
+            await Promise.race([sendPromise, timeoutPromise]);
+            
+            console.log("✅ Stream message sent successfully:", messageCode);
             return messageCode;
 
         } catch (error) {
             console.error("❌ Failed to send stream message:", error);
+            
+            // ✅ Check if connection is still valid after error
+            if (connectionRef.current && connectionRef.current.state !== signalR.HubConnectionState.Connected) {
+                console.warn("⚠️ Connection lost during send, attempting to reconnect...");
+                setConnection(false);
+                // Trigger reconnection
+                setTimeout(() => connect(), 1000);
+            }
+            
             throw error;
         }
-    }, []);
+    }, [deviceId, connect, setConnection]);
+
 
     const isStreamActive = useCallback((messageCode: string) => {
         const stream = getStreamMessage(messageCode);

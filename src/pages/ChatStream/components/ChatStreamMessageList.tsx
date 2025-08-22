@@ -59,6 +59,7 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
     lastPage,
     thinkLoading
 }) => {
+    console.log(allMessages)
         // const { text } = useSignalRStreamStore((s) => s.currentChatStream || { text: '' });
         const {
             completedMessages,
@@ -134,7 +135,7 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                 {/* {streamingMessage && (
                 <StreamingMessageItemComponent msg={streamingMessage} />
             )} */}
-                {thinkLoading && (
+                {isWaitingForFirstChunk && (
                     <motion.div
                         key="thinking-bubble"
                         initial={{ scaleX: 0 }}

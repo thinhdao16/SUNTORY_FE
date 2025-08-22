@@ -9,6 +9,7 @@ import { useToastStore } from "@/store/zustand/toast-store";
 import LogoIcon from "@/icons/logo/logo.svg?react";
 import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
 import CloseIcon from "@/icons/logo/close.svg?react";
+import { useTranslation } from "react-i18next";
 
 const Otp: React.FC = () => {
   const {
@@ -35,12 +36,13 @@ const Otp: React.FC = () => {
     }
     handleResend();
   };
+    const {t} = useTranslation()
 
   return (
     <AuthCardLayout title={t("OTP Verification")}>
       <CustomButton
         icon={<CloseIcon aria-label={t("Close")} />}
-        className="fixed top-6 left-6"
+        className="fixed top-6 left-6 right-6"
         navigateTo={
           otpType === "register"
             ? "/register"

@@ -43,7 +43,7 @@ const ImagesPreviewModal: React.FC<ImagesPreviewModalProps> = ({ open, images, i
                     <motion.img
                         src={images[cur]}
                         alt={`Preview ${cur + 1}`}
-                        className="max-w-[90vw] max-h-[80vh] rounded-xl"
+                        className="max-w-[350px] max-h-[80vh] rounded-xl"
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.8, opacity: 0 }}

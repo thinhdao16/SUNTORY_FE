@@ -59,6 +59,9 @@ importers:
       '@capacitor/push-notifications':
         specifier: ^7.0.2
         version: 7.0.2(@capacitor/core@7.4.2)
+      '@capacitor/screen-orientation':
+        specifier: ^7.0.2
+        version: 7.0.2(@capacitor/core@7.4.2)
       '@capacitor/share':
         specifier: ^7.0.2
         version: 7.0.2(@capacitor/core@7.4.2)
@@ -931,6 +934,11 @@ packages:
 
   '@capacitor/push-notifications@7.0.2':
     resolution: {integrity: sha512-naw1R61V0qlEBa4CsF7+w3ay7V1PdZ4bQ1cJum+lgZB/yz3ASb6fRHm5GPjJFgTR9ET8zN0Q9y7lfgMTBgDOiA==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+
+  '@capacitor/screen-orientation@7.0.2':
+    resolution: {integrity: sha512-73+ZeD0eZYJjTL/gcSCBuqmlCdO3LqIMcHgS21olrQE5MAmOodmmDwPV523OJbs8T0Ye3FXK7TSsq0BCZ3EQdQ==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
 
@@ -7630,6 +7638,10 @@ snapshots:
       '@capacitor/core': 7.4.2
 
   '@capacitor/push-notifications@7.0.2(@capacitor/core@7.4.2)':
+    dependencies:
+      '@capacitor/core': 7.4.2
+
+  '@capacitor/screen-orientation@7.0.2(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
 

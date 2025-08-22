@@ -11,6 +11,7 @@ import { useResendOtp } from "@/pages/Auth/hooks/useAuth";
 import LogoIcon from "@/icons/logo/logo.svg?react";
 import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
 import BackIcon from "@/icons/logo/back.svg?react";
+import { useTranslation } from "react-i18next";
 
 interface ForgotPasswordForm {
     emailOrPhone: string;
@@ -41,12 +42,13 @@ const ForgotPassword: React.FC = () => {
     };
 
     const emailOrPhoneValue = watch("emailOrPhone");
+    const {t} = useTranslation()
 
     return (
         <AuthCardLayout title={t("Reset Password")}>
             <CustomButton
                 icon={<BackIcon aria-label={t("Back")} />}
-                className="fixed top-6 left-6"
+                className="fixed top-6 left-6 right-6"
                 back
             />
             <form onSubmit={handleSubmit(onSubmit)}>

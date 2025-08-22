@@ -19,11 +19,14 @@ export const searchFriendshipUsers = async (params: SearchFriendshipUserParams) 
   const res = await httpClient.get("/api/v1/friendship/users", { params });
   return res.data.data.data;
 };
-export const getFriendshipFriends = async (page: number, pageSize: number) => {
+export const getFriendshipFriends = async ( page: number = 0, 
+    limit: number = 20,
+    search?: string) => {
   const res = await httpClient.get("/api/v1/friendship/friends", {
     params: {
       PageNumber: page,
-      PageSize: pageSize,
+      PageSize: limit,
+      keyword: search,
     },
   });
   return res.data.data.data;
