@@ -42,15 +42,18 @@ const ForgotPassword: React.FC = () => {
     };
 
     const emailOrPhoneValue = watch("emailOrPhone");
-    const {t} = useTranslation()
+    const { t } = useTranslation()
 
     return (
-        <AuthCardLayout title={t("Reset Password")}>
+        <AuthCardLayout >
             <CustomButton
                 icon={<BackIcon aria-label={t("Back")} />}
-                className="fixed top-6 left-6 right-6"
+                className="h-[100%]"
                 back
             />
+            <h1 className="text-3xl text-center font-semibold mb-6 text-main darkk:text-gray-200">
+                {t("Reset Password")}
+            </h1>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <InputTextField
                     label={t("Email")}

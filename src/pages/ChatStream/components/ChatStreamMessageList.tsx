@@ -59,7 +59,6 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
     lastPage,
     thinkLoading
 }) => {
-    console.log(allMessages)
         // const { text } = useSignalRStreamStore((s) => s.currentChatStream || { text: '' });
         const {
             completedMessages,

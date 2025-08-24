@@ -236,7 +236,7 @@ const SocialChatThread: React.FC = () => {
             }
         }
     }, [keyboardHeight]);
-    
+
     return (
         <MotionStyles
             isOpen={translateSheet.isOpen || sheetExpand.isOpen}
@@ -332,7 +332,13 @@ const SocialChatThread: React.FC = () => {
                                     // onSendFriend={awaitingAccept ? undefined : handleSendFriend}
                                     />
                                 )}
-                                {keyboardResizeScreen && (<div className={`h-30 lg:h-0 xl:h-20`} />)}
+
+                                {keyboardResizeScreen && (
+                                    <div
+                                        className="lg:h-0 xl:h-20"
+                                        style={{ height: `${inputBarHeight}px` }}
+                                    />
+                                )}
                                 <div ref={messagesEndRef} className="h-px mt-auto shrink-0" />
                             </div>
                             <div className={`bg-white w-full z-2 pb-2 ${keyboardResizeScreen ? "fixed" : !isNative && ""

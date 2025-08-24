@@ -36,13 +36,13 @@ const Otp: React.FC = () => {
     }
     handleResend();
   };
-    const {t} = useTranslation()
+  const { t } = useTranslation()
 
   return (
-    <AuthCardLayout title={t("OTP Verification")}>
+    <AuthCardLayout >
       <CustomButton
         icon={<CloseIcon aria-label={t("Close")} />}
-        className="fixed top-6 left-6 right-6"
+        className="h-full"
         navigateTo={
           otpType === "register"
             ? "/register"
@@ -51,7 +51,11 @@ const Otp: React.FC = () => {
               : "/forgot-password"
         }
       />
+
       <form onSubmit={handleSubmit(handleSubmitOtp)} className="flex flex-col  items-center">
+        <h1 className="text-3xl text-center font-semibold mb-6 text-main darkk:text-gray-200">
+          {t("OTP Verification")}
+        </h1>
         <span>
           {t("Enter the OTP sent to")}
         </span>

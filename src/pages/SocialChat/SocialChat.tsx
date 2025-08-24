@@ -47,7 +47,7 @@ function ChatSocial() {
               >
                 {t("Chats")}
                 {notificationCounts.unreadRoomsCount > 0 && (
-                  <button className={` ${type === undefined ? 'bg-error-500' : 'bg-netural-100'} flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px]`}>
+                  <button className={` ${type === undefined ? 'bg-error-500' : 'bg-error-500'} flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px]`}>
                     {notificationCounts.unreadRoomsCount > 99 ? '99+' : notificationCounts.unreadRoomsCount}
                   </button>
                 )}
@@ -63,7 +63,7 @@ function ChatSocial() {
               >
                 {t("Friend request")}
                 {notificationCounts.pendingFriendRequestsCount > 0 && (
-                  <button className={` ${type === "list-request" ? 'bg-error-500' : 'bg-netural-100'} flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px]`}>
+                  <button className={` ${type === "list-request" ? 'bg-error-500' : 'bg-error-500'} flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px]`}>
                     {notificationCounts.pendingFriendRequestsCount > 99 ? '99+' : notificationCounts.pendingFriendRequestsCount}
                   </button>
                 )}

@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { RoomChatInfo, useListChatRooms, useUserChatRooms } from '../hooks/useSocialChat';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
@@ -12,6 +12,7 @@ import { ChatInfoType } from '@/constants/socialChat';
 import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
+import { generatePreciseTimestampFromDate } from '@/utils/time-stamp';
 
 export default function SocialChatRecent() {
   const { t } = useTranslation();
@@ -114,6 +115,31 @@ export default function SocialChatRecent() {
     }
     return room.updateDate;
   };
+  const sortedChatRooms = useMemo(() => {
+    return [...chatRooms].sort((a, b) => {
+      try {
+        const unreadA = a.unreadCount ?? getRoomUnread(a.code) ?? 0;
+        const unreadB = b.unreadCount ?? getRoomUnread(b.code) ?? 0;
+
+        if (unreadA > 0 && unreadB === 0) return -1;
+        if (unreadA === 0 && unreadB > 0) return 1;
+
+        const getTimestamp = (room: RoomChatInfo) => {
+          const date = room.updateDate || room.createDate;
+          return date ? generatePreciseTimestampFromDate(date) : 0;
+        };
+
+        const timestampA = getTimestamp(a);
+        const timestampB = getTimestamp(b);
+
+        return timestampB - timestampA; 
+
+      } catch (error) {
+        console.warn('Sort error:', error);
+        return 0;
+      }
+    });
+  }, [chatRooms, getRoomUnread]);
 
   useEffect(() => {
     const handleScroll = () => {

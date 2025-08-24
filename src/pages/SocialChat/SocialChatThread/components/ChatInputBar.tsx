@@ -91,7 +91,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     const [open, setOpen] = useState(false);
     const [dots, setDots] = React.useState(".");
     const [isSending, setIsSending] = useState(false);
-
+    const [typingInput, setTypingInput] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
     const lastSentTimeRef = useRef<number>(0);
@@ -150,16 +150,33 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
         setMessageValue(value);
         tAPI.touch();
         if (value.trim() === "") setMessageTranslate("");
+        setTypingInput(!!value);
     };
 
     const handleChangeTranslate = (v: string) => {
         setMessageTranslate(v);
         tAPI.touch();
+        setTypingInput(!!v);
     };
     const handleTranslate = () => {
         setTranslateActionStatus(!translateActionStatus);
     };
+    const disableIsTranslating = useMemo(() => {
+        return isTranslating || typingInput || hasReachedLimit;
+    }, [isTranslating, typingInput, hasReachedLimit]);
 
+    useEffect(() => {
+        if (replyingToMessage && setReplyingToMessage) {
+            setReplyingToMessage(null);
+        }
+    }, [setReplyingToMessage, replyingToMessage]);
+
+    useEffect(() => {
+        if (messageRef.current) {
+            messageRef.current.style.height = 'auto';
+            messageRef.current.style.height = `${messageRef.current.scrollHeight}px`;
+        }
+    }, [messageValue, focused]);
     useEffect(() => {
         if (messageRef.current) {
             messageRef.current.style.height = 'auto';
@@ -172,7 +189,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     }, [messageValue, messageTranslate, focused]);
 
 
-    const debouncedSource = useDebounce(messageValue, 500);
+    const debouncedSource = useDebounce(messageValue, 400);
 
     useEffect(() => {
         if (translateActionStatus && debouncedSource.trim()) {
@@ -205,6 +222,19 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
         return () => clearInterval(interval);
     }, [isTranslating]);
     useEffect(() => () => tAPI.off(), []);
+    useEffect(() => {
+        if (messageValue.trim() || messageTranslate.trim()) {
+            setTypingInput(true);
+
+            const timer = setTimeout(() => {
+                setTypingInput(false);
+            }, 500  );
+
+            return () => clearTimeout(timer);
+        } else {
+            setTypingInput(false);
+        }
+    }, [messageValue, messageTranslate]);
     return (
         <div
             ref={containerRef}
@@ -289,7 +319,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             </button>
                         )} */}
                         {
-                            isTranslating ? (
+                            disableIsTranslating ? (
                                 <div className="w-6 h-6 animate-spin border-2 border-t-transparent border-gray-500 rounded-full" />
 
                             ) : (
