@@ -37,23 +37,18 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
   handleTouchMove,
   handleTouchEnd,
 }) => {
-  // Suggested languages (hiển thị đầu tiên)
   const suggestedLanguages = ["Detect language", "English", "Vietnamese", "Chinese (Simplified)"];
 
   const filterAndGroupLanguages = (searchKeyword: string, isFrom: boolean, languages: any[], languagesTo: any[]) => {
     const list = isFrom ? languages : languagesTo;
-
-    // Filter by search keyword
     const filtered = list.filter(item =>
       item.label.toLowerCase().includes((searchKeyword || '').toLowerCase()) ||
       item.lang.toLowerCase().includes((searchKeyword || '').toLowerCase())
     );
 
     if (!searchKeyword || searchKeyword.trim() === '') {
-      // Nếu không có search, hiển thị suggested trước
       const suggested = filtered.filter(lang =>
         suggestedLanguages.some(suggLang => {
-          // More flexible matching for suggested languages
           const normalizedSuggested = suggLang.toLowerCase();
           const normalizedLangLabel = lang.label.toLowerCase();
           const normalizedLangName = lang.lang.toLowerCase();
@@ -82,7 +77,6 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
         })
       );
 
-      // Group others by alphabet
       const groupedOthers = others.reduce((groups: any, lang: any) => {
         const firstLetter = lang.label.charAt(0).toUpperCase();
         if (!groups[firstLetter]) {
@@ -92,7 +86,6 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
         return groups;
       }, {});
 
-      // Sort each group alphabetically
       Object.keys(groupedOthers).forEach(letter => {
         groupedOthers[letter].sort((a: any, b: any) => a.label.localeCompare(b.label));
       });
@@ -103,7 +96,6 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
         isSearching: false
       };
     } else {
-      // Nếu có search, group kết quả theo alphabet
       const groupedSearch = filtered.reduce((groups: any, lang: any) => {
         const firstLetter = lang.label.charAt(0).toUpperCase();
         if (!groups[firstLetter]) {
@@ -113,7 +105,6 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
         return groups;
       }, {});
 
-      // Sort each group alphabetically
       Object.keys(groupedSearch).forEach(letter => {
         groupedSearch[letter].sort((a: any, b: any) => a.label.localeCompare(b.label));
       });

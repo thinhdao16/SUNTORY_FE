@@ -76,12 +76,12 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
     return (
         <div className={isUser ? "self-end w-fit" : "self-start w-fit"}>
-            <div className={`mb-2 z-0 space-y-2 relative ${isUser ? "ml-auto" : "mr-auto"} w-fit group`}>
+            <div className={`mb-2 z-4 space-y-2 relative ${isUser ? "ml-auto" : "mr-auto"} w-fit group`}>
                 <div
                     className={
                         displayPhotos.length === 1
-                            ? `w-[70vw] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "  justify-end" : "justify-start"}`
-                            : "grid gap-2 w-[70vw] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
+                            ? `w-[70vw]  lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "  justify-end" : "justify-start"}`
+                            : "grid gap-2 w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
                     }
                 >
                     {displayPhotos.map((photo: { src: string }, idx: number) => {

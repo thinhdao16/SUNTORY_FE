@@ -33,7 +33,7 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
     const pingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const { isAuthenticated } = useAuthStore();
-    const { addMessage, updateMessageByCode , updateMessageAndRepliesByCode} = useSocialChatStore();
+    const { addMessage, updateMessageByCode, updateMessageAndRepliesByCode } = useSocialChatStore();
 
     const log = useCallback(
         (message: string, ...args: any[]) => {
@@ -256,7 +256,7 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
         connection.on("UpdateUserMessage", (message: any) => {
             // updateMessageByCode(roomId, message.code, message);
             updateMessageAndRepliesByCode(roomId, message.code, message);
-            
+
         });
 
         connection.off("RevokeUserMessage");

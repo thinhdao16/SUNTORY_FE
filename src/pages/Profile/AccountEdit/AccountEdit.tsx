@@ -67,8 +67,8 @@ const AccountEdit: React.FC = () => {
     };
 
     return (
-        <>
-            <form className="space-y-4 pb-20" onSubmit={handleSubmit(onSubmit)}>
+        <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+            <form className="space-y-4 pb-30" onSubmit={handleSubmit(onSubmit)}>
                 <div className="flex gap-2">
                     <Controller
                         name="firstname"
@@ -202,7 +202,7 @@ const AccountEdit: React.FC = () => {
                     {t("Save")}
                 </MainButton>
             </form>
-        </>
+        </div>
     );
 };
 

@@ -63,17 +63,17 @@ const TranslateHistory: React.FC = () => {
 
       <div
         ref={containerRef}
-        className={`${styles["translate-history-container"]} pb-10 ${
+        className={`${styles["translate-history-container"]} pb-36 ${
           isNative
             ? "max-h-[85vh]"
-            : "max-h-[75vh] lg:max-h-[75vh] xl:max-h-[85vh]"
+            : "max-h-[80vh] lg:max-h-[87vh] xl:max-h-[87vh]"
         }`}
       >
-        {isLoading && (
+        {/* {isLoading && (
           <div className="flex justify-center items-center py-8 px-6">
             <div className="loader border-blue-600 border-t-transparent border-4 rounded-full w-8 h-8 animate-spin"></div>
           </div>
-        )}
+        )} */}
 
         {groupedHistory.length === 0 && !isLoading && (
           <div className="text-center text-gray-500 py-8 px-6">

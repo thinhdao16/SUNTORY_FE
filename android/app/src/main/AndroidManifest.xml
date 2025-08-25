@@ -38,6 +38,7 @@
             android:label="@string/title_activity_main"
             android:launchMode="singleTask"
             android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:screenOrientation="portrait"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|uiMode"
             android:windowSoftInputMode="stateUnchanged|adjustResize">
 

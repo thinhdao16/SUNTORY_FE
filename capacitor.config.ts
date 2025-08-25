@@ -8,7 +8,6 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     cleartext: true,
-    url:"https://2a6b82dcb34a.ngrok-free.app"
   },
   plugins: {
     SplashScreen: {
@@ -42,10 +41,16 @@ const config: CapacitorConfig = {
       smallIcon: 'ic_stat_notify',    
       iconColor: '#0A6EBD',          
       sound: 'default'               
+    },
+    ScreenOrientation: {
+      orientation: 'portrait'
     }
   },
   android: {
-    adjustMarginsForEdgeToEdge: "force"
+    adjustMarginsForEdgeToEdge: "force",
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: true,
   }
 };
 

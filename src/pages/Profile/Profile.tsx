@@ -81,7 +81,7 @@ const Profile: React.FC = () => {
                     <div className="loader border-4 border-white border-t-main rounded-full w-12 h-12 animate-spin"></div>
                 </div>
             )}
-            <div className="min-h-screen bg-white flex flex-col px-6"
+            <div className="min-h-screen max-h-[calc(100vh-200px)] overflow-y-auto bg-white flex flex-col px-6"
             // style={{ paddingTop: "var(--safe-area-inset-top)" }}
             >
                 <div className="flex items-center h-16 mb-2">
@@ -110,47 +110,51 @@ const Profile: React.FC = () => {
                 </div>
                 {userInfo && <ProfileHeader userInfo={userInfo} refetchAuthInfo={refetch} />}
                 <hr className="my-4 border-netural-200" />
-                {renderSectionContent()}
-                {showLanguageOptions && (
-                    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-xl shadow-lg p-6 w-72">
-                            <div className="font-semibold mb-3 text-center">{t("Language")}</div>
-                            <ul>
-                                {languageOptions.map((opt) => (
-                                    <li key={opt.code}>
-                                        <button
-                                            className={`w-full py-2 text-left rounded transition ${i18n.language === opt.code
-                                                ? " text-main font-semibold"
-                                                : "text-gray-700 hover:bg-gray-100"
-                                                }`}
-                                            onClick={async () => {
-                                                setLanguageLoading(true);
-                                                await i18n.changeLanguage(opt.code);
-                                                setLanguageLoading(false);
-                                                setShowLanguageOptions(false);
-                                            }}
-                                            disabled={languageLoading}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                            <button
-                                className="mt-4 w-full py-2 rounded bg-gray-100 text-gray-500 hover:bg-gray-200"
-                                onClick={() => setShowLanguageOptions(false)}
-                                disabled={languageLoading}
-                            >
-                                {t("Cancel")}
-                            </button>
+                <div className=" max-h-[calc(100svh-200px)] overflow-y-auto bg-white flex flex-col">
+                    <div className="pb-20">
+                        {renderSectionContent()}
+                    </div>
+                    {showLanguageOptions && (
+                        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+                            <div className="bg-white rounded-xl shadow-lg p-6 w-72">
+                                <div className="font-semibold mb-3 text-center">{t("Language")}</div>
+                                <ul>
+                                    {languageOptions.map((opt) => (
+                                        <li key={opt.code}>
+                                            <button
+                                                className={`w-full py-2 text-left rounded transition ${i18n.language === opt.code
+                                                    ? " text-main font-semibold"
+                                                    : "text-gray-700 hover:bg-gray-100"
+                                                    }`}
+                                                onClick={async () => {
+                                                    setLanguageLoading(true);
+                                                    await i18n.changeLanguage(opt.code);
+                                                    setLanguageLoading(false);
+                                                    setShowLanguageOptions(false);
+                                                }}
+                                                disabled={languageLoading}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <button
+                                    className="mt-4 w-full py-2 rounded bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                    onClick={() => setShowLanguageOptions(false)}
+                                    disabled={languageLoading}
+                                >
+                                    {t("Cancel")}
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                )}
-                {languageLoading && (
-                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999]">
-                        <div className="loader border-4 border-white border-t-main rounded-full w-12 h-12 animate-spin"></div>
-                    </div>
-                )}
+                    )}
+                    {languageLoading && (
+                        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999]">
+                            <div className="loader border-4 border-white border-t-main rounded-full w-12 h-12 animate-spin"></div>
+                        </div>
+                    )}
+                </div>
             </div>
         </PageContainer>
     );

@@ -1,3 +1,4 @@
+import { LanguageSwitcher, useLanguageSwitcher } from "@/pages/Home";
 import React from "react";
 import { useHistory } from "react-router-dom";
 
@@ -7,7 +8,7 @@ interface CustomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement
     imgClassName?: string;
     navigateTo?: string;
     back?: boolean;
-    icon?: React.ReactNode; // Thêm prop icon
+    icon?: React.ReactNode;
 }
 
 const CustomButton: React.FC<CustomButtonProps> = ({
@@ -19,10 +20,11 @@ const CustomButton: React.FC<CustomButtonProps> = ({
     className = "",
     children,
     onClick,
-    icon, // Nhận prop icon
+    icon,
     ...rest
 }) => {
     const history = useHistory();
+    const languageSwitcher = useLanguageSwitcher();
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         if (back) {
@@ -34,16 +36,20 @@ const CustomButton: React.FC<CustomButtonProps> = ({
             onClick(e);
         }
     };
-
     return (
-        <button className={className} onClick={handleClick} {...rest}>
-            {icon
-                ? icon
-                : imgSrc
-                    ? <img src={imgSrc} alt={imgAlt} className={imgClassName} />
-                    : null}
-            {children}
-        </button>
+        <div className={`${className}`}>
+            <div className={`w-full flex justify-between items-center `}>
+                <button onClick={handleClick} {...rest}>
+                    {icon
+                        ? icon
+                        : imgSrc
+                            ? <img src={imgSrc} alt={imgAlt} className={imgClassName} />
+                            : null}
+                </button>
+                <LanguageSwitcher {...languageSwitcher} classNameButton="border border-main" />
+                {children}
+            </div>
+        </div>
     );
 };
 

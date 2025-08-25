@@ -91,7 +91,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     const [open, setOpen] = useState(false);
     const [dots, setDots] = React.useState(".");
     const [isSending, setIsSending] = useState(false);
-
+    const [typingInput, setTypingInput] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
     const lastSentTimeRef = useRef<number>(0);
@@ -103,7 +103,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
     const handleSendWithDebounce = (e: any, field: string, force?: boolean) => {
         const now = Date.now();
-        if (now - lastSentTimeRef.current < 5) {
+        if (now - lastSentTimeRef.current < 2) {
             return;
         }
         if (isSending) { return; }
@@ -150,16 +150,33 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
         setMessageValue(value);
         tAPI.touch();
         if (value.trim() === "") setMessageTranslate("");
+        setTypingInput(!!value);
     };
 
     const handleChangeTranslate = (v: string) => {
         setMessageTranslate(v);
         tAPI.touch();
+        setTypingInput(!!v);
     };
     const handleTranslate = () => {
         setTranslateActionStatus(!translateActionStatus);
     };
+    const disableIsTranslating = useMemo(() => {
+        return isTranslating || typingInput || hasReachedLimit;
+    }, [isTranslating, typingInput, hasReachedLimit]);
 
+    useEffect(() => {
+        if (replyingToMessage && setReplyingToMessage) {
+            setReplyingToMessage(null);
+        }
+    }, [setReplyingToMessage, replyingToMessage]);
+
+    useEffect(() => {
+        if (messageRef.current) {
+            messageRef.current.style.height = 'auto';
+            messageRef.current.style.height = `${messageRef.current.scrollHeight}px`;
+        }
+    }, [messageValue, focused]);
     useEffect(() => {
         if (messageRef.current) {
             messageRef.current.style.height = 'auto';
@@ -172,7 +189,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     }, [messageValue, messageTranslate, focused]);
 
 
-    const debouncedSource = useDebounce(messageValue, 500);
+    const debouncedSource = useDebounce(messageValue, 400);
 
     useEffect(() => {
         if (translateActionStatus && debouncedSource.trim()) {
@@ -205,6 +222,19 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
         return () => clearInterval(interval);
     }, [isTranslating]);
     useEffect(() => () => tAPI.off(), []);
+    useEffect(() => {
+        if (messageValue.trim() || messageTranslate.trim()) {
+            setTypingInput(true);
+
+            const timer = setTimeout(() => {
+                setTypingInput(false);
+            }, 500  );
+
+            return () => clearTimeout(timer);
+        } else {
+            setTypingInput(false);
+        }
+    }, [messageValue, messageTranslate]);
     return (
         <div
             ref={containerRef}
@@ -222,7 +252,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     <div className="relative flex-1">
                         {isTranslating && !messageTranslate && (
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-netural-200 pointer-events-none flex">
-                                Translating
+                                {t("Translating")}
                                 <span className="flex">
                                     {dots.split("").map((dot, i) => (
                                         <span
@@ -250,11 +280,12 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             className={`flex-1 w-full min-h-[35px] ${focused.translate
                                 ? "max-h-20 overflow-y-auto whitespace-normal"
                                 : "!max-h-[35px] !truncate whitespace-nowrap overflow-hidden"
-                                } min-w-0 max-w-full resize-none overflow-y-auto px-4 py-2 rounded-3xl focus:outline-none placeholder:text-netural-200`}
+                                } min-w-0 max-w-full resize-none overflow-y-auto px-4 pt-4 rounded-3xl focus:outline-none placeholder:text-netural-200`}
                             onFocus={() => onFocus("translate")}
                             onClick={() => onFocus("translate")}
                             onBlur={() => onBlur("translate")}
                             onKeyDown={(e) => {
+                                if (hasReachedLimit) return; // ✅ Không cho gửi nếu quá giới hạn
                                 const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
                                 tAPI.touch();
 
@@ -271,10 +302,9 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             }}
                         />
                     </div>
-                    <div className="pb-1 gap-4 flex items-center h-fit">
-                        <button onClick={openTranslateExpandSheet}
-                        >
-                            <ExpandTranslateIcon />
+                    <div className=" gap-4 flex items-center h-fit pb-2">
+                        <button onClick={openTranslateExpandSheet}>
+                            <ExpandInputIcon />
                         </button>
 
                         {/* {messageTranslate.trim() && (
@@ -289,30 +319,40 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                                 <SendTranslateIcon />
                             </button>
                         )} */}
-                        {(messageValue.trim().length > 0 || messageTranslate.trim().length > 0) && translateActionStatus && (
-                            <button
-                                ref={sendBtnRef}
-                                type="button"
-                                disabled={hasReachedLimit || isSending}
-                                onMouseDown={preventBlur}
-                                onTouchStart={preventBlur}
-                                onClick={(e) => {
-                                    if (isSending) return;
-                                    if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
-                                    keepFocus();
-                                    tAPI.off();
-                                    requestAnimationFrame(() => {
-                                        handleSendWithDebounce(e, actionFieldSend, false);
-                                        requestAnimationFrame(() => {
-                                            setMessageValue("");
-                                            keepFocus();
-                                        });
-                                    });
-                                }}
-                            >
-                                <SendIcon />
-                            </button>
-                        )}
+                        {
+                            disableIsTranslating ? (
+                                <div className="w-6 h-6 animate-spin border-2 border-t-transparent border-gray-500 rounded-full" />
+
+                            ) : (
+                                <>
+                                    {(messageValue.trim().length > 0 || messageTranslate.trim().length > 0) && translateActionStatus && (
+                                        <button
+                                            ref={sendBtnRef}
+                                            type="button"
+                                            disabled={hasReachedLimit || isSending}
+                                            onMouseDown={preventBlur}
+                                            onTouchStart={preventBlur}
+                                            onClick={(e) => {
+                                                if (isSending) return;
+                                                if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
+                                                keepFocus();
+                                                tAPI.off();
+                                                requestAnimationFrame(() => {
+                                                    handleSendWithDebounce(e, actionFieldSend, false);
+                                                    requestAnimationFrame(() => {
+                                                        setMessageValue("");
+                                                        keepFocus();
+                                                    });
+                                                });
+                                            }}
+                                        >
+                                            <SendIcon />
+                                        </button>
+                                    )}
+                                </>
+                            )
+                        }
+
                     </div>
                     {/* <button className="bg-chat-to rounded-full p-2 flex items-center justify-center">
                         <SendTranslateIcon />
@@ -327,7 +367,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     onChange={(e) => handleChangeInput(e.target.value)}
                     rows={1}
                     disabled={hasReachedLimit}
-
+                    data-virtualkeyboard="true"
                     className={`flex-1 min-h-[35px] ${focused.input
                         //    &&  actionStatus
                         ? 'max-h-30 overflow-y-auto whitespace-normal'
@@ -337,6 +377,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     onClick={() => onFocus('input')}
                     onBlur={() => onBlur('input')}
                     onKeyDown={(e) => {
+                        if (hasReachedLimit) return; // ✅ Không cho gửi nếu quá giới hạn
                         const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
                         tAPI.touch();
 
@@ -381,17 +422,17 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             disabled={hasReachedLimit || isSending}
                             onMouseDown={preventBlur}
                             onTouchStart={preventBlur}
-                          onClick={(e) => {
-    if (isSending) return;
-    if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
-    tAPI.off();
-    requestAnimationFrame(() => {
-        handleSendWithDebounce(e, actionFieldSend, false);
-        requestAnimationFrame(() => {
-            setMessageValue("");
-        });
-    });
-}}
+                            onClick={(e) => {
+                                if (isSending) return;
+                                if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
+                                tAPI.off();
+                                requestAnimationFrame(() => {
+                                    handleSendWithDebounce(e, actionFieldSend, false);
+                                    requestAnimationFrame(() => {
+                                        setMessageValue("");
+                                    });
+                                });
+                            }}
                         >
                             <SendIcon />
                         </button>

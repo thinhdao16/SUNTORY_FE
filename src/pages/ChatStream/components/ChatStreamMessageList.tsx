@@ -134,7 +134,7 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                 {/* {streamingMessage && (
                 <StreamingMessageItemComponent msg={streamingMessage} />
             )} */}
-                {thinkLoading && (
+                {isWaitingForFirstChunk && (
                     <motion.div
                         key="thinking-bubble"
                         initial={{ scaleX: 0 }}

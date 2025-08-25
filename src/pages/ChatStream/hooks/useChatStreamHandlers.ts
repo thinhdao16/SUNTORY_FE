@@ -117,9 +117,9 @@ export function useChatStreamHandlers({
         if (!files) return;
         const totalCount = pendingFiles.length + pendingImages.length;
         const selectedCount = files.length;
-        if (totalCount + selectedCount > 3) {
+        if (totalCount + selectedCount > 2) {
             useToastStore.getState().showToast(
-                i18n.t("You can only send up to 3 images and files in total!"),
+                i18n.t("You can only send up to 2 images and files in total!"),
                 2000,
                 "warning"
             );
@@ -211,9 +211,9 @@ export function useChatStreamHandlers({
                 scrollToBottom();
                 let res: any
                 // if (parseInt(topicType) === TopicType.Chat || parseInt(topicType) === TopicType.FoodDiscovery) {
-                res = await createChatApi(payload);
+                // res = await createChatApi(payload);
                 // } else {
-                //     res = await createChatStreamApi(payload);
+                    res = await createChatStreamApi(payload);
                 // }
                 if (timeoutId) clearTimeout(timeoutId);
 

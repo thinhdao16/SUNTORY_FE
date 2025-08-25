@@ -1,7 +1,7 @@
 import MotionBottomSheet from '@/components/common/bottomSheet/MotionBottomSheet';
 import MotionStyles from '@/components/common/bottomSheet/MotionStyles';
 import ShareQRModal from '@/components/common/bottomSheet/ShareQRModal';
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { FiArrowLeft, FiDownload, } from 'react-icons/fi'
 import { useHistory } from 'react-router';
 import {
@@ -115,11 +115,12 @@ const SocialPartnerAdd = () => {
         >
             {({ scale, opacity, borderRadius, backgroundColor }) => (
                 <div
-                    className={`bg-white`}
+                    className={`bg-white overflow-y-auto min-h-screen`}
                     style={{
                         backgroundColor: backgroundColor,
-                        transition: isOpen ? "none" : "background-color 0.3s ease",
-                        // paddingTop: "var(--safe-area-inset-top)",
+                        transition: isOpen.shareQR || isOpen.search ? "none" : "background-color 0.3s ease",
+                        overflowY: 'auto',
+                        height: '100vh'
                     }}
                 >
                     <MotionBottomSheet
@@ -128,88 +129,97 @@ const SocialPartnerAdd = () => {
                         opacity={opacity}
                         borderRadius={borderRadius}
                     >
-                        <div className="bg-white  px-6 pt-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <button className="text-blue-500 text-lg" onClick={() => history.goBack()}>
-                                    <FiArrowLeft />
-                                </button>
-                                <h1 className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
-                                    {t("Add Partner")}
-                                </h1>
-                                <div className="w-5" />
-                            </div>
-                            <div className="bg-blue-50 rounded-2xl p-6 flex flex-col items-center text-center mb-6">
-                                <div className="max-w-[200px] space-x-0 space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <img
-                                            src={user?.avatarLink || "/favicon.png"}
-                                            alt={user?.name}
-                                            className="w-10 h-10 rounded-xl object-center"
-                                        />
-                                        <div className="text-start min-w-0">
-                                            <p className="font-semibold text-sm truncate" title={user?.name || ""}>
-                                                {user?.name}
-                                            </p>
-                                            <p className="text-xs text-gray-500 truncate" title={user?.email || ""}>
-                                                {user?.email}
-                                            </p>
+                        <div className="min-h-screen">
+                            <div className="bg-white px-6 pt-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <button className="text-blue-500 text-lg" onClick={() => history.goBack()}>
+                                        <FiArrowLeft />
+                                    </button>
+                                    <h1 className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
+                                        {t("Add Partner")}
+                                    </h1>
+                                    <div className="w-5" />
+                                </div>
+
+                                <div className="bg-blue-50 rounded-2xl p-6 flex flex-col items-center text-center mb-6">
+                                    <div className="max-w-[200px] space-x-0 space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <img
+                                                src={user?.avatarLink || "/favicon.png"}
+                                                alt={user?.name}
+                                                className="w-10 h-10 rounded-xl object-center"
+                                            />
+                                            <div className="text-start min-w-0">
+                                                <p className="font-semibold text-sm truncate" title={user?.name || ""}>
+                                                    {user?.name}
+                                                </p>
+                                                <p className="text-xs text-gray-500 truncate" title={user?.email || ""}>
+                                                    {user?.email}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="relative  bg-white p-9 rounded-xl border border-main">
-                                        <QRCodeCanvas
-                                            id="qr-gen"
-                                            value={valueQr}
-                                            size={130}
-                                            level="H"
-                                        />
-                                        <div className="absolute top-6 left-6 w-7 h-7 border-t-4 border-l-4 border-black rounded-tl-md" />
-                                        <div className="absolute top-6 right-6 w-7 h-7 border-t-4 border-r-4 border-black rounded-tr-md" />
-                                        <div className="absolute bottom-6 left-6 w-7 h-7 border-b-4 border-l-4 border-black rounded-bl-md" />
-                                        <div className="absolute bottom-6 right-6 w-7 h-7 border-b-4 border-r-4 border-black rounded-br-md" />
-                                    </div>
-                                    <button className=" w-full  bg-main text-white text-sm font-semibold px-6 py-2 rounded-full flex items-center justify-center gap-2"
-                                        // onClick={() => openModal("shareQR")}
-                                        onClick={handleShareSystem}
-                                    >
-                                        <ShareQRCodeIcon />
-                                        {t("Share QR Code")}
-                                    </button>
-                                    <button
-                                        className="w-full border border-main text-main text-sm font-semibold px-6 py-2 rounded-full flex items-center justify-center gap-2"
-                                        onClick={async () => {
-                                            const canvas = document.getElementById('qr-gen') as HTMLCanvasElement | null;
-                                            if (!canvas) return;
-                                            const dataUrl = canvas.toDataURL('image/png');
+                                        <div className="relative  bg-white p-9 rounded-xl border border-main">
+                                            <QRCodeCanvas
+                                                id="qr-gen"
+                                                value={valueQr}
+                                                size={130}
+                                                level="H"
+                                            />
+                                            <div className="absolute top-6 left-6 w-7 h-7 border-t-4 border-l-4 border-black rounded-tl-md" />
+                                            <div className="absolute top-6 right-6 w-7 h-7 border-t-4 border-r-4 border-black rounded-tr-md" />
+                                            <div className="absolute bottom-6 left-6 w-7 h-7 border-b-4 border-l-4 border-black rounded-bl-md" />
+                                            <div className="absolute bottom-6 right-6 w-7 h-7 border-b-4 border-r-4 border-black rounded-br-md" />
+                                        </div>
+                                        <button className=" w-full  bg-main text-white text-sm font-semibold px-6 py-2 rounded-full flex items-center justify-center gap-2"
+                                            // onClick={() => openModal("shareQR")}
+                                            onClick={handleShareSystem}
+                                        >
+                                            <ShareQRCodeIcon />
+                                            {t("Share QR Code")}
+                                        </button>
+                                        <button
+                                            className="w-full border border-main text-main text-sm font-semibold px-6 py-2 rounded-full flex items-center justify-center gap-2"
+                                            onClick={async () => {
+                                                const canvas = document.getElementById('qr-gen') as HTMLCanvasElement | null;
+                                                if (!canvas) return;
+                                                const dataUrl = canvas.toDataURL('image/png');
 
-                                            try {
-                                                await saveImage({ dataUrlOrBase64: dataUrl, fileName: 'qr-code.png' });
-                                            } catch (e) {
-                                                console.error(e);
-                                            }
-                                        }}
-                                    >
-                                        <FiDownload className="text-main text-lg" />
-                                        {t('Save Image')}
-                                    </button>
+                                                try {
+                                                    await saveImage({ dataUrlOrBase64: dataUrl, fileName: 'qr-code.png' });
+                                                } catch (e) {
+                                                    console.error(e);
+                                                }
+                                            }}
+                                        >
+                                            <FiDownload className="text-main text-lg" />
+                                            {t('Save Image')}
+                                        </button>
 
+                                    </div>
+                                </div>
+
+                                <div className="my-6">
+                                    <input
+                                        type="text"
+                                        placeholder={t("Username")}
+                                        className="w-full rounded-lg px-4 py-2 text-sm bg-chat-to focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        onFocus={() => openModal("search")}
+                                    />
                                 </div>
                             </div>
-                            <div className="my-6">
-                                <input
-                                    type="text"
-                                    placeholder={t("Username")}
-                                    className="w-full rounded-lg px-4 py-2 text-sm bg-chat-to focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    onFocus={() => openModal("search")}
-                                />
+
+                            <div className='px-6 border-t-[1px] border-netural-100 py-6 mt-8'>
+                                <div className="flex items-center gap-2 cursor-pointer" onClick={handleQR}>
+                                    <QRCodeMainIcon />
+                                    <span>{t("Scan QR Code")}</span>
+                                </div>
                             </div>
-                        </div>
-                        <div className='px-6 border-t-[1px] border-netural-100 py-6'>
-                            <div className="flex items-center gap-2 " onClick={handleQR}>
-                                <QRCodeMainIcon />
-                                <span>{t("Scan QR Code")}</span>
-                            </div>
+
+                            <div className="h-20"></div>
                         </div>
                     </MotionBottomSheet>
+
+                    {/* Modals */}
                     <ShareQRModal
                         isOpen={isOpen.shareQR}
                         translateY={translateY}

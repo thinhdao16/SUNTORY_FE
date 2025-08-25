@@ -106,9 +106,9 @@ const features = [
   useAppInit();
 
   return (
-    <PageContainer className='!bg-screen-page'>
+    <PageContainer className='!bg-screen-page !h-screen '>
       <HomeHeader userInfo={userInfo} />
-      <div className='-mt-34 px-6 pb-10'>
+      <div className='-mt-34 px-6 pb-30'>
         <FeatureGrid features={features} />
         {/* <HowItWorksSection items={howItWorks} /> */}
         {/* <GetStartedButton chatTopicId={TopicType.Chat} /> */}

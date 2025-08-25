@@ -17,6 +17,7 @@ import MedicalSupportIcon from "@/icons/logo/chat/medical_support.svg?react";
 import DocumentTranslationIcon from "@/icons/logo/chat/contract_translation.svg?react";
 import DrugInstructionsIcon from "@/icons/logo/chat/product_information.svg?react";
 import FoodDiscoveryIcon from "@/icons/logo/chat/food_discovery.svg?react";
+import BackDefaultIcon from "@/icons/logo/back-default.svg?react";
 import "./ChatSidebar.module.css"
 const sidebarVariants: Variants = {
   hidden: { x: "-100%", opacity: 0 },
@@ -126,6 +127,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         >
           <div className="flex-shrink-0 px-4 py-5">
             <div className="flex gap-2 mb-4">
+              <button onClick={onClose}>
+                <BackDefaultIcon   />
+              </button>
               <div className="flex-1 flex items-center bg-[#EDF1FC] rounded-lg pl-3">
                 <SearchIcon className="w-4 h-4 mr-2" aria-label={t("search")} />
                 <input

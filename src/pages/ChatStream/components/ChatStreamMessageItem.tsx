@@ -74,14 +74,14 @@ const ChatStreamMessageItem: React.FC<{
                                                     // onError={(e) => handleImageError(e, "/public/temp_logo.png")}
                                                     />
                                                 </a>
-                                                <button
+                                                {/* <button
                                                     className="absolute top-2 right-2 p-1 rounded bg-white/80 hover:bg-gray-100 transition opacity-0 group-hover:opacity-100"
                                                     type="button"
                                                     onClick={() => handleCopyToClipboard(file.fileUrl)}
                                                     title="Copy image link"
                                                 >
                                                     <CopyIcon className="w-5 h-5" />
-                                                </button>
+                                                </button> */}
                                             </div>
                                         );
                                     }
