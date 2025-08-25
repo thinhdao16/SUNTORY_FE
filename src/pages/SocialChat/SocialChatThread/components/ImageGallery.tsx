@@ -76,7 +76,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
     return (
         <div className={isUser ? "self-end w-fit" : "self-start w-fit"}>
-            <div className={`mb-2 z-4 space-y-2 relative ${isUser ? "ml-auto" : "mr-auto"} w-fit group`}>
+            <div className={`mb-2 z-1 space-y-2 relative ${isUser ? "ml-auto" : "mr-auto"} w-fit group`}>
                 <div
                     className={
                         displayPhotos.length === 1
