@@ -9,6 +9,7 @@ const PAGE_SIZE = 20;
 
 const SocialChatSearch = () => {
   const { search, clearSearch } = useSocialChatStore();
+  console.log(search)
   const history = useHistory();
   const isNative = Capacitor.isNativePlatform();
   const scrollRef = useRef<HTMLDivElement>(null);

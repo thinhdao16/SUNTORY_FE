@@ -58,8 +58,6 @@ const SocialChatThread: React.FC = () => {
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
     const { showScrollButton, onContainerScroll, recalc } = useScrollButton(messagesContainerRef, messagesEndRef);
 
-    const isFixedBar = !isNative && !keyboardResizeScreen && keyboardHeight === 0;
-
 
     const peerUserId = useMemo(() => usePeerUserId(roomData, userInfo?.id), [roomData, userInfo?.id]);
 
@@ -98,7 +96,7 @@ const SocialChatThread: React.FC = () => {
 
     const userRightCount = useMemo(
         () => displayMessages.reduce((acc, m) => acc + (m?.isRight ? 1 : 0), 0),
-        [displayMessages]
+        [displayMessages,messages]
     );
     const hasReachedLimit = !roomData?.isFriend && userRightCount >= CountLimitChatDontFriend && roomChatInfo?.type === ChatInfoType.UserVsUser;
     const {
@@ -238,7 +236,7 @@ const SocialChatThread: React.FC = () => {
             }
         }
     }, [keyboardHeight]);
-    console.log(inputBarHeight)
+
     return (
         <MotionStyles
             isOpen={translateSheet.isOpen || sheetExpand.isOpen}
@@ -265,8 +263,8 @@ const SocialChatThread: React.FC = () => {
                             style={{
                                 paddingRight: 0,
                                 paddingLeft: 0,
-                                paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 90 : 60) : (isNative ? 0 : 60),
-                                height: "100vh",
+                                // paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 90 : 60) : (isNative ? 0 : 60),
+                                height: "100svh",
                             }}
                         >
                             <SocialChatHeader
@@ -283,15 +281,15 @@ const SocialChatThread: React.FC = () => {
                             />
                             <div
                                 className={`flex-1 overflow-x-hidden overflow-y-auto px-6 min-h-0`}
-                                style={
-                                    !isNative
-                                        ? {
-                                            position: "relative",
-                                            height: `calc(100vh - ${inputBarHeight - 40}px)`,
-                                            paddingBottom: keyboardHeight > 0 ? keyboardHeight : 0
-                                        }
-                                        : undefined
-                                }
+                                // style={
+                                //     !isNative
+                                //         ? {
+                                //             position: "relative",
+                                //             height: `calc(100vh - ${inputBarHeight - 40}px)`,
+                                //             paddingBottom: keyboardHeight > 0 ? keyboardHeight : 0
+                                //         }
+                                //         : undefined
+                                // }
                                 ref={messagesContainerRef}
                                 onScroll={handleScrollWithLoadMore}
                             >
@@ -334,10 +332,16 @@ const SocialChatThread: React.FC = () => {
                                     // onSendFriend={awaitingAccept ? undefined : handleSendFriend}
                                     />
                                 )}
-                                {!isNative && (<div className={`h-30 lg:h-0 xl:h-20`} />)}
+
+                                {keyboardResizeScreen && (
+                                    <div
+                                        className="lg:h-0 xl:h-20"
+                                        style={{ height: `${inputBarHeight}px` }}
+                                    />
+                                )}
                                 <div ref={messagesEndRef} className="h-px mt-auto shrink-0" />
                             </div>
-                            <div className={`bg-white w-full z-2 pb-2 ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
+                            <div className={`bg-white w-full z-51 pb-2 ${keyboardResizeScreen ? "fixed" : !isNative && ""
                                 } ${isNative ? "bottom-0" : "bottom-0"} ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
                                 } `}>
                                 <div className="relative">

@@ -16,7 +16,10 @@ const CameraWeb: React.FC = () => {
     const [present, dismiss] = useIonToast();
     const { t } = useTranslation();
     const addPendingImages = useImageStore((s) => s.addPendingImages);
+    const pendingImages = useImageStore((s) => s.pendingImages);
     const removePendingImageByUrl = useImageStore((s) => s.removePendingImageByUrl);
+    const isImageLimitExceeded = () => pendingImages.length >= 2;
+
     const handleUploadImageFile = async (file: File) => {
         const localUrl = URL.createObjectURL(file);
 
@@ -51,10 +54,20 @@ const CameraWeb: React.FC = () => {
     };
     const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            await handleUploadImageFile(file);
+        if (!file) return;
+        if (isImageLimitExceeded()) {
+            present({
+                message: t("You can only send up to 2 images!"),
+                duration: 2000,
+                color: "warning",
+            });
+            e.target.value = "";
+            return;
         }
+        await handleUploadImageFile(file);
+        e.target.value = "";
     };
+
     return (
         <>
             <input

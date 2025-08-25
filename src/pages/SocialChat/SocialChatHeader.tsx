@@ -41,10 +41,10 @@ const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, 
                 <QRIcon />
 
             </button>
-            <Popover>
+            <Popover className="flex">
                 {({ close }) => (
                     <>
-                        <PopoverButton className="focus:outline-none">
+                        <PopoverButton className="focus:outline-none ">
                             <UserPlusIcon />
                         </PopoverButton>
 

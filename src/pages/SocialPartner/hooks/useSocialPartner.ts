@@ -29,15 +29,21 @@ export const useSearchFriendshipUsers = (keyword: string, pageSize = 10) => {
     );
 };
 
-export const useFriendshipFriends = (pageSize = 10) => {
+export const useFriendshipFriendsWithSearch = (
+    limit: number = 20,
+    searchQuery?: string
+) => {
     return useInfiniteQuery(
-        ["friendshipFriends"],
-        ({ pageParam = 0 }) => getFriendshipFriends(pageParam, pageSize),
+        ["friendshipFriends", searchQuery], 
+        ({ pageParam = 0 }) => getFriendshipFriends(pageParam, limit, searchQuery),
         {
-            getNextPageParam: (lastPage, allPages) => {
-                if (lastPage.length < pageSize) return undefined;
-                return allPages.length;
+            getNextPageParam: (lastPage, pages) => {
+                const hasMore = lastPage?.length === limit;
+                return hasMore ? pages.length + 1 : undefined;
             },
+            enabled: true,
+            refetchOnWindowFocus: false,
+            staleTime: 5 * 60 * 1000, 
         }
     );
 };

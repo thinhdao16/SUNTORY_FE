@@ -1,16 +1,18 @@
 import { Capacitor } from '@capacitor/core';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
-import { useListChatRooms, useUserChatRooms } from '../hooks/useSocialChat';
+import { RoomChatInfo, useListChatRooms, useUserChatRooms } from '../hooks/useSocialChat';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { useTranslation } from 'react-i18next';
 import { formatTimeFromNow } from '@/utils/formatTime';
 import { useSocialSignalRListChatRoom } from '@/hooks/useSocialSignalRListChatRoom';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
-import { RoomChatInfo } from '@/types/social-chat';
 import { ChatInfoType } from '@/constants/socialChat';
 import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
+import { useSocialSignalR } from '@/hooks/useSocialSignalR';
+import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
+import { generatePreciseTimestampFromDate } from '@/utils/time-stamp';
 
 export default function SocialChatRecent() {
   const { t } = useTranslation();
@@ -26,8 +28,11 @@ export default function SocialChatRecent() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    refetch: refetchUserChatRooms
   } = useUserChatRooms();
-
+  const {
+    refetch: refetchFriendshipRequests
+  } = useFriendshipReceivedRequests(20);
   const {
     data: listDataChatRooms,
   } = useListChatRooms();
@@ -38,7 +43,14 @@ export default function SocialChatRecent() {
   useSocialSignalRListChatRoom(deviceInfo.deviceId ?? '', {
     roomIds: listRoomIdChatRooms,
     autoConnect: true,
-    enableDebugLogs: false
+    enableDebugLogs: false,
+    refetchUserChatRooms
+  });
+  useSocialSignalR(deviceInfo.deviceId ?? "", {
+    roomId: "",
+    refetchRoomData: () => { void refetchFriendshipRequests(); void refetchUserChatRooms(); },
+    autoConnect: true,
+    enableDebugLogs: false,
   });
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -52,7 +64,22 @@ export default function SocialChatRecent() {
   const getDisplayMessageText = (room: RoomChatInfo, currentUserId: number) => {
     const storeLast = getLastMessageForRoom(room.code);
     const last = storeLast ?? room?.lastMessageInfo;
-    if (!last) return t('No messages');
+    if (!last) {
+      if (room.type === ChatInfoType.UserVsUser) {
+        const userName = room.title || t('this user');
+        if (room?.isFriend === true) {
+          return t('You and {{name}} are now friends', { name: userName });
+        }
+        if (room?.friendRequest?.fromUserId === currentUserId) {
+          return t('You have sent a friend request to {{name}}', { name: userName });
+        }
+        if (room?.friendRequest?.toUserId === currentUserId) {
+          return t('{{name}} has sent you a friend request', { name: userName });
+        }
+        return t('Send a friend request to {{name}}', { name: userName });
+      }
+      return '';
+    }
     if (last.isRevoked === 1 || last.isRevoked === true) {
       return t('This message was removed');
     }
@@ -88,6 +115,31 @@ export default function SocialChatRecent() {
     }
     return room.updateDate;
   };
+  const sortedChatRooms = useMemo(() => {
+    return [...chatRooms].sort((a, b) => {
+      try {
+        const unreadA = a.unreadCount ?? getRoomUnread(a.code) ?? 0;
+        const unreadB = b.unreadCount ?? getRoomUnread(b.code) ?? 0;
+
+        if (unreadA > 0 && unreadB === 0) return -1;
+        if (unreadA === 0 && unreadB > 0) return 1;
+
+        const getTimestamp = (room: RoomChatInfo) => {
+          const date = room.updateDate || room.createDate;
+          return date ? generatePreciseTimestampFromDate(date) : 0;
+        };
+
+        const timestampA = getTimestamp(a);
+        const timestampB = getTimestamp(b);
+
+        return timestampB - timestampA; 
+
+      } catch (error) {
+        console.warn('Sort error:', error);
+        return 0;
+      }
+    });
+  }, [chatRooms, getRoomUnread]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -137,7 +189,7 @@ export default function SocialChatRecent() {
                   <div className="ml-3">
                     <p className="text-base font-semibold truncate max-w-xs">{room.title}</p>
                     <p
-                      className={`text-xs max-w-xs  text-netural-300 ${isUnread && "font-semibold " } overflow-hidden text-ellipsis whitespace-nowrap`}
+                      className={`text-xs max-w-xs  text-netural-300 ${isUnread && "font-semibold "} overflow-hidden text-ellipsis whitespace-nowrap`}
                     >
                       {(() => {
                         const text = getDisplayMessageText(room, userInfo?.id || 0);
@@ -166,7 +218,7 @@ export default function SocialChatRecent() {
           )}
 
           {!hasNextPage && !isLoading && chatRooms.length === 0 && (
-            <div className="text-center py-2  text-gray-400">{t('No more chats')}</div>
+            <div className="text-center py-2  text-gray-400">{t('No more chats.')}</div>
           )}
         </div>
       </div>

@@ -14,6 +14,9 @@ import { useCreateAnonymousChat } from "@/pages/SocialChat/hooks/useSocialChat";
 import { useSocialChatStore } from "@/store/zustand/social-chat-store";
 import { useSocialSignalR } from "@/hooks/useSocialSignalR";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
+import ConfirmModal from "@/components/common/modals/ConfirmModal";
+import { t } from "@/lib/globalT";
+
 interface SearchPartnerModalProps {
   isOpen: boolean;
   translateY: number;
@@ -22,6 +25,13 @@ interface SearchPartnerModalProps {
   handleTouchEnd: () => void;
   onClose: () => void;
 }
+
+type ConfirmState = {
+  isOpen: boolean;
+  type: "cancel" | "reject" | null;
+  targetId: number | null;
+  userName: string;
+};
 
 const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
   isOpen,
@@ -34,6 +44,13 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 500);
   
+  const [confirmState, setConfirmState] = useState<ConfirmState>({
+    isOpen: false,
+    type: null,
+    targetId: null,
+    userName: ""
+  });
+
   const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
 
   const showToast = useToastStore((state) => state.showToast);
@@ -54,15 +71,72 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
   const acceptRequest = useAcceptFriendRequest(showToast);
   const rejectRequest = useRejectFriendRequest(showToast);
   const { mutateAsync: createAnonymousChat } = useCreateAnonymousChat();
+  
   useSocialSignalR(deviceInfo.deviceId ?? "", {
     roomId: "",
     refetchRoomData: () => { void refetch(); },
     autoConnect: true,
     enableDebugLogs: false,
   });
+  
   const users = data?.pages.flatMap((page) => page ?? []) ?? [];
-
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const openConfirm = (type: "cancel" | "reject", targetId: number, userName: string) => {
+    setConfirmState({
+      isOpen: true,
+      type,
+      targetId,
+      userName
+    });
+  };
+
+  const closeConfirm = () => {
+    setConfirmState({
+      isOpen: false,
+      type: null,
+      targetId: null,
+      userName: ""
+    });
+  };
+
+  const handleConfirm = () => {
+    if (!confirmState.targetId || !confirmState.type) return;
+
+    if (confirmState.type === "cancel") {
+      cancelRequest.mutate(confirmState.targetId);
+    } else if (confirmState.type === "reject") {
+      rejectRequest.mutate(confirmState.targetId);
+    }
+
+    closeConfirm();
+  };
+
+  const getConfirmContent = () => {
+    switch (confirmState.type) {
+      case "cancel":
+        return {
+          title: t("Cancel Friend Request?"),
+          message: t("Are you sure you want to cancel your friend request to {{name}}?", { name: confirmState.userName }),
+          confirmText: t("Yes, cancel"),
+          cancelText: t("Keep request")
+        };
+      case "reject":
+        return {
+          title: t("Reject Friend Request?"),
+          message: t("Are you sure you want to reject the friend request from {{name}}?", { name: confirmState.userName }),
+          confirmText: t("Yes, reject"),
+          cancelText: t("Keep request")
+        };
+      default:
+        return {
+          title: t("Are you sure?"),
+          message: "",
+          confirmText: t("Confirm"),
+          cancelText: t("Cancel")
+        };
+    }
+  };
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -77,6 +151,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
       onClose();
     }
   };
+
   const handleClickMessage = async (user: any) => {
     try {
       if (user?.roomChat?.code) {
@@ -96,6 +171,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
           lastMessageInfo: null,
           participants: [],
           topic: null,
+          chatInfo: null,
         });
         history.push(`/social-chat/t`);
         const chatData = await createAnonymousChat(user.id);
@@ -107,6 +183,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
       console.error("Tạo phòng chat thất bại:", error);
     }
   };
+
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (query) {
@@ -117,6 +194,8 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
   }, [query, refetch]);
 
   if (!isOpen) return null;
+
+  const confirmContent = getConfirmContent();
 
   return (
     <AnimatePresence>
@@ -143,6 +222,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
             <h1 className="text-sm font-semibold text-gray-900">{t("Search")}</h1>
             <div className="w-5" />
           </div>
+          
           <div className="flex items-center bg-gray-100 mx-4 rounded-full px-4 py-2 mb-4">
             <FiSearch className="text-gray-400 mr-2" />
             <input
@@ -160,6 +240,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
               />
             )}
           </div>
+          
           <div
             ref={scrollRef}
             onScroll={handleScroll}
@@ -167,7 +248,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
           >
             {!query && (
               <p className="text-gray-400 text-sm text-center mt-12">
-                Enter a username to search
+                {t('Enter a username to search')}
               </p>
             )}
             {isLoading && query && (
@@ -204,7 +285,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
                       {!user?.isFriend && (
                         user?.isRequestSender ? (
                           <button
-                            onClick={() => cancelRequest.mutate(user.friendRequest.id)}
+                            onClick={() => openConfirm("cancel", user.friendRequest.id, user?.fullName)}
                           >
                             <CancelInnovationIcon />
                           </button>
@@ -222,7 +303,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
                               <AcceptFriendIcon />
                             </button>
                             <button
-                              onClick={() => rejectRequest.mutate(user.friendRequest.id)}
+                              onClick={() => openConfirm("reject", user.friendRequest.id, user?.fullName)}
                             >
                               <RejectFriendIcon />
                             </button>
@@ -245,6 +326,17 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
           <div className="h-6" />
         </div>
       </motion.div>
+
+      {/* ✅ Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmContent.title}
+        message={confirmContent.message}
+        confirmText={confirmContent.confirmText}
+        cancelText={confirmContent.cancelText}
+        onConfirm={handleConfirm}
+        onClose={closeConfirm}
+      />
     </AnimatePresence>
   );
 };

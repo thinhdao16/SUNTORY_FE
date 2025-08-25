@@ -32,8 +32,12 @@ const CameraPage: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
 
     const addPendingImages = useImageStore((s) => s.addPendingImages);
+    const pendingImages = useImageStore((s) => s.pendingImages);
     const removePendingImageByUrl = useImageStore((s) => s.removePendingImageByUrl);
     const platform = Capacitor.getPlatform();
+    const isImageLimitExceeded = () => {
+        return pendingImages.length >= 2;
+    };
     const base64ToFile = (base64: string, filename: string): File => {
         const arr = base64.split(",");
         const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
@@ -94,9 +98,18 @@ const CameraPage: React.FC = () => {
         }
     };
 
-    // --- Sử dụng cho chụp ảnh ---
     const handleCapture = async () => {
         if (isCapturing || !videoRef.current) return;
+
+        if (isImageLimitExceeded()) {
+            present({
+                message: t("You can only send up to 2 images!"),
+                duration: 2000,
+                color: "warning",
+            });
+            return;
+        }
+
         setIsCapturing(true);
         try {
             const canvas = document.createElement("canvas");
@@ -114,7 +127,7 @@ const CameraPage: React.FC = () => {
         }
     };
 
-    // --- Sử dụng cho chọn từ gallery ---
+
     const handleChooseFromGallery = async () => {
         const imgData = await chooseFromGallery();
         let base64Img = imgData?.base64 || (imgData?.webPath && await base64FromPath(imgData.webPath));
@@ -225,8 +238,8 @@ const CameraPage: React.FC = () => {
         let stream: MediaStream | null = null;
 
         const init = async () => {
-            const ok = await checkPermission(); // ✅ await và gán kết quả
-            if (!ok) return; // ✅ thoát nếu chưa được cấp quyền
+            const ok = await checkPermission();
+            if (!ok) return;
 
             try {
                 const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });

@@ -37,6 +37,7 @@ export interface RoomChatInfo {
     unreadCount: number;
     lastMessageInfo: any;
     topic: any;
+    chatInfo: ChatInfo | null;
 }
 export interface ChatAttachment {
     id: number;

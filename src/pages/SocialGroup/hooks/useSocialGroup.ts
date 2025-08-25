@@ -26,7 +26,7 @@ export const useCreateChatGroup = (history: any) => {
                     lastMessageInfo: null,
                     topic: chatInfo.topic,
                     participants: [],
-
+                    chatInfo: null
                 });
                 setRoomMembers(data);
                 history.push(`/social-chat/t/${data.chatCode}`);

@@ -29,7 +29,7 @@ export default function ThinkingStatus({ doneSteps = 0, className = "" }: Thinki
                     >
                         <SparklesIcon className="w-5 h-5 text-blue-400" />
                         <motion.span
-                            className="font-medium text-gray-700 relative -top-1"
+                            className="font-medium text-gray-700 relative "
                             initial={{ opacity: 0.2 }}
                             animate={{ opacity: 0.8 }}
                             transition={{
@@ -46,7 +46,7 @@ export default function ThinkingStatus({ doneSteps = 0, className = "" }: Thinki
                 <div className="flex flex-col gap-1 ">
                     <div className="flex items-start gap-2">
                         <StepDot state={step1Done ? "done" : "loading"} />
-                        <p className="text-sm text-gray-600">Understanding the question and context</p>
+                        <p className="text-sm text-gray-600">{t("Understanding the question and context")}</p>
                     </div>
                     {
                         currentStep >= 2 && (
@@ -54,7 +54,7 @@ export default function ThinkingStatus({ doneSteps = 0, className = "" }: Thinki
                                 <div className="  w-[1px] bg-gray-200 h-4 ml-2" />
                                 <div className="flex items-start gap-2">
                                     <StepDot state={currentStep >= 2 ? (step2Done ? "done" : "loading") : "idle"} />
-                                    <p className="text-sm text-gray-600">Retrieving relevant information</p>
+                                    <p className="text-sm text-gray-600">{t("Retrieving relevant information")}</p>
                                 </div>
                             </>
                         )

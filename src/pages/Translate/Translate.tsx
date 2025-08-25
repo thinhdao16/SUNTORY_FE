@@ -177,6 +177,66 @@ const Translate: React.FC = () => {
     handleCopyToClipboard(e);
     toggleReloadCopy();
   }
+  const useAbortableTranslation = () => {
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const isMountedRef = useRef(true);
+    
+    const createTranslationMutation = useCreateTranslation();
+
+    const abortableTranslate = async (payload: any) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
+      return new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            reject(new Error('Request timeout'));
+          }
+        }, 30000);
+
+        createTranslationMutation.mutateAsync(payload)
+          .then((result) => {
+            clearTimeout(timeoutId);
+            if (signal.aborted || !isMountedRef.current) {
+              reject(new Error('Request aborted'));
+              return;
+            }
+            resolve(result);
+          })
+          .catch((error) => {
+            clearTimeout(timeoutId);
+            if (signal.aborted || !isMountedRef.current) {
+              reject(new Error('Request aborted'));
+              return;
+            }
+            reject(error);
+          });
+
+        signal.addEventListener('abort', () => {
+          clearTimeout(timeoutId);
+          reject(new Error('Request aborted'));
+        });
+      });
+    };
+
+    const cleanup = () => {
+      isMountedRef.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+
+    return { abortableTranslate, cleanup, isMounted: () => isMountedRef.current };
+  };
+
+  const { abortableTranslate, cleanup, isMounted } = useAbortableTranslation();
+
   const handleTranslateAI = async () => {
     if (!inputValueTranslate.input.trim()) {
       showToast(t("Please enter text to translate"), 3000, "error");
@@ -215,33 +275,18 @@ const Translate: React.FC = () => {
           : null
       };
 
-      const callTranslation = async () => {
-        const result = await createTranslationMutation.mutateAsync(payload);
-        return result;
-      };
-      let result = null;
-      let retries = 0;
-      const maxRetries = 1;
-
-      do {
-        result = await callTranslation();
-        const allFieldsEmpty = !result?.data?.translatedText &&
-          !result?.data?.reverseTranslation &&
-          !result?.data?.aiReviewInsights;
-
-        if (!allFieldsEmpty) break;
-
-        retries++;
-        console.warn(`Translation retry attempt #${retries}`);
-      } while (retries <= maxRetries);
-
-
-      if (result.data) {
+      const result = await abortableTranslate(payload);
+      
+      if (!isMounted()) return;
+      
+      // Narrow the type of result before accessing its properties
+      if (result && typeof result === "object" && "data" in result) {
+        const data = (result as { data: any }).data;
         const translationResult = {
           originalText: payload.originalText,
-          translatedText: result.data.translatedText ?? t("No translation available"),
-          reverseTranslation: result.data.reverseTranslation ?? t("No reverse translation available"),
-          aiReviewInsights: result.data.aiReviewInsights ?? t("No AI review insights available"),
+          translatedText: data.translatedText ?? t("No translation available"),
+          reverseTranslation: data.reverseTranslation ?? t("No reverse translation available"),
+          aiReviewInsights: data.aiReviewInsights ?? t("No AI review insights available"),
           fromLanguageId: payload.fromLanguageId ?? 0,
           toLanguageId: payload.toLanguageId ?? 0,
           context: payload.context,
@@ -251,13 +296,14 @@ const Translate: React.FC = () => {
         setCurrentResult(translationResult);
         setInputValueTranslate(prev => ({
           ...prev,
-          output: result.data.translatedText || ""
+          output: data.translatedText || ""
         }));
         setIsReverseCollapsed(false);
         setIsAiInsightsCollapsed(false);
         showToast(t("Translation completed successfully!"), 3000, "success");
       }
     } catch (error) {
+      if (!isMounted()) return;
       console.error("Translation failed:", error);
       showToast(t("Translation failed. Please try again."), 3000, "error");
     } finally {
@@ -321,6 +367,16 @@ const Translate: React.FC = () => {
     }
 
   }, [location.pathname, clearCurrentResult,]);
+  useEffect(() => {
+    return (
+      () => {
+        cleanup();
+        setEmotionData(null);
+        clearCurrentResult();
+        setInputValueTranslate({ input: "", output: "" });
+      }
+    )
+  }, [])
 
   return (
     <>

@@ -11,6 +11,9 @@ import { createAnonymousChatRoom } from '@/services/social/social-chat-service';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
+import { useListChatRooms, useUserChatRooms } from './hooks/useSocialChat';
+import { RoomChatInfo } from '@/types/social-chat';
+import { useSocialSignalRListChatRoom } from '@/hooks/useSocialSignalRListChatRoom';
 
 function SocialChatListRequest() {
     const history = useHistory();
@@ -30,6 +33,23 @@ function SocialChatListRequest() {
     const { mutate: acceptRequest } = useAcceptFriendRequest(showToast);
     const { mutate: rejectRequest } = useRejectFriendRequest(showToast);
     const { setRoomChatInfo } = useSocialChatStore();
+    const {
+
+        refetch: refetchUserChatRooms
+    } = useUserChatRooms();
+
+    const {
+        data: listDataChatRooms,
+    } = useListChatRooms();
+
+    const listRoomIdChatRooms = listDataChatRooms?.pages?.flat()?.map((room: RoomChatInfo) => room.code) || [];
+
+    useSocialSignalRListChatRoom(deviceInfo.deviceId ?? '', {
+        roomIds: listRoomIdChatRooms,
+        autoConnect: true,
+        enableDebugLogs: false,
+        refetchUserChatRooms
+    });
     useSocialSignalR(deviceInfo.deviceId ?? "", {
         roomId: "",
         refetchRoomData: () => { void refetch(); },
@@ -56,7 +76,7 @@ function SocialChatListRequest() {
                     lastMessageInfo: null,
                     participants: [],
                     topic: null,
-
+                    chatInfo: null
                 });
                 history.push(`/social-chat/t`);
                 const chatData = await createAnonymousChatRoom(user.fromUserId);

@@ -45,6 +45,7 @@ import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
 import { useSignalRChat } from "@/hooks/useSignalRChat";
 import { streamText } from "@/utils/streamText";
+import { useSignalRStream } from "@/hooks/useSignalRStream";
 
 dayjs.extend(utc);
 
@@ -151,11 +152,11 @@ const Chat: React.FC = () => {
     const title = isValidTopicType && topicType !== undefined ? TopicTypeLabel[topicType] : undefined;
     const anActivate = topicType === TopicType.MedicalSupport || topicType === TopicType.DocumentTranslation || topicType === TopicType.FoodDiscovery;
     // ==== Hooks: Chat & Message ====
-    useSignalRChat(deviceInfo.deviceId || "");
-    // useSignalRStream(deviceInfo.deviceId || "", {
-    //     autoReconnect: true,
-    //     logLevel: 0,
-    // });
+    // useSignalRChat(deviceInfo.deviceId || "");
+    useSignalRStream(deviceInfo.deviceId || "", {
+        autoReconnect: true,
+        logLevel: 0,
+    });
     const {
         lastPage,
         messages,
@@ -463,8 +464,10 @@ const Chat: React.FC = () => {
                     </div>
                 ) : (
                     <>
+
                         <div
-                            className={`flex-1 overflow-x-hidden overflow-y-auto p-6 ${!isNative && !keyboardResizeScreen ? `pb-2 max-h-[calc(100dvh-${anActivate ? 155 : 218}px)] overflow-hidden` : ""}`}
+                            className={`flex-1 overflow-x-hidden overflow-y-auto p-6 ${!isNative && !keyboardResizeScreen ? `pb-2 overflow-hidden` : ""}`}
+
                             ref={messagesContainerRef}
                             onScroll={(e) => {
                                 onContainerScroll?.();
@@ -477,16 +480,17 @@ const Chat: React.FC = () => {
                                 pendingMessages={pendingMessages}
                                 topicType={topicType}
                                 title={title}
-                                // loading={isSending || hasPendingMessages}
-                                loading={loadingStream.loading || isSending}
+                                loading={isSending || hasPendingMessages}
+                                // loading={loadingStream.loading || isSending}
                                 onRetryMessage={retryMessage}
                                 isSpending={isSending}
-                                thinkLoading={loadingStream.think}
+                                thinkLoading={isSending}
                             />
                             <div style={{ marginTop: pendingBarHeight }} />
-                            <div ref={messagesEndRef} className="" />
+                            {/* {!isNative && (<div className={`h-25 lg:h-0 xl:h-15`} />)} */}
+                            <div ref={messagesEndRef} className="h-px mt-auto shrink-0" />
                         </div>
-                        <div className={`bg-white w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "fixed"
+                        <div className={`bg-white w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "sticky"
                             } ${isNative ? "bottom-0" : "bottom-[60px]"
                             } ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
                             } ${keyboardResizeScreen && isNative ? "pb-4" : "pb-4"}`}>
