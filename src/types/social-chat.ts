@@ -117,7 +117,8 @@ export interface ChatMessage {
 
     isSend?: boolean;
     isError?: boolean;
-   
+    translatedText?: string; 
+    isTranslating?: boolean;
 }
 
 // export interface PendingMessage {

@@ -154,7 +154,6 @@ const Chat: React.FC = () => {
     // ==== Hooks: Chat & Message ====
     // useSignalRChat(deviceInfo.deviceId || "");
     useSignalRStream(deviceInfo.deviceId || "", {
-        autoReconnect: true,
         logLevel: 0,
     });
     const {

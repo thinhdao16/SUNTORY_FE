@@ -1,5 +1,6 @@
 // src/pages/SocialChat/SocialChatThread/components/ChatMessageItem.tsx
-import React, { useState, useRef, useEffect } from "react";
+
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, useAnimation } from "framer-motion";
 import BotIcon from "@/icons/logo/AI.svg?react";
 import ChatMessageActions from "./ChatMessageActions";
@@ -13,6 +14,13 @@ import { DraggableMessageContainer } from "./DraggableMessageContainer";
 import { Capacitor } from "@capacitor/core";
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded-full.svg";
 import { useSocialChatStore } from "@/store/zustand/social-chat-store";
+import useLanguageStore from "@/store/zustand/language-store";
+import { useCreateTranslationChat } from "@/pages/Translate/hooks/useTranslationLanguages";
+import { useParams } from "react-router";
+import useDeviceInfo from "@/hooks/useDeviceInfo";
+import { languageMap } from "@/constants/languageLocale";
+// ✅ Import useTranslation
+import { useTranslation } from "react-i18next";
 
 interface ChatMessageItemProps {
     msg: any;
@@ -45,8 +53,13 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     currentUserId = null,
     hasReachedLimit = false,
 }) => {
+    const { roomId } = useParams<{ roomId?: string; type?: string }>();
+    const { t, i18n } = useTranslation();
     const isNative = Capacitor.isNativePlatform();
 
+    const { language: deviceLanguage } = useDeviceInfo();
+    
+    const currentLanguage = i18n.language;
     const hasText = typeof msg.messageText === "string" && msg.messageText.trim() !== "";
     const showText = hasText || msg.isRevoked === 1;
 
@@ -56,10 +69,12 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     const [openModal, setOpenModal] = useState(false);
     const [previewList, setPreviewList] = useState<string[]>([]);
     const [previewIndex, setPreviewIndex] = useState(0);
+    const [translatingMessages, setTranslatingMessages] = useState<Set<string>>(new Set());
 
     const actionContainerRef = useRef<HTMLDivElement>(null);
 
-    const { roomChatInfo } = useSocialChatStore();
+    const { roomChatInfo, translateMessageByCode } = useSocialChatStore();
+    const createTranslationMutation = useCreateTranslationChat();
     const avatarUrl = useMemo(() => {
         // if (msg?.userAvatar) return msg.userAvatar;
 
@@ -109,6 +124,54 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         setOpenModal(true);
     };
 
+    const getTargetLanguageId = (): number => {
+        const targetLanguage = currentLanguage || deviceLanguage;
+        if (!targetLanguage) return 3; 
+        const normalizedLanguage = targetLanguage.toLowerCase();
+        if (languageMap[normalizedLanguage]) {
+            return languageMap[normalizedLanguage];
+        }
+        const baseLanguage = normalizedLanguage.split('-')[0];
+        if (languageMap[baseLanguage]) {
+            return languageMap[baseLanguage];
+        }
+        return 3;
+    };
+
+    const handleTranslateMessage = async (messageId: string, text: string) => {
+        try {
+            setTranslatingMessages(prev => new Set([...prev, messageId]));
+            const toLanguageId = getTargetLanguageId();
+            if (typeof toLanguageId !== "number") {
+                setTranslatingMessages(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(messageId);
+                    return newSet;
+                });
+                return;
+            }
+            const payload = {
+                toLanguageId,
+                originalText: text.trim(),
+            };
+            const result = await createTranslationMutation.mutateAsync(payload);
+            if (!roomId) {
+                return;
+            }
+            translateMessageByCode(roomId, msg.code, {
+                translatedText: result.data.translated_text || "",
+                isTranslating: false,
+            });
+        } catch (error) {
+        } finally {
+            setTranslatingMessages(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(messageId);
+                return newSet;
+            });
+        }
+    };
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent | TouchEvent) => {
             if (
@@ -143,6 +206,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     const showSenderName = !!msg._showSenderName && !!msg.userName;
     const truncateName = (name: string, maxLength = 20) =>
         name.length > maxLength ? name.slice(0, maxLength) + "…" : name;
+
     return (
         <>
             <DraggableMessageContainer
@@ -168,16 +232,14 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 )}
                 {!isUser && !shouldShowAvatar && <div className="w-[30px] ml-2" />}
                 <div className="flex-1 flex flex-col items-start gap-1 relative group">
-                    <div className={`flex w-full  ${isUser ? "justify-end pr-4" : "justify-start pl-4"} gap-1 `}>
+                    <div className={`flex w-full ${isUser ? "justify-end pr-4" : "justify-start pl-4"} gap-1`}>
                         {isEdited && !isRevoked && !isUser && (
-                            <div className={` text-xs text-main font-semibold `}>
+                            <div className="text-xs text-main font-semibold">
                                 {t("Edited")}
                             </div>
                         )}
                         {replyTo && (
-                            <div
-                                className={`text-xs text-gray-500 mb-1 ${isUser ? "text-right" : "text-left"}`}
-                            >
+                            <div className={`text-xs text-gray-500 mb-1 ${isUser ? "text-right" : "text-left"}`}>
                                 {isSelfReply
                                     ? (isUser
                                         ? t("reply.self")
@@ -187,19 +249,22 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                                         ? t("reply.youToOther", { name: truncateName(repliedName) })
                                         : (isReplyingToMe
                                             ? t("reply.otherToYou", { name: truncateName(msg.userName) })
-                                            : t("reply.otherToOther", { name1: truncateName(msg.userName), name2: truncateName(repliedName) })
+                                            : t("reply.otherToOther", { 
+                                                name1: truncateName(msg.userName), 
+                                                name2: truncateName(repliedName) 
+                                            })
                                         )
                                     )
                                 }
-
                             </div>
                         )}
                         {isEdited && !isRevoked && isUser && (
-                            <div className={` text-xs text-main font-semibold `}>
+                            <div className="text-xs text-main font-semibold">
                                 {t("Edited")}
                             </div>
                         )}
                     </div>
+                    
                     {isGroup && showSenderName && (
                         <div className="text-xs text-gray-500 ml-1 mb-0.5">{msg.userName}</div>
                     )}
@@ -241,21 +306,20 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                                     actionContainerRef={actionContainerRef}
                                     showActionsMobile={showActionsMobile}
                                     hasReachedLimit={hasReachedLimit}
+                                    isTranslating={translatingMessages.has(msg.code)}
+                                    onTranslate={() => handleTranslateMessage(msg.code, msg.messageText)}
                                 />
                             </motion.div>
                         </>
                     )}
-
                 </div>
             </DraggableMessageContainer>
-
             <ImagesPreviewModal
                 open={openModal}
                 images={previewList}
                 index={previewIndex}
                 onClose={() => setOpenModal(false)}
             />
-
             {!msg.isRevoked && showActions && (
                 <ChatMessageActions
                     onEdit={handleStartEdit}

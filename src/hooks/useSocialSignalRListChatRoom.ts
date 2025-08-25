@@ -196,7 +196,6 @@ export function useSocialSignalRListChatRoom(
             isConnectedRef.current = true;
             log("Reconnected:", id);
             
-            // Setup lại event handlers sau khi reconnect
             setupEventHandlers(connection);
             
             await joinUserNotify();
@@ -224,7 +223,6 @@ export function useSocialSignalRListChatRoom(
         const conn = createConnection();
         connectionRef.current = conn;
 
-        // Setup event handlers TRƯỚC khi start connection
         console.log("🔧 Setting up event handlers before connection start...");
         setupEventHandlers(conn);
 
@@ -233,7 +231,6 @@ export function useSocialSignalRListChatRoom(
         isConnectedRef.current = true;
         log("Connected:", conn.connectionId);
 
-        // Join user notify SAU khi đã start và setup event handlers
         console.log("📢 Joining user notify...");
         await joinUserNotify();
         

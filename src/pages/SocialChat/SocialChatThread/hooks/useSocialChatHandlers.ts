@@ -277,12 +277,15 @@ export function useSocialChatHandlers({
     const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent, field: string, force?: boolean,) => {
         e.preventDefault();
 
-        const isEmptyText = (text: string) => {
-            return text.replace(/\s/g, "").length === 0;
+        const isEmptyText = (text: string | null | undefined): boolean => {
+            if (!text) return true;
+            const trimmedText = text.replace(/\s+/g, '');
+            return trimmedText.length === 0 ||
+                trimmedText === '' ||
+                /^[\s\u200B\u2060\uFEFF]*$/g.test(text);
         };
         const hasMessage = !isEmptyText(messageValue) || !isEmptyText(messageTranslate);
         const hasFiles = pendingImages.length > 0 || pendingFiles.length > 0;
-
         if (!hasMessage && !hasFiles) {
             return;
         }
@@ -295,6 +298,7 @@ export function useSocialChatHandlers({
             return;
         }
         const textToSend = field === "inputTranslate" ? messageTranslate.trim() : messageValue.trim();
+        if (isEmptyText(textToSend) && !hasFiles) {return}
         const tempId = `temp_${Date.now()}_${Math.random()}`;
         const now = dayjs.utc();
         const filesArr = [
