@@ -285,6 +285,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             onClick={() => onFocus("translate")}
                             onBlur={() => onBlur("translate")}
                             onKeyDown={(e) => {
+                                if (hasReachedLimit) return; // ✅ Không cho gửi nếu quá giới hạn
                                 const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
                                 tAPI.touch();
 
@@ -376,6 +377,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     onClick={() => onFocus('input')}
                     onBlur={() => onBlur('input')}
                     onKeyDown={(e) => {
+                        if (hasReachedLimit) return; // ✅ Không cho gửi nếu quá giới hạn
                         const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
                         tAPI.touch();
 

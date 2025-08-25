@@ -65,7 +65,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                         .map((lang, index, filteredArray) => (
                             <React.Fragment key={lang.code}>
                                 <button
-                                    className="w-full px-3 py-1 text-left hover:bg-gray-50 flex items-center  gap-1 whitespace-nowrap text-main font-semibold"
+                                    className="w-full px-3 py-1 text-left flex items-center  gap-1 whitespace-nowrap text-main font-semibold"
                                     onClick={() => handleLanguageChange(lang.code)}
                                     disabled={languageLoading}
                                 >

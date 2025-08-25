@@ -98,7 +98,7 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
         )}
             <div className="flex justify-between items-center px-6">
                 <div className="flex gap-6">
-                    {isNative || isDesktop ? (
+                    { isDesktop ? (
                         <button onClick={onTakePhoto} disabled={isSpending}>
                             <CameraIcon aria-label={t("camera")} />
                         </button>

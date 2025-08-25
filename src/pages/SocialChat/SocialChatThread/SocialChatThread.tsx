@@ -96,7 +96,7 @@ const SocialChatThread: React.FC = () => {
 
     const userRightCount = useMemo(
         () => displayMessages.reduce((acc, m) => acc + (m?.isRight ? 1 : 0), 0),
-        [displayMessages]
+        [displayMessages,messages]
     );
     const hasReachedLimit = !roomData?.isFriend && userRightCount >= CountLimitChatDontFriend && roomChatInfo?.type === ChatInfoType.UserVsUser;
     const {
@@ -341,7 +341,7 @@ const SocialChatThread: React.FC = () => {
                                 )}
                                 <div ref={messagesEndRef} className="h-px mt-auto shrink-0" />
                             </div>
-                            <div className={`bg-white w-full z-2 pb-2 ${keyboardResizeScreen ? "fixed" : !isNative && ""
+                            <div className={`bg-white w-full z-51 pb-2 ${keyboardResizeScreen ? "fixed" : !isNative && ""
                                 } ${isNative ? "bottom-0" : "bottom-0"} ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
                                 } `}>
                                 <div className="relative">
