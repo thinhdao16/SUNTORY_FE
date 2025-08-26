@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonButton, IonIcon, IonSkeletonText, IonCard, IonCardContent, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { IonPage, IonContent, IonHeader, IonToolbar, IonButton, IonIcon, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { chevronBack } from 'ionicons/icons';
 import { FoodModel } from '@/services/menu/menu-types';
 import { getMenuFoodList } from '@/services/menu/menu-service';
 import FoodDetailModal from '@/components/common/bottomSheet/FoodDetailModal';
+import {
+    handleTouchStart as handleTouchStartUtil,
+    handleTouchMove as handleTouchMoveUtil,
+    handleTouchEnd as handleTouchEndUtil,
+} from '@/utils/translate-utils';
 
 interface LocationState {
     menuId?: number;
@@ -27,6 +32,12 @@ const FoodList: React.FC = () => {
     const [maxPages, setMaxPages] = useState(0); // Circuit breaker: max 10 pages
     const [selectedFood, setSelectedFood] = useState<FoodModel | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showOverlay, setShowOverlay] = useState(false);
+    const [translateY, setTranslateY] = useState(0);
+    const startYRef = useRef<number | null>(null);
+    const startTimeRef = useRef<number | null>(null);
+    const screenHeightRef = useRef(window.innerHeight);
+    const velocityThreshold = 0.4;
 
     const loadFoods = async (
         historyId: number,
@@ -71,7 +82,8 @@ const FoodList: React.FC = () => {
                 }
             }
         } catch (err) {
-            console.log(err);
+            if (!isLoadMore) {
+            }
         } finally {
             setLoading(false);
             setLoadingMore(false);
@@ -137,8 +149,33 @@ const FoodList: React.FC = () => {
 
 
     const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setSelectedFood(null);
+        setShowOverlay(false); // tắt overlay ngay lập tức
+        setTranslateY(screenHeightRef.current); // animate panel xuống
+        setTimeout(() => {
+            setIsModalOpen(false);
+            setSelectedFood(null);
+            setTranslateY(0);
+        }, 300);
+    };
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        handleTouchStartUtil(e, startYRef, startTimeRef);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        handleTouchMoveUtil(e, startYRef, screenHeightRef, setTranslateY);
+    };
+
+    const handleTouchEnd = () => {
+        handleTouchEndUtil(
+            translateY,
+            startYRef,
+            startTimeRef,
+            screenHeightRef,
+            velocityThreshold,
+            handleCloseModal,
+            setTranslateY
+        );
     };
 
     const renderFoodItem = (food: FoodModel, index: number) => (
@@ -147,6 +184,8 @@ const FoodList: React.FC = () => {
             className="bg-white rounded-xl overflow-hidden cursor-pointer"
             onClick={() => {
                 setSelectedFood(food);
+                setTranslateY(0);
+                setShowOverlay(true);
                 setIsModalOpen(true);
             }}
         >
@@ -266,6 +305,11 @@ const FoodList: React.FC = () => {
             <FoodDetailModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
+                translateY={translateY}
+                handleTouchStart={handleTouchStart}
+                handleTouchMove={handleTouchMove}
+                handleTouchEnd={handleTouchEnd}
+                showOverlay={showOverlay}
                 food={selectedFood ? {
                     id: selectedFood.id.toString(),
                     name: selectedFood.name,

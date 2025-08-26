@@ -74,11 +74,16 @@ const MenuAnalyzing: React.FC = () => {
         setFoodSuccess(0);
         const interval = setInterval(async () => {
             setAnalyzingMenuContentProgress(prev => {
-                const newProgress = Math.min(prev + 1, 80);
-                if (newProgress >= 80) {
+                // Nếu đã >= 80 (hoặc 100), giữ nguyên và dừng interval để tránh tụt về 80
+                if (prev >= 80) {
+                    clearInterval(interval);
+                    return prev;
+                }
+                const next = Math.min(prev + 1, 80);
+                if (next >= 80) {
                     clearInterval(interval);
                 }
-                return newProgress;
+                return next;
             });
         }, 100);
         analyzeMenu();

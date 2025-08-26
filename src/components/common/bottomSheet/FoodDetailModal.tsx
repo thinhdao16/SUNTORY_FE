@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
 import { close } from 'ionicons/icons';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface FoodDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
+    translateY: number;
+    handleTouchStart: (e: React.TouchEvent) => void;
+    handleTouchMove: (e: React.TouchEvent) => void;
+    handleTouchEnd: () => void;
+    showOverlay?: boolean;
     food: {
         id: string;
         name: string;
@@ -21,7 +26,7 @@ interface FoodDetailModalProps {
     } | null;
 }
 
-const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food }) => {
+const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food, translateY, handleTouchStart, handleTouchMove, handleTouchEnd, showOverlay = true }) => {
     const { t } = useTranslation();
     if (!isOpen || !food) return null;
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -35,7 +40,7 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className="fixed inset-0 z-151 h-full flex justify-center items-end bg-black/50"
+                    className={`fixed inset-0 z-151 h-full flex justify-center items-end ${showOverlay ? 'bg-black/50' : 'bg-transparent'}`}
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -10, opacity: 0 }}
@@ -44,26 +49,28 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
                 >
                     <div
                         className="w-full rounded-t-3xl shadow-lg bg-white overflow-hidden"
-                        style={{ maxHeight: `${SHEET_MAX_VH}vh`, marginTop: 16 }}
+                        style={{ maxHeight: `${SHEET_MAX_VH}vh`, marginTop: 16, transform: `translateY(${translateY}px)`, touchAction: 'none' }}
                         onClick={(e) => e.stopPropagation()}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
                     >
-                        {/* Header */}
-                        <div className="px-2" style={{ position: 'relative', minHeight: HEADER_PX, display: 'flex', alignItems: 'center' }}>
+                        {/* Header (drag handle area) */}
+                        <div
+                            className="px-2"
+                            style={{ minHeight: HEADER_PX, display: 'flex', alignItems: 'center', touchAction: 'none' }}
+                        >
                             <IonButton
                                 fill="clear"
                                 onClick={onClose}
-                                style={{ outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                style={{ width: 56, height: HEADER_PX, outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                                 <IonIcon icon={close} style={{ width: 24, height: 24, color: '#000000' }} />
                             </IonButton>
                             <div
                                 style={{
-                                    position: 'absolute',
-                                    left: 56,
-                                    right: 16,
+                                    flex: 1,
                                     textAlign: 'center',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
                                     fontWeight: 700,
                                     lineHeight: 1.2,
                                     wordBreak: 'break-word',
@@ -72,6 +79,8 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
                             >
                                 {food.name}
                             </div>
+                            {/* Right spacer to balance the close button so title stays centered */}
+                            <div style={{ width: 56, height: HEADER_PX }} />
                         </div>
 
                         {/* Scrollable Body */}
