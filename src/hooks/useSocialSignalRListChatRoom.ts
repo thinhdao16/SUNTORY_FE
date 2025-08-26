@@ -82,21 +82,32 @@ export function useSocialSignalRListChatRoom(
         return true;
     }, [log]);
 
+
     const joinUserNotify = useCallback(async () => {
         const conn = connectionRef.current;
-        if (!conn || conn.state !== signalR.HubConnectionState.Connected) return false;
+        if (!conn || conn.state !== signalR.HubConnectionState.Connected) {
+            console.log("❌ Connection not ready for JoinUserNotify");
+            return false;
+        }
         try {
             await conn.invoke("JoinUserNotify");
-            console.log("Joined user notify ✓");
             return true;
         } catch (e) {
             console.error("JoinUserNotify failed", e);
             return false;
         }
-    }, [log]);
+    }, [log, user?.id]);
+
 
     const setupEventHandlers = useCallback((connection: signalR.HubConnection) => {
-        console.log("Setting up event handlers...");
+        // const originalOn = connection.on.bind(connection);
+        // connection.on = function (methodName: string, newMethod: (...args: any[]) => void) {
+        //     console.log(`📝 Registering event: ${methodName}`);
+        //     return originalOn(methodName, (...args: any[]) => {
+        //         console.log(`🎯 Event triggered: ${methodName}`, args);
+        //         return newMethod(...args);
+        //     });
+        // };
         connection.off("ReceiveUserMessage");
         connection.on("ReceiveUserMessage", (message: any) => {
             const roomId = message.chatInfo?.code || message.roomId;
@@ -125,29 +136,19 @@ export function useSocialSignalRListChatRoom(
 
         connection.off("GroupChatCreated");
         connection.on("GroupChatCreated", (message: any) => {
-            console.log("GroupChatCreated", message);
-
             refetchUserChatRooms();
         });
 
         connection.off("UserVsUserChatCreated");
         connection.on("UserVsUserChatCreated", (message: any) => {
             console.log("UserVsUserChatCreated event received:", message);
-
             refetchUserChatRooms();
         });
 
-        let lastReceivedTime = 0;
-        const THROTTLE_DELAY = 1000;
+
         connection.off("RoomChatAndFriendRequestReceived");
         connection.on("RoomChatAndFriendRequestReceived", (message: any) => {
-            const currentTime = Date.now();
-            if (currentTime - lastReceivedTime < THROTTLE_DELAY) {
-                log("RoomChatAndFriendRequestReceived throttled - too frequent");
-                return;
-            }
-            lastReceivedTime = currentTime;
-            log("Received RoomChatAndFriendRequestReceived:", message);
+            console.log("Received RoomChatAndFriendRequestReceived:", message);
             if (message && typeof message === 'object') {
                 const currentCounts = useSocialChatStore.getState().notificationCounts;
                 const newCounts = {
@@ -195,24 +196,24 @@ export function useSocialSignalRListChatRoom(
         connection.onreconnected(async (id) => {
             isConnectedRef.current = true;
             log("Reconnected:", id);
-            
-            setupEventHandlers(connection);
-            
+
+            // setupEventHandlers(connection);
+
             await joinUserNotify();
-            if (activeRoomsRef.current.length) await joinChatRooms(activeRoomsRef.current);
-            try {
-                await connection.invoke("GetRoomChatAndFriendRequestReceived");
-                log("Re-invoked GetRoomChatAndFriendRequestReceived after reconnect");
-            } catch (error) {
-                log("Failed to invoke GetRoomChatAndFriendRequestReceived on reconnect:", error);
-            }
+            // if (activeRoomsRef.current.length) await joinChatRooms(activeRoomsRef.current);
+            // try {
+
+            //     await connection.invoke("GetRoomChatAndFriendRequestReceived");
+            //     log("Re-invoked GetRoomChatAndFriendRequestReceived after reconnect");
+            // } catch (error) {
+            //     log("Failed to invoke GetRoomChatAndFriendRequestReceived on reconnect:", error);
+            // }
         });
         connection.onclose((err) => {
             isConnectedRef.current = false;
             log("Closed:", err);
         });
-        
-        console.log("Event handlers setup completed ✓");
+
     }, [updateLastMessage, updateChatRoomFromMessage, setRoomUnread, setNotificationCounts, user?.id, enableDebugLogs, log, joinChatRooms, joinUserNotify, refetchUserChatRooms]);
 
     const startConnection = useCallback(async () => {
@@ -223,25 +224,22 @@ export function useSocialSignalRListChatRoom(
         const conn = createConnection();
         connectionRef.current = conn;
 
-        console.log("🔧 Setting up event handlers before connection start...");
         setupEventHandlers(conn);
 
-        console.log("🚀 Starting connection...");
         await conn.start();
         isConnectedRef.current = true;
         log("Connected:", conn.connectionId);
 
-        console.log("📢 Joining user notify...");
         await joinUserNotify();
-        
+
         if (roomIds?.length) await joinChatRooms(roomIds);
 
-        try {
-            await conn.invoke("GetRoomChatAndFriendRequestReceived");
-            log("Invoked GetRoomChatAndFriendRequestReceived");
-        } catch (error) {
-            log("Failed to invoke GetRoomChatAndFriendRequestReceived:", error);
-        }
+        // try {
+        //     await conn.invoke("GetRoomChatAndFriendRequestReceived");
+        //     console.log("Invoked GetRoomChatAndFriendRequestReceived");
+        // } catch (error) {
+        //     log("Failed to invoke GetRoomChatAndFriendRequestReceived:", error);
+        // }
 
         return true;
     }, [createConnection, setupEventHandlers, joinUserNotify, joinChatRooms, roomIds, log]);

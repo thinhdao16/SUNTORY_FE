@@ -7,6 +7,7 @@ import {
     RegisterRequest,
     RegisterResponse,
     UpdatePasswordOtpPayload,
+    LogoutPayload
 } from "./auth-types";
 
 export const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
@@ -61,4 +62,7 @@ export const uploadAvatar = async (file: File) => {
         headers: { "Content-Type": "multipart/form-data" },
     });
     return res.data;
+};
+export const logoutApi = async (payload: LogoutPayload): Promise<void> => {
+    await httpClient.post('/api/v1/auth/logout', payload);
 };

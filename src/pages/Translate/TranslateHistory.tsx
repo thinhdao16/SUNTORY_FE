@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
-import BackIcon from "@/icons/logo/vector_left.svg?react";
+import BackIcon from "@/icons/logo/back.svg?react";
 import MoreIcon from "@/icons/logo/more.svg?react";
 import DeleteIcon from "@/icons/logo/trash.svg?react";
 import HistoryGroup from "./components/HistoryGroup";

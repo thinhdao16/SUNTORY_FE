@@ -41,6 +41,7 @@ type ChatMessageListProps = {
     currentUserId?: number | string | null;
     hasReachedLimit?: boolean;
     isNative?: boolean;
+    inputBarHeight?: number;
 };
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
@@ -53,6 +54,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     currentUserId = null,
     hasReachedLimit = false,
     isNative = false,
+    inputBarHeight
 }) => {
     const { t } = useTranslation();
 
@@ -62,8 +64,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     useSyncDayjsLocale();
     return (
         <div className={`flex flex-col mx-auto pt-8 `}>
+            
             {messageGroups.map((group, groupIndex) => (
-                <div key={group.timestamp} className="mb-6">    
+                <div key={group.timestamp} className="mb-6">
                     {(messageGroups.length > 1 || groupIndex === 0) && (
                         <TimeGroupHeader displayTime={group.displayTime} />
                     )}
@@ -107,6 +110,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                     </div>
                 </div>
             )}
+            {/* {typeof inputBarHeight === "number" && (
+                <div style={{ height: `${inputBarHeight - 170}px` }} />
+            )} */}
         </div>
     );
 };

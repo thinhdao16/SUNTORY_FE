@@ -443,6 +443,7 @@ export const useSocialChatStore = create<SocialChatState>()(
                 });
             }),
 
+
         addMessage: (roomId, msg) =>
             set((state) => {
                 if (!state.messagesByRoomId[roomId]) {
@@ -459,12 +460,16 @@ export const useSocialChatStore = create<SocialChatState>()(
                     state.messagesByRoomId[roomId].push(msg);
                     state.lastMessageByRoomId[roomId] = msg;
 
-                    const roomIndex = state.chatRooms.findIndex(r => r.code === roomId);
-                    if (roomIndex !== -1) {
-                        state.chatRooms[roomIndex].updateDate = msg.createDate || new Date().toISOString();
-                        const room = state.chatRooms.splice(roomIndex, 1)[0];
-                        state.chatRooms.unshift(room);
-                    }
+                    setTimeout(() => {
+                        set((state) => {
+                            const roomIndex = state.chatRooms.findIndex(r => r.code === roomId);
+                            if (roomIndex !== -1) {
+                                state.chatRooms[roomIndex].updateDate = msg.createDate || new Date().toISOString();
+                                const room = state.chatRooms.splice(roomIndex, 1)[0];
+                                state.chatRooms.unshift(room);
+                            }
+                        });
+                    }, 0);
                 }
             }),
 

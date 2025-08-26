@@ -8,6 +8,7 @@ import {
     StreamEvent,
 } from "@/store/zustand/signalr-stream-store";
 import { useChatStore } from "@/store/zustand/chat-store";
+import { useParams } from 'react-router';
 
 export interface UseSignalRStreamOptions {
     logLevel?: signalR.LogLevel;
@@ -44,6 +45,7 @@ export function useSignalRStream(
         sendTimeoutMs = 15000,
         preferWebSockets = true,
     } = options;
+    const { sessionId } = useParams<{ sessionId?: string; type?: string }>();
 
     const {
         isConnected,
@@ -119,8 +121,10 @@ export function useSignalRStream(
                     code: data.botMessageCode,
                     timestamp: new Date().toISOString(),
                 };
-                addStreamChunk(chunk);
-                setIsSending(true);
+                if (data.chatCode === sessionId) {
+                    addStreamChunk(chunk);
+                    // setIsSending(true);
+                }
             }
         );
 
@@ -139,8 +143,10 @@ export function useSignalRStream(
                     timestamp: new Date().toISOString(),
                     code: data.botMessageCode,
                 };
+                if (data.chatCode === sessionId) {
                 completeStream(event);
                 setIsSending(false);
+                }
             }
         );
 
@@ -161,8 +167,10 @@ export function useSignalRStream(
                     errorMessage: data.errorMessage,
                     code: data.botMessageCode,
                 };
+                if (data.chatCode === sessionId) {
                 errorStream(event);
                 setIsSending(false);
+                }
             }
         );
 

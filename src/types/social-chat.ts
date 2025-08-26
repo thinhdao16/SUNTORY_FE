@@ -90,6 +90,7 @@ export interface ChatMessage {
     status: number;
     chatInfoId: number;
     createDate: string;
+    updateDate?:string;
     userName: string;
     botName?: string | null;
     userAvatar?: string | null;

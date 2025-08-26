@@ -25,6 +25,7 @@ import { useSocialChatHandlers } from "./hooks/useSocialChatHandlers";
 import { ChatMessage } from "@/types/social-chat";
 import MessageLimitNotice from "./components/MessageLimitNotice";
 import ExpandInputModal from "@/components/common/bottomSheet/ExpandInputModal";
+import { useCompensateScrollOnFooterChange } from "@/hooks/useCompensateScrollOnFooterChange";
 
 dayjs.extend(utc);
 
@@ -57,7 +58,7 @@ const SocialChatThread: React.FC = () => {
     const scrollToBottomMess = useScrollToBottom(messagesEndRef, 0, "auto");
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
     const { showScrollButton, onContainerScroll, recalc } = useScrollButton(messagesContainerRef, messagesEndRef);
-
+    const effectiveFooterHeight = inputBarHeight + (keyboardResizeScreen ? 0 : 0);
 
     const peerUserId = useMemo(() => usePeerUserId(roomData, userInfo?.id), [roomData, userInfo?.id]);
 
@@ -96,7 +97,7 @@ const SocialChatThread: React.FC = () => {
 
     const userRightCount = useMemo(
         () => displayMessages.reduce((acc, m) => acc + (m?.isRight ? 1 : 0), 0),
-        [displayMessages,messages]
+        [displayMessages, messages]
     );
     const hasReachedLimit = !roomData?.isFriend && userRightCount >= CountLimitChatDontFriend && roomChatInfo?.type === ChatInfoType.UserVsUser;
     const {
@@ -148,6 +149,10 @@ const SocialChatThread: React.FC = () => {
     //     const files = await Promise.all(items.map(photoItemToFile));
     //     await sendPickedFiles(files);
     // };
+    useCompensateScrollOnFooterChange(messagesContainerRef, effectiveFooterHeight, {
+        stickToBottomThreshold: 16,
+        clampDelta: 800,
+    });
     useEffect(() => {
         if (messagesData?.pages) {
             const apiMessages = messagesData.pages.flatMap(page => {
@@ -332,7 +337,6 @@ const SocialChatThread: React.FC = () => {
                                     // onSendFriend={awaitingAccept ? undefined : handleSendFriend}
                                     />
                                 )}
-
                                 {keyboardResizeScreen && (
                                     <div
                                         className="lg:h-0 xl:h-20"

@@ -337,13 +337,13 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                                                 if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
                                                 keepFocus();
                                                 tAPI.off();
-                                                requestAnimationFrame(() => {
+                                                // requestAnimationFrame(() => {
                                                     handleSendWithDebounce(e, actionFieldSend, false);
-                                                    requestAnimationFrame(() => {
+                                                    // requestAnimationFrame(() => {
                                                         setMessageValue("");
                                                         keepFocus();
-                                                    });
-                                                });
+                                                    // });
+                                                // });
                                             }}
                                         >
                                             <SendIcon />
