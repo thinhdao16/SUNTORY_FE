@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { IonPage, IonContent, IonButton } from '@ionic/react';
-import { useHistory, useParams } from 'react-router-dom';
+import { IonPage, IonContent } from '@ionic/react';
+import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import MenuIcon from "@/icons/logo/menu/menu-icon.svg?react";
 import { useLocation } from 'react-router-dom';
 import { updateHealthCondition } from '@/services/auth/auth-service';
+import { useMenuTranslationStore } from '@/store/zustand/menuTranslationStore';
 
 interface LocationState {
     payload: any;
@@ -15,6 +16,7 @@ const AnalyzingSetup: React.FC = () => {
     const { t } = useTranslation();
     const [progress, setProgress] = useState(0);
     const location = useLocation<LocationState>();
+    const { setDiet, setSavedAllergiesStore, setSelectedAllergiesStore } = useMenuTranslationStore();
 
     const data = location.state?.payload || [];
 
@@ -29,11 +31,15 @@ const AnalyzingSetup: React.FC = () => {
                         if (prev >= 100) {
                             clearInterval(finalInterval);
                             setTimeout(() => {
+                                // Reset 3 state sau khi lưu và trước khi điều hướng
+                                setDiet("0");
+                                setSavedAllergiesStore([]);
+                                setSelectedAllergiesStore([]);
                                 history.push("/menu-translation/scan-menu");
-                            }, 1000); 
+                            }, 1000);
                             return 100;
                         }
-                        return prev + 2; // Faster animation to 100%
+                        return prev + 2;
                     });
                 }, 30);
             }

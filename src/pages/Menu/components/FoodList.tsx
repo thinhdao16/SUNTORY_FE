@@ -27,62 +27,6 @@ const FoodList: React.FC = () => {
     const [maxPages, setMaxPages] = useState(0); // Circuit breaker: max 10 pages
     const [selectedFood, setSelectedFood] = useState<FoodModel | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const mockFoods: FoodModel[] = [
-        {
-            id: 1,
-            name: 'Cheese Burger',
-            imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&h=200&fit=crop&crop=center',
-            price: 120000,
-            description: 'Juicy beef patty with melted cheese',
-            calories: 650,
-            carbohydrates: 45
-        },
-        {
-            id: 2,
-            name: 'Cheese Sandwich',
-            imageUrl: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=300&h=200&fit=crop&crop=center',
-            price: 85000,
-            description: 'Grilled sandwich with melted cheese',
-            calories: 420,
-            carbohydrates: 32
-        },
-        {
-            id: 3,
-            name: 'Chicken Burger',
-            imageUrl: 'https://images.unsplash.com/photo-1553979459-d2229ba7433a?w=300&h=200&fit=crop&crop=center',
-            price: 135000,
-            description: 'Crispy chicken breast with fresh vegetables',
-            calories: 580,
-            carbohydrates: 42
-        },
-        {
-            id: 4,
-            name: 'Spicy Chicken',
-            imageUrl: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=300&h=200&fit=crop&crop=center',
-            price: 155000,
-            description: 'Hot and spicy chicken wings',
-            calories: 720,
-            carbohydrates: 12
-        },
-        {
-            id: 5,
-            name: 'Hotdog',
-            imageUrl: 'https://images.unsplash.com/photo-1612392062798-2306f3441ce8?w=300&h=200&fit=crop&crop=center',
-            price: 70000,
-            description: 'Classic hotdog with mustard and ketchup',
-            calories: 380,
-            carbohydrates: 28
-        },
-        {
-            id: 6,
-            name: 'Fruit Salad',
-            imageUrl: 'https://images.unsplash.com/photo-1564093497595-593b96d80180?w=300&h=200&fit=crop&crop=center',
-            price: 80000,
-            description: 'Fresh mixed fruits with honey dressing',
-            calories: 150,
-            carbohydrates: 38
-        }
-    ];
 
     const loadFoods = async (
         historyId: number,
@@ -123,14 +67,11 @@ const FoodList: React.FC = () => {
                 setHasNextPage(hasMore);
             } else {
                 if (!isLoadMore) {
-                    setFoods(mockFoods);
                     setHasNextPage(false);
                 }
             }
         } catch (err) {
-            if (!isLoadMore) {
-                setFoods(mockFoods);
-            }
+            console.log(err);
         } finally {
             setLoading(false);
             setLoadingMore(false);
@@ -143,7 +84,6 @@ const FoodList: React.FC = () => {
         if (menuId) {
             loadFoods(menuId, 0, pageSize, false);
         } else {
-            setFoods(mockFoods);
             setLoading(false);
         }
     }, [menuId]);
@@ -159,7 +99,7 @@ const FoodList: React.FC = () => {
 
             try {
                 await new Promise(resolve => setTimeout(resolve, 100));
-                await loadFoods(6, nextPage, pageSize, true);
+                await loadFoods(menuId || 0, nextPage, pageSize, true);
             } catch (error) {
                 setHasNextPage(false); // stop infinite scroll nếu lỗi
             }

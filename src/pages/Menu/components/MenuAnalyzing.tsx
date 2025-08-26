@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { IonPage, IonContent } from '@ionic/react';
 import MenuIcon from "@/icons/logo/menu/menu-icon.svg?react";
 import { useLocation, useHistory } from 'react-router-dom';
@@ -19,6 +19,7 @@ const MenuAnalyzing: React.FC = () => {
     const [totalFood, setTotalFood] = useState(0);
     const [menuId, setMenuId] = useState(0);
     const foodSuccess = useMenuTranslationStore(state => state.foodSuccess);
+    const setFoodSuccess = useMenuTranslationStore(state => state.setFoodSuccess);
     // State cho Step 1: Analyzing Menu Content
     const [analyzingMenuContentProgress, setAnalyzingMenuContentProgress] = useState(0);
     const [isActiveAnalyzingMenuContent, setIsActiveAnalyzingMenuContent] = useState(true);
@@ -33,6 +34,9 @@ const MenuAnalyzing: React.FC = () => {
     const [generatingDishImagesProgress, setGeneratingDishImagesProgress] = useState(0);
     const [isActiveGeneratingDishImages, setIsActiveGeneratingDishImages] = useState(false);
     const [isCompletedGeneratingDishImages, setIsCompletedGeneratingDishImages] = useState(false);
+
+    // Ref để quản lý interval trong analyzeMenu
+    const analyzeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useMenuSignalR(menuId.toString());
     const base64ToFile = (base64: string, filename: string): File => {
@@ -52,12 +56,11 @@ const MenuAnalyzing: React.FC = () => {
             const result = await menuAnalyzing(formData);
             if (result.data != null) {
                 setMenuId(result.data.id);
-                setInterval(() => {
-                    setTotalFood(result.data.totalFood);
-                    setAnalyzingMenuContentProgress(prev => Math.min(prev + 1, 100));
-                    setIsActiveAnalyzingMenuContent(false);
-                    setIsCompletedAnalyzingMenuContent(true);
-                }, 100);
+                // Cập nhật một lần, tránh interval không cần thiết gây rò rỉ
+                setTotalFood(result.data.totalFood);
+                setAnalyzingMenuContentProgress(100);
+                setIsActiveAnalyzingMenuContent(false);
+                setIsCompletedAnalyzingMenuContent(true);
             }
         } catch (error) {
             setIsActiveAnalyzingMenuContent(false);
@@ -67,6 +70,8 @@ const MenuAnalyzing: React.FC = () => {
 
     // Effect cho Step 1: Analyzing Menu Content
     useEffect(() => {
+        // Reset đếm ảnh thành công khi bắt đầu một phiên phân tích mới
+        setFoodSuccess(0);
         const interval = setInterval(async () => {
             setAnalyzingMenuContentProgress(prev => {
                 const newProgress = Math.min(prev + 1, 80);
@@ -77,8 +82,14 @@ const MenuAnalyzing: React.FC = () => {
             });
         }, 100);
         analyzeMenu();
-        return () => clearInterval(interval);
-    }, []);
+        return () => {
+            clearInterval(interval);
+            if (analyzeIntervalRef.current) {
+                clearInterval(analyzeIntervalRef.current);
+                analyzeIntervalRef.current = null;
+            }
+        };
+    }, [setFoodSuccess]);
 
     // Effect cho Step 2: Interpreting Nutritional Data
     useEffect(() => {
@@ -102,28 +113,46 @@ const MenuAnalyzing: React.FC = () => {
     }, []);
 
     // Effect cho Step 3: Generating Dish Images
+    const navigatedRef = useRef(false);
+
     useEffect(() => {
         if (totalFood === 0) return;
+        console.log("totalFood", totalFood);
 
         // set generating dish images progress
         setIsActiveGeneratingDishImages(true);
         //calculate progress
         const currentProgress = (foodSuccess / totalFood) * 100;
-        setGeneratingDishImagesProgress(Math.min(Number(currentProgress.toFixed(2)), 100));
+        setGeneratingDishImagesProgress(
+            foodSuccess >= totalFood ? 100 : Math.min(Number(currentProgress.toFixed(2)), 99.9)
+        );
 
-        // check if completed
-        if (foodSuccess >= totalFood) {
+        if (
+            foodSuccess >= totalFood &&
+            isCompletedAnalyzingMenuContent &&
+            isCompletedInterpretingNutritionalData &&
+            menuId > 0 &&
+            !navigatedRef.current
+        ) {
+            // đảm bảo progress hiển thị đủ 100%
+            setGeneratingDishImagesProgress(100);
             setIsActiveGeneratingDishImages(false);
             setIsCompletedGeneratingDishImages(true);
-            // After completed, set isConnected to false
-            useMenuTranslationStore.getState().setIsConnected(false);
-
             setTimeout(() => {
+                navigatedRef.current = true;
                 history.push('/food-list', { menuId });
+                useMenuTranslationStore.getState().setIsConnected(false);
             }, 1500);
         }
 
-    }, [foodSuccess, totalFood]);
+    }, [
+        foodSuccess,
+        totalFood,
+        isCompletedAnalyzingMenuContent,
+        isCompletedInterpretingNutritionalData,
+        history,
+        menuId
+    ]);
 
     return (
         <IonPage>

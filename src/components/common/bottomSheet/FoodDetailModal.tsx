@@ -24,7 +24,6 @@ interface FoodDetailModalProps {
 const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food }) => {
     const { t } = useTranslation();
     if (!isOpen || !food) return null;
-    console.log(food);
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) onClose();
     };
