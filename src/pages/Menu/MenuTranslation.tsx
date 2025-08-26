@@ -1,5 +1,5 @@
 import React from 'react';
-    import { IonPage, IonContent, IonButton, IonIcon, IonHeader, IonToolbar, IonButtons, IonTitle } from '@ionic/react';
+import { IonPage, IonContent, IonButton, IonIcon, IonHeader, IonToolbar, IonButtons, IonTitle } from '@ionic/react';
 import { useHistory, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import MenuIcon from "@/icons/logo/menu/menu-icon.svg?react";
@@ -39,6 +39,17 @@ const MenuTranslation: React.FC = () => {
         <IonPage>
             <IonContent className="ion-padding">
                 {renderSectionContent()}
+                <div className="flex justify-between items-left">
+                    <IonButtons slot="start">
+                        <IonButton
+                            fill="clear"
+                            onClick={() => history.push('/home')}
+                            className="ml-2"
+                        >
+                            <IonIcon icon={arrowBack} className="text-gray-700 font-bold text-2xl" />
+                        </IonButton>
+                    </IonButtons>
+                </div>
                 <div className="flex flex-col">
                     {/* Top Section - Icon */}
                     <div className="flex-1 flex items-center justify-center pt-16">

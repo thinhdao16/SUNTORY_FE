@@ -19,11 +19,10 @@ const AllergiesSetup: React.FC = () => {
     const [isIconSendStyle, setIsIconSendStyle] = useState('black');
     const [savedAllergies, setSavedAllergies] = useState<AllergyItem[]>([]);
     const [selectedAllergies, setSelectedAllergies] = useState<AllergyItem[]>([]);
-    const [dietStyle, setDietStyle] = useState<number>(0);
     const [showDropdown, setShowDropdown] = useState(false);
     const [searchResults, setSearchResults] = useState<AllergyItem[]>([]);
     const healthMasterData = useHealthMasterDataStore((state) => state.masterData);
-    const { setSavedAllergiesStore, savedAllergiesStore: storeAllergies, setSelectedAllergiesStore, selectedAllergiesStore: storeSelectedAllergies } = useMenuTranslationStore();
+    const { setSavedAllergiesStore, savedAllergiesStore: storeAllergies, setSelectedAllergiesStore, selectedAllergiesStore: storeSelectedAllergies, diet, setDiet } = useMenuTranslationStore();
     // Get all allergies from healthMasterData
     const getAllAllergies = (): AllergyItem[] => {
         if (!healthMasterData?.groupedAllergies) return [];
@@ -55,7 +54,7 @@ const AllergiesSetup: React.FC = () => {
                 //set state
                 setSavedAllergies(fromProfile);
                 setSavedAllergiesStore(fromProfile);
-                setDietStyle(dietStyle);
+                setDiet(dietStyle.toString());
             } catch {
                 console.log("error");
             }
@@ -144,7 +143,7 @@ const AllergiesSetup: React.FC = () => {
         const allAllergies = [...selectedAllergies, ...savedAllergies];
         setSavedAllergiesStore(savedAllergies);
         setSelectedAllergiesStore(selectedAllergies);
-        history.push('/menu-translation/diet-setup', { allergies: allAllergies, dietStyle: dietStyle });
+        history.push('/menu-translation/diet-setup', { allergies: allAllergies });
     };
 
     return (

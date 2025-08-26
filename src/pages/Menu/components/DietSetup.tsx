@@ -14,7 +14,6 @@ interface AllergyItem {
 
 interface LocationState {
     allergies?: AllergyItem[];
-    dietStyle?: number;
 }
 
 interface DietOption {
@@ -23,7 +22,6 @@ interface DietOption {
     description: string;
     icon: string;
 }
-
 const DietSetup: React.FC = () => {
     useHealthMasterData();
     const history = useHistory();
@@ -35,7 +33,6 @@ const DietSetup: React.FC = () => {
 
     // Lấy allergies từ location state
     const allergies = location.state?.allergies || [];
-    const dietStyle = location.state?.dietStyle || 0;
     const healthMasterData = useHealthMasterDataStore((state) => state.masterData);
 
     // Diet options data từ healthMasterData
@@ -45,7 +42,9 @@ const DietSetup: React.FC = () => {
         );
 
         return group?.lifestyles.map((item: any, index: number) => ({
-            id: item.id || item.name.toLowerCase().replace(/\s+/g, '-'),
+            id: (item?.id != null && item?.id !== undefined)
+                ? String(item.id)
+                : String(item.name.toLowerCase().replace(/\s+/g, '-')),
             name: item.name,
             description: item.description || `${item.name} diet for your health journey.`,
             icon: '🥗'
@@ -56,6 +55,7 @@ const DietSetup: React.FC = () => {
         if (selectedValue === selectedDietRef.current) {
             selectedDietRef.current = '';
             setSelectedDiet('');
+            setDiet('');
         } else {
             selectedDietRef.current = selectedValue;
             setSelectedDiet(selectedValue);
@@ -70,19 +70,21 @@ const DietSetup: React.FC = () => {
         };
         history.push('/menu-translation/confirm-setup', { payload: payload });
     };
-
+    
     useEffect(() => {
-        if (dietStyle && healthMasterData?.groupedLifestyles) {
+        if (diet && healthMasterData?.groupedLifestyles) {
             const group = healthMasterData.groupedLifestyles.find(
                 (g: any) => g.category?.name === "Diet"
             );
-            const dietItem = group?.lifestyles.find((item: any) => item.id == dietStyle);
+            const dietItem = group?.lifestyles.find((item: any) => String(item.id) === String(diet));
             if (dietItem) {
-                const dietId = dietItem.id || dietItem.name.toLowerCase().replace(/\s+/g, '-');
+                const dietId = (dietItem?.id != null && dietItem?.id !== undefined)
+                    ? String(dietItem.id)
+                    : String(dietItem.name.toLowerCase().replace(/\s+/g, '-'));
                 if (diet)
                 {
-                    setSelectedDiet(diet);
-                    selectedDietRef.current = diet;
+                    setSelectedDiet(String(diet));
+                    selectedDietRef.current = String(diet);
                 }
                 else {
                     setSelectedDiet(dietId);
@@ -95,7 +97,7 @@ const DietSetup: React.FC = () => {
 
     useEffect(() => {   
         if (diet) {
-           setSelectedDiet(diet);
+           setSelectedDiet(String(diet));
         }
     }, [diet]);
 
@@ -118,12 +120,26 @@ const DietSetup: React.FC = () => {
                             <IonItem
                                 key={option.id}
                                 lines="none"
-                                className="rounded-xl border border-gray-200"
-                                style={{ '--background': '#ffffff', height: '120px' } as any}
-                                button
+                                className="rounded-xl border border-gray-200 w-full overflow-hidden"
+                                style={{
+                                    '--background': '#ffffff',
+                                    '--min-height': '120px',
+                                    '--padding-start': '12px',
+                                    '--inner-padding-end': '12px',
+                                    '--inner-padding-top': '0px',
+                                    '--inner-padding-bottom': '0px',
+                                } as any}
+                                button={true}
+                                detail={false}
                                 onClick={() => handleRadioChange(option.id)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        handleRadioChange(option.id);
+                                    }
+                                }}
                             >
-                                <div className="flex items-start gap-4 py-4 w-full">
+                                <div className="flex items-start gap-4 py-4 w-full h-full">
                                     {/* Icon */}
                                     <div className="flex-shrink-0 w-15 h-15 rounded-lg bg-orange-100 flex items-center justify-center text-2xl">
                                         {option.icon}
