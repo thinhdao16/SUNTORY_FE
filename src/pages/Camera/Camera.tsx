@@ -15,6 +15,7 @@ import { AndroidSettings, IOSSettings, NativeSettings } from "capacitor-native-s
 import { Camera } from "@capacitor/camera";
 import { useTranslation } from "react-i18next";
 import PageContainer from "@/components/layout/PageContainer";
+import { useMenuTranslationStore } from "@/store/zustand/menuTranslationStore";
 const isNative = Capacitor.isNativePlatform();
 
 const CameraPage: React.FC = () => {
@@ -28,6 +29,7 @@ const CameraPage: React.FC = () => {
     const [toastId, setToastId] = useState<string | undefined>(undefined);
     const [permissionDenied, setPermissionDenied] = useState(false);
     const [isCapturing, setIsCapturing] = useState(false);
+    const { isUseCamera, setIsUseCamera } = useMenuTranslationStore();
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -41,6 +43,15 @@ const CameraPage: React.FC = () => {
         const u8arr = new Uint8Array(bstr.length);
         for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
         return new File([u8arr], filename, { type: mime });
+    };
+
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
     };
 
     const handleToggleFlash = async () => {
@@ -94,6 +105,34 @@ const CameraPage: React.FC = () => {
         }
     };
 
+    const handleMenuTranslation = async (file: File) => {
+        const localUrl = URL.createObjectURL(file);
+        addPendingImages([localUrl]);
+        try {
+            if (file.size > MAX_IMAGE_SIZE) {
+                present({
+                    message: t("Photo must be less than 20MB!"),
+                    duration: 3000,
+                    color: "danger",
+                });
+                removePendingImageByUrl(localUrl);
+                URL.revokeObjectURL(localUrl);
+                return;
+            }
+            const base64Img = await fileToBase64(file);
+            setIsUseCamera(false);
+            history.push("/menu-translation/scan-menu", { base64Img: base64Img });
+        } catch {
+            removePendingImageByUrl(localUrl);
+            URL.revokeObjectURL(localUrl);
+            present({
+                message: t("Image upload failed!"),
+                duration: 3000,
+                color: "danger",
+            });
+        }
+    }
+
     // --- Sử dụng cho chụp ảnh ---
     const handleCapture = async () => {
         if (isCapturing || !videoRef.current) return;
@@ -107,7 +146,11 @@ const CameraPage: React.FC = () => {
                 ctx.drawImage(videoRef.current, 0, 0);
                 const imgData = canvas.toDataURL("image/png");
                 const file = base64ToFile(imgData, "captured.png");
-                await handleUploadImageFile(file);
+                if (isUseCamera) {
+                    await handleMenuTranslation(file);
+                } else {
+                    await handleUploadImageFile(file);
+                }
             }
         } finally {
             setIsCapturing(false);
@@ -120,7 +163,11 @@ const CameraPage: React.FC = () => {
         let base64Img = imgData?.base64 || (imgData?.webPath && await base64FromPath(imgData.webPath));
         if (base64Img) {
             const file = base64ToFile(base64Img, "gallery.png");
-            await handleUploadImageFile(file);
+            if (isUseCamera) {
+                await handleMenuTranslation(file);
+            } else {
+                await handleUploadImageFile(file);
+            }
         }
     };
 

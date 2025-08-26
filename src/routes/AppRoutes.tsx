@@ -12,7 +12,7 @@ import { useAuthStore } from "@/store/zustand/auth-store";
 import ChatSidebarLayout from "@/components/layout/ChatSidebarLayout";
 import useAppInit from "@/hooks/useAppInit";
 import TranslateHistory from "@/pages/Translate/TranslateHistory";
-import SocialQRWeb from "@/pages/SocialQR/SocialQRWeb/SocialQRWeb";
+import FoodList from "@/pages/Menu/components/FoodList";
 
 const routes = {
   Chat: lazy(() => import("@/pages/ChatStream/ChatStream")),
@@ -43,10 +43,17 @@ const routes = {
   TakePhoto: lazy(() => import("@/pages/TakePhoto/TakePhoto")),
   Translate: lazy(() => import("@/pages/Translate/Translate")),
   TranslateHistory: lazy(() => import("@/pages/Translate/TranslateHistory")),
+  MenuTranslation: lazy(() => import("@/pages/Menu/MenuTranslation")),
+  FoodList: lazy(() => import("@/pages/Menu/components/FoodList")),
+  AllergiesSetup: lazy(() => import("@/pages/Menu/components/AllergiesSetup")),
+  DietSetup: lazy(() => import("@/pages/Menu/components/DietSetup")),
+  AnalyzingSetup: lazy(() => import("@/pages/Menu/components/AnalyzingSetup")),
+  ScanMenu: lazy(() => import("@/pages/Menu/components/ScanMenu")),
+  MenuAnalyzing: lazy(() => import("@/pages/Menu/components/MenuAnalyzing")),
 };
 
 const authRoutes = ["/login", "/register"];
-const authRoutesDontShowTabBar = ["/camera", "/social-qr-web", "/social-qr-native", "/social-chat/camera", "/social-chat/camera-web", "/social-chat/t"];
+const authRoutesDontShowTabBar = ["/camera", "/social-qr-web", "/social-qr-native", "/social-chat/camera", "/social-chat/camera-web", "/social-chat/t", "/menu-translation"];
 const ignoreRoutes = ["/forgot-password", "/otp", "/new-password", "/change-password"];
 
 const AppRoutes: React.FC = () => {
@@ -96,6 +103,8 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/translate/history" component={TranslateHistory} exact />
           <PrivateRoute path="/profile/:section?" component={routes.Profile} exact />
           <PrivateRoute path="/change-password" component={routes.ChangePassword} exact />
+          <PrivateRoute path="/menu-translation/:section?" component={routes.MenuTranslation} exact />
+          <PrivateRoute path="/food-list" component={routes.FoodList} exact />
           <Route exact path="/" render={() => <Redirect to="/social-chat" />} />
           <Route path="*" component={routes.NotFound} />
         </Switch>

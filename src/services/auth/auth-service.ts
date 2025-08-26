@@ -62,3 +62,8 @@ export const uploadAvatar = async (file: File) => {
     });
     return res.data;
 };
+
+export const updateHealthCondition = async (payload: any) => {
+    const res = await httpClient.post("/api/v1/account/update-health-condition-v1", payload);
+    return res.data;
+};

@@ -4,7 +4,6 @@ import { IoIosClose } from "react-icons/io";
 import { useScannerStore } from "@/store/zustand/scanner-store";
 import useCameraPermission from "@/hooks/useCameraPermission";
 
-
 const TakePhoto = () => {
     const { photos, addPhotos, removePhoto } = useScannerStore();
     const { hasPermission, requestPermission } = useCameraPermission();
