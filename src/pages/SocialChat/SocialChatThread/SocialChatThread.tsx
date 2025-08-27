@@ -93,11 +93,11 @@ const SocialChatThread: React.FC = () => {
             ...msg,
             botName: msg.botName === null ? undefined : msg.botName,
         }));
-    }, [serverMessages, messages, roomId]);
+    }, [serverMessages, messages, roomId,userInfo]);
 
     const userRightCount = useMemo(
         () => displayMessages.reduce((acc, m) => acc + (m?.isRight ? 1 : 0), 0),
-        [displayMessages, messages]
+        [displayMessages, messages,roomId , userInfo]
     );
     const hasReachedLimit = !roomData?.isFriend && userRightCount >= CountLimitChatDontFriend && roomChatInfo?.type === ChatInfoType.UserVsUser;
     const {

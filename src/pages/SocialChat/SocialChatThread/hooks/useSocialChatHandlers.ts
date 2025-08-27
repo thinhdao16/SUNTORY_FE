@@ -87,7 +87,7 @@ export function useSocialChatHandlers({
 }: UseSocialChatHandlersProps) {
     const currentUserId = useAuthStore.getState().user?.id;
     const sendMessageMutation = useSendSocialChatMessage({ roomId });
-    const MAX_IMAGE_SIZE = 15 * 1024 * 1024;
+    const MAX_IMAGE_SIZE = 150 * 1024 * 1024;
 
     const cleanImageUrl = (url: string): string => {
         if (!url) return url;
@@ -152,8 +152,9 @@ export function useSocialChatHandlers({
                 createDate: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
                 localUrl: blobUrl,                
                 serverUrl: undefined,             
-                isUploading: false,                
-                uploadProgress: 100,               
+                isUploading: true,                // ✅ Bắt đầu với uploading
+                isSending: false,                 // ✅ Chưa sending
+                uploadProgress: 0,                // ✅ 0% progress
             };
         });
 
@@ -190,6 +191,7 @@ export function useSocialChatHandlers({
             isUploading: false,
     };
 
+    // ✅ Add message ngay với uploading overlay
     addMessage(finalMessage);
     setTimeout(() => scrollToBottom(), 100);
 
@@ -198,8 +200,22 @@ export function useSocialChatHandlers({
     try {
         setLoadingMessages(true);
         
+        // ✅ Upload files với progress tracking
         const uploadPromises = validFiles.map(async (file, index) => {
             try {
+                // ✅ Update progress 10%
+                updateMessageWithServerResponse(tempId, {
+                    chatAttachments: finalMessage.chatAttachments.map((att, i) => {
+                        if (i === index) {
+                            return {
+                                ...att,
+                                uploadProgress: 10,
+                            };
+                        }
+                        return att;
+                    })
+                });
+
                 const localUrl = localChatAttachments[index].fileUrl;
                 const uploaded = await uploadImageMutation.mutateAsync(file);
                 
@@ -207,64 +223,108 @@ export function useSocialChatHandlers({
                     const serverFile = uploaded[0];
                     const serverUrl = cleanImageUrl(serverFile.linkImage);
                     
-                    uploadedFiles.push({
-                        name: serverFile.name,
+                    uploadedFiles.push({ 
+                        name: serverFile.name, 
                         linkImage: serverUrl,
                         localUrl: localUrl,
-                        index: index,
+                        index: index
                     });
 
+                    // ✅ Update progress 70%
+                    updateMessageWithServerResponse(tempId, {
+                        chatAttachments: finalMessage.chatAttachments.map((att, i) => {
+                            if (i === index) {
+                                return {
+                                    ...att,
+                                    uploadProgress: 70,
+                                    serverUrl: serverUrl,
+                                };
+                            }
+                            return att;
+                        })
+                    });
+
+                    // ✅ Preload và update với server URL
                     await new Promise<void>((resolve) => {
                         const preloadImage = new Image();
                         
                         preloadImage.onload = () => {
-                            console.log(`✅ Server image preloaded: ${serverFile.name}`);
-                            
+                            // ✅ Upload done, set to sending
                             updateMessageWithServerResponse(tempId, {
                                 chatAttachments: finalMessage.chatAttachments.map((att, i) => {
                                     if (i === index) {
                                         return {
                                             ...att,
-                                            // fileUrl: 
-                                            serverUrl: serverUrl,   
-                                            isUploading: false,       
+                                            serverUrl: serverUrl,
+                                            isUploading: false,  // ✅ Upload xong
+                                            isSending: true,     // ✅ Bắt đầu sending
                                             uploadProgress: 100,
                                         };
                                     }
                                     return att;
                                 })
                             });
-                            
                             resolve();
                         };
                         
                         preloadImage.onerror = () => {
-                            console.warn(`⚠️ Server image failed: ${serverFile.name}`);
+                            updateMessageWithServerResponse(tempId, {
+                                chatAttachments: finalMessage.chatAttachments.map((att, i) => {
+                                    if (i === index) {
+                                        return {
+                                            ...att,
+                                            isUploading: false,
+                                            isSending: true,     // ✅ Vẫn sending dù preload fail
+                                            uploadProgress: 100,
+                                        };
+                                    }
+                                    return att;
+                                })
+                            });
                             resolve();
                         };
                         
-                        setTimeout(() => {
-                            console.warn(`⏰ Preload timeout: ${serverFile.name}`);
-                            resolve();
-                        }, 8000);
-                        
+                        setTimeout(() => resolve(), 3000); // Shorter timeout
                         preloadImage.src = serverUrl;
                     });
-
                 } else {
                     failedFiles.push(`${file.name} (no response)`);
+                    updateMessageWithServerResponse(tempId, {
+                        chatAttachments: finalMessage.chatAttachments.map((att, i) => {
+                            if (i === index) {
+                                return {
+                                    ...att,
+                                    isUploading: false,
+                                    isError: true,
+                                };
+                            }
+                            return att;
+                        })
+                    });
                 }
             } catch (e) {
                 failedFiles.push(`${file.name} (upload failed)`);
-                console.warn(`Upload failed for ${file.name}, keeping local preview`);
+                updateMessageWithServerResponse(tempId, {
+                    chatAttachments: finalMessage.chatAttachments.map((att, i) => {
+                        if (i === index) {
+                            return {
+                                ...att,
+                                isUploading: false,
+                                isError: true,
+                            };
+                        }
+                        return att;
+                    })
+                });
             }
         });
 
         await Promise.all(uploadPromises);
 
+        // ✅ Send message - all images should be in sending state now
         if (uploadedFiles.length > 0) {
             uploadedFiles.sort((a, b) => a.index - b.index);
-            
+
             const payload: CreateSocialChatMessagePayload = {
                 chatCode: roomId || null,
                 messageText: "",
@@ -280,6 +340,7 @@ export function useSocialChatHandlers({
                 const serverMsg = await sendMessageMutation.mutateAsync(payload);
                 
                 if (serverMsg) {
+                    // ✅ Final update - remove sending state
                     updateMessageWithServerResponse(tempId, {
                         id: serverMsg.id,
                         code: serverMsg.code,
@@ -299,61 +360,61 @@ export function useSocialChatHandlers({
                         userAvatar: serverMsg.userAvatar,
                         hasAttachment: serverMsg.hasAttachment,
                         isRead: serverMsg.isRead,
-                        isSend: true, 
+                        isSend: true,
                         isError: false,
-                        isUploading: false,
-                        
                         chatAttachments: serverMsg.chatAttachments?.length
                             ? serverMsg.chatAttachments.map((att: any, index: number) => {
                                 const localAtt: any = finalMessage.chatAttachments[index];
                                 return {
                                     id: att.id,
                                     chatMessageId: att.chatMessageId,
-                                    fileUrl: localAtt?.fileUrl || att.fileUrl,
+                                    fileUrl: att.fileUrl,
                                     fileName: att.fileName,
                                     fileType: att.fileType,
                                     fileSize: att.fileSize,
                                     createDate: att.createDate,
                                     originalIndex: localAtt?.originalIndex ?? index,
-                                    serverUrl: att.fileUrl,
-                                    isUploading: false,    
+                                    isSending: false, // ✅ Remove sending flag
+                                    isUploading: false,
                                     uploadProgress: 100,
                                 };
                             })
                             : finalMessage.chatAttachments.map(att => ({
                                 ...att,
+                                isSending: false, // ✅ Remove sending flag
                                 isUploading: false,
                                 uploadProgress: 100,
                             })),
                         attachments: [],
                     });
-
-                    setTimeout(() => {
-                        localChatAttachments.forEach(att => {
-                            if (att.localUrl && att.localUrl.startsWith('blob:')) {
-                                URL.revokeObjectURL(att.localUrl);
-                            }
-                        });
-                    }, 3000); 
                 }
             } catch (e) {
                 console.error('Send message failed:', e);
+                // ✅ Handle send error
                 updateMessageWithServerResponse(tempId, {
                     isError: true,
                     isSend: false,
-                    isUploading: false,
+                    chatAttachments: finalMessage.chatAttachments.map(att => ({
+                        ...att,
+                        isSending: false, // ✅ Remove sending flag on error
+                        isError: true,
+                    })),
                     messageText: "Gửi tin nhắn thất bại"
                 });
                 useToastStore.getState().showToast("Gửi tin nhắn thất bại", 3000, "error");
             }
         }
-
     } catch (error) {
         console.error('Upload process failed:', error);
         updateMessageWithServerResponse(tempId, {
             isError: true,
             isSend: false,
-            isUploading: false,
+            chatAttachments: finalMessage.chatAttachments.map(att => ({
+                ...att,
+                isSending: false,
+                isUploading: false,
+                isError: true,
+            })),
             messageText: "Upload thất bại"
         });
     } finally {

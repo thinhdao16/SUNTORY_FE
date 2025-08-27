@@ -63,8 +63,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
     });
 
     const photoAlbumPhotos = sortedImageFiles.map((file: any, index: number) => ({
-        src: file.fileUrl,           
-        serverSrc: file.serverUrl,  
+        src: file.fileUrl,
+        serverSrc: file.serverUrl,
         width: 800,
         height: 600,
         attachment: file,
@@ -85,23 +85,72 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
     return (
         <div className={isUser ? "self-end w-fit" : "self-start w-fit"}>
             <div className={`mb-2 z-1 space-y-2 relative ${isUser ? "ml-auto" : "mr-auto"} w-fit group`}>
-                <div className={
-                    displayPhotos.length === 1
-                        ? `w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "justify-end" : "justify-start"}`
-                        : "grid gap-2 w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
-                }>
+                <div
+                    className={
+                        displayPhotos.length === 1
+                            ? `w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "justify-end" : "justify-start"}`
+                            : "grid gap-2 w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
+                    }
+                >
                     {displayPhotos.map((photo: { src: string; serverSrc?: string; attachment?: any; stableKey: string }, idx: number) => {
                         const attachment = photo.attachment;
                         const isUploading = attachment?.isUploading;
                         const uploadProgress = attachment?.uploadProgress || 0;
                         const isError = attachment?.isError;
+                        const isSending = attachment?.isSending; // ✅ Thêm flag cho sending
+
+                        const isLast = !showAll && idx === MAX_PREVIEW - 1 && remaining > 0;
+                        const isLastOdd = displayPhotos.length % 2 === 1 && idx === displayPhotos.length - 1;
+                        const isSecondLast = displayPhotos.length % 2 === 1 && idx === displayPhotos.length - 2;
+                        const isThirdLast = displayPhotos.length % 2 === 1 && idx === displayPhotos.length - 3;
+
+                        const renderOverlay = () => {
+                            if (isError) {
+                                return (
+                                    <div className="absolute inset-0 bg-red-500/20 rounded-2xl flex items-center justify-center z-10">
+                                        <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
+                                            {t("Upload failed")}
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            if (isSending) {
+                                return (
+                                    <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center z-10">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            <span className="text-white text-sm font-medium">
+                                                {t("Uploading...")}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            if (isUploading) {
+                                return (
+                                    <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center z-10">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            <span className="text-white text-sm font-medium">
+                                                {t("Uploading...")}
+                                                {/* {uploadProgress > 0 ? `${uploadProgress}%` : t("Uploading...")} */}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            return null;
+                        };
 
                         if (displayPhotos.length === 1) {
                             return (
                                 <div key={photo.stableKey} className="relative w-full rounded-2xl overflow-hidden">
                                     <AppImage
-                                        src={photo.src}         
-                                        serverSrc={photo.serverSrc}  
+                                        src={photo.src}
+                                        serverSrc={photo.serverSrc}
                                         alt=""
                                         fit="contain"
                                         wrapperClassName="w-full rounded-2xl overflow-hidden"
@@ -109,23 +158,52 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                         onClick={() => handleImageClick(idx)}
                                         style={{ cursor: "pointer" }}
                                     />
-                                    
-                                    {/* ✅ Upload overlay */}
-                                    {isUploading && (
-                                        <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center z-10">
+
+                                    {/* ✅ Render overlay states */}
+                                    {renderOverlay()}
+                                </div>
+                            );
+                        }
+
+                        if (isLast && isLastOdd) {
+                            return (
+                                <div
+                                    key={photo.stableKey}
+                                    className="relative object-cover rounded-2xl col-span-2 w-full h-[180px] cursor-pointer overflow-hidden"
+                                    style={{ gridColumn: "1 / span 2" }}
+                                    onClick={() => handleImageClick(idx)}
+                                >
+                                    <AppImage
+                                        src={photo.src}
+                                        serverSrc={photo.serverSrc}
+                                        alt=""
+                                        className="w-full h-full object-cover rounded-2xl"
+                                        style={{ filter: "brightness(0.7)" }}
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <span className="text-white font-bold text-2xl bg-black/50 px-4 py-2 rounded-2xl select-none pointer-events-none">
+                                            +{remaining}
+                                        </span>
+                                    </div>
+
+                                    {(isUploading || isSending || isError) && (
+                                        <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center z-20">
                                             <div className="flex flex-col items-center gap-2">
-                                                <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
-                                                <span className="text-white text-sm font-medium">
-                                                    {uploadProgress > 0 ? `${uploadProgress}%` : 'Uploading...'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {isError && (
-                                        <div className="absolute inset-0 bg-red-500/20 rounded-2xl flex items-center justify-center z-10">
-                                            <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
-                                                Upload failed
+                                                {isError ? (
+                                                    <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
+                                                        {t("Failed")}
+                                                    </div>
+                                                ) : isSending ? (
+                                                    <>
+                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        <span className="text-white text-sm font-medium">{t("Sending...")}</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        <span className="text-white text-xs">{t("Loading...")}</span>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -133,44 +211,131 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                             );
                         }
 
+                        if (isLast) {
+                            return (
+                                <div
+                                    key={photo.stableKey}
+                                    className="relative object-cover rounded-2xl w-full h-full cursor-pointer overflow-hidden"
+                                    onClick={() => handleImageClick(idx)}
+                                >
+                                    <AppImage
+                                        src={photo.src}
+                                        serverSrc={photo.serverSrc}
+                                        alt=""
+                                        className="w-full h-full object-cover rounded-2xl"
+                                        style={{ filter: "brightness(0.7)" }}
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <span className="text-white font-bold text-2xl bg-black/50 px-4 py-2 rounded-2xl select-none pointer-events-none">
+                                            +{remaining}
+                                        </span>
+                                    </div>
+
+                                    {/* ✅ Render overlay với higher z-index */}
+                                    {(isUploading || isSending || isError) && (
+                                        <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center z-20">
+                                            <div className="flex flex-col items-center gap-2">
+                                                {isError ? (
+                                                    <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
+                                                        Failed
+                                                    </div>
+                                                ) : isSending ? (
+                                                    <>
+                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        <span className="text-white text-sm font-medium">Đang gửi...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        <span className="text-white text-xs">Đang tải...</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+
+                        if (isLastOdd) {
+                            return (
+                                <div key={photo.stableKey} className="relative w-full">
+                                    <AppImage
+                                        src={photo.src}
+                                        serverSrc={photo.serverSrc}
+                                        alt=""
+                                        onClick={() => handleImageClick(idx)}
+                                        className="object-cover rounded-2xl col-span-2 w-full"
+                                        style={{
+                                            gridColumn: "1 / span 2",
+                                            cursor: "pointer",
+                                            height: bottomHeight || 180,
+                                            objectFit: "cover",
+                                        }}
+                                    />
+
+                                    {/* ✅ Render overlay states */}
+                                    {renderOverlay()}
+                                </div>
+                            );
+                        }
+
+                        if (isThirdLast) {
+                            return (
+                                <div key={photo.stableKey} className="relative w-full h-full">
+                                    <AppImage
+                                        src={photo.src}
+                                        serverSrc={photo.serverSrc}
+                                        alt=""
+                                        ref={ref1}
+                                        onClick={() => handleImageClick(idx)}
+                                        className="object-cover rounded-2xl w-full h-full"
+                                        style={{ cursor: "pointer" }}
+                                    />
+
+                                    {/* ✅ Render overlay states */}
+                                    {renderOverlay()}
+                                </div>
+                            );
+                        }
+
+                        if (isSecondLast) {
+                            return (
+                                <div key={photo.stableKey} className="relative w-full h-full">
+                                    <AppImage
+                                        src={photo.src}
+                                        serverSrc={photo.serverSrc}
+                                        alt=""
+                                        ref={ref2}
+                                        onClick={() => handleImageClick(idx)}
+                                        className="object-cover rounded-2xl w-full h-full"
+                                        style={{ cursor: "pointer" }}
+                                    />
+
+                                    {/* ✅ Render overlay states */}
+                                    {renderOverlay()}
+                                </div>
+                            );
+                        }
+
                         return (
                             <div key={photo.stableKey} className="relative w-full h-full">
                                 <AppImage
-                                    src={photo.src}             
-                                    serverSrc={photo.serverSrc} 
+                                    src={photo.src}
+                                    serverSrc={photo.serverSrc}
                                     alt=""
                                     onClick={() => handleImageClick(idx)}
                                     className="object-cover rounded-2xl w-full h-full"
                                     style={{ cursor: "pointer" }}
                                 />
-                                
-                                {/* ✅ Upload overlay */}
-                                {isUploading && (
-                                    <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center z-10">
-                                        <div className="flex flex-col items-center gap-1">
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            {uploadProgress > 0 && (
-                                                <span className="text-white text-xs font-medium">
-                                                    {uploadProgress}%
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {isError && (
-                                    <div className="absolute inset-0 bg-red-500/20 rounded-2xl flex items-center justify-center z-10">
-                                        <div className="bg-red-500 text-white px-2 py-1 rounded text-xs">
-                                            Failed
-                                        </div>
-                                    </div>
-                                )}
+
+                                {/* ✅ Render overlay states */}
+                                {renderOverlay()}
                             </div>
                         );
                     })}
                 </div>
-                
-                {/* ✅ Action buttons (existing code) */}
+
                 {!isRevoked && (
                     <div
                         ref={actionContainerRef}
@@ -184,10 +349,14 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                         style={{ pointerEvents: "auto" }}
                     >
                         {isUser && (
-                            <button onClick={onRevoke}><FaRegTrashAlt className="z-99 text-2xl" /></button>
+                            <button onClick={onRevoke}>
+                                <FaRegTrashAlt className="z-99 text-2xl" />
+                            </button>
                         )}
                         {!hasReachedLimit && (
-                            <button onClick={onReply}><MdOutlineReply className="z-99 text-2xl" /></button>
+                            <button onClick={onReply}>
+                                <MdOutlineReply className="z-99 text-2xl" />
+                            </button>
                         )}
                     </div>
                 )}
