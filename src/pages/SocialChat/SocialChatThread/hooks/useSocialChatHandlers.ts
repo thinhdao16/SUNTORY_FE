@@ -108,75 +108,163 @@ export function useSocialChatHandlers({
 
         return url;
     };
+
     const sendPickedFiles = async (files: File[]) => {
         clearReplyingToMessage();
-        const uploadedFiles: { name: string; linkImage: string }[] = [];
         const failedFiles: string[] = [];
 
+        const validFiles: File[] = [];
         for (const file of files) {
             if (file.size > MAX_IMAGE_SIZE) {
                 failedFiles.push(`${file.name} (>15MB)`);
                 useToastStore.getState().showToast(`${file.name} quá lớn (>15MB)`, 3000, "warning");
                 continue;
             }
+            validFiles.push(file);
+        }
+
+        if (validFiles.length === 0) {
+            if (failedFiles.length > 0) {
+                useToastStore.getState().showToast(
+                    `${failedFiles.length} file thất bại: ${failedFiles.join(", ")}`,
+                    4000,
+                    "warning"
+                );
+            }
+            return;
+        }
+
+        const tempId = `temp_${Date.now()}_${Math.random()}`;
+        const now = dayjs.utc();
+        const baseId = Date.now();
+        
+        const localChatAttachments = validFiles.map((file, i) => {
+            const blobUrl = URL.createObjectURL(file);
+            return {
+                id: baseId + i,
+                tempAttachmentId: `${tempId}_${i}`,
+                chatMessageId: 0,
+                fileUrl: blobUrl,                 
+                fileName: file.name,
+                fileType: 1,
+                fileSize: file.size,
+                originalIndex: i,
+                createDate: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
+                localUrl: blobUrl,                
+                serverUrl: undefined,             
+                isUploading: false,                
+                uploadProgress: 100,               
+            };
+        });
+
+        const finalMessage: ChatMessage = {
+            id: Date.now(),
+            tempId,
+            messageText: "",
+            messageType: 1,
+            senderType: 1,
+            userId: currentUserId ?? 0,
+            userName: "currentUserName",
+            userAvatar: "currentUserAvatar",
+            createDate: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
+            timeStamp: generatePreciseTimestampFromDate(now.toDate()),
+            chatInfoId: 1,
+            code: roomId || "",
+            status: 10,
+            attachments: [],
+            isSend: false,
+            isError: false,
+            hasAttachment: 1,
+            isRead: 0,
+            isRevoked: 0,
+            isEdited: 0,
+            chatAttachments: localChatAttachments,
+            chatInfo: null,
+            reactions: [],
+            replyToMessageId: replyingToMessage?.id ?? null,
+            replyToMessage: replyingToMessage ?? null,
+            replyToMessageCode:
+                replyingToMessage?.code !== undefined && replyingToMessage?.code !== null
+                    ? String(replyingToMessage.code)
+                    : null,
+            isUploading: false,
+    };
+
+    addMessage(finalMessage);
+    setTimeout(() => scrollToBottom(), 100);
+
+    const uploadedFiles: { name: string; linkImage: string; localUrl: string; index: number }[] = [];
+    
+    try {
+        setLoadingMessages(true);
+        
+        const uploadPromises = validFiles.map(async (file, index) => {
             try {
+                const localUrl = localChatAttachments[index].fileUrl;
                 const uploaded = await uploadImageMutation.mutateAsync(file);
+                
                 if (uploaded?.length) {
-                    const u = uploaded[0];
-                    uploadedFiles.push({ name: u.name, linkImage: cleanImageUrl(u.linkImage) });
+                    const serverFile = uploaded[0];
+                    const serverUrl = cleanImageUrl(serverFile.linkImage);
+                    
+                    uploadedFiles.push({
+                        name: serverFile.name,
+                        linkImage: serverUrl,
+                        localUrl: localUrl,
+                        index: index,
+                    });
+
+                    await new Promise<void>((resolve) => {
+                        const preloadImage = new Image();
+                        
+                        preloadImage.onload = () => {
+                            console.log(`✅ Server image preloaded: ${serverFile.name}`);
+                            
+                            updateMessageWithServerResponse(tempId, {
+                                chatAttachments: finalMessage.chatAttachments.map((att, i) => {
+                                    if (i === index) {
+                                        return {
+                                            ...att,
+                                            // fileUrl: 
+                                            serverUrl: serverUrl,   
+                                            isUploading: false,       
+                                            uploadProgress: 100,
+                                        };
+                                    }
+                                    return att;
+                                })
+                            });
+                            
+                            resolve();
+                        };
+                        
+                        preloadImage.onerror = () => {
+                            console.warn(`⚠️ Server image failed: ${serverFile.name}`);
+                            resolve();
+                        };
+                        
+                        setTimeout(() => {
+                            console.warn(`⏰ Preload timeout: ${serverFile.name}`);
+                            resolve();
+                        }, 8000);
+                        
+                        preloadImage.src = serverUrl;
+                    });
+
+                } else {
+                    failedFiles.push(`${file.name} (no response)`);
                 }
             } catch (e) {
                 failedFiles.push(`${file.name} (upload failed)`);
-                useToastStore.getState().showToast(`Upload ${file.name} thất bại`, 3000, "error");
+                console.warn(`Upload failed for ${file.name}, keeping local preview`);
             }
-        }
+        });
+
+        await Promise.all(uploadPromises);
 
         if (uploadedFiles.length > 0) {
-            const tempId = `temp_${Date.now()}_${Math.random()}`;
-            const now = dayjs.utc();
-
-            const finalMessage: ChatMessage = {
-                id: Date.now(),
-                tempId,
-                messageText: "",
-                messageType: 1,
-                senderType: 1,
-                userId: currentUserId ?? 0,
-                userName: "currentUserName",
-                userAvatar: "currentUserAvatar",
-                createDate: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
-                timeStamp: generatePreciseTimestampFromDate(now.toDate()),
-                chatInfoId: 1,
-                code: roomId || "",
-                status: 10,
-                attachments: [],
-                isSend: false,
-                isError: false,
-                hasAttachment: 1,
-                isRead: 0,
-                isRevoked: 0,
-                isEdited: 0,
-                chatAttachments: uploadedFiles.map((f, i) => ({
-                    id: Date.now() + i,
-                    chatMessageId: 0,
-                    fileUrl: f.linkImage,
-                    fileName: f.name,
-                    fileType: 1,
-                    fileSize: 0,
-                    createDate: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
-                })),
-                chatInfo: null,
-                reactions: [],
-                replyToMessageId: replyingToMessage?.id ?? null,
-                replyToMessage: replyingToMessage ?? null,
-                replyToMessageCode:
-                    replyingToMessage?.code !== undefined && replyingToMessage?.code !== null
-                        ? String(replyingToMessage.code)
-                        : null,
-            };
-
-            addMessage(finalMessage);
-
+            uploadedFiles.sort((a, b) => a.index - b.index);
+            
             const payload: CreateSocialChatMessagePayload = {
                 chatCode: roomId || null,
                 messageText: "",
@@ -189,8 +277,8 @@ export function useSocialChatHandlers({
             };
 
             try {
-                setLoadingMessages(true);
                 const serverMsg = await sendMessageMutation.mutateAsync(payload);
+                
                 if (serverMsg) {
                     updateMessageWithServerResponse(tempId, {
                         id: serverMsg.id,
@@ -211,39 +299,77 @@ export function useSocialChatHandlers({
                         userAvatar: serverMsg.userAvatar,
                         hasAttachment: serverMsg.hasAttachment,
                         isRead: serverMsg.isRead,
+                        isSend: true, 
+                        isError: false,
+                        isUploading: false,
+                        
                         chatAttachments: serverMsg.chatAttachments?.length
-                            ? serverMsg.chatAttachments.map((att: any) => ({
-                                id: att.id,
-                                chatMessageId: att.chatMessageId,
-                                fileUrl: att.fileUrl,
-                                fileName: att.fileName,
-                                fileType: att.fileType,
-                                fileSize: att.fileSize,
-                                createDate: att.createDate,
-                            }))
-                            : finalMessage.chatAttachments,
+                            ? serverMsg.chatAttachments.map((att: any, index: number) => {
+                                const localAtt: any = finalMessage.chatAttachments[index];
+                                return {
+                                    id: att.id,
+                                    chatMessageId: att.chatMessageId,
+                                    fileUrl: localAtt?.fileUrl || att.fileUrl,
+                                    fileName: att.fileName,
+                                    fileType: att.fileType,
+                                    fileSize: att.fileSize,
+                                    createDate: att.createDate,
+                                    originalIndex: localAtt?.originalIndex ?? index,
+                                    serverUrl: att.fileUrl,
+                                    isUploading: false,    
+                                    uploadProgress: 100,
+                                };
+                            })
+                            : finalMessage.chatAttachments.map(att => ({
+                                ...att,
+                                isUploading: false,
+                                uploadProgress: 100,
+                            })),
                         attachments: [],
                     });
+
+                    setTimeout(() => {
+                        localChatAttachments.forEach(att => {
+                            if (att.localUrl && att.localUrl.startsWith('blob:')) {
+                                URL.revokeObjectURL(att.localUrl);
+                            }
+                        });
+                    }, 3000); 
                 }
             } catch (e) {
-                updateMessageByTempId({ ...finalMessage, isError: true, messageText: "Gửi tin nhắn thất bại" });
+                console.error('Send message failed:', e);
+                updateMessageWithServerResponse(tempId, {
+                    isError: true,
+                    isSend: false,
+                    isUploading: false,
+                    messageText: "Gửi tin nhắn thất bại"
+                });
                 useToastStore.getState().showToast("Gửi tin nhắn thất bại", 3000, "error");
-            } finally {
-                setLoadingMessages(false);
             }
         }
 
-        if (failedFiles.length > 0) {
-            useToastStore.getState().showToast(
-                `${failedFiles.length} file thất bại: ${failedFiles.join(", ")}`,
-                4000,
-                "warning"
-            );
-        }
+    } catch (error) {
+        console.error('Upload process failed:', error);
+        updateMessageWithServerResponse(tempId, {
+            isError: true,
+            isSend: false,
+            isUploading: false,
+            messageText: "Upload thất bại"
+        });
+    } finally {
+        setLoadingMessages(false);
+    }
 
-        setTimeout(() => scrollToBottom(), 100);
-    };
+    if (failedFiles.length > 0) {
+        useToastStore.getState().showToast(
+            `${failedFiles.length} file thất bại: ${failedFiles.join(", ")}`,
+            4000,
+            "warning"
+        );
+    }
 
+    setTimeout(() => scrollToBottom(), 100);
+};
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files ?? []);
         await sendPickedFiles(files);
@@ -298,7 +424,7 @@ export function useSocialChatHandlers({
             return;
         }
         const textToSend = field === "inputTranslate" ? messageTranslate.trim() : messageValue.trim();
-        if (isEmptyText(textToSend) && !hasFiles) {return}
+        if (isEmptyText(textToSend) && !hasFiles) { return }
         const tempId = `temp_${Date.now()}_${Math.random()}`;
         const now = dayjs.utc();
         const filesArr = [

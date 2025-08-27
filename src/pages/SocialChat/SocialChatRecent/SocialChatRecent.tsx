@@ -13,6 +13,9 @@ import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { generatePreciseTimestampFromDate } from '@/utils/time-stamp';
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+dayjs.extend(utc);
 
 export default function SocialChatRecent() {
   const { t } = useTranslation();
@@ -121,42 +124,47 @@ export default function SocialChatRecent() {
     return room.updateDate;
   };
 
+  const toMsUTC = (input: unknown): number => {
+    if (!input) return 0;
+    if (typeof input === "number") return input;
+    if (typeof input !== "string") return 0;
+
+    let s = input.trim();
+    s = s.replace(/(\.\d{3})\d+/, "$1");
+
+    if (!/[zZ]|[+\-]\d{2}:\d{2}$/.test(s)) {
+      s += "Z";
+    }
+
+    const d = dayjs.utc(s);
+    if (d.isValid()) return d.valueOf();
+
+    const t = new Date(s).getTime();
+    return Number.isFinite(t) ? t : 0;
+  };
+
+  const getSortTimestamp = (room: RoomChatInfo): number => {
+    const lm = room.lastMessageInfo?.createDate;
+    const up = room.updateDate;
+    const cr = room.createDate;
+    return Math.max(toMsUTC(up), toMsUTC(cr));
+  };
+
   const sortedChatRooms = useMemo(() => {
-    return [...chatRooms].sort((a, b) => {
-      try {
-        const parseDateSafe = (input: any): number => {
-          if (!input || typeof input !== 'string') return 0;
-          const date = new Date(input);
-          if (isNaN(date.getTime())) {
-            console.warn("⚠️ Invalid date string:", input);
-            return 0;
-          }
-          return date.getTime();
-        };
+    const arr = [...chatRooms];
+    arr.sort((a, b) => {
+      const ta = getSortTimestamp(a);
+      const tb = getSortTimestamp(b);
+      if (tb !== ta) return tb - ta;
 
-        const getTimestamp = (room: RoomChatInfo): number => {
-          const storeLastMessage = getLastMessageForRoom(room.code);
-          const storeDate = storeLastMessage?.updateDate ?? null;
-          const roomDate = room.updateDate || room.createDate || null;
+      const ua = a.unreadCount ?? 0;
+      const ub = b.unreadCount ?? 0;
+      if (ub !== ua) return ub - ua;
 
-          const storeTime = parseDateSafe(storeDate);
-          const roomTime = parseDateSafe(roomDate);
-
-          return Math.max(storeTime, roomTime);
-        };
-
-        const timestampA = getTimestamp(a);
-        const timestampB = getTimestamp(b);
-
-        return timestampB - timestampA;
-
-      } catch (error) {
-        console.warn('Sort error:', error);
-        return 0;
-      }
+      return (b.id ?? 0) - (a.id ?? 0);
     });
-  }, [chatRooms, getRoomUnread, getLastMessageForRoom]);
-  console.log(sortedChatRooms)
+    return arr;
+  }, [chatRooms]);
   useEffect(() => {
     const handleScroll = () => {
       const el = scrollRef.current;
@@ -171,7 +179,7 @@ export default function SocialChatRecent() {
     el?.addEventListener('scroll', handleScroll);
     return () => el?.removeEventListener('scroll', handleScroll);
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
+  console.log(sortedChatRooms)
   return (
     <div className="h-screen">
       <div
