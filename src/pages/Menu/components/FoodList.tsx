@@ -269,7 +269,7 @@ const FoodList: React.FC = () => {
                             </p>
                             <IonButton
                                 fill="outline"
-                                onClick={() => history.push('/menu-translation/scan-menu')}
+                                onClick={() => history.push('/menu-translation')}
                             >
                                 {t('Scan new menu')}
                             </IonButton>

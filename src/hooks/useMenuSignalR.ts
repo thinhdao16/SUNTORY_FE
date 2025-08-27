@@ -5,7 +5,7 @@ import { useMenuTranslationStore } from "@/store/zustand/menuTranslationStore";
 
 export function useMenuSignalR(menuId: string) {
     const connectionRef = useRef<signalR.HubConnection | null>(null);
-    const { setIsConnected, setFoodSuccess, foodSuccess } = useMenuTranslationStore();
+    const { setIsConnected, setFoodSuccess, foodSuccess, setFoodFailed, foodFailed } = useMenuTranslationStore();
     const isConnectingRef = useRef(false);
 
     // Tách logic xử lý message ra thành callback riêng
@@ -15,7 +15,12 @@ export function useMenuSignalR(menuId: string) {
             setFoodSuccess(newCount);
             console.log("🍽️ FoodSuccess count: ", foodSuccess, "→", newCount);
         }
-    }, [foodSuccess, setFoodSuccess]);
+        else {
+            const newCount = foodFailed + 1;
+            setFoodFailed(newCount);
+            console.log("🍽️ FoodFailed count: ", foodFailed, "→", newCount);
+        }
+    }, [foodSuccess, setFoodSuccess, foodFailed, setFoodFailed]);
 
     // Tách logic kết nối ra thành callback riêng
     const startConnection = useCallback(async () => {

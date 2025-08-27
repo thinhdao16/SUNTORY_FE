@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { menuAnalyzing } from '@/services/menu/menu-service';
 import { useMenuTranslationStore } from '@/store/zustand/menuTranslationStore';
 import { useMenuSignalR } from '@/hooks/useMenuSignalR';
+import { set } from 'react-hook-form';
 
 interface LocationState {
     base64Img: string;
@@ -19,6 +20,7 @@ const MenuAnalyzing: React.FC = () => {
     const [totalFood, setTotalFood] = useState(0);
     const [menuId, setMenuId] = useState(0);
     const foodSuccess = useMenuTranslationStore(state => state.foodSuccess);
+    const foodFailed = useMenuTranslationStore(state => state.foodFailed);
     const setFoodSuccess = useMenuTranslationStore(state => state.setFoodSuccess);
     // State cho Step 1: Analyzing Menu Content
     const [analyzingMenuContentProgress, setAnalyzingMenuContentProgress] = useState(0);
@@ -54,7 +56,6 @@ const MenuAnalyzing: React.FC = () => {
             const file = base64ToFile(base64Img, "gallery.png");
             formData.append("file", file);
             const result = await menuAnalyzing(formData);
-            console.log("result", result);
             if (result?.data != null) {
                 setMenuId(result.data.id);
                 setTotalFood(result.data.totalFood);
@@ -63,9 +64,15 @@ const MenuAnalyzing: React.FC = () => {
                 setIsCompletedAnalyzingMenuContent(true);
             }
             else {
+                setIsCompletedInterpretingNutritionalData(true);
+                setIsCompletedGeneratingDishImages(true);
                 setAnalyzingMenuContentProgress(100);
                 setInterpretingNutritionalDataProgress(100);
                 setGeneratingDishImagesProgress(100);
+
+                setTimeout(() => {
+                    history.push('/food-list');
+                }, 1500);
             }
 
         } catch (error) {
@@ -142,7 +149,7 @@ const MenuAnalyzing: React.FC = () => {
         );
 
         if (
-            foodSuccess >= totalFood &&
+            foodSuccess + foodFailed >= totalFood &&
             isCompletedAnalyzingMenuContent &&
             isCompletedInterpretingNutritionalData &&
             menuId > 0 &&
@@ -165,7 +172,8 @@ const MenuAnalyzing: React.FC = () => {
         isCompletedAnalyzingMenuContent,
         isCompletedInterpretingNutritionalData,
         history,
-        menuId
+        menuId,
+        foodFailed
     ]);
 
     return (
