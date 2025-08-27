@@ -49,7 +49,14 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
                 >
                     <div
                         className="w-full rounded-t-3xl shadow-lg bg-white overflow-hidden"
-                        style={{ maxHeight: `${SHEET_MAX_VH}vh`, marginTop: 16, transform: `translateY(${translateY}px)`, touchAction: 'none' }}
+                        style={{ 
+                            maxHeight: `${SHEET_MAX_VH}vh`, 
+                            marginTop: 16, 
+                            transform: `translateY(${translateY}px)`, 
+                            touchAction: 'none',
+                            transition: 'transform 0.08s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                            willChange: 'transform'
+                        }}
                         onClick={(e) => e.stopPropagation()}
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}

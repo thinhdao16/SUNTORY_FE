@@ -54,14 +54,20 @@ const MenuAnalyzing: React.FC = () => {
             const file = base64ToFile(base64Img, "gallery.png");
             formData.append("file", file);
             const result = await menuAnalyzing(formData);
-            if (result.data != null) {
+            console.log("result", result);
+            if (result?.data != null) {
                 setMenuId(result.data.id);
-                // Cập nhật một lần, tránh interval không cần thiết gây rò rỉ
                 setTotalFood(result.data.totalFood);
                 setAnalyzingMenuContentProgress(100);
                 setIsActiveAnalyzingMenuContent(false);
                 setIsCompletedAnalyzingMenuContent(true);
             }
+            else {
+                setAnalyzingMenuContentProgress(100);
+                setInterpretingNutritionalDataProgress(100);
+                setGeneratingDishImagesProgress(100);
+            }
+
         } catch (error) {
             setIsActiveAnalyzingMenuContent(false);
             setIsCompletedAnalyzingMenuContent(true);
@@ -70,11 +76,11 @@ const MenuAnalyzing: React.FC = () => {
 
     // Effect cho Step 1: Analyzing Menu Content
     useEffect(() => {
-        // Reset đếm ảnh thành công khi bắt đầu một phiên phân tích mới
+        // Reset food success when start a new analyzing
         setFoodSuccess(0);
-        const interval = setInterval(async () => {
+        const interval = setInterval(() => {
             setAnalyzingMenuContentProgress(prev => {
-                // Nếu đã >= 80 (hoặc 100), giữ nguyên và dừng interval để tránh tụt về 80
+                // if >= 80 (or 100), keep it and stop interval to avoid going back to 80
                 if (prev >= 80) {
                     clearInterval(interval);
                     return prev;
@@ -98,32 +104,35 @@ const MenuAnalyzing: React.FC = () => {
 
     // Effect cho Step 2: Interpreting Nutritional Data
     useEffect(() => {
-        const startTimeout = setTimeout(() => {
-            setIsActiveInterpretingNutritionalData(true);
+        if (isCompletedAnalyzingMenuContent) {
+            const startTimeout = setTimeout(() => {
+                setIsActiveInterpretingNutritionalData(true);
 
-            const interval = setInterval(() => {
-                setInterpretingNutritionalDataProgress(prev => {
-                    const newProgress = Math.min(prev + 1, 100);
-                    if (newProgress >= 100) {
-                        clearInterval(interval);
-                        setIsActiveInterpretingNutritionalData(false);
-                        setIsCompletedInterpretingNutritionalData(true);
-                    }
-                    return newProgress;
-                });
-            }, 120);
-        }, 5500);
+                const interval = setInterval(() => {
+                    setInterpretingNutritionalDataProgress(prev => {
+                        const newProgress = Math.min(prev + 4, 100);
+                        if (newProgress >= 100) {
+                            clearInterval(interval);
+                            setIsActiveInterpretingNutritionalData(false);
+                            setIsCompletedInterpretingNutritionalData(true);
+                        }
+                        return newProgress;
+                    });
+                }, 120);
+                return () => clearInterval(interval);
+            }, 1000);
 
-        return () => clearTimeout(startTimeout);
-    }, []);
+            return () => {
+                clearTimeout(startTimeout);
+            };
+        }
+    }, [isCompletedAnalyzingMenuContent]);
 
     // Effect cho Step 3: Generating Dish Images
     const navigatedRef = useRef(false);
 
     useEffect(() => {
         if (totalFood === 0) return;
-        console.log("totalFood", totalFood);
-
         // set generating dish images progress
         setIsActiveGeneratingDishImages(true);
         //calculate progress
@@ -139,7 +148,7 @@ const MenuAnalyzing: React.FC = () => {
             menuId > 0 &&
             !navigatedRef.current
         ) {
-            // đảm bảo progress hiển thị đủ 100%
+            // make sure progress is 100%
             setGeneratingDishImagesProgress(100);
             setIsActiveGeneratingDishImages(false);
             setIsCompletedGeneratingDishImages(true);

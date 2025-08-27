@@ -23,6 +23,7 @@ const AllergiesSetup: React.FC = () => {
     const [searchResults, setSearchResults] = useState<AllergyItem[]>([]);
     const healthMasterData = useHealthMasterDataStore((state) => state.masterData);
     const { setSavedAllergiesStore, savedAllergiesStore: storeAllergies, setSelectedAllergiesStore, selectedAllergiesStore: storeSelectedAllergies, diet, setDiet } = useMenuTranslationStore();
+    
     // Get all allergies from healthMasterData
     const getAllAllergies = (): AllergyItem[] => {
         if (!healthMasterData?.groupedAllergies) return [];
@@ -84,9 +85,9 @@ const AllergiesSetup: React.FC = () => {
     // Function để search allergies
     const handleInputChange = (value: string) => {
         setInputValue(value);
-        value ? setIsIconSendStyle('blue') : setIsIconSendStyle('black');
+        setIsIconSendStyle(value ? 'blue' : 'black');
 
-        if (value.trim().length > 0) {
+        if (value) {
             const allAllergies = getAllAllergies();
             // Filter allergies dựa trên input
             const filtered = allAllergies.filter(allergy =>
@@ -94,7 +95,7 @@ const AllergiesSetup: React.FC = () => {
                 !selectedAllergies.some(selected => selected.allergyId === allergy.allergyId) &&
                 !savedAllergies.some(saved => saved.allergyId === allergy.allergyId)
             );
-            setSearchResults(filtered.slice(0, 5)); // Giới hạn 5 kết quả
+            setSearchResults(filtered.slice(0, 5));
             setShowDropdown(filtered.length > 0);
         } else {
             setSearchResults([]);
@@ -165,7 +166,7 @@ const AllergiesSetup: React.FC = () => {
                             <IonInput
                                 value={inputValue}
                                 placeholder={t('e.g., Peanuts, Shellfish')}
-                                onIonChange={(e) => handleInputChange((e.detail.value ?? '').toString())}
+                                onIonInput={(e) => handleInputChange((e.detail.value ?? '').toString())}
                                 onIonFocus={() => {
                                     if (inputValue.trim().length > 0 && searchResults.length > 0) {
                                         setShowDropdown(true);
@@ -173,7 +174,7 @@ const AllergiesSetup: React.FC = () => {
                                 }}
                             />
                             <IonButton slot="end" fill="clear" onClick={addAllergy} aria-label="Add allergy">
-                                <IonIcon icon={paperPlaneOutline} className="text-gray-500" style={{ color: isIconSendStyle }} />
+                                <IonIcon icon={paperPlaneOutline} className="text-gray-700" style={{ color: isIconSendStyle }} />
                             </IonButton>
                         </IonItem>
 

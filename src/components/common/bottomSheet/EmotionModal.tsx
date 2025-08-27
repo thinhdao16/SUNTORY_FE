@@ -179,6 +179,7 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
             style={{
               transform: `translateY(${translateY}px)`,
               touchAction: "none",
+              
             }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
