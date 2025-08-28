@@ -22,8 +22,8 @@ const AllergiesSetup: React.FC = () => {
     const [showDropdown, setShowDropdown] = useState(false);
     const [searchResults, setSearchResults] = useState<AllergyItem[]>([]);
     const healthMasterData = useHealthMasterDataStore((state) => state.masterData);
-    const { setSavedAllergiesStore, savedAllergiesStore: storeAllergies, setSelectedAllergiesStore, selectedAllergiesStore: storeSelectedAllergies, diet, setDiet } = useMenuTranslationStore();
-    
+    const { setSavedAllergiesStore, savedAllergiesStore: storeAllergies, setSelectedAllergiesStore, selectedAllergiesStore: storeSelectedAllergies, setDiet } = useMenuTranslationStore();
+
     // Get all allergies from healthMasterData
     const getAllAllergies = (): AllergyItem[] => {
         if (!healthMasterData?.groupedAllergies) return [];
@@ -43,32 +43,34 @@ const AllergiesSetup: React.FC = () => {
     useEffect(() => {
         (async () => {
             try {
-                const res: any = await getInfoService();
-                const fromProfile: AllergyItem[] = res.data.allergies.map((item: any) => ({
-                    allergyId: item.allergy.id || item.id,
-                    name: item.allergy.name
-                }));
-                const dietStyle: number = res.data.groupedLifestyles.find(
-                    (g: any) => g.category?.name === "Diet"
-                )?.lifestyles.map((item: any) => item.id);
+                if (storeAllergies.length === 0 && storeSelectedAllergies.length === 0) {
+                    const res: any = await getInfoService();
 
-                //set state
-                setSavedAllergies(fromProfile);
-                setSavedAllergiesStore(fromProfile);
-                setDiet(dietStyle.toString());
-            } catch {
+                    if (res.data.allergies != null) {
+                        const fromProfile: AllergyItem[] = res.data.allergies.map((item: any) => ({
+                            allergyId: item.allergy.id || item.id,
+                            name: item.allergy.name
+                        }));
+                        setSavedAllergies(fromProfile);
+                        setSavedAllergiesStore(fromProfile);
+                    }
+
+                    if (res.data.groupedLifestyles != null) {
+                        const dietStyle: number = res.data.groupedLifestyles.find(
+                            (g: any) => g.category?.name === "Diet"
+                        )?.lifestyles.map((item: any) => item.id);
+                        setDiet(dietStyle.toString());
+                    }
+                }
+                else {
+                    setSavedAllergies(storeAllergies);
+                    setSelectedAllergies(storeSelectedAllergies);
+                }
+            } catch (error) {
                 console.log("error");
             }
         })();
     }, []);
-
-    // Khôi phục giá trị từ store khi quay lại
-    useEffect(() => {
-        if (storeAllergies.length > 0 && storeSelectedAllergies.length > 0) {
-            setSavedAllergies(storeAllergies);
-            setSelectedAllergies(storeSelectedAllergies);
-        }
-    }, [storeAllergies, storeSelectedAllergies, savedAllergies, selectedAllergies]);
 
     // Ẩn dropdown khi click ra ngoài
     useEffect(() => {

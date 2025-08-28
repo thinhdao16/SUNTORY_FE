@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { menuAnalyzing } from '@/services/menu/menu-service';
 import { useMenuTranslationStore } from '@/store/zustand/menuTranslationStore';
 import { useMenuSignalR } from '@/hooks/useMenuSignalR';
-import { set } from 'react-hook-form';
 
 interface LocationState {
     base64Img: string;

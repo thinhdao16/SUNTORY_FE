@@ -25,7 +25,7 @@ const ScanMenu: React.FC<{ isNative?: boolean, isDesktop?: boolean }> = ({ isNat
         const imgData = await chooseFromGallery();
         let base64Img = imgData?.base64 || (imgData?.webPath && await base64FromPath(imgData.webPath));
         if (base64Img) {
-            history.push("/menu-translation/menu-analyzing", { base64Img: base64Img });
+            history.push("/menu-analyzing", { base64Img: base64Img });
         }
     };
 
@@ -36,7 +36,7 @@ const ScanMenu: React.FC<{ isNative?: boolean, isDesktop?: boolean }> = ({ isNat
 
     useEffect(() => {
         if (base64Img) {
-            history.push("/menu-translation/menu-analyzing", { base64Img: base64Img });
+            history.push("/menu-analyzing", { base64Img: base64Img });
         }
         else { return; }
     }, [base64Img]);

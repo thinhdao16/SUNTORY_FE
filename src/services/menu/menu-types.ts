@@ -72,4 +72,4 @@ export interface ListFoodQuery {
     pageSize?: number;
 }
 
-export interface MenuFoodListResponse extends Paged<FoodModel[]> {}
+export interface MenuFoodListResponse extends Paged<FoodModel[]> { }

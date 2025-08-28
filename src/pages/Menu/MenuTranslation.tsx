@@ -15,31 +15,25 @@ const MenuTranslation: React.FC = () => {
     const { section } = useParams<{ section?: string }>();
     const { t } = useTranslation();
 
-    const menuItems = [
-        { label: t("Allergies Setup"), onClick: () => history.push("/menu-translation/allergies-setup"), chevron: true },
-        { label: t("Diet Setup"), onClick: () => history.push("/menu-translation/diet-setup"), chevron: true },
-        { label: t("Confirm Setup"), onClick: () => history.push("/menu-translation/analyzing-setup"), chevron: true },
-        { label: t("Scan Menu"), onClick: () => history.push("/menu-translation/scan-menu"), chevron: true },
-        { label: t("Menu Analyzing"), onClick: () => history.push("/menu-translation/menu-analyzing"), chevron: true },
-    ];
-
-    const renderSectionContent = () => {
+    // Khi có section con, chỉ render trang con tương ứng để tránh chồng lấp UI
+    if (section) {
         switch (section) {
             case "allergies-setup":
                 return <AllergiesSetup />;
-            case "diet-setup": return <DietSetup />;
-            case "confirm-setup": return <AnalyzingSetup />;
-            case "scan-menu": return <ScanMenu />;
-            case "menu-analyzing": return <MenuAnalyzing />;
+            case "diet-setup":
+                return <DietSetup />;
+            case "confirm-setup":
+                return <AnalyzingSetup />;
+            case "scan-menu":
+                return <ScanMenu />;
             default:
-                return <></>
+                return <></>;
         }
-    };
+    }
     return (
         <IonPage>
-            <IonContent className="ion-padding">
-                {renderSectionContent()}
-                <div className="flex justify-between items-left">
+            <IonHeader className="ion-no-border">
+                <IonToolbar>
                     <IonButtons slot="start">
                         <IonButton
                             fill="clear"
@@ -49,7 +43,17 @@ const MenuTranslation: React.FC = () => {
                             <IonIcon icon={arrowBack} className="text-gray-700 font-bold text-2xl" />
                         </IonButton>
                     </IonButtons>
-                </div>
+                    <IonTitle className="text-center font-semibold text-lg">
+                        {t('Menu Translation')}
+                    </IonTitle>
+                    <IonButtons slot="end">
+                        <IonButton className="opacity-0 pointer-events-none" fill="clear">
+                            <IonIcon icon={chevronBack} />
+                        </IonButton>
+                    </IonButtons>
+                </IonToolbar>
+            </IonHeader>
+            <IonContent className="ion-padding">
                 <div className="flex flex-col">
                     {/* Top Section - Icon */}
                     <div className="flex-1 flex items-center justify-center pt-16">

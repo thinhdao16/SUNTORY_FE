@@ -66,7 +66,10 @@ const DietSetup: React.FC = () => {
     const handleContinue = () => {
         const payload = {
             lifestyleId: selectedDiet,
-            allergies: allergies
+            allergies: allergies.map((item: AllergyItem) => ({
+                allergyId: item.allergyId,
+                name: item.name,
+            }))
         };
         history.push('/menu-translation/confirm-setup', { payload: payload });
     };

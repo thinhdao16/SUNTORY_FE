@@ -1,5 +1,5 @@
 import httpClient from "@/config/http-client";
-import { DietStyleResponse, MenuAnalyzingResponse, MenuFoodListResponse } from "./menu-types";
+import { DietStyleResponse, MenuAnalyzingResponse } from "./menu-types";
 
 
 export const getDietStyle = async () => {
@@ -8,7 +8,7 @@ export const getDietStyle = async () => {
 };
 
 export const menuAnalyzing = async (formData: FormData) => {
-    const response = await httpClient.post<MenuAnalyzingResponse | null>("/api/v1/menu-translation/create-translation", formData, {
+    const response = await httpClient.post<MenuAnalyzingResponse>("/api/v1/menu-translation/create-translation", formData, {
         headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;
