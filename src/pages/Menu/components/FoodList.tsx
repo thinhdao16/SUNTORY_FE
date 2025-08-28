@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { IonPage, IonContent, IonHeader, IonToolbar, IonButton, IonIcon, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { chevronBack } from 'ionicons/icons';
+import { arrowBack } from 'ionicons/icons';
 import { FoodModel } from '@/services/menu/menu-types';
+import NoDishImageIcon from '@/icons/logo/menu/no-dish-image.svg?react';
 import { getMenuFoodList } from '@/services/menu/menu-service';
 import FoodDetailModal from '@/components/common/bottomSheet/FoodDetailModal';
 import {
@@ -231,7 +232,7 @@ const FoodList: React.FC = () => {
                             onClick={handleBack}
                             style={{ margin: 0, padding: '8px', minWidth: 'auto' }}
                         >
-                            <IonIcon icon={chevronBack} className="text-gray-700" />
+                            <IonIcon icon={arrowBack} className="text-gray-700" />
                         </IonButton>
                         <div style={{
                             flex: 1,
@@ -263,16 +264,34 @@ const FoodList: React.FC = () => {
                     )}
 
                     {!loading && foods.length === 0 && !error && (
-                        <div className="text-center py-12">
-                            <p className="text-gray-500 text-lg mb-4">
-                                {t('No food found')}
+                        <div className="flex flex-col items-center justify-start pt-6 pb-28 px-6 text-center">
+                            <div className="mb-6">
+                                <NoDishImageIcon className="w-40 h-40" />
+                            </div>
+                            <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
+                                {t("Oops! Your photo doesn't seem to be food-related or is too blurry.")}
+                                <br />
+                                {t('Please upload a clear, food-related image.')}
                             </p>
-                            <IonButton
-                                fill="outline"
-                                onClick={() => history.push('/menu-translation')}
-                            >
-                                {t('Scan new menu')}
-                            </IonButton>
+
+                            {/* Bottom fixed retake button */}
+                            <div className="fixed left-0 right-0 px-4" style={{ bottom: `calc(65px + env(safe-area-inset-bottom, 0px))` }}>
+                                <IonButton
+                                    expand="block"
+                                    shape="round"
+                                    className="h-12"
+                                    style={{
+                                        '--background': '#1152F4',
+                                        '--background-hover': '#2563eb',
+                                        '--color': 'white',
+                                        'fontWeight': 600,
+                                        'borderRadius': '24px',
+                                    }}
+                                    onClick={() => history.push('/menu-translation/scan-menu')}
+                                >
+                                    {t('Retake')}
+                                </IonButton>
+                            </div>
                         </div>
                     )}
 
@@ -288,17 +307,19 @@ const FoodList: React.FC = () => {
                 </div>
 
                 {/* Infinite Scroll */}
-                <IonInfiniteScroll
-                    onIonInfinite={handleInfiniteScroll}
-                    threshold="100px"
-                    disabled={!hasNextPage || loading}
-                    className="pb-16"
-                >
-                    <IonInfiniteScrollContent
-                        loadingSpinner="bubbles"
-                        loadingText={t('loading...')}
-                    />
-                </IonInfiniteScroll>
+                {foods.length > 0 && (
+                    <IonInfiniteScroll
+                        onIonInfinite={handleInfiniteScroll}
+                        threshold="100px"
+                        disabled={!hasNextPage || loading}
+                        className="pb-16"
+                    >
+                        <IonInfiniteScrollContent
+                            loadingSpinner="bubbles"
+                            loadingText={t('loading...')}
+                        />
+                    </IonInfiniteScroll>
+                )}
             </IonContent>
 
             {/* Food Detail Modal */}
