@@ -12,7 +12,8 @@ export function useChatStreamMessages(
     messagesContainerRef: RefObject<HTMLDivElement | null>,
     sessionId?: string,
     hasFirstSignalRMessage?: boolean,
-    isOnline: boolean = true
+    isOnline: boolean = true,
+    recall: any = null
 ) {
     const { messages, setMessages, addMessage, clearMessages } = useChatStore();
     const [messageValue, setMessageValue] = useState("");
@@ -81,6 +82,7 @@ export function useChatStreamMessages(
 
     const handleScrollLoadMore = useCallback(async () => {
         const el = messagesContainerRef.current;
+        recall()
         if (!el || isFetchingNextPage || !hasNextPage) return;
 
         if (el.scrollTop <= 150) {

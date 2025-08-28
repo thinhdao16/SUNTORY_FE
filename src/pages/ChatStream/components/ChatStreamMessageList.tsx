@@ -40,6 +40,7 @@ type ChatStreamMessageListProps = {
     isSpending?: boolean;
     lastPage: { hasMore: boolean } | null;
     thinkLoading?: boolean;
+    scrollToBottom?: () => void;
 };
 
 export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
@@ -57,7 +58,8 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
     isAtTop,
     isSpending,
     lastPage,
-    thinkLoading
+    thinkLoading,
+    scrollToBottom
 }) => {
         // const { text } = useSignalRStreamStore((s) => s.currentChatStream || { text: '' });
         const {
@@ -146,7 +148,7 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                     >
                         <div className="flex gap-2 items-start w-fit">
                             <BotIcon className="min-w-[30px] aspect-square object-contain" />
-                            <ThinkingStatus />
+                            <ThinkingStatus scrollToBottom={scrollToBottom ?? (() => {})} />
                         </div>
                     </motion.div>
                 )}
@@ -162,7 +164,7 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                     >
                         <div className="flex gap-2 items-start w-fit">
                             <BotIcon className="min-w-[30px] aspect-square object-contain" />
-                            <ThinkingStatus />
+                            <ThinkingStatus scrollToBottom={scrollToBottom ?? (() => {})} />
                         </div>
                     </motion.div>
                 )}

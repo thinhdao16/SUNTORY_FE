@@ -43,10 +43,15 @@ export interface ChatAttachment {
     id: number;
     chatMessageId: number;
     fileUrl: string;
-    fileType: number;
     fileName: string;
-    fileSize: number | null;
+    fileType: number;
+    fileSize: number;
     createDate: string;
+    isUploading?: boolean;
+    isError?: boolean;
+    localUrl?: string;
+    serverUrl?: string;
+
 }
 
 export interface ReplyToMessage {
@@ -90,6 +95,7 @@ export interface ChatMessage {
     status: number;
     chatInfoId: number;
     createDate: string;
+    updateDate?:string;
     userName: string;
     botName?: string | null;
     userAvatar?: string | null;
@@ -114,10 +120,11 @@ export interface ChatMessage {
     isRight?: boolean;
     timeStamp?: number;
     isPending?: boolean;
-
+    isUploading?: boolean;
     isSend?: boolean;
     isError?: boolean;
-   
+    translatedText?: string; 
+    isTranslating?: boolean;
 }
 
 // export interface PendingMessage {

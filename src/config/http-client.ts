@@ -6,6 +6,7 @@ const httpClient = axios.create({
     baseURL: ENV.BE,
     headers: {
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true"
     },
 });
 

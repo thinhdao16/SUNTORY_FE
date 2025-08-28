@@ -158,17 +158,18 @@ const SocialPartnerAdd = () => {
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="relative  bg-white p-9 rounded-xl border border-main">
+                                        <div className="relative flex justify-center items-center bg-white p-6 rounded-xl border border-main">
                                             <QRCodeCanvas
                                                 id="qr-gen"
                                                 value={valueQr}
-                                                size={130}
+                                                size={150}
                                                 level="H"
+                                                marginSize={4}
                                             />
-                                            <div className="absolute top-6 left-6 w-7 h-7 border-t-4 border-l-4 border-black rounded-tl-md" />
-                                            <div className="absolute top-6 right-6 w-7 h-7 border-t-4 border-r-4 border-black rounded-tr-md" />
-                                            <div className="absolute bottom-6 left-6 w-7 h-7 border-b-4 border-l-4 border-black rounded-bl-md" />
-                                            <div className="absolute bottom-6 right-6 w-7 h-7 border-b-4 border-r-4 border-black rounded-br-md" />
+                                            <div className="absolute top-7 left-7 w-7 h-7 border-t-4 border-l-4 border-black rounded-tl-md" />
+                                            <div className="absolute top-7 right-7 w-7 h-7 border-t-4 border-r-4 border-black rounded-tr-md" />
+                                            <div className="absolute bottom-7 left-7 w-7 h-7 border-b-4 border-l-4 border-black rounded-bl-md" />
+                                            <div className="absolute bottom-7 right-7 w-7 h-7 border-b-4 border-r-4 border-black rounded-br-md" />
                                         </div>
                                         <button className=" w-full  bg-main text-white text-sm font-semibold px-6 py-2 rounded-full flex items-center justify-center gap-2"
                                             // onClick={() => openModal("shareQR")}

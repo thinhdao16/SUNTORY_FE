@@ -30,8 +30,9 @@ const AvatarPreviewModal: React.FC<AvatarPreviewModalProps> = ({ open, src, alt,
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         onClick={e => e.stopPropagation()}
                     />
-                    <button className="absolute top-4 right-4 text-white text-lg bg-black/50 rounded-full p-1" onClick={onClose}> <FiX size={14} /></button>
                 </div>
+                    <button className="absolute top-10 right-6 text-white text-lg bg-black/50 rounded-full p-2" onClick={onClose}> <FiX size={14} /></button>
+
             </motion.div>
         )}
     </AnimatePresence>

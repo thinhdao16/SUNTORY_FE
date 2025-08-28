@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { useEffect, useRef, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
-import { RoomChatInfo, useListChatRooms, useUserChatRooms } from '../hooks/useSocialChat';
+import { RoomChatInfo, useListChatRooms, useNotificationCounts, useUserChatRooms } from '../hooks/useSocialChat';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { useTranslation } from 'react-i18next';
 import { formatTimeFromNow } from '@/utils/formatTime';
@@ -13,6 +13,9 @@ import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { generatePreciseTimestampFromDate } from '@/utils/time-stamp';
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+dayjs.extend(utc);
 
 export default function SocialChatRecent() {
   const { t } = useTranslation();
@@ -36,6 +39,11 @@ export default function SocialChatRecent() {
   const {
     data: listDataChatRooms,
   } = useListChatRooms();
+  useNotificationCounts({
+    enabled: true,
+    refetchInterval: 30000
+  });
+
   const { data: userInfo } = useAuthInfo();
 
   const listRoomIdChatRooms = listDataChatRooms?.pages?.flat()?.map((room: RoomChatInfo) => room.code) || [];
@@ -46,12 +54,12 @@ export default function SocialChatRecent() {
     enableDebugLogs: false,
     refetchUserChatRooms
   });
-  useSocialSignalR(deviceInfo.deviceId ?? "", {
-    roomId: "",
-    refetchRoomData: () => { void refetchFriendshipRequests(); void refetchUserChatRooms(); },
-    autoConnect: true,
-    enableDebugLogs: false,
-  });
+  // useSocialSignalR(deviceInfo.deviceId ?? "", {
+  //   roomId: "",
+  //   refetchRoomData: () => { void refetchFriendshipRequests(); void refetchUserChatRooms(); },
+  //   autoConnect: true,
+  //   enableDebugLogs: false,
+  // });
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -108,39 +116,55 @@ export default function SocialChatRecent() {
 
   const getLatestUpdateDate = (room: RoomChatInfo) => {
     const storeLastMessage = getLastMessageForRoom(room.code);
-    if (storeLastMessage?.createDate) {
-      const storeMessageDate = new Date(storeLastMessage.createDate).getTime();
+    if (storeLastMessage?.updateDate) {
+      const storeMessageDate = new Date(storeLastMessage.updateDate).getTime();
       const roomUpdateDate = new Date(room.updateDate || 0).getTime();
-      return storeMessageDate > roomUpdateDate ? storeLastMessage.createDate : room.updateDate;
+      return storeMessageDate > roomUpdateDate ? storeLastMessage.updateDate : room.updateDate;
     }
     return room.updateDate;
   };
+
+  const toMsUTC = (input: unknown): number => {
+    if (!input) return 0;
+    if (typeof input === "number") return input;
+    if (typeof input !== "string") return 0;
+
+    let s = input.trim();
+    s = s.replace(/(\.\d{3})\d+/, "$1");
+
+    if (!/[zZ]|[+\-]\d{2}:\d{2}$/.test(s)) {
+      s += "Z";
+    }
+
+    const d = dayjs.utc(s);
+    if (d.isValid()) return d.valueOf();
+
+    const t = new Date(s).getTime();
+    return Number.isFinite(t) ? t : 0;
+  };
+
+  const getSortTimestamp = (room: RoomChatInfo): number => {
+    const lm = room.lastMessageInfo?.createDate;
+    const up = room.updateDate;
+    const cr = room.createDate;
+    return Math.max(toMsUTC(up), toMsUTC(cr));
+  };
+
   const sortedChatRooms = useMemo(() => {
-    return [...chatRooms].sort((a, b) => {
-      try {
-        const unreadA = a.unreadCount ?? getRoomUnread(a.code) ?? 0;
-        const unreadB = b.unreadCount ?? getRoomUnread(b.code) ?? 0;
+    const arr = [...chatRooms];
+    arr.sort((a, b) => {
+      const ta = getSortTimestamp(a);
+      const tb = getSortTimestamp(b);
+      if (tb !== ta) return tb - ta;
 
-        if (unreadA > 0 && unreadB === 0) return -1;
-        if (unreadA === 0 && unreadB > 0) return 1;
+      const ua = a.unreadCount ?? 0;
+      const ub = b.unreadCount ?? 0;
+      if (ub !== ua) return ub - ua;
 
-        const getTimestamp = (room: RoomChatInfo) => {
-          const date = room.updateDate || room.createDate;
-          return date ? generatePreciseTimestampFromDate(date) : 0;
-        };
-
-        const timestampA = getTimestamp(a);
-        const timestampB = getTimestamp(b);
-
-        return timestampB - timestampA; 
-
-      } catch (error) {
-        console.warn('Sort error:', error);
-        return 0;
-      }
+      return (b.id ?? 0) - (a.id ?? 0);
     });
-  }, [chatRooms, getRoomUnread]);
-
+    return arr;
+  }, [chatRooms]);
   useEffect(() => {
     const handleScroll = () => {
       const el = scrollRef.current;
@@ -155,7 +179,7 @@ export default function SocialChatRecent() {
     el?.addEventListener('scroll', handleScroll);
     return () => el?.removeEventListener('scroll', handleScroll);
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
+  console.log(sortedChatRooms)
   return (
     <div className="h-screen">
       <div
@@ -166,7 +190,7 @@ export default function SocialChatRecent() {
           }`}
       >
         <div className="">
-          {chatRooms.map((room) => {
+          {sortedChatRooms.map((room) => {
             const unread = room.unreadCount ?? getRoomUnread(room.code) ?? 0;
             const isUnread = unread > 0;
             return (
