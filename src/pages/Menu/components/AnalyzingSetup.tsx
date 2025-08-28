@@ -23,7 +23,6 @@ const AnalyzingSetup: React.FC = () => {
     // Call API and handle response
     const handleUpdateHealth = async () => {
         try {
-            console.log(data);
             const payload: any = {
                 lifestyleId: data?.lifestyleId || "0",
                 allergies: data?.allergies || []
