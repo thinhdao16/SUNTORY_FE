@@ -19,3 +19,8 @@ export interface UpdateSocialChatMessagePayload {
 export interface RevokeSocialChatMessagePayload {
     messageCode: string;
 }
+export interface NotificationCounts {
+    userId: number;
+    unreadRoomsCount: number;
+    pendingFriendRequestsCount: number;
+}

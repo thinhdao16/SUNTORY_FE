@@ -53,6 +53,21 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
     const iconScale = useTransform(uiProgress, (p) => 0.9 + p * 0.35);
     const iconOpacity = useTransform(uiProgress, (p) => Math.min(1, p * 1.2));
 
+    const iconX = useTransform(x, (v) => {
+        const swipeDistance = Math.max(0, -v);
+        if (swipeDistance <= WIDTH) {
+            return 0;
+        } else {
+            const extraDistance = swipeDistance - WIDTH;
+            return -extraDistance / 2;
+        }
+    });
+
+    const iconWidth = useTransform(x, (v) => {
+        const swipeDistance = Math.max(0, -v);
+        return `${Math.max(WIDTH, swipeDistance)}px`;
+    });
+
     useEffect(() => {
         const unsub = x.on("change", (v) => {
             const w = Math.max(1, rowWidthRef.current);
@@ -114,17 +129,36 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
                 className="absolute inset-y-0 right-0 bg-red-500"
                 style={{ width: redWidth, pointerEvents: "none" }}
             />
+            
             <motion.button
                 aria-label={t("Delete") as string}
                 onClick={handlePressDelete}
-                className="absolute inset-y-0 right-0 w-[72px] flex items-center justify-center text-white"
-                style={{ scale: iconScale, opacity: iconOpacity }}
+                className="absolute inset-y-0 right-0 w-[72px] flex items-center justify-center text-white z-10"
+                style={{ 
+                    scale: iconScale, 
+                    opacity: iconOpacity,
+                    x: iconX
+                }}
             >
                 <IoTrashOutline className="text-2xl" />
             </motion.button>
+
+            {/* <motion.button
+                aria-label={t("Delete") as string}
+                onClick={handlePressDelete}
+                className="absolute inset-y-0 right-0 flex items-center justify-center text-white z-10"
+                style={{ 
+                    scale: iconScale, 
+                    opacity: iconOpacity,
+                    width: iconWidth
+                }}
+            >
+                <IoTrashOutline className="text-2xl" />
+            </motion.button> */}
+
             <motion.div
                 ref={rowRef}
-                className="bg-white border-b-[0.5px] border-neutral-200 py-3 mx-6 w-auto relative"
+                className="bg-white border-b-[0.5px] border-neutral-200 py-3 mx-6 w-auto relative z-20"
                 style={{ x, touchAction: "pan-y" }}
                 drag="x"
                 dragDirectionLock

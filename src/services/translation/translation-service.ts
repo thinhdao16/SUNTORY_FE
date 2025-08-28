@@ -56,6 +56,7 @@ export interface CreateTranslationResponse {
     aiReviewInsights?: string | null;
     fromLanguageId?: number | null;
     toLanguageId?: number | null;
+    translated_text?:string
   };
 }
 

@@ -13,6 +13,7 @@ import BackIcon from "@/icons/logo/back.svg?react";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 import PageContainer from "@/components/layout/PageContainer";
 import ChangePassword from "../Auth/ChangePassword/ChangePassword";
+import { useLogout } from "./hooks/useLogout";
 
 
 const languageOptions = [
@@ -27,10 +28,7 @@ const Profile: React.FC = () => {
     const { section } = useParams<{ section?: string, type: string }>();
     const history = useHistory();
     const location = useLocation<{ from?: string }>();
-    const handleLogout = () => {
-        useAuthStore.getState().logout();
-        window.location.href = "/login";
-    };
+    const handleLogout = useLogout();
     const handleChangeLanguage = (status: boolean, lang?: string) => {
         setShowLanguageOptions(status);
     };
@@ -81,7 +79,7 @@ const Profile: React.FC = () => {
                     <div className="loader border-4 border-white border-t-main rounded-full w-12 h-12 animate-spin"></div>
                 </div>
             )}
-            <div className="min-h-screen max-h-[calc(100vh-200px)] overflow-y-auto bg-white flex flex-col px-6"
+            <div className="min-h-screen max-h-[calc(100vh-200px)] overflow-y-auto bg-white flex flex-col px-6 pb-24"
             // style={{ paddingTop: "var(--safe-area-inset-top)" }}
             >
                 <div className="flex items-center h-16 mb-2">
@@ -110,7 +108,7 @@ const Profile: React.FC = () => {
                 </div>
                 {userInfo && <ProfileHeader userInfo={userInfo} refetchAuthInfo={refetch} />}
                 <hr className="my-4 border-netural-200" />
-                <div className=" max-h-[calc(100svh-200px)] overflow-y-auto bg-white flex flex-col">
+                <div className=" bg-white flex flex-col">
                     <div className="pb-20">
                         {renderSectionContent()}
                     </div>

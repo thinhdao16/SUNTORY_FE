@@ -71,3 +71,6 @@ export interface ChangePasswordPayload {
     password: string;
     confirmPassword: string;
 }
+export interface LogoutPayload {
+    deviceId: string;
+}

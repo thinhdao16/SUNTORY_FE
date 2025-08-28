@@ -1,8 +1,8 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "react-query";
-import { createAnonymousChatRoom, createSocialChatMessageApi, getChatRoomByCode, getSocialChatMessages, getUserChatRooms, revokeSocialChatMessageApi, updateSocialChatMessageApi } from "@/services/social/social-chat-service";
+import { createAnonymousChatRoom, createSocialChatMessageApi, getChatRoomByCode, getNotificationCounts, getSocialChatMessages, getUserChatRooms, revokeSocialChatMessageApi, updateSocialChatMessageApi } from "@/services/social/social-chat-service";
 import { useSocialChatStore } from "@/store/zustand/social-chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
-import { CreateSocialChatMessagePayload, RevokeSocialChatMessagePayload, UpdateSocialChatMessagePayload } from "@/services/social/social-chat-type";
+import { CreateSocialChatMessagePayload, NotificationCounts, RevokeSocialChatMessagePayload, UpdateSocialChatMessagePayload } from "@/services/social/social-chat-type";
 import { ChatInfo } from "@/types/social-chat";
 
 export interface RoomChatInfo {
@@ -221,4 +221,51 @@ export const useRevokeSocialChatMessage = (options?: UseRevokeSocialChatMessageO
             },
         }
     );
+};
+export const useNotificationCounts = (options?: {
+    enabled?: boolean;
+    refetchInterval?: number;
+}) => {
+    const { enabled = true, refetchInterval = 30000 } = options || {};
+    const { setNotificationCounts } = useSocialChatStore();
+
+    return useQuery({
+        queryKey: ["notificationCounts"],
+        queryFn: getNotificationCounts,
+        enabled,
+        refetchInterval,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+        // staleTime: 1000 * 60 * 2,
+        onSuccess: (data: NotificationCounts) => {
+            const currentCounts = useSocialChatStore.getState().notificationCounts;
+            const newCounts = {
+                userId: data.userId || 0,
+                unreadRoomsCount: data.unreadRoomsCount || 0,
+                pendingFriendRequestsCount: data.pendingFriendRequestsCount || 0,
+            };
+            if (
+                currentCounts.userId !== newCounts.userId ||
+                currentCounts.unreadRoomsCount !== newCounts.unreadRoomsCount ||
+                currentCounts.pendingFriendRequestsCount !== newCounts.pendingFriendRequestsCount
+            ) {
+                setNotificationCounts(newCounts);
+            } else {
+            }
+        },
+        onError: (error: any) => {
+            if (error?.response?.status === 401) {
+                console.warn("Unauthorized access to notification counts");
+            } else {
+                console.error("Failed to fetch notification counts:", error);
+            }
+        },
+        retry: (failureCount, error: any) => {
+            // Don't retry on auth errors
+            if (error?.response?.status === 401) {
+                return false;
+            }
+            return failureCount < 3;
+        }
+    });
 };

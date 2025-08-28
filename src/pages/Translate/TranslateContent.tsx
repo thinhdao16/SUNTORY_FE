@@ -17,7 +17,7 @@ import { TranslationResult } from "@/store/zustand/translation-store";
 import { GoPaste } from "react-icons/go";
 import ReactMarkdown from 'react-markdown';
 import { useHistory } from "react-router-dom";
-import BackIcon from "@/icons/logo/vector_left.svg?react";
+import BackIcon from "@/icons/logo/back.svg?react";
 import { IoIosClose } from "react-icons/io";
 
 interface TranslateContentProps {

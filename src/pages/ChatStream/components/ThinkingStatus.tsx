@@ -5,9 +5,10 @@ import SparklesIcon from "@/icons/logo/AI_thinking.svg?react";
 type ThinkingStatusProps = {
     doneSteps?: number;
     className?: string;
+    scrollToBottom: () => void;
 };
 
-export default function ThinkingStatus({ doneSteps = 0, className = "" }: ThinkingStatusProps) {
+export default function ThinkingStatus({ doneSteps = 0, className = "", scrollToBottom }: ThinkingStatusProps) {
     const [currentStep, setCurrentStep] = useState(1);
 
     useEffect(() => {
@@ -16,6 +17,15 @@ export default function ThinkingStatus({ doneSteps = 0, className = "" }: Thinki
             return () => clearTimeout(t);
         }
     }, [doneSteps]);
+
+    useEffect(() => {
+        if (scrollToBottom) {
+            const timeoutId = setTimeout(() => {
+                scrollToBottom();
+            }, 100);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [currentStep, doneSteps, scrollToBottom]);
 
     const step1Done = doneSteps >= 1 || currentStep > 1;
     const step2Done = doneSteps >= 2;

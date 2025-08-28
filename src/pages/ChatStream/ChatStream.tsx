@@ -36,15 +36,14 @@ import { ChatStreamMessageList } from "./components/ChatStreamMessageList";
 import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 
 import "./ChatStream.module.css";
-import { IoArrowBack, IoArrowDown } from "react-icons/io5";
+import { IoArrowDown } from "react-icons/io5";
 import { useChatHistoryLastModule } from "./hooks/useChatStreamHistorylastModule";
 import { IonSpinner } from "@ionic/react";
 import { mergeMessagesStream } from "@/utils/mapSignalRStreamMessage ";
 import { MessageState, StreamMsg } from "@/types/chat-message";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
-import { useSignalRChat } from "@/hooks/useSignalRChat";
-import { streamText } from "@/utils/streamText";
+import BackDefaultIcon from "@/icons/logo/back.svg?react";
 import { useSignalRStream } from "@/hooks/useSignalRStream";
 
 dayjs.extend(utc);
@@ -154,9 +153,12 @@ const Chat: React.FC = () => {
     // ==== Hooks: Chat & Message ====
     // useSignalRChat(deviceInfo.deviceId || "");
     useSignalRStream(deviceInfo.deviceId || "", {
-        autoReconnect: true,
         logLevel: 0,
     });
+        const uploadImageMutation = useUploadChatFile();
+    const scrollToBottomMess = useScrollToBottom(messagesEndRef);
+    const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
+    const { showScrollButton, onContainerScroll, recalc } = useScrollButton(messagesContainerRef, messagesEndRef);
     const {
         lastPage,
         messages,
@@ -167,12 +169,9 @@ const Chat: React.FC = () => {
         scrollToBottom,
         messageValue,
         setMessageValue,
-    } = useChatStreamMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, false, isOnline);
+    } = useChatStreamMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, false, isOnline, recalc);
 
-    const uploadImageMutation = useUploadChatFile();
-    const scrollToBottomMess = useScrollToBottom(messagesEndRef);
-    const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
-    const { showScrollButton, onContainerScroll, recalc } = useScrollButton(messagesContainerRef, messagesEndRef);
+
 
 
     const shouldFetchHistory = useMemo(() => {
@@ -404,6 +403,9 @@ const Chat: React.FC = () => {
         }
     }, [location.state?.actionFrom]);
 
+useEffect(() => { recalc(); }, [mergedMessages.length]);
+useEffect(() => { recalc(); }, [keyboardHeight]);
+useEffect(() => { recalc(); }, []); 
 
     useAppState(() => {
         if (sessionId) queryClient.invalidateQueries(["messages", sessionId]);
@@ -433,7 +435,7 @@ const Chat: React.FC = () => {
                         }}
                         aria-label="Back"
                     >
-                        <IoArrowBack size={20} className="text-blue-600" />
+                        <BackDefaultIcon  />
                     </button>
 
                 </div>
@@ -485,6 +487,7 @@ const Chat: React.FC = () => {
                                 onRetryMessage={retryMessage}
                                 isSpending={isSending}
                                 thinkLoading={isSending}
+                                scrollToBottom={scrollToBottom}
                             />
                             <div style={{ marginTop: pendingBarHeight }} />
                             {/* {!isNative && (<div className={`h-25 lg:h-0 xl:h-15`} />)} */}

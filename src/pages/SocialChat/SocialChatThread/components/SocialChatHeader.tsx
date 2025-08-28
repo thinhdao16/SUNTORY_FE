@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import BackIcon from "@/icons/logo/vector_left_black.svg?react";
+import BackIcon from "@/icons/logo/back-default.svg?react";
+import { t } from "i18next";
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded-full.svg";
 import AddFriendMainIcon from "@/icons/logo/social-chat/add-friend-main.svg?react";
 import CancelInnovationIcon from "@/icons/logo/social-chat/cancel-innovation.svg?react";
@@ -107,7 +108,7 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-error-400 font-semibold hover:bg-red-50"
                             role="menuitem"
                         >
-                            <UnFriendIcon /> Unfriend
+                            <UnFriendIcon /> {t("Unfriend")}
                         </button>
                     </div>
                 )}
@@ -140,7 +141,7 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
 
     return (
         <>
-            <div className="w-full sticky top-0 z-2">
+            <div className="w-full sticky top-0 z-20">
                 <div className="relative flex items-center justify-between px-4 sm:px-6 h-[50px]">
                     <div className="flex items-center gap-3 z-10">
                         <button onClick={onBackClick} aria-label="Back" className="p-1 rounded hover:bg-gray-100">

@@ -22,7 +22,7 @@ const ImagesPreviewModal: React.FC<ImagesPreviewModalProps> = ({ open, images, i
         <AnimatePresence>
             {open && images[cur] && (
                 <motion.div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+                    className="fixed inset-0 z-9999 flex items-center justify-center bg-black/80"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -52,11 +52,12 @@ const ImagesPreviewModal: React.FC<ImagesPreviewModalProps> = ({ open, images, i
                             onClick={e => e.stopPropagation()}
                             draggable={false}
                         />
-                        <button className="absolute top-4 right-4 text-white text-lg bg-black/50 rounded-full p-1" onClick={onClose}> <FiX size={14} /></button>
                     </div>
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white text-sm bg-black/40 rounded-lg px-4 py-1">
                         {cur + 1} / {images.length}
                     </div>
+                        <button className="absolute top-10 right-6 text-white text-lg bg-black/50 rounded-full p-2" onClick={onClose}> <FiX size={20} /></button>
+
                 </motion.div>
             )}
         </AnimatePresence>

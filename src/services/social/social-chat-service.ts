@@ -1,5 +1,5 @@
 import httpClient from "@/config/http-client";
-import { CreateSocialChatMessagePayload, GetSocialChatMessagesParams, RevokeSocialChatMessagePayload, UpdateSocialChatMessagePayload } from "./social-chat-type";
+import { CreateSocialChatMessagePayload, GetSocialChatMessagesParams, NotificationCounts, RevokeSocialChatMessagePayload, UpdateSocialChatMessagePayload } from "./social-chat-type";
 
 export const getUserChatRooms = async (params: { PageNumber?: number; PageSize?: number; Keyword?: string } = {}) => {
     const { PageNumber = 0, PageSize = 100, Keyword } = params;
@@ -42,4 +42,8 @@ export async function updateSocialChatMessageApi(payload: UpdateSocialChatMessag
 export async function revokeSocialChatMessageApi(payload: RevokeSocialChatMessagePayload) {
     const res = await httpClient.put("/api/v1/chat-user/message/revoke", payload);
     return res.data.data;
-}
+};
+    export const getNotificationCounts = async (): Promise<NotificationCounts> => {
+    const response = await httpClient.get('/api/v1/chat-user/notifications/counts');
+    return response.data.data;
+};

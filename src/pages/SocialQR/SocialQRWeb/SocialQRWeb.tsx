@@ -26,24 +26,62 @@ const SocialQRWeb = () => {
     const history = useHistory();
     const isStarting = useRef(false);
     const isRunning = useRef(false);
+    const isNavigating = useRef(false); 
     const showToast = useToastStore.getState().showToast;
+
     const { mutate: createFriendship, isLoading } = useCreateFriendshipByCode({
         onSuccess: (data) => {
-            setIsCreatingFriendship(false);
-
+            React.startTransition(() => {
+                setIsCreatingFriendship(false);
+            });
+            
+            setTimeout(() => {
+                if (!isNavigating.current) {
+                    showToast(t("Friend request sent successfully!"), 3000, "success");
+                    handleGoBack();
+                }
+            }, 100);
         },
         onError: (error) => {
+            console.error("Create friendship failed:", error);
             
-            scanned.current = false;
-            setIsScanning(true);
-            setIsCreatingFriendship(false);
+            React.startTransition(() => {
+                scanned.current = false;
+                setIsScanning(true);
+                setIsCreatingFriendship(false);
+            });
             
-            if (!isRunning.current) {
-                setupHtml5Qrcode();
-            }
+            setTimeout(() => {
+                if (!isNavigating.current && !isRunning.current) {
+                    setupHtml5Qrcode();
+                }
+            }, 100);
         },
-
     });
+
+    const handleGoBack = () => {
+        if (isNavigating.current) return;
+        
+        isNavigating.current = true;
+        
+        const cleanup = async () => {
+            try {
+                if (html5QrCodeRef.current && isRunning.current) {
+                    await html5QrCodeRef.current.stop();
+                    html5QrCodeRef.current.clear();
+                    isRunning.current = false;
+                }
+            } catch (err) {
+                console.warn("Stop scanner failed:", err);
+            }
+            
+            setTimeout(() => {
+                history.goBack();
+            }, 50);
+        };
+        
+        cleanup();
+    };
 
     const decodeQRCodeFromFile = async (file: File) => {
         const img = document.createElement("img");
@@ -67,6 +105,7 @@ const SocialQRWeb = () => {
             };
         });
     };
+
     const handleQRSuccess = (decodedText: string) => {
         if (!decodedText.startsWith(QR_PREFIX)) {
             console.log('Not a WayJet QR code:', decodedText);
@@ -74,33 +113,44 @@ const SocialQRWeb = () => {
             return;
         }
 
-        if (scanned.current || !isScanning || isCreatingFriendship || isLoading) return;
+        if (scanned.current || !isScanning || isCreatingFriendship || isLoading || isNavigating.current) return;
         
-        scanned.current = true;
-        setIsScanning(false);
-        setIsCreatingFriendship(true);
+        React.startTransition(() => {
+            scanned.current = true;
+            setIsScanning(false);
+            setIsCreatingFriendship(true);
+        });
         
         const userCode = decodedText.replace(QR_PREFIX, '');
         console.log('QR scanned from camera, user code:', userCode);
         
         if (html5QrCodeRef.current && isRunning.current) {
-            html5QrCodeRef.current.stop().catch(console.warn);
-            isRunning.current = false;
+            html5QrCodeRef.current.stop()
+                .then(() => {
+                    isRunning.current = false;
+                })
+                .catch(console.warn);
         }
         
-        
-        createFriendship({ 
-            toUserCode: userCode, 
-            inviteMessage: "" 
-        });
+        setTimeout(() => {
+            if (!isNavigating.current) {
+                createFriendship({ 
+                    toUserCode: userCode, 
+                    inviteMessage: "" 
+                });
+            }
+        }, 100);
     };
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        if (isProcessing || isCreatingFriendship || isLoading) return;
-        setIsProcessing(true);
+        if (isProcessing || isCreatingFriendship || isLoading || isNavigating.current) return;
+        
+        React.startTransition(() => {
+            setIsProcessing(true);
+        });
 
         try {
             const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -126,14 +176,20 @@ const SocialQRWeb = () => {
 
                 showToast(t("QR code found!"), 2000, "success");
                 
-                if (!scanned.current && !isCreatingFriendship) {
-                    scanned.current = true;
-                    setIsScanning(false);
-                    setIsCreatingFriendship(true);
+                if (!scanned.current && !isCreatingFriendship && !isNavigating.current) {
+                    React.startTransition(() => {
+                        scanned.current = true;
+                        setIsScanning(false);
+                        setIsCreatingFriendship(true);
+                    });
                     
                     const userCode = decodedText.replace(QR_PREFIX, '');
                     
-                    createFriendship({ toUserCode: userCode, inviteMessage: "" });
+                    setTimeout(() => {
+                        if (!isNavigating.current) {
+                            createFriendship({ toUserCode: userCode, inviteMessage: "" });
+                        }
+                    }, 100);
                 }
             } else {
                 showToast(t("No QR code found in image"), 3000, "warning");
@@ -141,30 +197,28 @@ const SocialQRWeb = () => {
 
         } catch (error) {
             console.error("Error decoding QR from image:", error);
-
-            if (error instanceof Error) {
-                if (error.message.includes('QR code not found') || 
-                    error.message.includes('No QR code found')) {
-                    showToast(t("No QR code found in image"), 3000, "warning");
-                } else if (error.message.includes('Unable to load the image')) {
-                    showToast(t("Unable to load image"), 3000, "error");
-                } else {
-                    showToast(t("Unable to read QR from image"), 3000, "error");
-                }
-            } else {
-                showToast(t("Unable to read QR from image"), 3000, "error");
-            }
         } finally {
-            setIsProcessing(false);
+            React.startTransition(() => {
+                setIsProcessing(false);
+            });
             event.target.value = '';
         }
     };
 
     const setupHtml5Qrcode = async () => {
-        if (isStarting.current || isRunning.current) return;
+        if (isStarting.current || isRunning.current || isNavigating.current) return;
         isStarting.current = true;
 
         try {
+            if (html5QrCodeRef.current) {
+                try {
+                    await html5QrCodeRef.current.stop();
+                    html5QrCodeRef.current.clear();
+                } catch (err) {
+                    console.warn("Failed to clear previous scanner:", err);
+                }
+            }
+
             const qrCodeScanner = new Html5Qrcode(qrRegionId);
             const width = window.innerWidth;
             const height = window.innerHeight;
@@ -190,7 +244,9 @@ const SocialQRWeb = () => {
                     },
                 },
                 (decodedText) => {
-                    handleQRSuccess(decodedText);
+                    if (!scanned.current && !isNavigating.current) {
+                        handleQRSuccess(decodedText);
+                    }
                 },
                 (errorMessage) => {
                 }
@@ -202,6 +258,30 @@ const SocialQRWeb = () => {
         } finally {
             isStarting.current = false;
         }
+    };
+
+    const handleNavigateToQRCode = () => {
+        if (isCreatingFriendship || isLoading || isNavigating.current) return;
+        
+        isNavigating.current = true;
+        
+        const navigateToQR = async () => {
+            try {
+                if (html5QrCodeRef.current && isRunning.current) {
+                    await html5QrCodeRef.current.stop();
+                    html5QrCodeRef.current.clear();
+                    isRunning.current = false;
+                }
+            } catch (err) {
+                console.warn("Stop scanner failed:", err);
+            }
+            
+            setTimeout(() => {
+                history.push('/social-partner/add');
+            }, 50);
+        };
+        
+        navigateToQR();
     };
 
     useEffect(() => {
@@ -216,6 +296,7 @@ const SocialQRWeb = () => {
         init();
 
         return () => {
+            isNavigating.current = true;
             if (html5QrCodeRef.current && isRunning.current) {
                 html5QrCodeRef.current
                     .stop()
@@ -245,28 +326,6 @@ const SocialQRWeb = () => {
         };
     }, []);
 
-    useEffect(() => {
-        const cleanup = () => {
-            scanned.current = false;
-            setIsScanning(true);
-            setIsCreatingFriendship(false);
-            
-            if (html5QrCodeRef.current && isRunning.current) {
-                html5QrCodeRef.current
-                    .stop()
-                    .then(() => {
-                        html5QrCodeRef.current?.clear();
-                        isRunning.current = false;
-                    })
-                    .catch((err) => {
-                        console.warn("html5-qrcode stop failed:", err);
-                    });
-            }
-        };
-
-        return cleanup;
-    }, []);
-
     return (
         <IonPage>
             <IonContent fullscreen className="relative h-full p-0 m-0">
@@ -284,7 +343,8 @@ const SocialQRWeb = () => {
                     <div className="font-semibold text-center">{t("Scan to Rate")}</div>
                     <button 
                         type="button" 
-                        onClick={() => history.goBack()}
+                        onClick={handleGoBack} 
+                        disabled={isNavigating.current}
                     >
                         <QRClose />
                     </button>
@@ -300,7 +360,7 @@ const SocialQRWeb = () => {
                         <label
                             htmlFor="upload-image"
                             className={`bg-white text-netural-300 gap-[6px] flex flex-col items-center justify-center text-sm cursor-pointer font-medium ${
-                                isProcessing || isCreatingFriendship || isLoading ? 'opacity-50 pointer-events-none' : ''
+                                isProcessing || isCreatingFriendship || isLoading || isNavigating.current ? 'opacity-50 pointer-events-none' : ''
                             }`}
                         >
                             <UploadImgIcon className="block" />
@@ -314,16 +374,16 @@ const SocialQRWeb = () => {
                             accept="image/*"
                             className="hidden"
                             onChange={handleImageUpload}
-                            disabled={isProcessing || isCreatingFriendship || isLoading}
+                            disabled={isProcessing || isCreatingFriendship || isLoading || isNavigating.current}
                         />
                     </div>
                     <div>
                         <button
                             className={`bg-white text-netural-300 gap-[6px] flex flex-col items-center justify-center text-sm cursor-pointer font-medium ${
-                                isCreatingFriendship || isLoading ? 'opacity-50 pointer-events-none' : ''
+                                isCreatingFriendship || isLoading || isNavigating.current ? 'opacity-50 pointer-events-none' : ''
                             }`}
-                            onClick={() => history.push('/social-partner/add')}
-                            disabled={isCreatingFriendship || isLoading}
+                            onClick={handleNavigateToQRCode}
+                            disabled={isCreatingFriendship || isLoading || isNavigating.current}
                         >
                             <YourQRIcon className="block" />
                             {t("Your QR Code")}

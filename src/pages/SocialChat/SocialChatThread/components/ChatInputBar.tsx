@@ -285,7 +285,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             onClick={() => onFocus("translate")}
                             onBlur={() => onBlur("translate")}
                             onKeyDown={(e) => {
-                                if (hasReachedLimit) return; // ✅ Không cho gửi nếu quá giới hạn
+                                if (hasReachedLimit) return; 
                                 const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
                                 tAPI.touch();
 
@@ -337,13 +337,13 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                                                 if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
                                                 keepFocus();
                                                 tAPI.off();
-                                                requestAnimationFrame(() => {
+                                                // requestAnimationFrame(() => {
                                                     handleSendWithDebounce(e, actionFieldSend, false);
-                                                    requestAnimationFrame(() => {
+                                                    // requestAnimationFrame(() => {
                                                         setMessageValue("");
                                                         keepFocus();
-                                                    });
-                                                });
+                                                    // });
+                                                // });
                                             }}
                                         >
                                             <SendIcon />
@@ -377,7 +377,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                     onClick={() => onFocus('input')}
                     onBlur={() => onBlur('input')}
                     onKeyDown={(e) => {
-                        if (hasReachedLimit) return; // ✅ Không cho gửi nếu quá giới hạn
+                        if (hasReachedLimit) return; 
                         const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
                         tAPI.touch();
 
@@ -385,7 +385,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                             if (event.isComposing) {
                                 return;
                             }
-
+                            
                             e.preventDefault();
                             e.stopPropagation();
 

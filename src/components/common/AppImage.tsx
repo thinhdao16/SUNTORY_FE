@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import "react-lazy-load-image-component/src/effects/blur.css";
-import { useImageSize } from "@/hooks/useImageSize";
 
 type Effect = "blur" | "black-and-white" | "opacity";
 
@@ -14,16 +13,14 @@ type AppImageProps = {
   placeholderSrc?: string;
   effect?: Effect;
   onLoad?: () => void;
-
-  fallbackRatio?: number;
   hardHeight?: number;
-
   animate?: boolean;
   animationType?: "fade" | "fadeScale";
   duration?: number;
-  [key: string]: any;
   fit?: "cover" | "contain";
   backgroundColor?: string;
+  serverSrc?: string;
+  [key: string]: any;
 };
 
 const AppImage: React.FC<AppImageProps> = ({
@@ -31,87 +28,86 @@ const AppImage: React.FC<AppImageProps> = ({
   alt = "",
   className = "",
   wrapperClassName = "",
-  motionClassName = "",
   placeholderSrc = "/favicon.png",
   effect = "blur",
   onLoad,
-
-  fallbackRatio = 4 / 3,
   hardHeight = 200,
-
   animate = true,
   animationType = "fadeScale",
   duration = 0.25,
-
   fit = "contain",
   backgroundColor = "#f3f4f6",
-
+  serverSrc, 
   style,
   ...props
 }) => {
-  const [imgLoaded, setImgLoaded] = useState(false);
-  const measured = useImageSize(src);
+  const [localLoaded, setLocalLoaded] = useState(false);
+  const [serverLoaded, setServerLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState(src);
 
-  const ratio = useMemo(() => {
-    if (measured?.width && measured?.height) {
-      const r = measured.width / measured.height;
-      return r > 0 ? r : fallbackRatio;
-    }
-    return fallbackRatio;
-  }, [measured, fallbackRatio]);
-
-  const handleLoad = () => {
-    setImgLoaded(true);
+  const handleLocalLoad = useCallback(() => {
+    setLocalLoaded(true);
+    setHasError(false);
     onLoad?.();
-  };
+  }, [onLoad]);
+
+  const handleServerLoad = useCallback(() => {
+    setServerLoaded(true);
+    console.log("✅ Server image loaded, ready to transition");
+  }, []);
+
+  const handleError = useCallback(() => {
+    setHasError(true);
+    setLocalLoaded(false);
+  }, []);
+
+  useEffect(() => {
+    if (src !== currentSrc) {
+      setCurrentSrc(src);
+      if (!src?.startsWith("blob:")) {
+        setLocalLoaded(false);
+        setServerLoaded(false);
+        setHasError(false);
+      }
+    }
+  }, [src, currentSrc]);
 
   const variants =
     animationType === "fadeScale"
       ? { hidden: { opacity: 0, scale: 0.98 }, show: { opacity: 1, scale: 1 } }
       : { hidden: { opacity: 0 }, show: { opacity: 1 } };
 
-
   return (
     <div
       className={wrapperClassName}
       style={{
-        // aspectRatio: ratio,
         minHeight: hardHeight,
         position: "relative",
         backgroundColor,
         ...style,
       }}
     >
-      <AnimatePresence>
-        {!imgLoaded && (
-          <motion.div
-            initial={{ opacity: 0.35 }}
-            animate={{ opacity: 0.55 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className={`absolute inset-0 overflow-hidden rounded-2xl ${motionClassName}`}
-          >
-            <div className="w-full h-full bg-gray-200" />
-            <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+      {/* ✅ Local/Primary image layer */}
       <motion.div
         initial="hidden"
-        animate={imgLoaded && animate ? "show" : "hidden"}
+        animate={localLoaded && animate ? "show" : "hidden"}
         variants={variants}
         transition={{ duration }}
         className="absolute inset-0"
-        style={{ willChange: "opacity, transform" }}
+        style={{
+          willChange: "opacity, transform",
+          zIndex: serverLoaded ? 1 : 2,
+        }}
       >
         <LazyLoadImage
-          src={src}
+          src={currentSrc}
           alt={alt}
           className={className}
           effect={effect}
           placeholderSrc={placeholderSrc}
-          onLoad={handleLoad}
+          onLoad={handleLocalLoad}
+          onError={handleError}
           width="100%"
           height="100%"
           style={{
@@ -125,6 +121,47 @@ const AppImage: React.FC<AppImageProps> = ({
           {...props}
         />
       </motion.div>
+
+      {serverSrc && serverSrc !== currentSrc && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: serverLoaded ? 1 : 0 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+          className="absolute inset-0"
+          style={{
+            willChange: "opacity",
+            zIndex: serverLoaded ? 2 : 1,
+          }}
+        >
+          <LazyLoadImage
+            src={serverSrc}
+            alt={alt}
+            className={className}
+            effect="opacity"
+            onLoad={handleServerLoad}
+            onError={() => {
+              console.warn("Server image failed to load");
+            }}
+            width="100%"
+            height="100%"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: fit,
+              objectPosition: "center",
+            }}
+            decoding="async"
+            loading="lazy"
+          />
+        </motion.div>
+      )}
+
+      {/* Error state */}
+      {hasError && (
+        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
+          <span className="text-gray-500 text-xs">Failed to load</span>
+        </div>
+      )}
     </div>
   );
 };

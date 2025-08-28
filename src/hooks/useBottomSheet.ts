@@ -17,6 +17,7 @@ export function useBottomSheet() {
     const startTime = useRef<number | null>(null);
 
     const open = () => {
+        console.log("first")
         setIsOpen(true);
         setTranslateY(0);
     };

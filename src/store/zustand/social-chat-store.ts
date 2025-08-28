@@ -28,6 +28,8 @@ interface SocialChatState {
     updateMessageByTempId: (roomId: string, msg: ChatMessage) => void;
     updateMessageWithServerResponse: (roomId: string, tempId: string, serverData: Partial<ChatMessage>) => void;
     updateMessageByCode: (roomId: string, messageCode: string, updatedData: Partial<ChatMessage>) => void;
+    translateMessageByCode: (roomId: string, messageCode: string, updatedData: Partial<ChatMessage>) => void;
+
     updateMessageAndRepliesByCode: (roomId: string, messageCode: string, updatedData: Partial<ChatMessage>) => void;
     removeMessage: (roomId: string, tempId: string) => void;
     clearMessages: (roomId?: string) => void;
@@ -131,38 +133,38 @@ export const useSocialChatStore = create<SocialChatState>()(
         //     }),
 
 
-addMessages: (roomId, msgs) =>
-    set((state) => {
-        if (!state.messagesByRoomId[roomId]) {
-            state.messagesByRoomId[roomId] = [];
-        }
+        addMessages: (roomId, msgs) =>
+            set((state) => {
+                if (!state.messagesByRoomId[roomId]) {
+                    state.messagesByRoomId[roomId] = [];
+                }
 
-        const roomMessages = state.messagesByRoomId[roomId];
+                const roomMessages = state.messagesByRoomId[roomId];
 
-        msgs.forEach((newMsg) => {
-            const index = roomMessages.findIndex(
-                (existing) =>
-                    existing.code === newMsg.code ||
-                    (existing.tempId && existing.tempId === newMsg.tempId)
-            );
+                msgs.forEach((newMsg) => {
+                    const index = roomMessages.findIndex(
+                        (existing) =>
+                            existing.code === newMsg.code ||
+                            (existing.tempId && existing.tempId === newMsg.tempId)
+                    );
 
-            if (index === -1) {
-                // Chưa có → thêm mới
-                roomMessages.push(newMsg);
-            } else {
-                // Đã có → merge các field mới (giữ nguyên id, code, tempId, createDate cũ)
-                const existing = roomMessages[index];
-                roomMessages[index] = {
-                    ...existing,
-                    ...newMsg,
-                    id: existing.id ?? newMsg.id,
-                    code: existing.code,
-                    tempId: existing.tempId,
-                    createDate: existing.createDate,
-                };
-            }
-        });
-    }),
+                    if (index === -1) {
+                        // Chưa có → thêm mới
+                        roomMessages.push(newMsg);
+                    } else {
+                        // Đã có → merge các field mới (giữ nguyên id, code, tempId, createDate cũ)
+                        const existing = roomMessages[index];
+                        roomMessages[index] = {
+                            ...existing,
+                            ...newMsg,
+                            id: existing.id ?? newMsg.id,
+                            code: existing.code,
+                            tempId: existing.tempId,
+                            createDate: existing.createDate,
+                        };
+                    }
+                });
+            }),
 
 
         updateMessage: (roomId, updatedMsg) =>
@@ -242,7 +244,31 @@ addMessages: (roomId, msgs) =>
                     state.lastMessageByRoomId[roomId] = { ...last, ...next };
                 }
             }),
+        translateMessageByCode: (roomId, messageCode, updatedData) =>
+            set((state) => {
+                const roomMessages = state.messagesByRoomId[roomId];
+                if (!roomMessages) return;
 
+                const index = roomMessages.findIndex((msg) => msg.code === messageCode);
+                if (index === -1) return;
+
+                const current = roomMessages[index];
+                const next = {
+                    ...current,
+                    ...updatedData,
+                    id: current.id,
+                    code: current.code,
+                    tempId: current.tempId,
+                    createDate: current.createDate,
+                    timeStamp: current.timeStamp,
+                };
+                roomMessages[index] = next;
+
+                const last = state.lastMessageByRoomId[roomId];
+                if (last && last.code === messageCode) {
+                    state.lastMessageByRoomId[roomId] = { ...last, ...next };
+                }
+            }),
         updateMessageAndRepliesByCode: (roomId, messageCode, updatedData) =>
             set((state) => {
                 const roomMessages = state.messagesByRoomId[roomId];
@@ -417,6 +443,7 @@ addMessages: (roomId, msgs) =>
                 });
             }),
 
+
         addMessage: (roomId, msg) =>
             set((state) => {
                 if (!state.messagesByRoomId[roomId]) {
@@ -433,12 +460,16 @@ addMessages: (roomId, msgs) =>
                     state.messagesByRoomId[roomId].push(msg);
                     state.lastMessageByRoomId[roomId] = msg;
 
-                    const roomIndex = state.chatRooms.findIndex(r => r.code === roomId);
-                    if (roomIndex !== -1) {
-                        state.chatRooms[roomIndex].updateDate = msg.createDate || new Date().toISOString();
-                        const room = state.chatRooms.splice(roomIndex, 1)[0];
-                        state.chatRooms.unshift(room);
-                    }
+                    setTimeout(() => {
+                        set((state) => {
+                            const roomIndex = state.chatRooms.findIndex(r => r.code === roomId);
+                            if (roomIndex !== -1) {
+                                state.chatRooms[roomIndex].updateDate = msg.createDate || new Date().toISOString();
+                                const room = state.chatRooms.splice(roomIndex, 1)[0];
+                                state.chatRooms.unshift(room);
+                            }
+                        });
+                    }, 0);
                 }
             }),
 

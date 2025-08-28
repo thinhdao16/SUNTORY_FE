@@ -1,4 +1,3 @@
-// src/pages/SocialChat/SocialChatThread/components/ImageGallery.tsx
 import AppImage from "@/components/common/AppImage";
 import React, { useState, useRef, useEffect } from "react";
 import { FaRegTrashAlt } from "react-icons/fa";
@@ -57,10 +56,19 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
         /\.(jpg|jpeg|png|gif|webp)$/i.test(file.fileName || "")
     );
 
-    const photoAlbumPhotos = imageFiles.map((file: any) => ({
+    const sortedImageFiles = imageFiles.sort((a: any, b: any) => {
+        const indexA = a.originalIndex ?? 0;
+        const indexB = b.originalIndex ?? 0;
+        return indexA - indexB;
+    });
+
+    const photoAlbumPhotos = sortedImageFiles.map((file: any, index: number) => ({
         src: file.fileUrl,
+        serverSrc: file.serverUrl,
         width: 800,
         height: 600,
+        attachment: file,
+        stableKey: file.tempAttachmentId || file.id || `img_${index}`,
     }));
 
     const displayPhotos = showAll ? photoAlbumPhotos : photoAlbumPhotos.slice(0, MAX_PREVIEW);
@@ -80,39 +88,94 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                 <div
                     className={
                         displayPhotos.length === 1
-                            ? `w-[70vw]  lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "  justify-end" : "justify-start"}`
+                            ? `w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "justify-end" : "justify-start"}`
                             : "grid gap-2 w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
                     }
                 >
-                    {displayPhotos.map((photo: { src: string }, idx: number) => {
+                    {displayPhotos.map((photo: { src: string; serverSrc?: string; attachment?: any; stableKey: string }, idx: number) => {
+                        const attachment = photo.attachment;
+                        const isUploading = attachment?.isUploading;
+                        const uploadProgress = attachment?.uploadProgress || 0;
+                        const isError = attachment?.isError;
+                        const isSending = attachment?.isSending; // ✅ Thêm flag cho sending
+
                         const isLast = !showAll && idx === MAX_PREVIEW - 1 && remaining > 0;
                         const isLastOdd = displayPhotos.length % 2 === 1 && idx === displayPhotos.length - 1;
                         const isSecondLast = displayPhotos.length % 2 === 1 && idx === displayPhotos.length - 2;
                         const isThirdLast = displayPhotos.length % 2 === 1 && idx === displayPhotos.length - 3;
+
+                        const renderOverlay = () => {
+                            if (isError) {
+                                return (
+                                    <div className="absolute inset-0 bg-red-500/20 rounded-2xl flex items-center justify-center z-10">
+                                        <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
+                                            {t("Upload failed")}
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            if (isSending) {
+                                return (
+                                    <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center z-10">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            <span className="text-white text-sm font-medium">
+                                                {t("Uploading...")}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            if (isUploading) {
+                                return (
+                                    <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center z-10">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            <span className="text-white text-sm font-medium">
+                                                {t("Uploading...")}
+                                                {/* {uploadProgress > 0 ? `${uploadProgress}%` : t("Uploading...")} */}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            return null;
+                        };
+
                         if (displayPhotos.length === 1) {
                             return (
-                                <AppImage
-                                    key={idx}
-                                    src={photo.src}
-                                    alt=""
-                                    fit="contain"
-                                    wrapperClassName="w-full  rounded-2xl overflow-hidden"
-                                    className="rounded-2xl"
-                                    onClick={() => handleImageClick(idx)}
-                                    style={{ cursor: "pointer" }}
-                                />
+                                <div key={photo.stableKey} className="relative w-full rounded-2xl overflow-hidden">
+                                    <AppImage
+                                        src={photo.src}
+                                        serverSrc={photo.serverSrc}
+                                        alt=""
+                                        fit="contain"
+                                        wrapperClassName="w-full rounded-2xl overflow-hidden"
+                                        className="rounded-2xl"
+                                        onClick={() => handleImageClick(idx)}
+                                        style={{ cursor: "pointer" }}
+                                    />
+
+                                    {/* ✅ Render overlay states */}
+                                    {renderOverlay()}
+                                </div>
                             );
                         }
+
                         if (isLast && isLastOdd) {
                             return (
                                 <div
-                                    key={idx}
+                                    key={photo.stableKey}
                                     className="relative object-cover rounded-2xl col-span-2 w-full h-[180px] cursor-pointer overflow-hidden"
                                     style={{ gridColumn: "1 / span 2" }}
                                     onClick={() => handleImageClick(idx)}
                                 >
                                     <AppImage
                                         src={photo.src}
+                                        serverSrc={photo.serverSrc}
                                         alt=""
                                         className="w-full h-full object-cover rounded-2xl"
                                         style={{ filter: "brightness(0.7)" }}
@@ -122,6 +185,28 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                             +{remaining}
                                         </span>
                                     </div>
+
+                                    {(isUploading || isSending || isError) && (
+                                        <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center z-20">
+                                            <div className="flex flex-col items-center gap-2">
+                                                {isError ? (
+                                                    <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
+                                                        {t("Failed")}
+                                                    </div>
+                                                ) : isSending ? (
+                                                    <>
+                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        <span className="text-white text-sm font-medium">{t("Sending...")}</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        <span className="text-white text-xs">{t("Loading...")}</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         }
@@ -129,85 +214,128 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                         if (isLast) {
                             return (
                                 <div
-                                    key={idx}
+                                    key={photo.stableKey}
                                     className="relative object-cover rounded-2xl w-full h-full cursor-pointer overflow-hidden"
                                     onClick={() => handleImageClick(idx)}
                                 >
                                     <AppImage
                                         src={photo.src}
+                                        serverSrc={photo.serverSrc}
                                         alt=""
                                         className="w-full h-full object-cover rounded-2xl"
                                         style={{ filter: "brightness(0.7)" }}
-
                                     />
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         <span className="text-white font-bold text-2xl bg-black/50 px-4 py-2 rounded-2xl select-none pointer-events-none">
                                             +{remaining}
                                         </span>
                                     </div>
+
+                                    {/* ✅ Render overlay với higher z-index */}
+                                    {(isUploading || isSending || isError) && (
+                                        <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center z-20">
+                                            <div className="flex flex-col items-center gap-2">
+                                                {isError ? (
+                                                    <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
+                                                        Failed
+                                                    </div>
+                                                ) : isSending ? (
+                                                    <>
+                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        <span className="text-white text-sm font-medium">Đang gửi...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        <span className="text-white text-xs">Đang tải...</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         }
 
                         if (isLastOdd) {
                             return (
-                                <AppImage
-                                    key={idx}
-                                    src={photo.src}
-                                    alt=""
-                                    onClick={() => handleImageClick(idx)}
-                                    className="object-cover rounded-2xl col-span-2 w-full"
-                                    style={{
-                                        gridColumn: "1 / span 2",
-                                        cursor: "pointer",
-                                        height: bottomHeight || 180,
-                                        objectFit: "cover",
-                                    }}
-                                />
+                                <div key={photo.stableKey} className="relative w-full">
+                                    <AppImage
+                                        src={photo.src}
+                                        serverSrc={photo.serverSrc}
+                                        alt=""
+                                        onClick={() => handleImageClick(idx)}
+                                        className="object-cover rounded-2xl col-span-2 w-full"
+                                        style={{
+                                            gridColumn: "1 / span 2",
+                                            cursor: "pointer",
+                                            height: bottomHeight || 180,
+                                            objectFit: "cover",
+                                        }}
+                                    />
+
+                                    {/* ✅ Render overlay states */}
+                                    {renderOverlay()}
+                                </div>
                             );
                         }
 
                         if (isThirdLast) {
                             return (
-                                <AppImage
-                                    key={idx}
-                                    src={photo.src}
-                                    alt=""
-                                    ref={ref1}
-                                    onClick={() => handleImageClick(idx)}
-                                    className="object-cover rounded-2xl w-full h-full"
-                                    style={{ cursor: "pointer" }}
-                                />
+                                <div key={photo.stableKey} className="relative w-full h-full">
+                                    <AppImage
+                                        src={photo.src}
+                                        serverSrc={photo.serverSrc}
+                                        alt=""
+                                        ref={ref1}
+                                        onClick={() => handleImageClick(idx)}
+                                        className="object-cover rounded-2xl w-full h-full"
+                                        style={{ cursor: "pointer" }}
+                                    />
+
+                                    {/* ✅ Render overlay states */}
+                                    {renderOverlay()}
+                                </div>
                             );
                         }
 
                         if (isSecondLast) {
                             return (
-                                <AppImage
-                                    key={idx}
-                                    src={photo.src}
-                                    alt=""
-                                    ref={ref2}
-                                    onClick={() => handleImageClick(idx)}
-                                    className="object-cover rounded-2xl w-full h-full"
-                                    style={{ cursor: "pointer" }}
-                                />
+                                <div key={photo.stableKey} className="relative w-full h-full">
+                                    <AppImage
+                                        src={photo.src}
+                                        serverSrc={photo.serverSrc}
+                                        alt=""
+                                        ref={ref2}
+                                        onClick={() => handleImageClick(idx)}
+                                        className="object-cover rounded-2xl w-full h-full"
+                                        style={{ cursor: "pointer" }}
+                                    />
+
+                                    {/* ✅ Render overlay states */}
+                                    {renderOverlay()}
+                                </div>
                             );
                         }
 
                         return (
-                            <AppImage
-                                key={idx}
-                                src={photo.src}
-                                alt=""
-                                onClick={() => handleImageClick(idx)}
-                                className="object-cover rounded-2xl w-full h-full"
-                                style={{ cursor: "pointer" }}
-                            />
+                            <div key={photo.stableKey} className="relative w-full h-full">
+                                <AppImage
+                                    src={photo.src}
+                                    serverSrc={photo.serverSrc}
+                                    alt=""
+                                    onClick={() => handleImageClick(idx)}
+                                    className="object-cover rounded-2xl w-full h-full"
+                                    style={{ cursor: "pointer" }}
+                                />
+
+                                {/* ✅ Render overlay states */}
+                                {renderOverlay()}
+                            </div>
                         );
-                    })}<>
-                    </>
+                    })}
                 </div>
+
                 {!isRevoked && (
                     <div
                         ref={actionContainerRef}
@@ -220,11 +348,15 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                         ].join(" ")}
                         style={{ pointerEvents: "auto" }}
                     >
-                        {isUser && (<>
-                            <button onClick={onRevoke}><FaRegTrashAlt className="z-99 text-2xl" /></button>
-                        </>)}
+                        {isUser && (
+                            <button onClick={onRevoke}>
+                                <FaRegTrashAlt className="z-99 text-2xl" />
+                            </button>
+                        )}
                         {!hasReachedLimit && (
-                            <button onClick={onReply}><MdOutlineReply className="z-99 text-2xl" /></button>
+                            <button onClick={onReply}>
+                                <MdOutlineReply className="z-99 text-2xl" />
+                            </button>
                         )}
                     </div>
                 )}

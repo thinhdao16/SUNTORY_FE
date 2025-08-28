@@ -113,8 +113,8 @@ function SocialGroupAdd() {
               return (
                 <div key={id} className="relative z-9 text-center flex flex-col gap-1 items-center justify-center">
                   <img
-                    src={user.avatar || avatarGrayFallback}
-                    alt={user.fullName}
+                    src={user?.avatar || avatarGrayFallback}
+                    alt={user?.fullName}
                     className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-2xl object-cover flex-shrink-0"
                     onError={(e) => {
                       e.currentTarget.src = avatarGrayFallback;
@@ -141,7 +141,7 @@ function SocialGroupAdd() {
             placeholder={t("Group name (optional)")}
             className="w-full border-none text-netural-300 outline-none"
             value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
+            onChange={(e) => setGroupName(e?.target?.value)}
           />
         </div>
         <div className="flex items-center bg-chat-to rounded-lg px-4 py-2 ">

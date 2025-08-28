@@ -11,7 +11,7 @@ import { createAnonymousChatRoom } from '@/services/social/social-chat-service';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
-import { useListChatRooms, useUserChatRooms } from './hooks/useSocialChat';
+import { useListChatRooms, useNotificationCounts, useUserChatRooms } from './hooks/useSocialChat';
 import { RoomChatInfo } from '@/types/social-chat';
 import { useSocialSignalRListChatRoom } from '@/hooks/useSocialSignalRListChatRoom';
 
@@ -19,7 +19,8 @@ function SocialChatListRequest() {
     const history = useHistory();
     const isNative = Capacitor.isNativePlatform();
     const scrollRef = useRef<HTMLDivElement>(null);
-    const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
+    const deviceInfo = useDeviceInfo();
+    const { setRoomChatInfo, notificationCounts } = useSocialChatStore();
 
     const {
         data,
@@ -32,30 +33,32 @@ function SocialChatListRequest() {
     const showToast = useToastStore((state) => state.showToast);
     const { mutate: acceptRequest } = useAcceptFriendRequest(showToast);
     const { mutate: rejectRequest } = useRejectFriendRequest(showToast);
-    const { setRoomChatInfo } = useSocialChatStore();
-    const {
+    // const {
 
-        refetch: refetchUserChatRooms
-    } = useUserChatRooms();
-
+    //     refetch: refetchUserChatRooms
+    // } = useUserChatRooms();
+    const prevFriendRequestCount = useRef(notificationCounts.pendingFriendRequestsCount);
     const {
         data: listDataChatRooms,
     } = useListChatRooms();
-
+    useNotificationCounts({
+        enabled: true,
+        refetchInterval: 30000
+    });
     const listRoomIdChatRooms = listDataChatRooms?.pages?.flat()?.map((room: RoomChatInfo) => room.code) || [];
 
     useSocialSignalRListChatRoom(deviceInfo.deviceId ?? '', {
         roomIds: listRoomIdChatRooms,
         autoConnect: true,
         enableDebugLogs: false,
-        refetchUserChatRooms
+        refetchUserChatRooms: () => { void refetch(); }
     });
-    useSocialSignalR(deviceInfo.deviceId ?? "", {
-        roomId: "",
-        refetchRoomData: () => { void refetch(); },
-        autoConnect: true,
-        enableDebugLogs: false,
-    });
+    // useSocialSignalR(deviceInfo.deviceId ?? "", {
+    //     roomId: "",
+    //     refetchRoomData: () => { void refetch(); },
+    //     autoConnect: true,
+    //     enableDebugLogs: false,
+    // });
     const users = data?.pages.flat() ?? [];
     const handleClickMessage = async (user: any) => {
         try {
@@ -105,7 +108,15 @@ function SocialChatListRequest() {
         el.addEventListener("scroll", handleScroll);
         return () => el.removeEventListener("scroll", handleScroll);
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
+    useEffect(() => {
+        const currentCount = notificationCounts.pendingFriendRequestsCount;
+        const previousCount = prevFriendRequestCount.current;
+        if (previousCount !== currentCount && previousCount !== undefined) {
+            console.log(`Friend request count changed: ${previousCount} -> ${currentCount}, refetching...`);
+            refetch();
+        }
+        prevFriendRequestCount.current = currentCount;
+    }, [notificationCounts.pendingFriendRequestsCount, refetch]);
     return (
         <div className="h-screen">
             <div
