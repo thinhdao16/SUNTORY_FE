@@ -65,4 +65,8 @@ export const uploadAvatar = async (file: File) => {
 };
 export const logoutApi = async (payload: LogoutPayload): Promise<void> => {
     await httpClient.post('/api/v1/auth/logout', payload);
-};
+}
+export const updateHealthCondition = async (payload: any) => {
+    const res = await httpClient.post("/api/v1/account/update-health-condition-v1", payload);
+    return res.data;
+}

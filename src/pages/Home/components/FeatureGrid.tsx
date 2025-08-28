@@ -18,7 +18,11 @@ interface FeatureGridProps {
 export const FeatureGrid: React.FC<FeatureGridProps> = ({ features }) => {
     const history = useHistory();
     const handleFeatureClick = (topic: TopicType) => {
-        history.push(`/chat/${topic}`, { actionFrom: '/home' });
+        if (topic === TopicType.MenuTranslation) {
+            history.push(`/menu-translation`, { actionFrom: '/home' });
+        } else {
+            history.push(`/chat/${topic}`, { actionFrom: '/home' });
+        }
     };
 
     return (
