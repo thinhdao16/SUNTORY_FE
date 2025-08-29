@@ -38,6 +38,7 @@ const FoodList: React.FC = () => {
     const startTimeRef = useRef<number | null>(null);
     const screenHeightRef = useRef(window.innerHeight);
     const velocityThreshold = 0.4;
+    const [bottomBarHeight, setBottomBarHeight] = useState(60);
 
     const loadFoods = async (
         historyId: number,
@@ -99,6 +100,29 @@ const FoodList: React.FC = () => {
             setLoading(false);
         }
     }, [menuId]);
+
+    useEffect(() => {
+        const updateBottomBarHeight = () => {
+            const el = document.getElementById('bottom-tab-bar');
+            if (el) {
+                const h = el.getBoundingClientRect().height || 60;
+                setBottomBarHeight(h);
+            } else {
+                setBottomBarHeight(60);
+            }
+        };
+        updateBottomBarHeight();
+        const ro = (window as any).ResizeObserver ? new (window as any).ResizeObserver(updateBottomBarHeight) : null;
+        if (ro) {
+            const el = document.getElementById('bottom-tab-bar');
+            if (el) ro.observe(el);
+        }
+        window.addEventListener('resize', updateBottomBarHeight);
+        return () => {
+            window.removeEventListener('resize', updateBottomBarHeight);
+            if (ro) ro.disconnect();
+        };
+    }, []);
 
     const handleBack = () => {
         history.goBack();
@@ -218,8 +242,8 @@ const FoodList: React.FC = () => {
 
     return (
         <IonPage>
-            <IonHeader className="ion-no-border">
-                <IonToolbar>
+            <IonContent className="ion-padding" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+                <div className="sticky top-0 z-50 bg-white" style={{ borderBottom: '1px solid #eef2f7' }}>
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -243,10 +267,9 @@ const FoodList: React.FC = () => {
                             {t('Your Dish Images')}
                         </div>
                     </div>
-                </IonToolbar>
-            </IonHeader>
+                </div>
 
-            <IonContent className="ion-padding">
+                {/* Content */}
                 {error && (
                     <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded mb-4">
                         {error}
@@ -274,7 +297,7 @@ const FoodList: React.FC = () => {
                             </p>
 
                             {/* Bottom fixed retake button */}
-                            <div className="fixed left-0 right-0 px-4" style={{ bottom: `calc(65px + env(safe-area-inset-bottom, 0px))` }}>
+                            <div className="fixed left-0 right-0 px-4" style={{ bottom: `calc(${bottomBarHeight}px + env(safe-area-inset-bottom, 0px))`, zIndex: 100 }}>
                                 <IonButton
                                     expand="block"
                                     shape="round"

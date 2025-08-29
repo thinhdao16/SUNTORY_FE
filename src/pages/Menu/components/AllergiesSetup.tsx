@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IonPage, IonContent, IonButton, IonItem, IonInput, IonIcon, IonChip, IonLabel } from '@ionic/react';
+import { IonPage, IonContent, IonButton, IonItem, IonInput, IonIcon, IonChip, IonLabel, IonHeader, IonToolbar, IonButtons, IonTitle, IonFooter } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { chevronBackOutline, paperPlaneOutline, close } from 'ionicons/icons';
@@ -43,7 +43,8 @@ const AllergiesSetup: React.FC = () => {
     useEffect(() => {
         (async () => {
             try {
-                if (storeAllergies.length === 0 && storeSelectedAllergies.length === 0) {
+                const initialized = sessionStorage.getItem('mt_allergies_initialized') === '1';
+                if (!initialized && storeAllergies.length === 0 && storeSelectedAllergies.length === 0) {
                     const res: any = await getInfoService();
 
                     if (res.data.allergies != null) {
@@ -61,8 +62,9 @@ const AllergiesSetup: React.FC = () => {
                         )?.lifestyles.map((item: any) => item.id);
                         setDiet(dietStyle.toString());
                     }
-                }
-                else {
+
+                    sessionStorage.setItem('mt_allergies_initialized', '1');
+                } else {
                     setSavedAllergies(storeAllergies);
                     setSelectedAllergies(storeSelectedAllergies);
                 }
@@ -171,16 +173,25 @@ const AllergiesSetup: React.FC = () => {
 
     return (
         <IonPage>
-            <IonContent className="ion-padding">
-                <div className="flex flex-col min-h-full">
+            <IonContent className="ion-padding" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+                <div className="flex flex-col min-h-full pb-28 bg-white">
                     {/* Main Content Area */}
                     <div className="flex-1 space-y-6">
-                        {/* Progress */}
-                        <div className="flex items-center gap-3 px-2 pt-2">
-                            <div className="flex-1 h-2 rounded-full bg-blue-600" />
-                            <div className="flex-1 h-2 rounded-full bg-blue-200" />
+                        {/* Progress (sticky, có mask mờ bên dưới để tránh đè nội dung) */}
+                        <div className="px-2 pt-2 sticky top-0 z-20 bg-white" style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
+                            <div className="flex items-center gap-3 relative">
+                                <div className="flex-1 h-2 rounded-full bg-blue-600" />
+                                <div className="flex-1 h-2 rounded-full bg-blue-200" />
+                                <div
+                                    className="absolute left-0 right-0"
+                                    style={{
+                                        bottom: -10,
+                                        height: 10,
+                                        background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)'
+                                    }}
+                                />
+                            </div>
                         </div>
-
                         {/* Title */}
                         <h1 className="text-center text-xl font-semibold px-4">{t('Enter your food allergies')}</h1>
 
@@ -341,55 +352,55 @@ const AllergiesSetup: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Bottom Action Buttons */}
-                    <div className="mt-auto pt-8 pb-8 px-4 space-y-4">
-                        {/* Back Button */}
-                        <div className="flex items-center justify-between">
-                            <IonButton
-                                fill="clear"
-                                onClick={() => history.push('/menu-translation')}
+                </div>
+            </IonContent>
+            <IonFooter className="ion-no-border" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+                <div className="pt-4 pb-6 px-4 bg-white">
+                    <div className="flex items-center justify-between">
+                        <IonButton
+                            fill="clear"
+                            onClick={() => history.push('/menu-translation')}
+                            style={{
+                                width: '44px',
+                                height: '44px',
+                                borderRadius: '50%',
+                                border: '1px solid #e5e7eb',
+                                backgroundColor: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: 0,
+                                margin: 0,
+                                flexShrink: 0
+                            }}
+                        >
+                            <IonIcon
+                                icon={chevronBackOutline}
                                 style={{
-                                    width: '44px',
-                                    height: '44px',
-                                    borderRadius: '50%',
-                                    border: '1px solid #e5e7eb',
-                                    backgroundColor: 'white',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: 0,
-                                    margin: 0,
-                                    flexShrink: 0
+                                    color: '#6b7280',
+                                    fontSize: '20px'
+                                }}
+                            />
+                        </IonButton>
+                        <div className="flex-1 ml-4">
+                            <IonButton 
+                                expand="block" 
+                                shape="round" 
+                                onClick={() => handleContinue()} 
+                                className="h-14"
+                                style={{
+                                    '--background': '#1152F4',
+                                    '--background-hover': '#2563eb',
+                                    '--color': 'white',
+                                    'font-weight': '600'
                                 }}
                             >
-                                <IonIcon
-                                    icon={chevronBackOutline}
-                                    style={{
-                                        color: '#6b7280',
-                                        fontSize: '20px'
-                                    }}
-                                />
+                                {t('Continue')}
                             </IonButton>
-                            <div className="flex-1 ml-4">
-                                <IonButton 
-                                    expand="block" 
-                                    shape="round" 
-                                    onClick={() => handleContinue()} 
-                                    className="h-14"
-                                    style={{
-                                        '--background': '#1152F4',
-                                        '--background-hover': '#2563eb',
-                                        '--color': 'white',
-                                        'font-weight': '600'
-                                    }}
-                                >
-                                    {t('Continue')}
-                                </IonButton>
-                            </div>
                         </div>
                     </div>
                 </div>
-            </IonContent>
+            </IonFooter>
         </IonPage>
     );
 };

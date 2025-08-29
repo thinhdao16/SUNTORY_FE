@@ -149,6 +149,7 @@ const BottomTabBar: React.FC = () => {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 80, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    id="bottom-tab-bar"
                     className="fixed bottom-0 left-0 right-0 bg-white shadow-[0px_-3px_10px_0px_#0000000D] flex justify-between items-center px-8 z-[101] rounded-t-3xl h-[60px]"
                 >
                     {tabs.map((tab) => {

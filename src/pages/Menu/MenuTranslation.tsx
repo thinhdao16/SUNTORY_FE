@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonPage, IonContent, IonButton, IonIcon, IonHeader, IonToolbar, IonButtons, IonTitle } from '@ionic/react';
+import { IonPage, IonContent, IonButton, IonIcon, IonHeader, IonToolbar, IonButtons, IonTitle, IonFooter } from '@ionic/react';
 import { useHistory, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import MenuIcon from "@/icons/logo/menu/menu-icon.svg?react";
@@ -30,10 +30,11 @@ const MenuTranslation: React.FC = () => {
                 return <></>;
         }
     }
+    
     return (
         <IonPage>
-            <IonHeader className="ion-no-border">
-                <IonToolbar>
+            <IonHeader className="ion-no-border" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+                <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
                     <IonButtons slot="start">
                         <IonButton
                             fill="clear"
@@ -53,12 +54,12 @@ const MenuTranslation: React.FC = () => {
                     </IonButtons>
                 </IonToolbar>
             </IonHeader>
-            <IonContent className="ion-padding">
-                <div className="flex flex-col min-h-full">
+            <IonContent className="ion-padding" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+                <div className="flex flex-col min-h-full pb-28 bg-white">
                     {/* Top Section - Icon */}
                     <div className="flex items-center justify-center pt-16 mb-8">
                         <div className="text-center">
-                            <MenuIcon className="w-36 h-36 mx-auto" />
+                            <MenuIcon className="mx-auto" style={{ width: 'clamp(96px, 22vw, 160px)', height: 'clamp(96px, 22vw, 160px)' }} />
                         </div>
                     </div>
 
@@ -71,39 +72,39 @@ const MenuTranslation: React.FC = () => {
                             {t('Just a moment! Share a few details to get accurate, personalized results.')}
                         </p>
                     </div>
-
-                    {/* Bottom Section - Action Buttons */}
-                    <div className="mt-auto pt-8 pb-8 px-6 space-y-4">
-                        <IonButton
-                            expand="block"
-                            shape="round"
-                            onClick={() => history.push('/menu-translation/allergies-setup')}
-                            style={{
-                                borderRadius: '16px',
-                                border: '100',
-                                height: '44px',
-                            }}
-                        >
-                            {t('Continue')}
-                        </IonButton>
-                        <IonButton
-                            expand="block"
-                            onClick={() => history.push('/menu-translation/scan-menu')}
-                            fill="clear"
-                            style={{
-                                height: '44px',
-                                borderRadius: '22px',
-                                border: '1px solid #A3A8AF',
-                                backgroundColor: 'white',
-                                color: '#6b7280',
-                                fontWeight: '500'
-                            }}
-                        >
-                            {t('Skip for now')}
-                        </IonButton>
-                    </div>
                 </div>
             </IonContent>
+            <IonFooter className="ion-no-border" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+                <div className="pt-4 pb-6 px-6 space-y-4 bg-white">
+                    <IonButton
+                        expand="block"
+                        shape="round"
+                        onClick={() => history.push('/menu-translation/allergies-setup')}
+                        style={{
+                            borderRadius: '16px',
+                            border: '100',
+                            height: '44px',
+                        }}
+                    >
+                        {t('Continue')}
+                    </IonButton>
+                    <IonButton
+                        expand="block"
+                        onClick={() => history.push('/menu-translation/scan-menu')}
+                        fill="clear"
+                        style={{
+                            height: '44px',
+                            borderRadius: '22px',
+                            border: '1px solid #A3A8AF',
+                            backgroundColor: 'white',
+                            color: '#6b7280',
+                            fontWeight: '500'
+                        }}
+                    >
+                        {t('Skip for now')}
+                    </IonButton>
+                </div>
+            </IonFooter>
         </IonPage>
     );
 };
