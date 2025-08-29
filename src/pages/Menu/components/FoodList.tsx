@@ -20,7 +20,6 @@ interface LocationState {
 const FoodList: React.FC = () => {
     const history = useHistory();
     const location = useLocation<LocationState>();
-    const { t } = useTranslation();
     const menuId = location.state?.menuId;
     const [foods, setFoods] = useState<FoodModel[]>([]);
     const [loading, setLoading] = useState(true);

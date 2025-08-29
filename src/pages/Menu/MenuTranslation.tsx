@@ -54,16 +54,16 @@ const MenuTranslation: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent className="ion-padding">
-                <div className="flex flex-col">
+                <div className="flex flex-col min-h-full">
                     {/* Top Section - Icon */}
-                    <div className="flex-1 flex items-center justify-center pt-16">
+                    <div className="flex items-center justify-center pt-16 mb-8">
                         <div className="text-center">
                             <MenuIcon className="w-36 h-36 mx-auto" />
                         </div>
                     </div>
 
                     {/* Middle Section - Title & Description */}
-                    <div className="flex-1 flex flex-col justify-center px-8 min-h-[20vh]">
+                    <div className="flex flex-col justify-center px-8 mb-16">
                         <h1 className="text-3xl font-bold text-gray-900 text-center mb-6 leading-tight">
                             {t('Menu Visualization & Translation')}
                         </h1>
@@ -73,36 +73,34 @@ const MenuTranslation: React.FC = () => {
                     </div>
 
                     {/* Bottom Section - Action Buttons */}
-                    <div className="absolute bottom-2 left-0 right-0 px-6 pb-8 bg-white">
-                        <div className="space-y-4">
-                            <IonButton
-                                expand="block"
-                                shape="round"
-                                onClick={() => history.push('/menu-translation/allergies-setup')}
-                                style={{
-                                    borderRadius: '16px',
-                                    border: '100',
-                                    height: '44px',
-                                }}
-                            >
-                                {t('Continue')}
-                            </IonButton>
-                            <IonButton
-                                expand="block"
-                                onClick={() => history.push('/menu-translation/scan-menu')}
-                                fill="clear"
-                                style={{
-                                    height: '44px',
-                                    borderRadius: '22px',
-                                    border: '1px solid #A3A8AF',
-                                    backgroundColor: 'white',
-                                    color: '#6b7280',
-                                    fontWeight: '500'
-                                }}
-                            >
-                                {t('Skip for now')}
-                            </IonButton>
-                        </div>
+                    <div className="mt-auto pt-8 pb-8 px-6 space-y-4">
+                        <IonButton
+                            expand="block"
+                            shape="round"
+                            onClick={() => history.push('/menu-translation/allergies-setup')}
+                            style={{
+                                borderRadius: '16px',
+                                border: '100',
+                                height: '44px',
+                            }}
+                        >
+                            {t('Continue')}
+                        </IonButton>
+                        <IonButton
+                            expand="block"
+                            onClick={() => history.push('/menu-translation/scan-menu')}
+                            fill="clear"
+                            style={{
+                                height: '44px',
+                                borderRadius: '22px',
+                                border: '1px solid #A3A8AF',
+                                backgroundColor: 'white',
+                                color: '#6b7280',
+                                fontWeight: '500'
+                            }}
+                        >
+                            {t('Skip for now')}
+                        </IonButton>
                     </div>
                 </div>
             </IonContent>

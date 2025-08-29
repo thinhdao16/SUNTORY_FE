@@ -107,77 +107,80 @@ const DietSetup: React.FC = () => {
     return (
         <IonPage>
             <IonContent className="ion-padding">
-                <div className="relative flex flex-col min-h-full pb-24">
-                    {/* Progress */}
-                    <div className="flex items-center gap-3 px-2 pt-2">
-                        <div className="flex-1 h-2 rounded-full bg-blue-200" />
-                        <div className="flex-1 h-2 rounded-full bg-blue-600" />
-                    </div>
+                <div className="flex flex-col min-h-screen">
+                    {/* Main Content Area */}
+                    <div className="flex-1 space-y-6">
+                        {/* Progress */}
+                        <div className="flex items-center gap-3 px-2 pt-2">
+                            <div className="flex-1 h-2 rounded-full bg-blue-200" />
+                            <div className="flex-1 h-2 rounded-full bg-blue-600" />
+                        </div>
 
-                    {/* Title */}
-                    <h1 className="text-center text-xl font-semibold mt-6 mb-8">{t('Your current diet')}</h1>
+                        {/* Title */}
+                        <h1 className="text-center text-xl font-semibold px-4">{t('Your current diet')}</h1>
 
-                    {/* Diet Options */}
-                    <div className="space-y-4">
-                        {dietOptions.map((option) => (
-                            <IonItem
-                                key={option.id}
-                                lines="none"
-                                className="rounded-xl border border-gray-200 w-full overflow-hidden"
-                                style={{
-                                    '--background': '#ffffff',
-                                    '--min-height': '120px',
-                                    '--padding-start': '12px',
-                                    '--inner-padding-end': '12px',
-                                    '--inner-padding-top': '0px',
-                                    '--inner-padding-bottom': '0px',
-                                } as any}
-                                button={true}
-                                detail={false}
-                                onClick={() => handleRadioChange(option.id)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        handleRadioChange(option.id);
-                                    }
-                                }}
-                            >
-                                <div className="flex items-start gap-4 py-4 w-full h-full">
-                                    {/* Icon */}
-                                    <div className="flex-shrink-0 w-15 h-15 rounded-lg bg-orange-100 flex items-center justify-center text-2xl">
-                                        {option.icon}
-                                    </div>
+                        {/* Diet Options */}
+                        <div className="space-y-4">
+                            {dietOptions.map((option) => (
+                                <IonItem
+                                    key={option.id}
+                                    lines="none"
+                                    className="rounded-xl border border-gray-200 w-full overflow-hidden"
+                                    style={{
+                                        '--background': '#ffffff',
+                                        '--min-height': '120px',
+                                        '--padding-start': '12px',
+                                        '--inner-padding-end': '12px',
+                                        '--inner-padding-top': '0px',
+                                        '--inner-padding-bottom': '0px',
+                                    } as any}
+                                    button={true}
+                                    detail={false}
+                                    onClick={() => handleRadioChange(option.id)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            handleRadioChange(option.id);
+                                        }
+                                    }}
+                                >
+                                    <div className="flex items-start gap-4 py-4 w-full h-full">
+                                        {/* Icon */}
+                                        <div className="flex-shrink-0 w-15 h-15 rounded-lg bg-orange-100 flex items-center justify-center text-2xl">
+                                            {option.icon}
+                                        </div>
 
-                                    {/* Content */}
-                                    <div className="flex-1 w-207">
-                                        <h3 className="font-semibold text-gray-900 text-base mb-1">
-                                            {t(option.name)}
-                                        </h3>
-                                        <p className="text-sm text-gray-600 leading-relaxed">
-                                            {t(option.description)}
-                                        </p>
-                                    </div>
+                                        {/* Content */}
+                                        <div className="flex-1 w-207">
+                                            <h3 className="font-semibold text-gray-900 text-base mb-1">
+                                                {t(option.name)}
+                                            </h3>
+                                            <p className="text-sm text-gray-600 leading-relaxed">
+                                                {t(option.description)}
+                                            </p>
+                                        </div>
 
-                                    {/* Tick */}
-                                    <div className="flex-shrink-0">
-                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedDiet === option.id
-                                            ? 'border-blue-600 bg-blue-600'
-                                            : 'border-gray-300'
-                                            }`}>
-                                            {selectedDiet === option.id && (
-                                                <span className="text-white text-base">✓</span>
-                                            )}
+                                        {/* Tick */}
+                                        <div className="flex-shrink-0">
+                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedDiet === option.id
+                                                ? 'border-blue-600 bg-blue-600'
+                                                : 'border-gray-300'
+                                                }`}>
+                                                {selectedDiet === option.id && (
+                                                    <span className="text-white text-base">✓</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </IonItem>
-                        ))}
+                                </IonItem>
+                            ))}
+                        </div>
                     </div>
 
-                    {/* Bottom actions */}
-                    <div className="fixed bottom-0 left-0 right-0">
-                        {/* Bottom actions */}
-                        <div className="absolute bottom-2 left-0 right-0 px-4 pb-8 bg-white flex items-center justify-between">
+                    {/* Bottom Action Buttons */}
+                    <div className="mt-auto pt-8 pb-4 px-4 space-y-4">
+                        {/* Back Button */}
+                        <div className="flex items-center justify-between">
                             <IonButton
                                 fill="clear"
                                 onClick={() => history.push('/menu-translation/allergies-setup')}
@@ -191,7 +194,8 @@ const DietSetup: React.FC = () => {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     padding: 0,
-                                    margin: 0
+                                    margin: 0,
+                                    flexShrink: 0
                                 }}
                             >
                                 <IonIcon 
@@ -203,13 +207,18 @@ const DietSetup: React.FC = () => {
                                 />
                             </IonButton>
                             <div className="flex-1 ml-4">
-                                <IonButton expand="block" shape="round" onClick={() => handleContinue()} style={{
-                                    background: '#1152F4',
-                                    color: 'white',
-                                    height: '44px',
-                                    borderRadius: '16px',
-                                    border: '100'
-                                }}>
+                                <IonButton 
+                                    expand="block" 
+                                    shape="round" 
+                                    onClick={() => handleContinue()} 
+                                    className="h-14"
+                                    style={{
+                                        '--background': '#1152F4',
+                                        '--background-hover': '#2563eb',
+                                        '--color': 'white',
+                                        'font-weight': '600'
+                                    }}
+                                >
                                     {t('Continue')}
                                 </IonButton>
                             </div>
