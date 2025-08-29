@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { IonPage, IonContent, IonButton, IonItem, IonInput, IonIcon, IonChip, IonLabel } from '@ionic/react';
-import { useHistory, useParams } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { chevronBackOutline, paperPlaneOutline, close } from 'ionicons/icons';
 import { getInfo as getInfoService } from '@/services/auth/auth-service';
@@ -14,7 +14,6 @@ interface AllergyItem {
 
 const AllergiesSetup: React.FC = () => {
     const history = useHistory();
-    const { t } = useTranslation();
     const [inputValue, setInputValue] = useState('');
     const [isIconSendStyle, setIsIconSendStyle] = useState('black');
     const [savedAllergies, setSavedAllergies] = useState<AllergyItem[]>([]);
@@ -23,6 +22,7 @@ const AllergiesSetup: React.FC = () => {
     const [searchResults, setSearchResults] = useState<AllergyItem[]>([]);
     const healthMasterData = useHealthMasterDataStore((state) => state.masterData);
     const { setSavedAllergiesStore, savedAllergiesStore: storeAllergies, setSelectedAllergiesStore, selectedAllergiesStore: storeSelectedAllergies, setDiet } = useMenuTranslationStore();
+    const { t } = useTranslation();
 
     // Get all allergies from healthMasterData
     const getAllAllergies = (): AllergyItem[] => {
@@ -117,22 +117,42 @@ const AllergiesSetup: React.FC = () => {
     const addAllergy = () => {
         const value = inputValue.trim();
         if (!value) return;
-        if (selectedAllergies.some(allergy => allergy.name === value)) {
-            setInputValue('');
-            return;
+        
+        const allergyNames = new Set(value.split(',').map(name => name.trim()).filter(name => name.length > 0));
+        
+        const newAllergies: AllergyItem[] = [];
+        
+        allergyNames.forEach(name => {
+            const isDuplicate = selectedAllergies.some(allergy => 
+                allergy.name.toLowerCase() === name.toLowerCase()
+            ) || savedAllergies.some(allergy => 
+                allergy.name.toLowerCase() === name.toLowerCase()
+            );
+            
+            if (!isDuplicate) {
+                newAllergies.push({
+                    allergyId: 0,
+                    name: name
+                });
+            }
+        });
+        
+        if (newAllergies.length > 0) {
+            setSelectedAllergies(prev => [...prev, ...newAllergies]);
         }
-        const newAllergy: AllergyItem = {
-            allergyId: 0, // id = 0 cho allergies mới
-            name: value
-        };
-        setSelectedAllergies(prev => [...prev, newAllergy]);
+        
         setInputValue('');
         setIsIconSendStyle('black');
     };
 
+    const truncateText = (text: string, maxLength: number = 20) => {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    };
+
     const removeSavedAllergy = (name: string) => {
         const newSavedAllergies = savedAllergies.filter(x => x.name !== name);
-        setSavedAllergies(newSavedAllergies);
+        setSavedAllergies(newSavedAllergies);   
         setSavedAllergiesStore(newSavedAllergies);
     };
 
@@ -202,7 +222,7 @@ const AllergiesSetup: React.FC = () => {
                         {savedAllergies.length > 0 && (
                             <div className="px-2">
                                 <p className="text-sm font-semibold text-black-700 mb-3">{t('Saved from your profile:')}</p>
-                                <div className="flex flex-wrap gap-3">
+                                <div className="flex flex-wrap gap-3 max-h-40 overflow-y-auto pr-2">
                                     {savedAllergies.map((allergy) => (
                                         <IonChip
                                             key={`saved-${allergy.allergyId}-${allergy.name}`}
@@ -210,7 +230,8 @@ const AllergiesSetup: React.FC = () => {
                                             style={{
                                                 'color': '#CFDCFD',
                                                 'height': '37px',
-                                                'width': '98px',
+                                                'min-width': '98px',
+                                                'max-width': '200px',
                                                 'radius': '12',
                                                 'align-items': 'center',
                                                 backgroundColor: '#CFDCFD',
@@ -232,11 +253,14 @@ const AllergiesSetup: React.FC = () => {
                                                     flex: '1 1 auto'
                                                 }}
                                             >
-                                                {allergy.name}
+                                                {truncateText(allergy.name)}
                                             </IonLabel>
                                             <IonIcon
                                                 icon={close}
-                                                onClick={() => removeSavedAllergy(allergy.name)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeSavedAllergy(allergy.name);
+                                                }}
                                                 style={{
                                                     color: '#ef476f',
                                                     marginLeft: 6,
@@ -259,7 +283,7 @@ const AllergiesSetup: React.FC = () => {
                         {(selectedAllergies.length > 0) && (
                             <div className="px-2">
                                 <p className="text-sm font-semibold text-black-700 mb-3">{t('Add new allergies:')}</p>
-                                <div className="flex flex-wrap gap-3">
+                                <div className="flex flex-wrap gap-3 max-h-40 overflow-y-auto pr-2">
                                     {selectedAllergies.map((allergy) => (
                                         <IonChip
                                             key={`new-${allergy.allergyId}-${allergy.name}`}
@@ -267,7 +291,8 @@ const AllergiesSetup: React.FC = () => {
                                             style={{
                                                 'color': '#CFDCFD',
                                                 'height': '37px',
-                                                'width': '98px',
+                                                'min-width': '98px',
+                                                'max-width': '200px',
                                                 'radius': '12',
                                                 'align-items': 'center',
                                                 backgroundColor: '#CFDCFD',
@@ -289,11 +314,14 @@ const AllergiesSetup: React.FC = () => {
                                                     flex: '1 1 auto'
                                                 }}
                                             >
-                                                {allergy.name}
+                                                {truncateText(allergy.name)}
                                             </IonLabel>
                                             <IonIcon
                                                 icon={close}
-                                                onClick={() => removeSelectedAllergy(allergy.name)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeSelectedAllergy(allergy.name);
+                                                }}
                                                 style={{
                                                     color: '#ef476f',
                                                     marginLeft: 6,

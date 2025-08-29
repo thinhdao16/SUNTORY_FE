@@ -26,7 +26,6 @@ const DietSetup: React.FC = () => {
     useHealthMasterData();
     const history = useHistory();
     const location = useLocation<LocationState>();
-    const { t } = useTranslation();
     const [selectedDiet, setSelectedDiet] = useState<string>('');
     const selectedDietRef = useRef<string>('');
     const { diet, setDiet } = useMenuTranslationStore();
@@ -107,9 +106,9 @@ const DietSetup: React.FC = () => {
     return (
         <IonPage>
             <IonContent className="ion-padding">
-                <div className="flex flex-col min-h-screen">
+                <div className="flex flex-col min-h-full">
                     {/* Main Content Area */}
-                    <div className="flex-1 space-y-6">
+                    <div className="flex-1 space-y-4">
                         {/* Progress */}
                         <div className="flex items-center gap-3 px-2 pt-2">
                             <div className="flex-1 h-2 rounded-full bg-blue-200" />
@@ -117,10 +116,10 @@ const DietSetup: React.FC = () => {
                         </div>
 
                         {/* Title */}
-                        <h1 className="text-center text-xl font-semibold px-4">{t('Your current diet')}</h1>
+                        <h1 className="text-center text-xl font-semibold px-4 mb-6">{t('Your current diet')}</h1>
 
                         {/* Diet Options */}
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             {dietOptions.map((option) => (
                                 <IonItem
                                     key={option.id}
@@ -128,7 +127,7 @@ const DietSetup: React.FC = () => {
                                     className="rounded-xl border border-gray-200 w-full overflow-hidden"
                                     style={{
                                         '--background': '#ffffff',
-                                        '--min-height': '120px',
+                                        '--min-height': '100px',
                                         '--padding-start': '12px',
                                         '--inner-padding-end': '12px',
                                         '--inner-padding-top': '0px',
@@ -144,14 +143,14 @@ const DietSetup: React.FC = () => {
                                         }
                                     }}
                                 >
-                                    <div className="flex items-start gap-4 py-4 w-full h-full">
+                                    <div className="flex items-start gap-4 py-3 w-full h-full">
                                         {/* Icon */}
-                                        <div className="flex-shrink-0 w-15 h-15 rounded-lg bg-orange-100 flex items-center justify-center text-2xl">
+                                        <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center text-xl">
                                             {option.icon}
                                         </div>
 
                                         {/* Content */}
-                                        <div className="flex-1 w-207">
+                                        <div className="flex-1">
                                             <h3 className="font-semibold text-gray-900 text-base mb-1">
                                                 {t(option.name)}
                                             </h3>
@@ -178,7 +177,7 @@ const DietSetup: React.FC = () => {
                     </div>
 
                     {/* Bottom Action Buttons */}
-                    <div className="mt-auto pt-8 pb-4 px-4 space-y-4">
+                    <div className="mt-auto pt-8 pb-8 px-4 space-y-4">
                         {/* Back Button */}
                         <div className="flex items-center justify-between">
                             <IonButton

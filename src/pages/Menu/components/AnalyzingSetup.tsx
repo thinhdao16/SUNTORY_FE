@@ -13,7 +13,6 @@ interface LocationState {
 
 const AnalyzingSetup: React.FC = () => {
     const history = useHistory();
-    const { t } = useTranslation();
     const [progress, setProgress] = useState(0);
     const location = useLocation<LocationState>();
     const { setDiet, setSavedAllergiesStore, setSelectedAllergiesStore } = useMenuTranslationStore();
