@@ -5,10 +5,10 @@ import useAppInit from '@/hooks/useAppInit';
 import PageContainer from '@/components/layout/PageContainer';
 import AppImage from '@/components/common/AppImage';
 
-import medicalSupportSvg from "@/icons/logo/home/medical_support.svg";
-import documentTranslationSvg from "@/icons/logo/home/document_translation.svg";
-import menuTranslation from "@/icons/logo/home/document_translation.svg";
-import foodDiscoverySvg from "@/icons/logo/home/food_discovery.svg";
+import medicalSupportSvg from "@/icons/logo/home/medical_support.png";
+import documentTranslationSvg from "@/icons/logo/home/document_translation.png";
+import menuTranslation from "@/icons/logo/home/menu_translation.png";
+import foodDiscoverySvg from "@/icons/logo/home/food_discovery.png";
 
 import { HomeHeader } from './components/HomeHeader';
 import { FeatureGrid } from './components/FeatureGrid';
@@ -51,21 +51,21 @@ const features = [
     desc: t("Scan documents to find key terms and hidden risks"),
     topic: TopicType.DocumentTranslation,
   },
-  {
-    image: (
-      <AppImage
-        src={menuTranslation}
-        alt="Menu Translation"
-        className="w-full h-full object-contain"
-        wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
-        effect="blur"
-        hardHeight={80}
-      />
-    ),
-    title: t("Menu Translation"),
-    desc: t("Decode any menu with a simple scan"),
-    topic: TopicType.MenuTranslation,
-  },
+  // {
+  //   image: (
+  //     <AppImage
+  //       src={menuTranslation}
+  //       alt="Menu Translation"
+  //       className="w-full h-full object-contain"
+  //       wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
+  //       effect="blur"
+  //       hardHeight={80}
+  //     />
+  //   ),
+  //   title: t("Menu Translation"),
+  //   desc: t("Decode any menu with a simple scan"),
+  //   topic: TopicType.MenuTranslation,
+  // },
   {
     image: (
       <AppImage
