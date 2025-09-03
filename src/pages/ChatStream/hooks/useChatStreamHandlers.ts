@@ -58,7 +58,8 @@ export function useChatStreamHandlers({
     setStopMessages,
     removePendingImageByUrl,
     messageRetry,
-    setMessageRetry
+    setMessageRetry,
+    deviceInfo
 }: UseChatStreamHandlersProps) {
     const scrollToBottom = useScrollToBottom(messagesEndRef);
     const queryClient = useQueryClient();
@@ -138,7 +139,6 @@ export function useChatStreamHandlers({
     };
     function extractName(img: string | undefined, idx: number) {
         if (!img) return `image_${idx}`;
-
         const match = img.match(/(Develop_[^/]+.*)$/i);
         return match ? match[1] : img.split("/").pop() || `image_${idx}`;
     }
@@ -157,7 +157,6 @@ export function useChatStreamHandlers({
             addPendingFiles([]);
             clearAll();
             useChatStore.getState().setIsSending(true);
-
             let timeoutId: ReturnType<typeof setTimeout> | null = null;
             try {
                 const filesArr = [
@@ -166,7 +165,6 @@ export function useChatStreamHandlers({
                         name: extractName(typeof img === "string" ? img : undefined, idx)
                     }))
                 ];
-
                 const shortLang = i18n.language?.split("-")[0] || "en";
                 const payload = {
                     chatCode: sessionId ?? null,
@@ -174,8 +172,8 @@ export function useChatStreamHandlers({
                     topic: Number(topicType),
                     files: filesArr.length > 0 ? filesArr : undefined,
                     language: shortLang,
+                    deviceId: deviceInfo.deviceId,
                 };
-
                 const now = dayjs.utc();
                 const attachments = [
                     ...pendingFiles.map(f => ({
@@ -191,9 +189,7 @@ export function useChatStreamHandlers({
                         createDate: now.format("YYYY-MM-DDTHH:mm:ss"),
                     })),
                 ];
-
                 const tempId = `temp_${Date.now()}`;
-
                 setPendingMessages((prev: any) => [
                     ...prev,
                     {
@@ -207,7 +203,6 @@ export function useChatStreamHandlers({
                         isRight: true,
                     }
                 ]);
-
                 scrollToBottom();
                 let res: any
                 // if (parseInt(topicType) === TopicType.Chat || parseInt(topicType) === TopicType.FoodDiscovery) {
@@ -216,8 +211,6 @@ export function useChatStreamHandlers({
                     res = await createChatStreamApi(payload);
                 // }
                 if (timeoutId) clearTimeout(timeoutId);
-
-                // Cập nhật pending message với data từ server
                 if (res?.data?.userChatMessage) {
                     setPendingMessages((prev: any[]) => {
                         return prev.map(msg => {
@@ -225,7 +218,7 @@ export function useChatStreamHandlers({
                                 const serverMsg = res.data.userChatMessage;
                                 return {
                                     ...msg,
-                                    id: serverMsg.id, // Update với real ID từ server
+                                    id: serverMsg.id,
                                     code: serverMsg.code,
                                     text: serverMsg.messageText || msg.text,
                                     createdAt: serverMsg.createDate || msg.createdAt,
@@ -242,7 +235,6 @@ export function useChatStreamHandlers({
                                     messageState: "SENT", // Update state
                                     hasAttachment: serverMsg.hasAttachment,
                                     isRead: serverMsg.isRead,
-                                    // Update attachments nếu có từ server
                                     attachments: serverMsg.chatAttachments?.length > 0 ?
                                         serverMsg.chatAttachments.map((att: any) => ({
                                             fileUrl: att.fileUrl,
@@ -255,7 +247,6 @@ export function useChatStreamHandlers({
                             return msg;
                         });
                     });
-
                     if (!sessionId) {
                         const newSessionId = res.data.userChatMessage.chatInfo.code;
                         queryClient.refetchQueries(["chatHistory"]);
@@ -264,15 +255,11 @@ export function useChatStreamHandlers({
                         setStopMessages(false);
                     }
                 }
-
             } catch (err) {
                 if (timeoutId) clearTimeout(timeoutId);
                 const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
                 if (sessionIdAtSend !== sessionCreatedAt) return;
-
                 useChatStore.getState().setIsSending(false);
-
-                // Update message thành failed state
                 setPendingMessages((prev: any) => [
                     ...prev,
                     {

@@ -263,7 +263,6 @@ const LanguageModal: React.FC<LanguageModalProps> = ({
                     </div>
                   ))
               ) : (
-                // No results found
                 isSearching && (
                   <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                     <div className="text-4xl mb-2">🔍</div>

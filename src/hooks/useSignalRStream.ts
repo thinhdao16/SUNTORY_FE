@@ -121,7 +121,7 @@ export function useSignalRStream(
                     code: data.botMessageCode,
                     timestamp: new Date().toISOString(),
                 };
-                if (data.chatCode === sessionId) {
+                if (data.chatCode === sessionId ) {
                     addStreamChunk(chunk);
                     // setIsSending(true);
                 }

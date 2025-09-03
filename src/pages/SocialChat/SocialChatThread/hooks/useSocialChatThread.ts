@@ -154,7 +154,7 @@ export const useSocialChatThread = () => {
             clearInterval(interval);
             setInactiveInRoom(roomId);
         };
-    }, [roomId, pingActiveRoom, setInactiveInRoom]);
+    }, []);
 
     const messages = roomId ? getMessagesForRoom(roomId) : [];
     const isLoadingMessages = roomId ? getLoadingForRoom(roomId) : false;

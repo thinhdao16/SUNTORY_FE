@@ -3,13 +3,13 @@ include ':capacitor-android'
 project(':capacitor-android').projectDir = new File('../node_modules/.pnpm/@capacitor+android@7.4.2_@capacitor+core@7.4.2/node_modules/@capacitor/android/capacitor')
 
 include ':capacitor-community-camera-preview'
-project(':capacitor-community-camera-preview').projectDir = new File('../node_modules/.pnpm/@capacitor-community+camera_6c794426853cb67dd4ef1bc6aea22cbc/node_modules/@capacitor-community/camera-preview/android')
+project(':capacitor-community-camera-preview').projectDir = new File('../node_modules/.pnpm/@capacitor-community+camera-preview@7.0.2_@capacitor+core@7.4.2/node_modules/@capacitor-community/camera-preview/android')
 
 include ':capacitor-community-media'
 project(':capacitor-community-media').projectDir = new File('../node_modules/.pnpm/@capacitor-community+media@8.0.1_@capacitor+core@7.4.2/node_modules/@capacitor-community/media/android')
 
 include ':capacitor-community-text-to-speech'
-project(':capacitor-community-text-to-speech').projectDir = new File('../node_modules/.pnpm/@capacitor-community+text-t_e6ae706bf45cc5a00542a8dff2926f31/node_modules/@capacitor-community/text-to-speech/android')
+project(':capacitor-community-text-to-speech').projectDir = new File('../node_modules/.pnpm/@capacitor-community+text-to-speech@6.0.0_@capacitor+core@7.4.2/node_modules/@capacitor-community/text-to-speech/android')
 
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../node_modules/.pnpm/@capacitor+app@7.0.1_@capacitor+core@7.4.2/node_modules/@capacitor/app/android')
@@ -57,10 +57,10 @@ include ':capacitor-status-bar'
 project(':capacitor-status-bar').projectDir = new File('../node_modules/.pnpm/@capacitor+status-bar@7.0.1_@capacitor+core@7.4.2/node_modules/@capacitor/status-bar/android')
 
 include ':capawesome-capacitor-android-edge-to-edge-support'
-project(':capawesome-capacitor-android-edge-to-edge-support').projectDir = new File('../node_modules/.pnpm/@capawesome+capacitor-andro_39adb1934633e034a4be7743c3ec5256/node_modules/@capawesome/capacitor-android-edge-to-edge-support/android')
+project(':capawesome-capacitor-android-edge-to-edge-support').projectDir = new File('../node_modules/.pnpm/@capawesome+capacitor-android-edge-to-edge-support@7.2.2_@capacitor+core@7.4.2/node_modules/@capawesome/capacitor-android-edge-to-edge-support/android')
 
 include ':codetrix-studio-capacitor-google-auth'
-project(':codetrix-studio-capacitor-google-auth').projectDir = new File('../node_modules/.pnpm/@codetrix-studio+capacitor-_76e2b01240e20ff16199ef138df3352c/node_modules/@codetrix-studio/capacitor-google-auth/android')
+project(':codetrix-studio-capacitor-google-auth').projectDir = new File('../node_modules/.pnpm/@codetrix-studio+capacitor-google-auth@3.4.0-rc.4_@capacitor+core@7.4.2/node_modules/@codetrix-studio/capacitor-google-auth/android')
 
 include ':capacitor-native-settings'
 project(':capacitor-native-settings').projectDir = new File('../node_modules/.pnpm/capacitor-native-settings@7.0.2_@capacitor+core@7.4.2/node_modules/capacitor-native-settings/android')

@@ -123,7 +123,7 @@ const EmotionModal: React.FC<EmotionModalProps> = ({
       .split(",")
       .map(s => s.trim())
       .filter(Boolean)
-      .filter(lbl => !emotionByLabel.has(lbl.toLowerCase())); // loại preset cũ
+      .filter(lbl => !emotionByLabel.has(lbl.toLowerCase()));
 
     const presetLabels = next
       .map(k => EMOTIONS.find(e => e.key === k)!)

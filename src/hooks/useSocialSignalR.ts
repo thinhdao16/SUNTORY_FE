@@ -91,9 +91,11 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
 
     const setInactiveInRoom = useCallback(async (chatRoomId: string) => {
         const conn = connectionRef.current;
-        if (!conn || conn.state !== signalR.HubConnectionState.Connected) return false;
+        // if (!conn || conn.state !== signalR.HubConnectionState.Connected) return false;
         try {
-            await conn.invoke("SetInactiveInRoom", chatRoomId);
+            console.log("un-ping")
+
+            await conn?.invoke("SetInactiveInRoom", chatRoomId);
             return true;
         } catch {
             return false;
@@ -390,8 +392,9 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
 
         pingActiveRoom: (rid: string) => {
             const conn = connectionRef.current;
-            if (!conn || conn.state !== signalR.HubConnectionState.Connected) return Promise.resolve(false);
-            return conn.invoke("PingActiveRoom", rid).then(() => true).catch(() => false);
+            // if (!conn || conn.state !== signalR.HubConnectionState.Connected) return Promise.resolve(false);
+            console.log("ping")
+            return conn?.invoke("PingActiveRoom", rid).then(() => true).catch(() => false);
         },
         setInactiveInRoom,
 

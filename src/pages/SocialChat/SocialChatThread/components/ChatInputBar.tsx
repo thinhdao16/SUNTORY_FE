@@ -442,7 +442,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
             <div className="flex items-center justify-between px-6 pt-2"    >
                 <div className="flex  ">
                     <button className="flex space-x-4" disabled={hasReachedLimit}>
-                        {isNative || isDesktop ? (
+                        { isDesktop ? (
                             <button
                                 type="button"
                                 onMouseDown={preventBlur}

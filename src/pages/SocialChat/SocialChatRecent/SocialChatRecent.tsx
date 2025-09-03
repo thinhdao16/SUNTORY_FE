@@ -179,7 +179,6 @@ export default function SocialChatRecent() {
     el?.addEventListener('scroll', handleScroll);
     return () => el?.removeEventListener('scroll', handleScroll);
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-  console.log(sortedChatRooms)
   return (
     <div className="h-screen">
       <div
