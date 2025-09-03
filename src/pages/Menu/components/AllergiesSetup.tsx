@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { IonPage, IonContent, IonButton, IonItem, IonInput, IonIcon, IonChip, IonLabel } from '@ionic/react';
-import { useHistory, useParams } from 'react-router-dom';
+import { IonPage, IonContent, IonButton, IonItem, IonInput, IonIcon, IonChip, IonLabel, IonHeader, IonToolbar, IonButtons, IonTitle, IonFooter } from '@ionic/react';
+import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { chevronBackOutline, paperPlaneOutline, close } from 'ionicons/icons';
 import { getInfo as getInfoService } from '@/services/auth/auth-service';
@@ -14,7 +14,6 @@ interface AllergyItem {
 
 const AllergiesSetup: React.FC = () => {
     const history = useHistory();
-    const { t } = useTranslation();
     const [inputValue, setInputValue] = useState('');
     const [isIconSendStyle, setIsIconSendStyle] = useState('black');
     const [savedAllergies, setSavedAllergies] = useState<AllergyItem[]>([]);
@@ -22,8 +21,9 @@ const AllergiesSetup: React.FC = () => {
     const [showDropdown, setShowDropdown] = useState(false);
     const [searchResults, setSearchResults] = useState<AllergyItem[]>([]);
     const healthMasterData = useHealthMasterDataStore((state) => state.masterData);
-    const { setSavedAllergiesStore, savedAllergiesStore: storeAllergies, setSelectedAllergiesStore, selectedAllergiesStore: storeSelectedAllergies, diet, setDiet } = useMenuTranslationStore();
-    
+    const { setSavedAllergiesStore, savedAllergiesStore: storeAllergies, setSelectedAllergiesStore, selectedAllergiesStore: storeSelectedAllergies, setDiet } = useMenuTranslationStore();
+    const { t } = useTranslation();
+
     // Get all allergies from healthMasterData
     const getAllAllergies = (): AllergyItem[] => {
         if (!healthMasterData?.groupedAllergies) return [];
@@ -43,32 +43,36 @@ const AllergiesSetup: React.FC = () => {
     useEffect(() => {
         (async () => {
             try {
-                const res: any = await getInfoService();
-                const fromProfile: AllergyItem[] = res.data.allergies.map((item: any) => ({
-                    allergyId: item.allergy.id || item.id,
-                    name: item.allergy.name
-                }));
-                const dietStyle: number = res.data.groupedLifestyles.find(
-                    (g: any) => g.category?.name === "Diet"
-                )?.lifestyles.map((item: any) => item.id);
+                const initialized = sessionStorage.getItem('mt_allergies_initialized') === '1';
+                if (!initialized && storeAllergies.length === 0 && storeSelectedAllergies.length === 0) {
+                    const res: any = await getInfoService();
 
-                //set state
-                setSavedAllergies(fromProfile);
-                setSavedAllergiesStore(fromProfile);
-                setDiet(dietStyle.toString());
-            } catch {
+                    if (res.data.allergies != null) {
+                        const fromProfile: AllergyItem[] = res.data.allergies.map((item: any) => ({
+                            allergyId: item.allergy.id || item.id,
+                            name: item.allergy.name
+                        }));
+                        setSavedAllergies(fromProfile);
+                        setSavedAllergiesStore(fromProfile);
+                    }
+
+                    if (res.data.groupedLifestyles != null) {
+                        const dietStyle: number = res.data.groupedLifestyles.find(
+                            (g: any) => g.category?.name === "Diet"
+                        )?.lifestyles.map((item: any) => item.id);
+                        setDiet(dietStyle.toString());
+                    }
+
+                    sessionStorage.setItem('mt_allergies_initialized', '1');
+                } else {
+                    setSavedAllergies(storeAllergies);
+                    setSelectedAllergies(storeSelectedAllergies);
+                }
+            } catch (error) {
                 console.log("error");
             }
         })();
     }, []);
-
-    // Khôi phục giá trị từ store khi quay lại
-    useEffect(() => {
-        if (storeAllergies.length > 0 && storeSelectedAllergies.length > 0) {
-            setSavedAllergies(storeAllergies);
-            setSelectedAllergies(storeSelectedAllergies);
-        }
-    }, [storeAllergies, storeSelectedAllergies, savedAllergies, selectedAllergies]);
 
     // Ẩn dropdown khi click ra ngoài
     useEffect(() => {
@@ -115,22 +119,42 @@ const AllergiesSetup: React.FC = () => {
     const addAllergy = () => {
         const value = inputValue.trim();
         if (!value) return;
-        if (selectedAllergies.some(allergy => allergy.name === value)) {
-            setInputValue('');
-            return;
+        
+        const allergyNames = new Set(value.split(',').map(name => name.trim()).filter(name => name.length > 0));
+        
+        const newAllergies: AllergyItem[] = [];
+        
+        allergyNames.forEach(name => {
+            const isDuplicate = selectedAllergies.some(allergy => 
+                allergy.name.toLowerCase() === name.toLowerCase()
+            ) || savedAllergies.some(allergy => 
+                allergy.name.toLowerCase() === name.toLowerCase()
+            );
+            
+            if (!isDuplicate) {
+                newAllergies.push({
+                    allergyId: 0,
+                    name: name
+                });
+            }
+        });
+        
+        if (newAllergies.length > 0) {
+            setSelectedAllergies(prev => [...prev, ...newAllergies]);
         }
-        const newAllergy: AllergyItem = {
-            allergyId: 0, // id = 0 cho allergies mới
-            name: value
-        };
-        setSelectedAllergies(prev => [...prev, newAllergy]);
+        
         setInputValue('');
         setIsIconSendStyle('black');
     };
 
+    const truncateText = (text: string, maxLength: number = 20) => {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    };
+
     const removeSavedAllergy = (name: string) => {
         const newSavedAllergies = savedAllergies.filter(x => x.name !== name);
-        setSavedAllergies(newSavedAllergies);
+        setSavedAllergies(newSavedAllergies);   
         setSavedAllergiesStore(newSavedAllergies);
     };
 
@@ -149,207 +173,234 @@ const AllergiesSetup: React.FC = () => {
 
     return (
         <IonPage>
-            <IonContent className="ion-padding" >
-                <div className="relative flex flex-col">{/* reserve space for bottom buttons */}
-                    {/* Progress */}
-                    <div className="flex items-center gap-3 px-2 pt-2">
-                        <div className="flex-1 h-2 rounded-full bg-blue-600" />
-                        <div className="flex-1 h-2 rounded-full bg-blue-200" />
-                    </div>
+            <IonContent className="ion-padding" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+                <div className="flex flex-col min-h-full pb-28 bg-white">
+                    {/* Main Content Area */}
+                    <div className="flex-1 space-y-6">
+                        {/* Progress (sticky, có mask mờ bên dưới để tránh đè nội dung) */}
+                        <div className="px-2 pt-2 sticky top-0 z-20 bg-white" style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
+                            <div className="flex items-center gap-3 relative">
+                                <div className="flex-1 h-2 rounded-full bg-blue-600" />
+                                <div className="flex-1 h-2 rounded-full bg-blue-200" />
+                                <div
+                                    className="absolute left-0 right-0"
+                                    style={{
+                                        bottom: -10,
+                                        height: 10,
+                                        background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)'
+                                    }}
+                                />
+                            </div>
+                        </div>
+                        {/* Title */}
+                        <h1 className="text-center text-xl font-semibold px-4">{t('Enter your food allergies')}</h1>
 
-                    {/* Title */}
-                    <h1 className="text-center text-xl font-semibold mt-6">{t('Enter your food allergies')}</h1>
+                        {/* Input */}
+                        <div className="px-2 relative">
+                            <IonItem lines="none" className="rounded-xl border border-neutral-200 shadow-sm" style={{ '--background': '#ffffff' } as any}>
+                                <IonInput
+                                    value={inputValue}
+                                    placeholder={t('e.g., Peanuts, Shellfish')}
+                                    onIonInput={(e) => handleInputChange((e.detail.value ?? '').toString())}
+                                    onIonFocus={() => {
+                                        if (inputValue.trim().length > 0 && searchResults.length > 0) {
+                                            setShowDropdown(true);
+                                        }
+                                    }}
+                                />
+                                <IonButton slot="end" fill="clear" onClick={addAllergy} aria-label="Add allergy">
+                                    <IonIcon icon={paperPlaneOutline} className="text-gray-700" style={{ color: isIconSendStyle }} />
+                                </IonButton>
+                            </IonItem>
 
-                    {/* Input */}
-                    <div className="px-2 mt-4 relative">
-                        <IonItem lines="none" className="rounded-xl border border-neutral-200 shadow-sm" style={{ '--background': '#ffffff' } as any}>
-                            <IonInput
-                                value={inputValue}
-                                placeholder={t('e.g., Peanuts, Shellfish')}
-                                onIonInput={(e) => handleInputChange((e.detail.value ?? '').toString())}
-                                onIonFocus={() => {
-                                    if (inputValue.trim().length > 0 && searchResults.length > 0) {
-                                        setShowDropdown(true);
-                                    }
-                                }}
-                            />
-                            <IonButton slot="end" fill="clear" onClick={addAllergy} aria-label="Add allergy">
-                                <IonIcon icon={paperPlaneOutline} className="text-gray-700" style={{ color: isIconSendStyle }} />
-                            </IonButton>
-                        </IonItem>
+                            {/* Dropdown Search Results */}
+                            {showDropdown && searchResults.length > 0 && (
+                                <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 mx-2 max-h-48 overflow-y-auto">
+                                    {searchResults.map((allergy) => (
+                                        <div
+                                            key={`dropdown-${allergy.allergyId}`}
+                                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 flex justify-between items-center"
+                                            onClick={() => selectFromDropdown(allergy)}
+                                        >
+                                            <span className="text-gray-900 text-sm">{allergy.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
 
-                        {/* Dropdown Search Results */}
-                        {showDropdown && searchResults.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 mx-2 max-h-48 overflow-y-auto">
-                                {searchResults.map((allergy) => (
-                                    <div
-                                        key={`dropdown-${allergy.allergyId}`}
-                                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 flex justify-between items-center"
-                                        onClick={() => selectFromDropdown(allergy)}
-                                    >
-                                        <span className="text-gray-900 text-sm">{allergy.name}</span>
-                                    </div>
-                                ))}
+                        {/* Saved from profile */}
+                        {savedAllergies.length > 0 && (
+                            <div className="px-2">
+                                <p className="text-sm font-semibold text-black-700 mb-3">{t('Saved from your profile:')}</p>
+                                <div className="flex flex-wrap gap-3 max-h-40 overflow-y-auto pr-2">
+                                    {savedAllergies.map((allergy) => (
+                                        <IonChip
+                                            key={`saved-${allergy.allergyId}-${allergy.name}`}
+                                            className="bg-blue-200"
+                                            style={{
+                                                'color': '#CFDCFD',
+                                                'height': '37px',
+                                                'min-width': '98px',
+                                                'max-width': '200px',
+                                                'radius': '12',
+                                                'align-items': 'center',
+                                                backgroundColor: '#CFDCFD',
+                                                borderRadius: '12px',
+                                                padding: '0 10px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px'
+                                            }}
+                                        >
+                                            <IonLabel
+                                                className="text-sm text-blue-700"
+                                                style={{
+                                                    color: "#000001",
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    minWidth: 0,
+                                                    flex: '1 1 auto'
+                                                }}
+                                            >
+                                                {truncateText(allergy.name)}
+                                            </IonLabel>
+                                            <IonIcon
+                                                icon={close}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeSavedAllergy(allergy.name);
+                                                }}
+                                                style={{
+                                                    color: '#ef476f',
+                                                    marginLeft: 6,
+                                                    'align-items': 'center',
+                                                    alignItems: 'center',
+                                                    cursor: 'pointer',
+                                                    flexShrink: 0,
+                                                    width: '16px',
+                                                    height: '16px',
+                                                    fontSize: '16px'
+                                                }}
+                                            />
+                                        </IonChip>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Add new allergies */}
+                        {(selectedAllergies.length > 0) && (
+                            <div className="px-2">
+                                <p className="text-sm font-semibold text-black-700 mb-3">{t('Add new allergies:')}</p>
+                                <div className="flex flex-wrap gap-3 max-h-40 overflow-y-auto pr-2">
+                                    {selectedAllergies.map((allergy) => (
+                                        <IonChip
+                                            key={`new-${allergy.allergyId}-${allergy.name}`}
+                                            className="bg-blue-200"
+                                            style={{
+                                                'color': '#CFDCFD',
+                                                'height': '37px',
+                                                'min-width': '98px',
+                                                'max-width': '200px',
+                                                'radius': '12',
+                                                'align-items': 'center',
+                                                backgroundColor: '#CFDCFD',
+                                                borderRadius: '12px',
+                                                padding: '0 10px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px'
+                                            }}
+                                        >
+                                            <IonLabel
+                                                className="text-sm text-blue-700"
+                                                style={{
+                                                    color: "#000001",
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    minWidth: 0,
+                                                    flex: '1 1 auto'
+                                                }}
+                                            >
+                                                {truncateText(allergy.name)}
+                                            </IonLabel>
+                                            <IonIcon
+                                                icon={close}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeSelectedAllergy(allergy.name);
+                                                }}
+                                                style={{
+                                                    color: '#ef476f',
+                                                    marginLeft: 6,
+                                                    'align-items': 'center',
+                                                    alignItems: 'center',
+                                                    cursor: 'pointer',
+                                                    flexShrink: 0,
+                                                    width: '16px',
+                                                    height: '16px',
+                                                    fontSize: '16px'
+                                                }}
+                                            />
+                                        </IonChip>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
 
-                    {/* Saved from profile */}
-                    {savedAllergies.length > 0 && (
-                        <div className="px-2 mt-6">
-                            <p className="text-sm font-semibold text-black-700 mb-3">{t('Saved from your profile:')}</p>
-                            <div className="flex flex-wrap gap-3">
-                                {savedAllergies.map((allergy) => (
-                                    <IonChip
-                                        key={`saved-${allergy.allergyId}-${allergy.name}`}
-                                        className="bg-blue-200"
-                                        style={{
-                                            'color': '#CFDCFD',
-                                            'height': '37px',
-                                            'width': '98px',
-                                            'radius': '12',
-                                            'align-items': 'center',
-                                            backgroundColor: '#CFDCFD',
-                                            borderRadius: '12px',
-                                            padding: '0 10px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '6px'
-                                        }}
-                                    >
-                                        <IonLabel
-                                            className="text-sm text-blue-700"
-                                            style={{
-                                                color: "#000001",
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                                minWidth: 0,
-                                                flex: '1 1 auto'
-                                            }}
-                                        >
-                                            {allergy.name}
-                                        </IonLabel>
-                                        <IonIcon
-                                            icon={close}
-                                            onClick={() => removeSavedAllergy(allergy.name)}
-                                            style={{
-                                                color: '#ef476f',
-                                                marginLeft: 6,
-                                                'align-items': 'center',
-                                                alignItems: 'center',
-                                                cursor: 'pointer',
-                                                flexShrink: 0,
-                                                width: '16px',
-                                                height: '16px',
-                                                fontSize: '16px'
-                                            }}
-                                        />
-                                    </IonChip>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Add new allergies */}
-                    {(selectedAllergies.length > 0) && (
-                        <div className="px-2 mt-6">
-                            <p className="text-sm font-semibold text-black-700 mb-3">{t('Add new allergies:')}</p>
-                            <div className="flex flex-wrap gap-3">
-                                {selectedAllergies.map((allergy) => (
-                                    <IonChip
-                                        key={`new-${allergy.allergyId}-${allergy.name}`}
-                                        className="bg-blue-200"
-                                        style={{
-                                            'color': '#CFDCFD',
-                                            'height': '37px',
-                                            'width': '98px',
-                                            'radius': '12',
-                                            'align-items': 'center',
-                                            backgroundColor: '#CFDCFD',
-                                            borderRadius: '12px',
-                                            padding: '0 10px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '6px'
-                                        }}
-                                    >
-                                        <IonLabel
-                                            className="text-sm text-blue-700"
-                                            style={{
-                                                color: "#000001",
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                                minWidth: 0,
-                                                flex: '1 1 auto'
-                                            }}
-                                        >
-                                            {allergy.name}
-                                        </IonLabel>
-                                        <IonIcon
-                                            icon={close}
-                                            onClick={() => removeSelectedAllergy(allergy.name)}
-                                            style={{
-                                                color: '#ef476f',
-                                                marginLeft: 6,
-                                                'align-items': 'center',
-                                                alignItems: 'center',
-                                                cursor: 'pointer',
-                                                flexShrink: 0,
-                                                width: '16px',
-                                                height: '16px',
-                                                fontSize: '16px'
-                                            }}
-                                        />
-                                    </IonChip>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="fixed bottom-0 left-0 right-0">
-                        {/* Bottom actions */}
-                        <div className="absolute bottom-2 left-0 right-0 px-4 pb-8 bg-white flex items-center justify-between">
-                            <IonButton
-                                fill="clear"
-                                onClick={() => history.push('/menu-translation')}
+                </div>
+            </IonContent>
+            <IonFooter className="ion-no-border" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+                <div className="pt-4 pb-6 px-4 bg-white">
+                    <div className="flex items-center justify-between">
+                        <IonButton
+                            fill="clear"
+                            onClick={() => history.push('/menu-translation')}
+                            style={{
+                                width: '44px',
+                                height: '44px',
+                                borderRadius: '50%',
+                                border: '1px solid #e5e7eb',
+                                backgroundColor: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: 0,
+                                margin: 0,
+                                flexShrink: 0
+                            }}
+                        >
+                            <IonIcon
+                                icon={chevronBackOutline}
                                 style={{
-                                    width: '44px',
-                                    height: '44px',
-                                    borderRadius: '50%',
-                                    border: '1px solid #e5e7eb',
-                                    backgroundColor: 'white',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: 0,
-                                    margin: 0
+                                    color: '#6b7280',
+                                    fontSize: '20px'
+                                }}
+                            />
+                        </IonButton>
+                        <div className="flex-1 ml-4">
+                            <IonButton 
+                                expand="block" 
+                                shape="round" 
+                                onClick={() => handleContinue()} 
+                                className="h-14"
+                                style={{
+                                    '--background': '#1152F4',
+                                    '--background-hover': '#2563eb',
+                                    '--color': 'white',
+                                    'font-weight': '600'
                                 }}
                             >
-                                <IonIcon
-                                    icon={chevronBackOutline}
-                                    style={{
-                                        color: '#6b7280',
-                                        fontSize: '20px'
-                                    }}
-                                />
+                                {t('Continue')}
                             </IonButton>
-                            <div className="flex-1 ml-4">
-                                <IonButton expand="block" shape="round" onClick={() => handleContinue()} style={{
-                                    background: '#1152F4',
-                                    color: 'white',
-                                    height: '44px',
-                                    borderRadius: '16px',
-                                    border: '100'
-                                }}>
-                                    {t('Continue')}
-                                </IonButton>
-                            </div>
                         </div>
                     </div>
                 </div>
-            </IonContent>
+            </IonFooter>
         </IonPage>
     );
 };

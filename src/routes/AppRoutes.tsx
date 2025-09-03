@@ -104,6 +104,7 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/profile/:section?" component={routes.Profile} exact />
           <PrivateRoute path="/change-password" component={routes.ChangePassword} exact />
           <PrivateRoute path="/menu-translation/:section?" component={routes.MenuTranslation} exact />
+          <PrivateRoute path="/menu-analyzing" component={routes.MenuAnalyzing} exact />
           <PrivateRoute path="/food-list" component={routes.FoodList} exact />
           <Route exact path="/" render={() => <Redirect to="/social-chat" />} />
           <Route path="*" component={routes.NotFound} />

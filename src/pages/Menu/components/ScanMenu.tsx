@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { IonPage, IonContent, IonButton, IonIcon, IonHeader, IonToolbar, IonTitle, IonButtons } from '@ionic/react';
+import { IonPage, IonContent, IonButton, IonIcon, IonHeader, IonToolbar, IonTitle, IonButtons, IonFooter } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { arrowBack, chevronBack } from 'ionicons/icons';
+import { arrowBack } from 'ionicons/icons';
 import PhotoIcon from "@/icons/logo/menu/take-photo.svg?react";
 import { base64FromPath, usePhotoGallery } from '@/pages/TakePhoto/usePhotoGallery';
 import { useLocation } from 'react-router-dom';
@@ -25,7 +25,7 @@ const ScanMenu: React.FC<{ isNative?: boolean, isDesktop?: boolean }> = ({ isNat
         const imgData = await chooseFromGallery();
         let base64Img = imgData?.base64 || (imgData?.webPath && await base64FromPath(imgData.webPath));
         if (base64Img) {
-            history.push("/menu-translation/menu-analyzing", { base64Img: base64Img });
+            history.push("/menu-analyzing", { base64Img: base64Img });
         }
     };
 
@@ -36,15 +36,15 @@ const ScanMenu: React.FC<{ isNative?: boolean, isDesktop?: boolean }> = ({ isNat
 
     useEffect(() => {
         if (base64Img) {
-            history.push("/menu-translation/menu-analyzing", { base64Img: base64Img });
+            history.push("/menu-analyzing", { base64Img: base64Img });
         }
         else { return; }
     }, [base64Img]);
 
     return (
         <IonPage>
-            <IonHeader className="ion-no-border">
-                <IonToolbar>
+            <IonHeader className="ion-no-border" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+                <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
                     <IonButtons slot="start">
                         <IonButton
                             fill="clear"
@@ -59,14 +59,14 @@ const ScanMenu: React.FC<{ isNative?: boolean, isDesktop?: boolean }> = ({ isNat
                     </IonTitle>
                     <IonButtons slot="end">
                         <IonButton className="opacity-0 pointer-events-none" fill="clear">
-                            <IonIcon icon={chevronBack} />
+                            <IonIcon icon={arrowBack} />
                         </IonButton>
                     </IonButtons>
                 </IonToolbar>
             </IonHeader>
 
-            <IonContent className="ion-padding">
-                <div className="flex flex-col h-full">
+            <IonContent className="ion-padding" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+                <div className="flex flex-col h-full pb-28 bg-white">
                     {/* Main Content Area */}
                     <div className="flex-1 flex flex-col items-center justify-center px-8">
                         {/* Scan Icon */}
@@ -87,42 +87,40 @@ const ScanMenu: React.FC<{ isNative?: boolean, isDesktop?: boolean }> = ({ isNat
                         </div>
                     </div>
 
-                    {/* Bottom Action Buttons */}
-                    <div className="pb-8 px-4 space-y-4">
-                        {/* Take Photo Button */}
-                        <IonButton
-                            expand="block"
-                            shape="round"
-                            onClick={handleTakePhoto}
-                            className="h-14"
-                            style={{
-                                '--background': '#1152F4',
-                                '--background-hover': '#2563eb',
-                                '--color': 'white',
-                                'font-weight': '600'
-                            }}
-                        >
-                            {t('Take Photo')}
-                        </IonButton>
-
-                        {/* Choose from Gallery Button */}
-                        <IonButton
-                            expand="block"
-                            fill="outline"
-                            shape="round"
-                            onClick={handleChooseFromGallery}
-                            className="h-14"
-                            style={{
-                                '--border-color': '#1152F4',
-                                '--color': '#1152F4',
-                                'font-weight': '600'
-                            }}
-                        >
-                            {t('Choose from Gallery')}
-                        </IonButton>
-                    </div>
                 </div>
             </IonContent>
+            <IonFooter className="ion-no-border" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+                <div className="pt-4 pb-6 px-4 bg-white space-y-4">
+                    <IonButton
+                        expand="block"
+                        shape="round"
+                        onClick={handleTakePhoto}
+                        className="h-14"
+                        style={{
+                            '--background': '#1152F4',
+                            '--background-hover': '#2563eb',
+                            '--color': 'white',
+                            'font-weight': '600'
+                        }}
+                    >
+                        {t('Take Photo')}
+                    </IonButton>
+                    <IonButton
+                        expand="block"
+                        fill="outline"
+                        shape="round"
+                        onClick={handleChooseFromGallery}
+                        className="h-14"
+                        style={{
+                            '--border-color': '#1152F4',
+                            '--color': '#1152F4',
+                            'font-weight': '600'
+                        }}
+                    >
+                        {t('Choose from Gallery')}
+                    </IonButton>
+                </div>
+            </IonFooter>
         </IonPage>
     );
 };
