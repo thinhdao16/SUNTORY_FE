@@ -8,7 +8,8 @@ import UnFriendIcon from "@/icons/logo/social-chat/unfriend.svg?react";
 import MoreActionIcon from "@/icons/logo/social-chat/more-action.svg?react";
 import ConfirmModal from "@/components/common/modals/ConfirmModal";
 import { ChatInfoType } from "@/constants/socialChat";
-
+import { useHistory } from "react-router";
+import  InfoIcon from "@/icons/logo/info.svg?react";
 const MoreDots: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = (props) => (
     <button
         {...props}
@@ -42,6 +43,7 @@ interface SocialChatHeaderProps {
     onCancelFriendRequest: (requestId: number) => void;
     onUnfriend: (targetUserId: number) => void;
     currentUserId: number;
+    roomId?: string
 }
 
 const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
@@ -52,7 +54,9 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
     onCancelFriendRequest,
     onUnfriend,
     currentUserId,
+    roomId
 }) => {
+    const history = useHistory()
     const src = roomChatInfo?.avatarRoomChat?.trim() ? roomChatInfo.avatarRoomChat : avatarFallback;
     const isFriend = !!roomData?.isFriend;
     const friendRequest = roomData?.friendRequest;
@@ -162,9 +166,15 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
                         </div>
                     </div>
                     {roomChatInfo?.type === ChatInfoType.UserVsUser && <div className="z-10">{RightActions}</div>}
-                </div>
+                {roomChatInfo?.type === ChatInfoType.Group && <div className="z-10">
+                    <button
+                        onClick={() => history.push(`/social-chat/t/${roomId}/info`)}
+                    >
+                        <InfoIcon className="w-5 h-5" />
+                    </button>   
+                </div>}
             </div>
-
+            </div>
             <ConfirmModal
                 isOpen={confirmState.open}
                 title={t("Are you sure?")}

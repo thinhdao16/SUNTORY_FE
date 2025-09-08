@@ -1,41 +1,44 @@
 import { useState, useEffect, useRef } from "react";
-import { FiArrowLeft, FiSearch } from "react-icons/fi";
+import { FiSearch } from "react-icons/fi";
+import BackIcon from "@/icons/logo/back-default.svg?react";
 import { HiX } from "react-icons/hi";
-import { useHistory } from "react-router";
-import { useFriendshipFriendsWithSearch } from "../SocialPartner/hooks/useSocialPartner";
-import SendIcon from "@/icons/logo/social-chat/send.svg?react";
-import SendEmptyIcon from "@/icons/logo/social-chat/send-empty.svg?react";
-import CheckboxSelectIcon from "@/icons/logo/checkbox-select.svg?react";
-import { useCreateChatGroup } from "./hooks/useSocialGroup";
-import { Capacitor } from "@capacitor/core";
-import SearchIcon from '@/icons/logo/social-chat/search.svg?react';
-import ClearInputIcon from '@/icons/logo/social-chat/clear-input.svg?react';
+import { useHistory, useParams } from "react-router";
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import avatarGrayFallback from "@/icons/logo/social-chat/avt-gray-rounded.svg";
 import { t } from "@/lib/globalT";
 import { useDebounce } from "@/hooks/useDebounce";
+import SearchIcon from '@/icons/logo/social-chat/search.svg?react';
+import ClearInputIcon from '@/icons/logo/social-chat/clear-input.svg?react';
+import CheckboxSelectIcon from "@/icons/logo/checkbox-select.svg?react";
+import { Capacitor } from "@capacitor/core";
+// Import useAddGroupMembers thay vì useCreateChatGroup
+import { useAddGroupMembers } from "@/pages/SocialChat/hooks/useSocialChat";
+import { useFriendExcludeRoom } from "@/pages/SocialPartner/hooks/useSocialPartner";
 
-function SocialGroupAdd() {
+function SocialChatAddMembers() {
   const isNative = Capacitor.isNativePlatform();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [search, setSearch] = useState("");
-  const [groupName, setGroupName] = useState("");
   const history = useHistory();
 
-  const debouncedSearch = useDebounce(search, 500); 
-
+  const debouncedSearch = useDebounce(search, 500);
+  const { roomId } = useParams<{ roomId: string }>();
   const {
     data,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
     isLoading,
-    refetch,
-  } = useFriendshipFriendsWithSearch(20, debouncedSearch);
+  } = useFriendExcludeRoom(roomId, 20, debouncedSearch);
 
-  const { mutate: createGroup, isLoading: creating } = useCreateChatGroup(history);
+  const { mutate: addMembers, isLoading: adding } = useAddGroupMembers({
+    onSuccess: () => {
+      history.push(`/social-chat/t/${roomId}`);
+    }
+  });
+
   const users = data?.pages.flat() ?? [];
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -47,11 +50,6 @@ function SocialGroupAdd() {
     }
   }, [debouncedSearch]);
 
-  useEffect(() => {
-    if (debouncedSearch !== search) {
-    }
-  }, [debouncedSearch, search]);
-
   const toggleUser = (id: number) => {
     setSelectedUsers((prev) =>
       prev.includes(id) ? prev.filter((uid) => uid !== id) : [...prev, id]
@@ -61,16 +59,14 @@ function SocialGroupAdd() {
   const removeSelected = (id: number) => {
     setSelectedUsers((prev) => prev.filter((uid) => uid !== id));
   };
-  const handleCreateGroup = () => {
-    if (selectedUsers.length === 0) return;
 
-    createGroup(
-      {
-        title: groupName || "New Group",
-        userIds: selectedUsers,
-      },
+  const handleAddMembers = () => {
+    if (selectedUsers.length === 0 || !roomId) return;
 
-    );
+    addMembers({
+      chatCode: roomId,
+      userIds: selectedUsers,
+    });
   };
 
   const handleClearSearch = () => {
@@ -95,19 +91,28 @@ function SocialGroupAdd() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div className="bg-white min-h-screen  py-3">
+    <div className="bg-white min-h-screen py-3">
       <div className="px-6 space-y-4">
         <div className="flex justify-between items-center mb-4">
-          <button onClick={() => history.goBack()} className="text-gray-500">
-            <FiArrowLeft className="text-xl" />
-          </button>
-          <h2 className="text-blue-600 font-semibold uppercase">  {t("Add Group")}</h2>
-          <button onClick={handleCreateGroup} disabled={creating || selectedUsers.length === 0}>
-            {selectedUsers.length > 0 ? <SendIcon /> : <SendEmptyIcon />}
+          <div className="flex items-center gap-4">
+            <button onClick={() => history.goBack()} className="text-gray-500">
+              <BackIcon />
+            </button>
+            <h2 className="font-semibold">{t("Add Member")}</h2>
+          </div>
+          {/* Thay đổi hàm handleCreateGroup thành handleAddMembers */}
+          <button 
+            onClick={handleAddMembers} 
+            disabled={adding || selectedUsers.length === 0}
+          >
+            <span className={`font-semibold ${selectedUsers.length > 0 ? "text-blue-600" : "text-gray-400"}`}>
+              {adding ? t("Adding...") : t("Add")}
+            </span>
           </button>
         </div>
+        
         {selectedUsers.length > 0 && (
-          <div className="flex gap-[15px] mb-3  overflow-x-auto w-full pt-2">
+          <div className="flex gap-[15px] mb-3 overflow-x-auto w-full pt-2">
             {selectedUsers.map((id) => {
               const user = users.find((u) => u.id === id);
               return (
@@ -124,9 +129,8 @@ function SocialGroupAdd() {
                     onClick={() => removeSelected(id)}
                     className="absolute z-20 -top-1 -right-1"
                   >
-                    <div className=" bg-success-500 text-black rounded-full w-5 h-5 flex items-center justify-center">
-                    <HiX className="text-[14px]" />
-                    
+                    <div className="bg-success-500 text-black rounded-full w-5 h-5 flex items-center justify-center">
+                      <HiX className="text-[14px]" />
                     </div>
                   </button>
                   <p className="text-xs text-center max-w-[40px] truncate">{user?.fullName}</p>
@@ -135,16 +139,8 @@ function SocialGroupAdd() {
             })}
           </div>
         )}
-        <div className="">
-          <input
-            type="text"
-            placeholder={t("Group name (optional)")}
-            className="w-full border-none text-netural-300 outline-none"
-            value={groupName}
-            onChange={(e) => setGroupName(e?.target?.value)}
-          />
-        </div>
-        <div className="flex items-center bg-chat-to rounded-lg px-4 py-2 ">
+      
+        <div className="flex items-center bg-chat-to rounded-lg px-4 py-2">
           <SearchIcon className="text-gray-400 mr-2" />
           <input
             ref={inputRef}
@@ -200,7 +196,7 @@ function SocialGroupAdd() {
             </div>
           ) : (
             displayUsers.map((user) => (
-              <div key={user.id} className="flex items-center justify-between  pb-2">
+              <div key={user.id} className="flex items-center justify-between pb-2">
                 <div className="flex items-center space-x-3">
                   <input
                     type="checkbox"
@@ -226,7 +222,7 @@ function SocialGroupAdd() {
                     }}
                   />
                   <div className="">
-                    <span className=" font-medium">{user.fullName}</span>
+                    <span className="font-medium">{user.fullName}</span>
                   </div>
                 </div>
               </div>
@@ -241,4 +237,4 @@ function SocialGroupAdd() {
   );
 }
 
-export default SocialGroupAdd;
+export default SocialChatAddMembers;

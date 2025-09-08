@@ -283,6 +283,7 @@ const SocialChatThread: React.FC = () => {
                                     if (!peerUserId) return;
                                     unfriendMutation.mutate({ friendUserId: peerUserId, roomCode: roomId ?? undefined });
                                 }}
+                                roomId={roomId}
                             />
                             <div
                                 className={`flex-1 overflow-x-hidden overflow-y-auto px-6 min-h-0`}
@@ -325,7 +326,6 @@ const SocialChatThread: React.FC = () => {
                                         isGroup={roomChatInfo?.type !== ChatInfoType.UserVsUser}
                                         currentUserId={userInfo?.id}
                                         hasReachedLimit={hasReachedLimit}
-
                                     />
                                 )}
                                 {hasReachedLimit && (

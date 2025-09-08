@@ -8,13 +8,14 @@ import { formatTimeFromNow } from '@/utils/formatTime';
 import { useSocialSignalRListChatRoom } from '@/hooks/useSocialSignalRListChatRoom';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
-import { ChatInfoType } from '@/constants/socialChat';
+import { ChatInfoType, KEYCHATFORMATNOTI } from '@/constants/socialChat';
 import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { generatePreciseTimestampFromDate } from '@/utils/time-stamp';
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { SystemMessageType } from "@/constants/socialChat";
 dayjs.extend(utc);
 
 export default function SocialChatRecent() {
@@ -96,13 +97,96 @@ export default function SocialChatRecent() {
     if (!text && attachments.length === 0) {
       return t('This message was removed');
     }
+
+    let systemPreview = "";
+    try {
+      const systemObj = JSON.parse(text);
+      if (systemObj && systemObj.Event && systemObj.Key === KEYCHATFORMATNOTI) {
+        const actor = systemObj.Actor;
+        const actorName = actor?.Id === currentUserId ? t("You") : actor?.FullName || t("Admin");
+        
+        const eventType = systemObj.Event; 
+        const eventValue = SystemMessageType[eventType as keyof typeof SystemMessageType];
+        
+        switch (eventType) {
+          case "NOTIFY_GROUP_CHAT_CREATED": {
+            systemPreview = `🎉 ${actorName} ${t("has created the group!")}`;
+            break;
+          }
+          
+          case "NOTIFY_GROUP_CHAT_KICKED": {
+            const kickedUser = systemObj.Users?.[0];
+            const kickedName = kickedUser?.Id === currentUserId ? t("You") : kickedUser?.FullName || t("User");
+            systemPreview = `❌ ${actorName} ${t("has removed")} ${kickedName}`;
+            break;
+          }
+          
+          case "NOTIFY_GROUP_CHAT_ADD_MEMBER": {
+            if (systemObj.Users && systemObj.Users.length > 0) {
+              const names = systemObj.Users.map((u: any) =>
+                u.Id === currentUserId ? t("You") : u.FullName || u.UserName || "User"
+              );
+              if (names.length === 1) {
+                systemPreview = `➕ ${actorName} ${t("has added")} ${names[0]}`;
+              } else if (names.length <= 2) {
+                systemPreview = `➕ ${actorName} ${t("has added")} ${names.join(t(" and "))}`;
+              } else {
+                systemPreview = `➕ ${actorName} ${t("has added")} ${names.length} ${t("members")}`;
+              }
+            } else {
+              systemPreview = `➕ ${actorName} ${t("has added new member")}`;
+            }
+            break;
+          }
+          
+          case "NOTIFY_GROUP_CHAT_USER_LEAVE_GROUP": {
+            systemPreview = `🚶 ${actorName} ${t("has left the group")}`;
+            break;
+          }
+          
+          case "NOTIFY_GROUP_CHAT_ADMIN_RENAME_GROUP": {
+            systemPreview = `✏️ ${actorName} ${t("has renamed the group")}`;
+            break;
+          }
+          
+          case "NOTIFY_GROUP_CHAT_ADMIN_CHANGE_AVATAR_GROUP": {
+            systemPreview = `🖼️ ${actorName} ${t("has changed the group avatar")}`;
+            break;
+          }
+          
+          case "NOTIFY_GROUP_CHAT_ADMIN_LEAVE_GROUP": {
+            systemPreview = `👋 ${actorName} ${t("has left the group as admin")}`;
+            break;
+          }
+          
+          case "NOTIFY_GROUP_CHAT_CHANGE_ADMIN": {
+            const newAdmin = systemObj.Users?.[0];
+            const newAdminName = newAdmin?.Id === currentUserId ? t("You") : newAdmin?.FullName || t("User");
+            systemPreview = `👑 ${actorName} ${t("has appointed")} ${newAdminName} ${t("as admin")}`;
+            break;
+          }
+          
+          case "NOTIFY_FRIENDLY_ACCEPTED": {
+            const friend = systemObj.Users?.[0];
+            const friendName = friend?.Id === currentUserId ? t("You") : friend?.FullName || t("User");
+            systemPreview = `💫 ${actorName} ${t("and")} ${friendName} ${t("are now friends")}`;
+            break;
+          }
+          
+          default:
+            systemPreview = `ℹ️ ${t("System notification")}`;
+        }
+      }
+    } catch {
+    }
+    if (systemPreview) return systemPreview;
+
     let content = text || `📷 ${t('Photo')}`;
     if (room.type === ChatInfoType.UserVsUser) {
       if (last.userId === currentUserId) {
         content = `${t('You')}: ${content}`;
       }
     }
-
     if (room.type === ChatInfoType.Group) {
       if (last.userId !== currentUserId && last.userName) {
         content = `${last.userName}: ${content}`;
@@ -110,7 +194,6 @@ export default function SocialChatRecent() {
         content = `${t('You')}: ${content}`;
       }
     }
-
     return content;
   };
 

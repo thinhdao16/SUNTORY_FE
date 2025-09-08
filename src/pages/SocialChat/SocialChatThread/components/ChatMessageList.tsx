@@ -42,6 +42,7 @@ type ChatMessageListProps = {
     hasReachedLimit?: boolean;
     isNative?: boolean;
     inputBarHeight?: number;
+    
 };
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({

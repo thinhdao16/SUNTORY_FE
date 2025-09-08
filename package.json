@@ -86,10 +86,12 @@
     "react-swipeable": "^7.0.2",
     "react-swipeable-list": "^1.10.0",
     "react-virtuoso": "^4.13.0",
+    "react-zoom-pan-pinch": "^3.7.0",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
     "remove-markdown": "^0.6.2",
     "sharp": "^0.34.3",
+    "swiper": "^11.2.10",
     "use-long-press": "^3.3.0",
     "zustand": "^5.0.3"
   },

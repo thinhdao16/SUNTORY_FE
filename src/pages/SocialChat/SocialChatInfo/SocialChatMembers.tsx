@@ -1,0 +1,274 @@
+import React, { useState } from 'react';
+import { useParams, useHistory } from 'react-router-dom';
+import { useChatRoomByCode, useCreateAnonymousChat, useRemoveGroupMembers, useLeaveChatRoom } from '../hooks/useSocialChat';
+import { useToastStore } from '@/store/zustand/toast-store';
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
+import "../SocialChat.css"
+import MotionStyles from '@/components/common/bottomSheet/MotionStyles';
+import MotionBottomSheet from '@/components/common/bottomSheet/MotionBottomSheet';
+import { useBottomSheet } from '@/hooks/useBottomSheet';
+import ActionMember from '@/pages/SocialChat/SocialChatInfo/components/ActionMember';
+import { useSocialChatStore } from '@/store/zustand/social-chat-store';
+import { useAuthStore } from '@/store/zustand/auth-store';
+import { t } from "@/lib/globalT";
+import ConfirmModal from '@/components/common/modals/ConfirmModal';
+import BackDefaultIcon from "@/icons/logo/back-default.svg?react";
+import { TbLogout } from 'react-icons/tb';
+
+const SocialChatMembers: React.FC = () => {
+    const { roomId } = useParams<{ roomId: string }>();
+    const history = useHistory();
+    const { refetch } = useChatRoomByCode(roomId);
+    const { roomChatInfo, setRoomChatInfo } = useSocialChatStore();
+    const { user } = useAuthStore();
+    const showToast = useToastStore((state) => state.showToast);
+
+    const sheetExpand = useBottomSheet();
+
+    const [selectedMember, setSelectedMember] = useState<any>(null);
+
+    const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
+    const [memberToRemove, setMemberToRemove] = useState<{ id: number, name: string } | null>(null);
+
+    const currentUserIsAdmin = roomChatInfo?.participants?.find(
+        (p) => p.userId === user?.id && p.isAdmin === 1
+    ) || false;
+
+    const isAdmin = React.useMemo(() => {
+        if (!user || !roomChatInfo?.participants) return false;
+        const currentUserParticipant = roomChatInfo.participants.find(
+            (p) => p.userId === user.id
+        );
+        return currentUserParticipant?.isAdmin === 1;
+    }, [user, roomChatInfo]);
+    const { mutate: removeMember, isLoading: removing } = useRemoveGroupMembers({
+        onSuccess: () => {
+            refetch();
+            showToast(t("Member removed successfully"), 2000, "success");
+        }
+    });
+
+    const { mutateAsync: leaveRoom, isLoading: isLeaving } = useLeaveChatRoom({
+        onSuccess: () => {
+            history.push('/social-chat');
+        }
+    });
+    const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
+    const { mutateAsync: createAnonymousChat } = useCreateAnonymousChat();
+    
+    const handleLeaveGroup = async () => {
+        if (!roomId) return;
+        try {
+            await leaveRoom({ chatCode: roomId });
+        } catch (error) {
+            console.error('Leave group failed', error);
+        }
+    };
+
+    const handleBack = () => {
+        history.push(`/social-chat/t/${roomId}/info`);
+    };
+
+    const handleUserAction = (member: any) => {
+        setSelectedMember(member);
+        sheetExpand.open();
+    };
+
+    const handleAddMembers = () => {
+        history.push(`/social-chat/t/${roomId}/add-members`);
+    };
+
+    const handleRemoveFromGroup = (userId: number) => {
+        if (!roomId || !userId) return;
+
+        if (userId === user?.id) {
+            showToast(t("You cannot remove yourself from the group"), 3000, "error");
+            return;
+        }
+        const member = roomChatInfo?.participants?.find(p => p.userId === userId);
+        if (member) {
+            setMemberToRemove({
+                id: userId,
+                name: member.user?.fullName || t("This user")
+            });
+            setIsRemoveModalOpen(true);
+        }
+        sheetExpand.close();
+    };
+
+    const confirmRemoveMember = () => {
+        if (!roomId || !memberToRemove) return;
+        removeMember({
+            chatCode: roomId,
+            userIds: [memberToRemove.id]
+        });
+        setIsRemoveModalOpen(false);
+        setMemberToRemove(null);
+    };
+    const handleViewProfile = (userId: number) => {
+        history.push(`/social-partner/profile/${userId}`);
+        sheetExpand.close();
+    };
+
+    const handleSendMessage = async (user: any) => {
+        sheetExpand.close();
+        setRoomChatInfo({
+            id: 0,
+            code: "",
+            title: user?.fullName || "Anonymous",
+            avatarRoomChat: user?.avatar || "/favicon.png",
+            type: 0,
+            status: 0,
+            createDate: new Date().toISOString(),
+            updateDate: new Date().toISOString(),
+            unreadCount: 0,
+            lastMessageInfo: null,
+            participants: [],
+            topic: null,
+            chatInfo: null,
+        });
+        history.push(`/social-chat/t`);
+        const chatData = await createAnonymousChat(user.id);
+        if (chatData?.chatCode) {
+            history.replace(`/social-chat/t/${chatData.chatCode}`);
+        }
+    };
+
+    const handleAppointAdmin = (userId: number) => {
+        showToast("This feature is not available yet", 2000, "info");
+        sheetExpand.close();
+    };
+
+    return (
+        <>
+            <MotionStyles
+                isOpen={sheetExpand.isOpen}
+                translateY={sheetExpand.translateY}
+                screenHeight={window.innerHeight}
+            >
+                {({ scale, opacity, borderRadius, backgroundColor }) => (
+                    <div
+                        className={` ${sheetExpand.isOpen ? "" : "bg-blue-100"}`}
+                        style={{
+                            backgroundColor: backgroundColor,
+                            transition: sheetExpand.isOpen ? "none" : "background-color 0.3s ease",
+                        }}
+                    >
+                        <MotionBottomSheet
+                            isOpen={sheetExpand.isOpen}
+                            scale={scale}
+                            opacity={opacity}
+                            borderRadius={borderRadius}
+                        >
+                            <div className="h-screen flex flex-col">
+                                <div className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between bg-white">
+                                    <div className="flex items-center">
+                                        <button onClick={handleBack} className="p-1">
+                                            <BackDefaultIcon className="text-xl" />
+                                        </button>
+                                        <h1 className="text-base font-medium ml-2">{t("Members")}</h1>
+                                    </div>
+                                    {/* {currentUserIsAdmin && (
+                                        <button className="p-1" onClick={handleAddMembers}>
+                                            <IoAdd className="text-xl" />
+                                        </button>
+                                    )} */}
+                                </div>
+                                <div className="px-4 py-2 text-gray-500 text-sm">
+                                    {roomChatInfo?.participants?.length || 0} {t("members")}
+                                </div>
+                                <div className="flex-1 overflow-y-auto px-4 pb-6">
+                                    <div className="bg-white rounded-xl overflow-hidden">
+                                        {roomChatInfo?.participants?.map((member) => (
+                                            <div key={member.userId} className="flex items-center justify-between  py-3 border-b border-gray-100 last:border-b-0">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full overflow-hidden">
+                                                        <img
+                                                            src={member?.user?.avatar || avatarFallback}
+                                                            alt={member?.user?.fullName}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).src = avatarFallback;
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-medium flex items-end justify-center gap-4 ">{member?.user?.fullName} <span className='text-xs text-netural-200'>{member?.user?.id === user?.id ? t('You') : ''}</span></div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {member.isAdmin ? t('Admin') : ''}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {(currentUserIsAdmin || user?.id !== member.userId) && (
+                                                    <button
+                                                        onClick={() => handleUserAction(member)}
+                                                        className="w-8 h-8 flex items-center justify-center text-gray-500">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                                                            <circle cx="12" cy="12" r="1"></circle>
+                                                            <circle cx="12" cy="5" r="1"></circle>
+                                                            <circle cx="12" cy="19" r="1"></circle>
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </MotionBottomSheet>
+                        <ActionMember
+                            isOpen={sheetExpand.isOpen}
+                            translateY={sheetExpand.translateY}
+                            closeModal={sheetExpand.close}
+                            handleTouchStart={sheetExpand.handleTouchStart}
+                            handleTouchMove={sheetExpand.handleTouchMove}
+                            handleTouchEnd={sheetExpand.handleTouchEnd}
+                            selectedUser={selectedMember}
+                            onViewProfile={handleViewProfile}
+                            onSendMessage={handleSendMessage}
+                            onAppointAdmin={currentUserIsAdmin ? handleAppointAdmin : undefined}
+                            onRemoveFromGroup={currentUserIsAdmin ? handleRemoveFromGroup : undefined}
+                            isAdmin={isAdmin}
+                        />
+                    </div>
+                )}
+            </MotionStyles>
+
+            <div className="px-4 pb-6">
+                <button
+                    className="w-full flex items-center gap-3 px-4 py-4 text-red-500 border-t border-gray-100 rounded-xl bg-white mt-3"
+                    onClick={() => setIsLeaveConfirmOpen(true)}
+                    disabled={isLeaving}
+                >
+                    <TbLogout className="text-xl" />
+                    <span>{isLeaving ? t('Leaving...') : t('Leave group')}</span>
+                </button>
+            </div>
+
+            <ConfirmModal
+                isOpen={isRemoveModalOpen}
+                title={t("Are you sure?")}
+                message={t("This user will no longer have access to the chat.")}
+                confirmText={t("Yes, remove")}
+                cancelText={t("Cancel")}
+                onConfirm={confirmRemoveMember}
+                onClose={() => setIsRemoveModalOpen(false)}
+            />
+
+            <ConfirmModal
+                isOpen={isLeaveConfirmOpen}
+                title={t("Are you sure?")}
+                message={t("Are you sure you want to leave this group?")}
+                confirmText={t("Leave")}
+                cancelText={t("Cancel")}
+                onConfirm={() => {
+                    setIsLeaveConfirmOpen(false);
+                    void handleLeaveGroup();
+                }}
+                onClose={() => setIsLeaveConfirmOpen(false)}
+            />
+        </>
+    );
+};
+
+export default SocialChatMembers;

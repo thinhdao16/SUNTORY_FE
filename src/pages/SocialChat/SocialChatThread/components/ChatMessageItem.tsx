@@ -22,6 +22,8 @@ import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/react
 import { useLongPressOpen } from "@/hooks/useLongPressOpen";
 import "./ChatMessageItem.css";
 import Portal from "@/components/common/Portal";
+import ChatSystemMessage from "./ChatSystemMessage";
+import { KEYCHATFORMATNOTI, SystemMessageType } from "@/constants/socialChat";
 
 interface ChatMessageItemProps {
     msg: any;
@@ -53,21 +55,24 @@ function useVirtualRef(rect: DOMRect | null) {
     );
 }
 
-const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
-    msg,
-    isUser,
-    isError,
-    isSend,
-    onEditMessage,
-    onRevokeMessage,
-    onReplyMessage,
-    isEdited,
-    isRevoked,
-    isReply,
-    isGroup = false,
-    currentUserId = null,
-    hasReachedLimit = false,
-}) => {
+const ChatMessageItem: React.FC<ChatMessageItemProps> = (props) => {
+    const {
+        msg,
+        isUser,
+        isError,
+        isSend,
+        onEditMessage,
+        onRevokeMessage,
+        onReplyMessage,
+        isEdited,
+        isRevoked,
+        isReply,
+        isGroup = false,
+        currentUserId = null,
+        hasReachedLimit = false,
+        
+    } = props;
+
     const isDesktop = () => window.innerWidth > 1024;
 
     const { roomId } = useParams<{ roomId?: string; type?: string }>();
@@ -167,10 +172,8 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             bubbleH: H_eff,
             maxBubbleH,
             clipped,
-
             pillBottom,
             centerX,
-
             menuTop,
             menuLeft,
         };
@@ -227,17 +230,6 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         setMenuOpen(false);
     };
 
-    if (isEditing) {
-        return (
-            <MessageEditor
-                initialText={msg.messageText || ""}
-                onSave={saveEdit}
-                onCancel={() => setIsEditing(false)}
-                isUser={isUser}
-            />
-        );
-    }
-
     const shouldShowAvatar = msg._shouldShowAvatar !== false;
     const showSenderName = !!msg._showSenderName && !!msg.userName;
     const trunc = (s: string, n = 20) => (s.length > n ? s.slice(0, n) + "…" : s);
@@ -280,6 +272,36 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         };
     }, [menuOpen, anchorId, update]);
 
+    const parseSystemEvent = (text: string) => {
+        try {
+            const obj = typeof text === "string" ? JSON.parse(text) : text;
+            if (obj && obj.Event && obj.Key) return obj;
+        } catch {
+        }
+        return null;
+    };
+
+    const eventData = parseSystemEvent(msg.messageText);
+
+    if (eventData && eventData.Event && eventData.Key === KEYCHATFORMATNOTI) {
+        const eventType = SystemMessageType[eventData.Event as keyof typeof SystemMessageType];
+        const systemData = {
+            actor: eventData.Actor,
+            targetUsers: eventData.Users || [],
+            target: eventData.Users?.length === 1 ? eventData.Users[0] : undefined,
+            userIds: eventData.UserIds,
+            key: eventData.Key,
+        };
+
+        return (
+            <ChatSystemMessage
+                type={eventType}
+                data={systemData}
+                dataRoom={roomChatInfo}
+            />
+        );
+    }
+
     const Bubble = (
         <div
             id={anchorId}
@@ -311,84 +333,122 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             />
         </div>
     );
+    const parseSystemMessageType = (text: string) => {
+        if (typeof text !== "string") return null;
+        const match = text.match(/^([A-Z0-9_]+)-?/);
+        if (!match) return null;
+        return match[1];
+    };
+    const SYSTEM_MESSAGE_MAP: Record<string, string> = {
+        NOTIFY_GROUP_CHAT_CREATED: t("Group created"),
+        NOTIFY_GROUP_CHAT_KICKED: t("Member removed from group"),
+        NOTIFY_GROUP_CHAT_ADD_MEMBER: t("Member added to group"),
+        NOTIFY_GROUP_CHAT_USER_LEAVE_GROUP: t("Member left the group"),
+        NOTIFY_GROUP_CHAT_ADMIN_RENAME_GROUP: t("Group renamed"),
+        NOTIFY_GROUP_CHAT_ADMIN_CHANGE_AVATAR_GROUP: t("Group avatar changed"),
+        NOTIFY_GROUP_CHAT_ADMIN_LEAVE_GROUP: t("Admin left the group"),
+        NOTIFY_GROUP_CHAT_CHANGE_ADMIN: t("New admin appointed"),
+        NOTIFY_FRIENDLY_ACCEPTED: t("New friendship"),
+    };
+
+    const systemTypeKey = parseSystemMessageType(msg.messageText);
+    const isSystemTextMessage = !!systemTypeKey && SYSTEM_MESSAGE_MAP[systemTypeKey];
+
+    if (isSystemTextMessage) {
+        return (
+            <div className="px-4 py-2 my-2 bg-gray-100 rounded-lg text-center text-sm text-gray-600">
+                {SYSTEM_MESSAGE_MAP[systemTypeKey]}
+            </div>
+        );
+    }
+
     return (
         <>
-            <DraggableMessageContainer
-                messageId={typeof msg.id === "string" || typeof msg.id === "number" ? msg.id : String(msg.createdAt)}
-                isUser={isUser}
-                isRevoked={isRevoked}
-                onReply={reply}
-                onLongPress={() => {
-                    const el = document.getElementById(anchorId);
-                    if (!el) return;
-                    const r = el.getBoundingClientRect();
-                    setAnchorRect(r);
-                    setMenuOpen(true);
-                    requestAnimationFrame(() => update());
-                }}
-                setShowActionsMobile={() => { }}
-                hasReachedLimit={hasReachedLimit}
-            >
-                {!isUser && shouldShowAvatar && (
-                    <div className="flex flex-col items-center mr-2">
-                        <img
-                            src={avatarUrl || avatarFallback}
-                            alt={msg.userName || "Avatar"}
-                            className="w-[30px] aspect-square object-cover rounded-full"
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarFallback; }}
-                        />
-                    </div>
-                )}
-                {!isUser && !shouldShowAvatar && <div className="w-[30px] ml-2" />}
-                <div className={`flex-1 flex flex-col ${isUser ? "items-end" : "items-start"}  gap-1 relative group`}>
-                    <div className={`flex w-full ${isUser ? "justify-end pr-4" : "justify-start pl-4"} gap-1`}>
-                        {isEdited && !isRevoked && !isUser && <div className="text-xs text-main font-semibold">{t("Edited")}</div>}
-                        {replyTo && (
-                            <div className={`text-xs text-gray-500 mb-1 ${isUser ? "text-right" : "text-left"}`}>
-                                {isSelfReply
-                                    ? (isUser ? t("reply.self") : t("reply.selfOther", { name: trunc(msg.userName) }))
-                                    : (isUser
-                                        ? t("reply.youToOther", { name: trunc(repliedName) })
-                                        : (isReplyingToMe
-                                            ? t("reply.otherToYou", { name: trunc(msg.userName) })
-                                            : t("reply.otherToOther", { name1: trunc(msg.userName), name2: trunc(repliedName) })))}
-                            </div>
-                        )}
-                        {isEdited && !isRevoked && isUser && <div className="text-xs text-main font-semibold">{t("Edited")}</div>}
-                    </div>
-                    {isGroup && showSenderName && (<div className="text-xs text-gray-500 ml-1 mb-0.5">{msg.userName}</div>)}
-                    {msg.replyToMessage && (<ReplyBubble msg={msg.replyToMessage} isUser={isUser} isRevoked={msg.replyToMessage.isRevoked === 1} />)}
-                    <div
-                        className="longpress-safe"
-                        {...bind((info) => {
-                            const r = (document.getElementById(anchorId) ?? (info.target as HTMLElement)).getBoundingClientRect();
-                            setAnchorRect(r);
-                            setOverlayKind("images");
-                            setMenuOpen(true);
-                            requestAnimationFrame(() => update());
-                        })}
-                    >
-                        <ImageGallery
-                            chatAttachments={msg.chatAttachments || []}
-                            isUser={isUser}
-                            onImageClick={(i, list) => {
-                                if (!menuOpen) {
-                                    handleImageClick(i, list);
-                                }
-                            }}
-                            isRevoked={msg.isRevoked === 1}
-                            actionContainerRef={actionContainerRef}
-                            onEdit={enterEdit}
-                            onRevoke={revoke}
-                            onReply={reply}
-                            showActionsMobile={false}
-                            hasReachedLimit={hasReachedLimit}
-                        />
-                    </div>
+            {isEditing ? (
+                <MessageEditor
+                    initialText={msg.messageText || ""}
+                    onSave={saveEdit}
+                    onCancel={() => setIsEditing(false)}
+                    isUser={isUser}
+                />
+            ) : (
+                <DraggableMessageContainer
+                    messageId={typeof msg.id === "string" || typeof msg.id === "number" ? msg.id : String(msg.createdAt)}
+                    isUser={isUser}
+                    isRevoked={isRevoked}
+                    onReply={reply}
+                    onLongPress={() => {
+                        const el = document.getElementById(anchorId);
+                        if (!el) return;
+                        const r = el.getBoundingClientRect();
+                        setAnchorRect(r);
+                        setMenuOpen(true);
+                        requestAnimationFrame(() => update());
+                    }}
+                    setShowActionsMobile={() => { }}
+                    hasReachedLimit={hasReachedLimit}
+                >
+                    {!isUser && shouldShowAvatar && (
+                        <div className="flex flex-col items-center mr-2">
+                            <img
+                                src={avatarUrl || avatarFallback}
+                                alt={msg.userName || "Avatar"}
+                                className="w-[30px] aspect-square object-cover rounded-full"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarFallback; }}
+                            />
+                        </div>
+                    )}
+                    {!isUser && !shouldShowAvatar && <div className="w-[30px] ml-2" />}
+                    <div className={`flex-1 flex flex-col ${isUser ? "items-end" : "items-start"}  gap-1 relative group`}>
+                        <div className={`flex w-full ${isUser ? "justify-end pr-4" : "justify-start pl-4"} gap-1`}>
+                            {isEdited && !isRevoked && !isUser && <div className="text-xs text-main font-semibold">{t("Edited")}</div>}
+                            {replyTo && (
+                                <div className={`text-xs text-gray-500 mb-1 ${isUser ? "text-right" : "text-left"}`}>
+                                    {isSelfReply
+                                        ? (isUser ? t("reply.self") : t("reply.selfOther", { name: trunc(msg.userName) }))
+                                        : (isUser
+                                            ? t("reply.youToOther", { name: trunc(repliedName) })
+                                            : (isReplyingToMe
+                                                ? t("reply.otherToYou", { name: trunc(msg.userName) })
+                                                : t("reply.otherToOther", { name1: trunc(msg.userName), name2: trunc(repliedName) })))}
+                                </div>
+                            )}
+                            {isEdited && !isRevoked && isUser && <div className="text-xs text-main font-semibold">{t("Edited")}</div>}
+                        </div>
+                        {isGroup && showSenderName && (<div className="text-xs text-gray-500 ml-1 mb-0.5">{msg.userName}</div>)}
+                        {msg.replyToMessage && (<ReplyBubble msg={msg.replyToMessage} isUser={isUser} isRevoked={msg.replyToMessage.isRevoked === 1} />)}
+                        <div
+                            className="longpress-safe"
+                            {...bind((info) => {
+                                const r = (document.getElementById(anchorId) ?? (info.target as HTMLElement)).getBoundingClientRect();
+                                setAnchorRect(r);
+                                setOverlayKind("images");
+                                setMenuOpen(true);
+                                requestAnimationFrame(() => update());
+                            })}
+                        >
+                            <ImageGallery
+                                chatAttachments={msg.chatAttachments || []}
+                                isUser={isUser}
+                                onImageClick={(i, list) => {
+                                    if (!menuOpen) {
+                                        handleImageClick(i, list);
+                                    }
+                                }}
+                                isRevoked={msg.isRevoked === 1}
+                                actionContainerRef={actionContainerRef}
+                                onEdit={enterEdit}
+                                onRevoke={revoke}
+                                onReply={reply}
+                                showActionsMobile={false}
+                                hasReachedLimit={hasReachedLimit}
+                            />
+                        </div>
 
-                    {showText && Bubble}
-                </div>
-            </DraggableMessageContainer>
+                        {showText && Bubble}
+                    </div>
+                </DraggableMessageContainer>
+            )}
 
             {!isRevoked && menuOpen && anchorRect && layout && (
                 <Portal>

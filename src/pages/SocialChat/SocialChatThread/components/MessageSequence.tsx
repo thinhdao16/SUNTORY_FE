@@ -11,6 +11,7 @@ interface MessageSequenceProps {
     isGroup?: boolean;
     currentUserId?: number | string | null;
     hasReachedLimit?: boolean;
+    
 }
 
 export const MessageSequence: React.FC<MessageSequenceProps> = ({
