@@ -13,7 +13,8 @@ interface ActionMemberProps {
     onSendMessage: (user: any) => void;
     onAppointAdmin?: (userId: number) => void;
     onRemoveFromGroup?: (userId: number) => void;
-    isAdmin: boolean
+    isAdmin: boolean;
+    isUser: boolean;
 }
 
 const ActionMember: React.FC<ActionMemberProps> = ({
@@ -28,7 +29,8 @@ const ActionMember: React.FC<ActionMemberProps> = ({
     onSendMessage,
     onAppointAdmin,
     onRemoveFromGroup,
-    isAdmin
+    isAdmin,
+    isUser,
 }) => {
     const userId = selectedUser?.userId;
 
@@ -52,27 +54,42 @@ const ActionMember: React.FC<ActionMemberProps> = ({
                     >
                         View profile
                     </button>
-                    <button
-                        className="py-4 text-start  border-b border-gray-100"
-                        onClick={() => onSendMessage?.(selectedUser?.user)}
-                    >
-                        Send message
-                    </button>
+
+                    {!isUser && (
+                        <button
+                            className="py-4 text-start  border-b border-gray-100"
+                            onClick={() => onSendMessage?.(selectedUser?.user)}
+                        >
+                            Send message
+                        </button>
+                    )}
+
                     {isAdmin && (
                         <>
-                            <button
-                                className="py-4 text-start  border-b border-gray-100"
-                                onClick={() => onAppointAdmin?.(selectedUser)}
-                            >
-                                Appoint as admin
-                            </button>
+                            {!isUser && (
+                                <button
+                                    className="py-4 text-start  border-b border-gray-100"
+                                    onClick={() => onAppointAdmin?.(selectedUser?.userId)}
+                                >
+                                    Appoint as admin
+                                </button>
+                            )}
+
                             <button
                                 className="py-4 text-start  text-red-500"
                                 onClick={() => onRemoveFromGroup?.(userId)}
                             >
-                                Remove from this group
+                                {isUser ? t("Leave group") : t("Remove from this group")}
                             </button>
                         </>
+                    )}
+                    {isUser && (
+                        <button
+                            className="py-4 text-start  text-red-500"
+                            onClick={() => onRemoveFromGroup?.(userId)}
+                        >
+                            {t("Leave group")}
+                        </button>
                     )}
                 </div>
             </div>

@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "react-query";
-import { addGroupMembersApi, chatRoomAttachments, createAnonymousChatRoom, createSocialChatMessageApi, getChatRoomByCode, getNotificationCounts, getSocialChatMessages, getUserChatRooms, removeGroupMembersApi, revokeSocialChatMessageApi, updateSocialChatMessageApi, updateChatRoomApi, leaveChatRoomApi, toggleChatRoomQuietStatusApi } from "@/services/social/social-chat-service";
+import { addGroupMembersApi, chatRoomAttachments, createAnonymousChatRoom, createSocialChatMessageApi, getChatRoomByCode, getNotificationCounts, getSocialChatMessages, getUserChatRooms, removeGroupMembersApi, revokeSocialChatMessageApi, updateSocialChatMessageApi, updateChatRoomApi, leaveChatRoomApi, toggleChatRoomQuietStatusApi, transferAdminApi } from "@/services/social/social-chat-service";
 import { useSocialChatStore } from "@/store/zustand/social-chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
 import { AddGroupMembersPayload, CreateSocialChatMessagePayload, NotificationCounts, RemoveGroupMembersPayload, RevokeSocialChatMessagePayload, UpdateSocialChatMessagePayload, UpdateChatRoomPayload, UseAddGroupMembersOptions, UseRemoveGroupMembersOptions } from "@/services/social/social-chat-type";
@@ -424,13 +424,11 @@ export const useLeaveChatRoom = (options?: {
             onMutate: async (variables) => {
                 await queryClient.cancelQueries({ queryKey: ['chatRooms'] });
                 const previousRooms = queryClient.getQueryData<any[]>(['chatRooms']);
-                queryClient.setQueryData(['chatRooms'], (old: any[] | undefined) =>
-                    (old || []).filter(r => r.code !== variables.chatCode)
-                );
-
+                // queryClient.setQueryData(['chatRooms'], (old: any[] | undefined) =>
+                //     (old || [])?.filter(r => r.code !== variables.chatCode)
+                // );
                 const currentRoom: any = useSocialChatStore.getState().roomChatInfo;
                 setRoomChatInfo(currentRoom?.code === variables.chatCode ? null : currentRoom);
-
                 return { previousRooms };
             },
             onError: (err: any, variables, context: any) => {
@@ -457,46 +455,81 @@ export const useToggleQuietStatus = (options?: {
     const queryClient = useQueryClient();
     const setRoomChatInfo = useSocialChatStore.getState().setRoomChatInfo;
     const showToast = useToastStore.getState().showToast;
-
     return useMutation(
         (payload: { chatCode: string; isQuiet: boolean }) => toggleChatRoomQuietStatusApi(payload),
         {
             onMutate: async (variables) => {
                 await queryClient.cancelQueries({ queryKey: ["chatRoom", variables.chatCode] });
                 await queryClient.cancelQueries({ queryKey: ["chatRooms"] });
-
                 const previousRoom = queryClient.getQueryData<any>(["chatRoom", variables.chatCode]);
                 const previousRooms = queryClient.getQueryData<any[]>(["chatRooms"]);
-
                 queryClient.setQueryData(["chatRoom", variables.chatCode], (old: any) => {
                     if (!old) return old;
-                    const participants = (old.participants || []).map((p: any) =>
-                        p.userId === useAuthStore.getState().user?.id ? { ...p, isQuiet: variables.isQuiet ? 1 : 0 } : p
-                    );
+                    const participants = Array.isArray(old.participants)
+                        ? old.participants.map((p: any) =>
+                            p.userId === useAuthStore.getState().user?.id ? { ...p, isQuiet: variables.isQuiet ? 1 : 0 } : p
+                        )
+                        : old.participants;
                     return { ...old, participants };
                 });
-
                 try {
                     const currentRoom = useSocialChatStore.getState().roomChatInfo;
                     if (currentRoom && currentRoom.code === variables.chatCode) {
-                        const updatedParticipants = (currentRoom.participants || []).map((p: any) =>
-                            p.userId === useAuthStore.getState().user?.id ? { ...p, isQuiet: variables.isQuiet ? 1 : 0 } : p
-                        );
+                        const updatedParticipants = Array.isArray(currentRoom.participants)
+                            ? currentRoom.participants.map((p: any) =>
+                                p.userId === useAuthStore.getState().user?.id ? { ...p, isQuiet: variables.isQuiet ? 1 : 0 } : p
+                            )
+                            : currentRoom.participants;
                         setRoomChatInfo({ ...currentRoom, participants: updatedParticipants });
                     }
                 } catch (e) { }
+                queryClient.setQueryData(["chatRooms"], (old: any) => {
+                    if (!old) return old;
 
-                queryClient.setQueryData(["chatRooms"], (old: any[] | undefined) => {
-                    const rooms = old || [];
-                    return rooms.map(r => {
+                    const updateRoom = (r: any) => {
                         if (!r || r.code !== variables.chatCode) return r;
-                        const participants = (r.participants || []).map((p: any) =>
-                            p.userId === useAuthStore.getState().user?.id ? { ...p, isQuiet: variables.isQuiet ? 1 : 0 } : p
-                        );
+                        const participants = Array.isArray(r.participants)
+                            ? r.participants.map((p: any) => {
+                                  const pid = p.userId ?? p.user?.id ?? p.user?.userId;
+                                  if (pid === undefined) return p;
+                                  return { ...p, isQuiet: variables.isQuiet ? 1 : 0 };
+                              })
+                            : r.participants;
                         return { ...r, participants };
-                    });
-                });
+                    };
 
+                    // old is plain array of rooms
+                    if (Array.isArray(old)) {
+                        return old.map(updateRoom);
+                    }
+
+                    // old is infinite query result { pages: [...], pageParams: [...] }
+                    if (old.pages && Array.isArray(old.pages)) {
+                        return {
+                            ...old,
+                            pages: old.pages.map((page: any) => {
+                                // page might be an array of rooms
+                                if (Array.isArray(page)) {
+                                    return page.map(updateRoom);
+                                }
+                                // page might be { data: [...] } or { data: { data: [...] } }
+                                if (page && Array.isArray(page.data)) {
+                                    return { ...page, data: page.data.map(updateRoom) };
+                                }
+                                if (page && page.data && Array.isArray(page.data.data)) {
+                                    return {
+                                        ...page,
+                                        data: { ...page.data, data: page.data.data.map(updateRoom) },
+                                    };
+                                }
+                                return page;
+                            }),
+                        };
+                    }
+
+                    // unknown shape — return as-is
+                    return old;
+                });
                 return { previousRoom, previousRooms };
             },
             onError: (err: any, variables, context: any) => {
@@ -571,6 +604,100 @@ export const useRemoveChatRoom = (options?: {
                 queryClient.removeQueries({ queryKey: ["chatRoom", variables.chatCode] });
                 options?.onSuccess?.(data, variables);
             }
+        }
+    );
+};
+export const useTransferAdmin = (options?: {
+    onSuccess?: (data: any, variables: { chatCode: string; newAdminUserId: number }) => void;
+    onError?: (err: any) => void;
+}) => {
+    const queryClient = useQueryClient();
+    const setRoomChatInfo = useSocialChatStore.getState().setRoomChatInfo;
+    const showToast = useToastStore.getState().showToast;
+
+    return useMutation(
+        (payload: { chatCode: string; newAdminUserId: number }) => transferAdminApi(payload),
+        {
+            onMutate: async (variables) => {
+                await queryClient.cancelQueries({ queryKey: ["chatRoom", variables.chatCode] });
+                await queryClient.cancelQueries({ queryKey: ["chatRooms"] });
+
+                const previousRoom = queryClient.getQueryData<any>(["chatRoom", variables.chatCode]);
+                const previousRooms = queryClient.getQueryData<any[]>(["chatRooms"]);
+
+                queryClient.setQueryData(["chatRoom", variables.chatCode], (old: any) => {
+                    if (!old) return old;
+                    if (!Array.isArray(old.participants)) {return old;}
+                    const newParticipants = old.participants.map((p: any) => {
+                        const participantUserId = p.userId ?? p.user?.id ?? p.user?.userId;
+                        if (participantUserId === undefined) return p;
+                        return {
+                            ...p,
+                            isAdmin: participantUserId === variables.newAdminUserId ? 1 : 0,
+                        };
+                    });
+                    return { ...old, participants: newParticipants };
+                });
+                try {
+                    const current = useSocialChatStore.getState().roomChatInfo;
+                    if (current && current.code === variables.chatCode) {
+                        const participants = Array.isArray(current.participants)
+                            ? current.participants.map((p: any) => ({
+                                ...p,
+                                isAdmin: p.userId === variables.newAdminUserId ? 1 : (p.isAdmin ? 0 : p.isAdmin)
+                            }))
+                            : current.participants;
+                        setRoomChatInfo({ ...current, participants } as any);
+                    }
+                } catch (e) { }
+                queryClient.setQueryData(["chatRooms"], (old: any) => {
+                    if (!old) return old;
+                    const updateRoom = (r: any) => {
+                        if (!r || r.code !== variables.chatCode) return r;
+                        const participants = Array.isArray(r.participants)
+                            ? r.participants.map((p: any) => ({
+                                ...p,
+                                isAdmin: p.userId === variables.newAdminUserId ? 1 : (p.isAdmin ? 0 : p.isAdmin)
+                            }))
+                            : r.participants;
+                        return { ...r, participants };
+                    };
+                    if (old.pages && Array.isArray(old.pages)) {
+                        return {
+                            ...old,
+                            pages: old.pages.map((page: any) => {
+                                if (Array.isArray(page)) {
+                                    return page.map(updateRoom);
+                                }
+                                return page;
+                            }),
+                        };
+                    }
+                    if (Array.isArray(old)) {
+                        return old.map(updateRoom);
+                    }
+                    return old;
+                });
+                return { previousRoom, previousRooms };
+            },
+            onError: (err: any, variables, context: any) => {
+                if (context?.previousRoom) {
+                    queryClient.setQueryData(["chatRoom", variables.chatCode], context.previousRoom);
+                    try { setRoomChatInfo(context.previousRoom); } catch (e) {}
+                }
+                if (context?.previousRooms) {
+                    queryClient.setQueryData(["chatRooms"], context.previousRooms);
+                }
+                const msg = err?.response?.data?.message || "Unable to transfer admin";
+                showToast(msg, 3000, "error");
+                options?.onError?.(err);
+            },
+            onSuccess: (data, variables) => {
+                showToast("Đã chuyển quyền quản trị", 2000, "success");
+                queryClient.invalidateQueries({ queryKey: ["chatRoom", variables.chatCode] });
+                queryClient.invalidateQueries({ queryKey: ["chatRooms"] });
+                options?.onSuccess?.(data, variables);
+            },
         }
     );
 };

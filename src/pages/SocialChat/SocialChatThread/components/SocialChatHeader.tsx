@@ -9,7 +9,7 @@ import MoreActionIcon from "@/icons/logo/social-chat/more-action.svg?react";
 import ConfirmModal from "@/components/common/modals/ConfirmModal";
 import { ChatInfoType } from "@/constants/socialChat";
 import { useHistory } from "react-router";
-import  InfoIcon from "@/icons/logo/info.svg?react";
+import InfoIcon from "@/icons/logo/info.svg?react";
 const MoreDots: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = (props) => (
     <button
         {...props}
@@ -147,33 +147,38 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
         <>
             <div className="w-full sticky top-0 z-20">
                 <div className="relative flex items-center justify-between px-4 sm:px-6 h-[50px]">
-                    <div className="flex items-center gap-3 z-10">
-                        <button onClick={onBackClick} aria-label="Back" className="p-1 rounded hover:bg-gray-100">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <button onClick={onBackClick} aria-label="Back" className="p-1 rounded hover:bg-gray-100 flex-none">
                             <BackIcon />
                         </button>
-                        <div className="flex items-center gap-2">
+
+                        <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                             <img
                                 src={src}
                                 alt={roomChatInfo?.title || "Avatar"}
-                                className="w-[34px] h-[34px] rounded-full object-cover"
+                                className="w-[34px] h-[34px] rounded-full object-cover flex-none"
                                 onError={(e) => {
                                     e.currentTarget.src = avatarFallback;
                                 }}
                             />
-                            <span className="text-sm font-semibold text-gray-800">
+                            <span
+                                className="text-sm font-semibold text-gray-800 truncate overflow-hidden"
+                                title={roomChatInfo?.title || roomData?.title || "Chat Room"}
+                            >
                                 {roomChatInfo?.title || roomData?.title || "Chat Room"}
                             </span>
                         </div>
                     </div>
-                    {roomChatInfo?.type === ChatInfoType.UserVsUser && <div className="z-10">{RightActions}</div>}
-                {roomChatInfo?.type === ChatInfoType.Group && <div className="z-10">
-                    <button
-                        onClick={() => history.push(`/social-chat/t/${roomId}/info`)}
-                    >
-                        <InfoIcon className="w-5 h-5" />
-                    </button>   
-                </div>}
-            </div>
+
+                    <div className="flex items-center gap-2 flex-none z-10">
+                        {roomChatInfo?.type === ChatInfoType.UserVsUser && RightActions}
+                        {roomChatInfo?.type === ChatInfoType.Group && (
+                            <button onClick={() => history.push(`/social-chat/t/${roomId}/info`)}>
+                                <InfoIcon className="w-5 h-5" />
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
             <ConfirmModal
                 isOpen={confirmState.open}

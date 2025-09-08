@@ -137,21 +137,21 @@ export function useSocialChatHandlers({
         const tempId = `temp_${Date.now()}_${Math.random()}`;
         const now = dayjs.utc();
         const baseId = Date.now();
-        
+
         const localChatAttachments = validFiles.map((file, i) => {
             const blobUrl = URL.createObjectURL(file);
             return {
                 id: baseId + i,
                 tempAttachmentId: `${tempId}_${i}`,
                 chatMessageId: 0,
-                fileUrl: blobUrl,                 
+                fileUrl: blobUrl,
                 fileName: file.name,
                 fileType: 1,
                 fileSize: file.size,
                 originalIndex: i,
                 createDate: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
-                localUrl: blobUrl,                
-                serverUrl: undefined,             
+                localUrl: blobUrl,
+                serverUrl: undefined,
                 isUploading: true,                // ✅ Bắt đầu với uploading
                 isSending: false,                 // ✅ Chưa sending
                 uploadProgress: 0,                // ✅ 0% progress
@@ -189,106 +189,121 @@ export function useSocialChatHandlers({
                     ? String(replyingToMessage.code)
                     : null,
             isUploading: false,
-    };
+        };
 
-    // ✅ Add message ngay với uploading overlay
-    addMessage(finalMessage);
-    setTimeout(() => scrollToBottom(), 100);
+        // ✅ Add message ngay với uploading overlay
+        addMessage(finalMessage);
+        setTimeout(() => scrollToBottom(), 100);
 
-    const uploadedFiles: { name: string; linkImage: string; localUrl: string; index: number }[] = [];
-    
-    try {
-        setLoadingMessages(true);
-        
-        // ✅ Upload files với progress tracking
-        const uploadPromises = validFiles.map(async (file, index) => {
-            try {
-                // ✅ Update progress 10%
-                updateMessageWithServerResponse(tempId, {
-                    chatAttachments: finalMessage.chatAttachments.map((att, i) => {
-                        if (i === index) {
-                            return {
-                                ...att,
-                                uploadProgress: 10,
-                            };
-                        }
-                        return att;
-                    })
-                });
+        const uploadedFiles: { name: string; linkImage: string; localUrl: string; index: number }[] = [];
 
-                const localUrl = localChatAttachments[index].fileUrl;
-                const uploaded = await uploadImageMutation.mutateAsync(file);
-                
-                if (uploaded?.length) {
-                    const serverFile = uploaded[0];
-                    const serverUrl = cleanImageUrl(serverFile.linkImage);
-                    
-                    uploadedFiles.push({ 
-                        name: serverFile.name, 
-                        linkImage: serverUrl,
-                        localUrl: localUrl,
-                        index: index
-                    });
+        try {
+            setLoadingMessages(true);
 
-                    // ✅ Update progress 70%
+            // ✅ Upload files với progress tracking
+            const uploadPromises = validFiles.map(async (file, index) => {
+                try {
+                    // ✅ Update progress 10%
                     updateMessageWithServerResponse(tempId, {
                         chatAttachments: finalMessage.chatAttachments.map((att, i) => {
                             if (i === index) {
                                 return {
                                     ...att,
-                                    uploadProgress: 70,
-                                    serverUrl: serverUrl,
+                                    uploadProgress: 10,
                                 };
                             }
                             return att;
                         })
                     });
 
-                    // ✅ Preload và update với server URL
-                    await new Promise<void>((resolve) => {
-                        const preloadImage = new Image();
-                        
-                        preloadImage.onload = () => {
-                            // ✅ Upload done, set to sending
-                            updateMessageWithServerResponse(tempId, {
-                                chatAttachments: finalMessage.chatAttachments.map((att, i) => {
-                                    if (i === index) {
-                                        return {
-                                            ...att,
-                                            serverUrl: serverUrl,
-                                            isUploading: false,  // ✅ Upload xong
-                                            isSending: true,     // ✅ Bắt đầu sending
-                                            uploadProgress: 100,
-                                        };
-                                    }
-                                    return att;
-                                })
-                            });
-                            resolve();
-                        };
-                        
-                        preloadImage.onerror = () => {
-                            updateMessageWithServerResponse(tempId, {
-                                chatAttachments: finalMessage.chatAttachments.map((att, i) => {
-                                    if (i === index) {
-                                        return {
-                                            ...att,
-                                            isUploading: false,
-                                            isSending: true,     // ✅ Vẫn sending dù preload fail
-                                            uploadProgress: 100,
-                                        };
-                                    }
-                                    return att;
-                                })
-                            });
-                            resolve();
-                        };
-                        
-                        setTimeout(() => resolve(), 3000); // Shorter timeout
-                        preloadImage.src = serverUrl;
-                    });
-                } else {
-                    failedFiles.push(`${file.name} (no response)`);
+                    const localUrl = localChatAttachments[index].fileUrl;
+                    const uploaded = await uploadImageMutation.mutateAsync(file);
+
+                    if (uploaded?.length) {
+                        const serverFile = uploaded[0];
+                        const serverUrl = cleanImageUrl(serverFile.linkImage);
+
+                        uploadedFiles.push({
+                            name: serverFile.name,
+                            linkImage: serverUrl,
+                            localUrl: localUrl,
+                            index: index
+                        });
+
+                        // ✅ Update progress 70%
+                        updateMessageWithServerResponse(tempId, {
+                            chatAttachments: finalMessage.chatAttachments.map((att, i) => {
+                                if (i === index) {
+                                    return {
+                                        ...att,
+                                        uploadProgress: 70,
+                                        serverUrl: serverUrl,
+                                    };
+                                }
+                                return att;
+                            })
+                        });
+
+                        // ✅ Preload và update với server URL
+                        await new Promise<void>((resolve) => {
+                            const preloadImage = new Image();
+
+                            preloadImage.onload = () => {
+                                // ✅ Upload done, set to sending
+                                updateMessageWithServerResponse(tempId, {
+                                    chatAttachments: finalMessage.chatAttachments.map((att, i) => {
+                                        if (i === index) {
+                                            return {
+                                                ...att,
+                                                serverUrl: serverUrl,
+                                                isUploading: false,  // ✅ Upload xong
+                                                isSending: true,     // ✅ Bắt đầu sending
+                                                uploadProgress: 100,
+                                            };
+                                        }
+                                        return att;
+                                    })
+                                });
+                                resolve();
+                            };
+
+                            preloadImage.onerror = () => {
+                                updateMessageWithServerResponse(tempId, {
+                                    chatAttachments: finalMessage.chatAttachments.map((att, i) => {
+                                        if (i === index) {
+                                            return {
+                                                ...att,
+                                                isUploading: false,
+                                                isSending: true,     // ✅ Vẫn sending dù preload fail
+                                                uploadProgress: 100,
+                                            };
+                                        }
+                                        return att;
+                                    })
+                                });
+                                resolve();
+                            };
+
+                            setTimeout(() => resolve(), 3000); // Shorter timeout
+                            preloadImage.src = serverUrl;
+                        });
+                    } else {
+                        failedFiles.push(`${file.name} (no response)`);
+                        updateMessageWithServerResponse(tempId, {
+                            chatAttachments: finalMessage.chatAttachments.map((att, i) => {
+                                if (i === index) {
+                                    return {
+                                        ...att,
+                                        isUploading: false,
+                                        isError: true,
+                                    };
+                                }
+                                return att;
+                            })
+                        });
+                    }
+                } catch (e) {
+                    failedFiles.push(`${file.name} (upload failed)`);
                     updateMessageWithServerResponse(tempId, {
                         chatAttachments: finalMessage.chatAttachments.map((att, i) => {
                             if (i === index) {
@@ -302,140 +317,145 @@ export function useSocialChatHandlers({
                         })
                     });
                 }
-            } catch (e) {
-                failedFiles.push(`${file.name} (upload failed)`);
-                updateMessageWithServerResponse(tempId, {
-                    chatAttachments: finalMessage.chatAttachments.map((att, i) => {
-                        if (i === index) {
-                            return {
-                                ...att,
-                                isUploading: false,
-                                isError: true,
-                            };
-                        }
-                        return att;
-                    })
-                });
-            }
-        });
+            });
 
-        await Promise.all(uploadPromises);
+            await Promise.all(uploadPromises);
 
-        // ✅ Send message - all images should be in sending state now
-        if (uploadedFiles.length > 0) {
-            uploadedFiles.sort((a, b) => a.index - b.index);
+            // ✅ Send message - all images should be in sending state now
+            if (uploadedFiles.length > 0) {
+                uploadedFiles.sort((a, b) => a.index - b.index);
 
-            const payload: CreateSocialChatMessagePayload = {
-                chatCode: roomId || null,
-                messageText: "",
-                files: uploadedFiles.map(f => ({ name: f.name })),
-                replyToMessageCode:
-                    replyingToMessage?.code !== undefined && replyingToMessage?.code !== null
-                        ? String(replyingToMessage.code)
-                        : null,
-                tempId,
-            };
+                const payload: CreateSocialChatMessagePayload = {
+                    chatCode: roomId || null,
+                    messageText: "",
+                    files: uploadedFiles.map(f => ({ name: f.name })),
+                    replyToMessageCode:
+                        replyingToMessage?.code !== undefined && replyingToMessage?.code !== null
+                            ? String(replyingToMessage.code)
+                            : null,
+                    tempId,
+                };
 
-            try {
-                const serverMsg = await sendMessageMutation.mutateAsync(payload);
-                
-                if (serverMsg) {
-                    // ✅ Final update - remove sending state
-                    updateMessageWithServerResponse(tempId, {
-                        id: serverMsg.id,
-                        code: serverMsg.code,
-                        messageText: serverMsg.messageText,
-                        createDate: serverMsg.createDate,
-                        timeStamp: serverMsg.createDate
-                            ? generatePreciseTimestampFromDate(new Date(serverMsg.createDate))
-                            : finalMessage.timeStamp,
-                        messageType: serverMsg.messageType,
-                        senderType: serverMsg.senderType,
-                        replyToMessageId: serverMsg.replyToMessageId,
-                        replyToMessageCode: serverMsg.replyToMessageCode,
-                        replyToMessage: serverMsg.replyToMessage || null,
-                        status: serverMsg.status,
-                        chatInfoId: serverMsg.chatInfoId,
-                        userName: serverMsg.userName,
-                        userAvatar: serverMsg.userAvatar,
-                        hasAttachment: serverMsg.hasAttachment,
-                        isRead: serverMsg.isRead,
-                        isSend: true,
-                        isError: false,
-                        chatAttachments: serverMsg.chatAttachments?.length
-                            ? serverMsg.chatAttachments.map((att: any, index: number) => {
-                                const localAtt: any = finalMessage.chatAttachments[index];
-                                return {
-                                    id: att.id,
-                                    chatMessageId: att.chatMessageId,
-                                    fileUrl: att.fileUrl,
-                                    fileName: att.fileName,
-                                    fileType: att.fileType,
-                                    fileSize: att.fileSize,
-                                    createDate: att.createDate,
-                                    originalIndex: localAtt?.originalIndex ?? index,
+                try {
+                    const serverMsg = await sendMessageMutation.mutateAsync(payload);
+
+                    if (serverMsg) {
+                        // ✅ Final update - remove sending state
+                        updateMessageWithServerResponse(tempId, {
+                            id: serverMsg.id,
+                            code: serverMsg.code,
+                            messageText: serverMsg.messageText,
+                            createDate: serverMsg.createDate,
+                            timeStamp: serverMsg.createDate
+                                ? generatePreciseTimestampFromDate(new Date(serverMsg.createDate))
+                                : finalMessage.timeStamp,
+                            messageType: serverMsg.messageType,
+                            senderType: serverMsg.senderType,
+                            replyToMessageId: serverMsg.replyToMessageId,
+                            replyToMessageCode: serverMsg.replyToMessageCode,
+                            replyToMessage: serverMsg.replyToMessage || null,
+                            status: serverMsg.status,
+                            chatInfoId: serverMsg.chatInfoId,
+                            userName: serverMsg.userName,
+                            userAvatar: serverMsg.userAvatar,
+                            hasAttachment: serverMsg.hasAttachment,
+                            isRead: serverMsg.isRead,
+                            isSend: true,
+                            isError: false,
+                            chatAttachments: serverMsg.chatAttachments?.length
+                                ? serverMsg.chatAttachments.map((att: any, index: number) => {
+                                    const localAtt: any = finalMessage.chatAttachments[index];
+                                    return {
+                                        id: att.id,
+                                        chatMessageId: att.chatMessageId,
+                                        fileUrl: att.fileUrl,
+                                        fileName: att.fileName,
+                                        fileType: att.fileType,
+                                        fileSize: att.fileSize,
+                                        createDate: att.createDate,
+                                        originalIndex: localAtt?.originalIndex ?? index,
+                                        isSending: false, // ✅ Remove sending flag
+                                        isUploading: false,
+                                        uploadProgress: 100,
+                                    };
+                                })
+                                : finalMessage.chatAttachments.map(att => ({
+                                    ...att,
                                     isSending: false, // ✅ Remove sending flag
                                     isUploading: false,
                                     uploadProgress: 100,
-                                };
-                            })
-                            : finalMessage.chatAttachments.map(att => ({
-                                ...att,
-                                isSending: false, // ✅ Remove sending flag
-                                isUploading: false,
-                                uploadProgress: 100,
-                            })),
-                        attachments: [],
-                    });
-                }
-            } catch (e) {
-                console.error('Send message failed:', e);
-                // ✅ Handle send error
-                updateMessageWithServerResponse(tempId, {
-                    isError: true,
-                    isSend: false,
-                    chatAttachments: finalMessage.chatAttachments.map(att => ({
-                        ...att,
-                        isSending: false, // ✅ Remove sending flag on error
+                                })),
+                            attachments: [],
+                        });
+                    }
+                } catch (e) {
+                    console.error('Send message failed:', e);
+                    // ✅ Handle send error
+                    updateMessageWithServerResponse(tempId, {
                         isError: true,
-                    })),
-                    messageText: "Gửi tin nhắn thất bại"
-                });
-                useToastStore.getState().showToast("Gửi tin nhắn thất bại", 3000, "error");
+                        isSend: false,
+                        chatAttachments: finalMessage.chatAttachments.map(att => ({
+                            ...att,
+                            isSending: false, // ✅ Remove sending flag on error
+                            isError: true,
+                        })),
+                        messageText: "Gửi tin nhắn thất bại"
+                    });
+                    useToastStore.getState().showToast("Gửi tin nhắn thất bại", 3000, "error");
+                }
             }
-        }
-    } catch (error) {
-        console.error('Upload process failed:', error);
-        updateMessageWithServerResponse(tempId, {
-            isError: true,
-            isSend: false,
-            chatAttachments: finalMessage.chatAttachments.map(att => ({
-                ...att,
-                isSending: false,
-                isUploading: false,
+        } catch (error) {
+            console.error('Upload process failed:', error);
+            updateMessageWithServerResponse(tempId, {
                 isError: true,
-            })),
-            messageText: "Upload thất bại"
-        });
-    } finally {
-        setLoadingMessages(false);
-    }
+                isSend: false,
+                chatAttachments: finalMessage.chatAttachments.map(att => ({
+                    ...att,
+                    isSending: false,
+                    isUploading: false,
+                    isError: true,
+                })),
+                messageText: "Upload thất bại"
+            });
+        } finally {
+            setLoadingMessages(false);
+        }
 
-    if (failedFiles.length > 0) {
-        useToastStore.getState().showToast(
-            `${failedFiles.length} file thất bại: ${failedFiles.join(", ")}`,
-            4000,
-            "warning"
-        );
-    }
+        if (failedFiles.length > 0) {
+            useToastStore.getState().showToast(
+                `${failedFiles.length} file thất bại: ${failedFiles.join(", ")}`,
+                4000,
+                "warning"
+            );
+        }
 
-    setTimeout(() => scrollToBottom(), 100);
-};
+        setTimeout(() => scrollToBottom(), 100);
+    };
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files ?? []);
-        await sendPickedFiles(files);
-        e.target.value = "";
-    };
+
+        if (files.length === 0) {
+            e.target.value = "";
+            return;
+        }
+        const isImageFile = (f: File) =>
+            (f.type && f.type.startsWith("image/")) ||
+            /\.(jpe?g|png|gif|webp|svg|heic|heif)$/i.test(f.name);
+        const imageFiles = files.filter(isImageFile);
+        const invalidFiles = files.filter((f) => !isImageFile(f));
+
+        if (invalidFiles.length > 0) {
+            showToast(
+                `${invalidFiles.length} file không phải ảnh: ${invalidFiles.map(f => f.name).join(", ")}`,
+                4000,
+                "warning"
+            );
+        }
+        if (imageFiles.length === 0) {
+            e.target.value = "";
+            return;
+        }
+    }
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;

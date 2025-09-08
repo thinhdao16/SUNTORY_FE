@@ -51,6 +51,7 @@ interface SocialChatState {
     addChatRoom: (room: RoomChatInfo) => void;
     updateChatRoom: (roomCode: string, updatedRoom: Partial<RoomChatInfo>) => void;
     removeChatRoom: (roomCode: string) => void;
+    deleteRoom: (roomCode: string) => void;
     getChatRoomByCode: (code: string) => RoomChatInfo | undefined;
     sortChatRoomsByDate: () => void;
 
@@ -427,6 +428,14 @@ export const useSocialChatStore = create<SocialChatState>()(
         removeChatRoom: (roomCode) =>
             set((state) => {
                 state.chatRooms = state.chatRooms.filter(r => r.code !== roomCode);
+            }),
+
+        deleteRoom: (roomCode: string) =>
+            set((state) => {
+                state.chatRooms = state.chatRooms.filter(r => r.code !== roomCode);
+                if (state.roomChatInfo?.code === roomCode) state.roomChatInfo = null;
+                if (state.unreadByRoom && state.unreadByRoom[roomCode] !== undefined) delete state.unreadByRoom[roomCode];
+                if (state.lastMessageByRoomId && state.lastMessageByRoomId[roomCode] !== undefined) delete state.lastMessageByRoomId[roomCode];
             }),
 
         getChatRoomByCode: (code) => {

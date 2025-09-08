@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
-import { useChatRoomByCode, useCreateAnonymousChat, useRemoveGroupMembers, useLeaveChatRoom } from '../hooks/useSocialChat';
+import { useChatRoomByCode, useCreateAnonymousChat, useRemoveGroupMembers, useLeaveChatRoom, useTransferAdmin } from '../hooks/useSocialChat';
 import { useToastStore } from '@/store/zustand/toast-store';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import "../SocialChat.css"
@@ -41,6 +41,7 @@ const SocialChatMembers: React.FC = () => {
         );
         return currentUserParticipant?.isAdmin === 1;
     }, [user, roomChatInfo]);
+
     const { mutate: removeMember, isLoading: removing } = useRemoveGroupMembers({
         onSuccess: () => {
             refetch();
@@ -55,7 +56,17 @@ const SocialChatMembers: React.FC = () => {
     });
     const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
     const { mutateAsync: createAnonymousChat } = useCreateAnonymousChat();
-    
+    const { mutateAsync: transferAdmin, isLoading: isTransferring } = useTransferAdmin({
+        onSuccess: () => {
+            refetch();
+            showToast(t("Admin transferred successfully"), 2000, "success");
+        },
+        onError: () => {
+        }
+    });
+    const [isAppointConfirmOpen, setIsAppointConfirmOpen] = useState(false);
+    const [memberToAppoint, setMemberToAppoint] = useState<any | null>(null);
+
     const handleLeaveGroup = async () => {
         if (!roomId) return;
         try {
@@ -135,8 +146,27 @@ const SocialChatMembers: React.FC = () => {
     };
 
     const handleAppointAdmin = (userId: number) => {
-        showToast("This feature is not available yet", 2000, "info");
+        const member = roomChatInfo?.participants?.find(p => p.userId === userId);
+        if (!member) {
+            showToast(t("User not found"), 2000, "error");
+            sheetExpand.close();
+            return;
+        }
+        setMemberToAppoint(member);
+        setIsAppointConfirmOpen(true);
         sheetExpand.close();
+    };
+
+    const confirmAppointAdmin = async () => {
+        if (!roomId || !memberToAppoint) return;
+        setIsAppointConfirmOpen(false);
+        try {
+            await transferAdmin({ chatCode: roomId, newAdminUserId: memberToAppoint.userId });
+        } catch (err) {
+            console.error("Transfer admin failed", err);
+        } finally {
+            setMemberToAppoint(null);
+        }
     };
 
     return (
@@ -166,7 +196,7 @@ const SocialChatMembers: React.FC = () => {
                                         <button onClick={handleBack} className="p-1">
                                             <BackDefaultIcon className="text-xl" />
                                         </button>
-                                        <h1 className="text-base font-medium ml-2">{t("Members")}</h1>
+                                        <h1 className="text-base font-semibold ml-2">{t("Members")}</h1>
                                     </div>
                                     {/* {currentUserIsAdmin && (
                                         <button className="p-1" onClick={handleAddMembers}>
@@ -193,13 +223,15 @@ const SocialChatMembers: React.FC = () => {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <div className="font-medium flex items-end justify-center gap-4 ">{member?.user?.fullName} <span className='text-xs text-netural-200'>{member?.user?.id === user?.id ? t('You') : ''}</span></div>
+                                                        <div className="font-medium flex items-end justify-center gap-1 ">{member?.user?.fullName} 
+                                                            {/* <span className='text-xs text-netural-200'>{member?.user?.id === user?.id ? t('(You)') : ''}</span> */}
+                                                        </div>
                                                         <div className="text-xs text-gray-500">
                                                             {member.isAdmin ? t('Admin') : ''}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                {(currentUserIsAdmin || user?.id !== member.userId) && (
+                                                {(currentUserIsAdmin || user?.id === member.userId) && (
                                                     <button
                                                         onClick={() => handleUserAction(member)}
                                                         className="w-8 h-8 flex items-center justify-center text-gray-500">
@@ -229,6 +261,7 @@ const SocialChatMembers: React.FC = () => {
                             onAppointAdmin={currentUserIsAdmin ? handleAppointAdmin : undefined}
                             onRemoveFromGroup={currentUserIsAdmin ? handleRemoveFromGroup : undefined}
                             isAdmin={isAdmin}
+                            isUser={selectedMember?.userId === user?.id}
                         />
                     </div>
                 )}
@@ -253,6 +286,19 @@ const SocialChatMembers: React.FC = () => {
                 cancelText={t("Cancel")}
                 onConfirm={confirmRemoveMember}
                 onClose={() => setIsRemoveModalOpen(false)}
+            />
+
+            <ConfirmModal
+                isOpen={isAppointConfirmOpen}
+                title={t("Transfer admin?")}
+                message={memberToAppoint ? t("Are you sure you want to make {{name}} an admin?", { name: memberToAppoint.user?.fullName || '' }) : t("Are you sure?")}
+                confirmText={t("Transfer")}
+                cancelText={t("Cancel")}
+                onConfirm={confirmAppointAdmin}
+                onClose={() => {
+                    setIsAppointConfirmOpen(false);
+                    setMemberToAppoint(null);
+                }}
             />
 
             <ConfirmModal

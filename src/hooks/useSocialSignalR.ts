@@ -4,6 +4,7 @@ import * as signalR from "@microsoft/signalr";
 import ENV from "@/config/env";
 import { useSocialChatStore } from "@/store/zustand/social-chat-store";
 import { useAuthStore } from "@/store/zustand/auth-store";
+import { useHistory } from "react-router";
 
 export interface UseSocialSignalROptions {
     roomId: string;
@@ -22,6 +23,8 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
         onTypingUsers,
     } = options;
 
+    const history = useHistory();
+
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const isConnectedRef = useRef(false);
     const currentRoomRef = useRef<string | null>(null);
@@ -33,7 +36,7 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
     const pingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const { isAuthenticated } = useAuthStore();
-    const { addMessage, updateMessageByCode, updateMessageAndRepliesByCode } = useSocialChatStore();
+    const { addMessage, updateMessageByCode, updateMessageAndRepliesByCode, deleteRoom } = useSocialChatStore();
 
     const log = useCallback(
         (message: string, ...args: any[]) => {
@@ -272,6 +275,24 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
             if (refetchRoomData) refetchRoomData();
         });
 
+        connection.off("GroupChatRemoved");
+        connection.on("GroupChatRemoved", (m: any) => {
+            const removedCode =
+                m?.chatCode || m?.chatInfo?.code || m?.roomId || m?.code || (typeof m === "string" ? m : null);
+            if (!removedCode) return;
+            try {
+                if (!removedCode) return;
+                deleteRoom(removedCode);
+                try {
+                    history.replace("/social-chat");
+                } catch (e) {
+                    window.location.href = "/social-chat";
+                }
+                if (typeof refetchRoomData === "function") refetchRoomData();
+            } catch (err) {
+                console.error("Error handling GroupChatRemoved:", err);
+            }
+        });
         onEvt("UnreadCountChanged", (payload: any) => {
         });
 

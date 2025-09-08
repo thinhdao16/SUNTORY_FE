@@ -3,6 +3,7 @@ import { SystemMessageType } from "@/constants/socialChat";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store/zustand/auth-store";
+import CongratulationGroup from "@/icons/logo/social-chat/congratulation-group.svg";
 
 interface ChatSystemMessageProps {
     type: number;
@@ -44,16 +45,15 @@ const ChatSystemMessage: React.FC<ChatSystemMessageProps> = ({
         
         switch (type) {
             case SystemMessageType.NOTIFY_GROUP_CHAT_CREATED:
-                return (
+            return (
                     <div className="relative p-4 my-2 bg-white shadow-lg rounded-xl text-center text-base font-medium text-netural-500 overflow-hidden">
                         <div className="absolute inset-0 pointer-events-none z-0">
-                            <svg width="100%" height="40" viewBox="0 0 400 40" fill="none">
-                                <text x="10" y="30" fontSize="30" fill="#a78bfa">🎉</text>
-                                <text x="60" y="20" fontSize="20" fill="#fbbf24">🎊</text>
-                                <text x="120" y="35" fontSize="25" fill="#34d399">🎈</text>
-                                <text x="200" y="25" fontSize="22" fill="#f472b6">🎉</text>
-                                <text x="300" y="30" fontSize="28" fill="#60a5fa">🎊</text>
-                            </svg>
+                            <img
+                                src={CongratulationGroup}
+                                alt=""
+                                aria-hidden="true"
+                                className="w-full h-full object-cover"
+                            />
                         </div>
                         <span className="relative z-10">
                             {formatUser(actor)} {t("has created the group!")}

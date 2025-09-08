@@ -138,6 +138,11 @@ function getDisplayTime(time: dayjs.Dayjs, t: TFn): string {
 }
 
 function getSenderKey(m: any): string | number {
+    if (m.isNotifyRoomChat || m.messageType === 10 || m.messageType === 2) {
+        const sysId = m.Key || m.Event || m.messageText || m.code || (`sys:${m.id ?? Math.random()}`);
+        return `system:${sysId}`;
+    }
+
     if (m.userId !== undefined && m.userId !== null) return m.userId;
     if (m.senderId !== undefined && m.senderId !== null) return m.senderId;
     if (m.userName) return `name:${m.userName}`;

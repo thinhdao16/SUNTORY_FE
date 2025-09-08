@@ -5,7 +5,7 @@ import { useSocialChatStore } from "@/store/zustand/social-chat-store";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import { useToastStore } from "@/store/zustand/toast-store";
 
-import { IoPersonAddOutline, IoVolumeMuteOutline } from "react-icons/io5";
+import { IoPersonAddOutline } from "react-icons/io5";
 import { MdOutlineEdit, MdOutlineGroups, MdOutlinePhotoLibrary } from "react-icons/md";
 import { FaCamera } from "react-icons/fa";
 import { BiTrash } from "react-icons/bi";
@@ -14,7 +14,9 @@ import { TbLogout } from "react-icons/tb";
 import BackDefaultIcon from "@/icons/logo/back-default.svg?react";
 import NextIcon from "@/icons/logo/next.svg?react";
 import NextGrayIcon from "@/icons/logo/vector-right-gray.svg?react";
-
+import MuteIcon from "@/icons/logo/social-chat/mute.svg?react"
+import UnMuteIcon from "@/icons/logo/social-chat/unmute.svg?react"
+import AddMemberIcon from "@/icons/logo/social-chat/add-member.svg?react"
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 
 import EditGroupNameModal from "./components/EditGroupNameModal";
@@ -143,7 +145,7 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
         }
     };
 
-    const currentParticipant:any = roomChatInfo?.participants?.find((p: any) => p.userId === user?.id);
+    const currentParticipant: any = roomChatInfo?.participants?.find((p: any) => p.userId === user?.id);
     const currentIsQuiet = (currentParticipant?.isQuiet === 1) || (currentParticipant?.isQuiet === true);
 
     const handleToggleQuietConfirmed = async () => {
@@ -198,19 +200,18 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
                             </div>
                         )}
                     </div>
-
                     <div className="flex items-center gap-2">
                         <h2 className="text-lg font-medium">{roomData?.title || "Supernova"}</h2>
-                        <button className="text-gray-500" onClick={() => setIsEditModalOpen(true)}>
+                        {isAdmin && (<button className="text-gray-500" onClick={() => setIsEditModalOpen(true)}>
                             <MdOutlineEdit />
                         </button>
-                    </div>
+                        )}</div>
 
                     <div className="flex items-center gap-8 mt-4">
                         {isAdmin && (
                             <button className="flex flex-col items-center gap-1" onClick={() => history.push(`/social-chat/t/${roomId}/add-members`)}>
                                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                                    <IoPersonAddOutline className="text-xl" />
+                                    <AddMemberIcon />
                                 </div>
                                 <span className="text-xs text-gray-600">Thêm</span>
                             </button>
@@ -221,7 +222,11 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
                             onClick={() => setIsQuietConfirmOpen(true)}
                         >
                             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                                <IoVolumeMuteOutline className={`text-xl ${currentIsQuiet ? "text-blue-500" : ""}`} />
+                                {currentIsQuiet ? (
+                                    <MuteIcon  />
+                                ):(
+                                    <UnMuteIcon  />
+                                )}
                             </div>
                             <span className="text-xs text-gray-600">{currentIsQuiet ? t("Notifications off") : t("Mute")}</span>
                         </button>
@@ -263,7 +268,7 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
                                 ) : (
                                     <div className="grid grid-cols-5 gap-2">
                                         {mediaPreview.map((media: any) => (
-                                            <div key={media.id} className="w-full aspect-square rounded-md overflow-hidden border border-netural-50">
+                                            <div key={media.id} className="w-full aspect-square rounded-md overflow-hidden border border-netural-50" onClick={() => history.push(`/social-chat/t/${roomId}/view-attachments`)}>
                                                 <img
                                                     src={media.fileUrl}
                                                     alt={`Media ${media.id}`}

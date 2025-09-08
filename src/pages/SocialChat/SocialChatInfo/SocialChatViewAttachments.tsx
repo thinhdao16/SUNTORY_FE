@@ -10,13 +10,14 @@ import ImageLightbox from '@/components/common/ImageLightbox';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
+import { formatDateUtil } from '@/utils/formatTime';
 
 type FilterType = 'all' | 'images' | 'files';
 
 const SocialChatViewAttachments: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const history = useHistory();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -134,17 +135,9 @@ const SocialChatViewAttachments: React.FC = () => {
     }, 500);
   };
 
+
   const formatDate = (dateStr: string) => {
-    const date = dayjs(dateStr);
-    const today = dayjs();
-    
-    if (date.isSame(today, 'day')) {
-      return t('Today');
-    } else if (date.isSame(today.subtract(1, 'day'), 'day')) {
-      return t('Yesterday');
-    }
-    
-    return date.locale('vi').format('DD MMMM, YYYY');
+    return formatDateUtil(dateStr, t, i18n.language);
   };
   
   const getFileIcon = (fileName: string) => {

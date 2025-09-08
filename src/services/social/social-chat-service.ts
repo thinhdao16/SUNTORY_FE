@@ -92,3 +92,7 @@ export const toggleChatRoomQuietStatusApi = async (payload: { chatCode: string; 
     const res = await httpClient.put("/api/v1/chat-user/chatroom/quiet-status", payload);
     return res.data;
 };
+export const transferAdminApi = async (payload: { chatCode: string; newAdminUserId: number }) => {
+    const res = await httpClient.post("/api/v1/chat-user/chatroom/transfer-admin", payload);
+    return res.data;
+};

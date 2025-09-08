@@ -10,7 +10,7 @@ export interface UseSocialSignalRListChatRoomOptions {
   autoConnect?: boolean;
   enableDebugLogs?: boolean;
   refetchUserChatRooms: () => void;
-  preferWebSockets?: boolean; 
+  preferWebSockets?: boolean;
 }
 
 export function useSocialSignalRListChatRoom(
@@ -174,7 +174,10 @@ export function useSocialSignalRListChatRoom(
         log("Updated notification counts:", next);
       }
     });
-
+    connection.off("GroupChatRemoved");
+    connection.on("GroupChatRemoved", (m:any) => {
+      refetchRef.current?.();
+    });
     const handleUnread = (d: any) => {
       const chatCode = d?.chatCode;
       if (!chatCode) return;
@@ -196,7 +199,7 @@ export function useSocialSignalRListChatRoom(
 
     connection.onreconnected(async (id) => {
       isConnectedRef.current = true;
-      joinedUserNotifyRef.current = false;  
+      joinedUserNotifyRef.current = false;
       log("Reconnected:", id);
       await joinUserNotify();
       if (activeRoomsRef.current.length) await joinChatRooms(activeRoomsRef.current);
@@ -219,7 +222,7 @@ export function useSocialSignalRListChatRoom(
     setNotificationCounts,
   ]);
 
-      const connect = useCallback(async () => {
+  const connect = useCallback(async () => {
     const curr = connectionRef.current;
     if (curr) {
       const s = curr.state;
