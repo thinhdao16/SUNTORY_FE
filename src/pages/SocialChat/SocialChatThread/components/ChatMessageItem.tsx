@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { MdOutlineReply, MdModeEditOutline, MdTranslate, MdContentCopy } from "react-icons/md";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { MessageBubble } from "./MessageBubble";
+import MessageStatus from "./MessageStatus";
 
 import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/react";
 import { useLongPressOpen } from "@/hooks/useLongPressOpen";
@@ -39,6 +40,9 @@ interface ChatMessageItemProps {
     isGroup?: boolean;
     currentUserId?: number | string | null;
     hasReachedLimit?: boolean;
+    isLastUserMessage?: boolean;
+    isSendingMessage?: boolean;
+    activeUserIds?: number[];
 }
 
 const REACTIONS = ["❤️", "🙂", "😮", "🤢", "😡", "😂"];
@@ -55,23 +59,24 @@ function useVirtualRef(rect: DOMRect | null) {
     );
 }
 
-const ChatMessageItem: React.FC<ChatMessageItemProps> = (props) => {
-    const {
-        msg,
-        isUser,
-        isError,
-        isSend,
-        onEditMessage,
-        onRevokeMessage,
-        onReplyMessage,
-        isEdited,
-        isRevoked,
-        isReply,
-        isGroup = false,
-        currentUserId = null,
-        hasReachedLimit = false,
-        
-    } = props;
+const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
+    msg,
+    isUser,
+    isError,
+    isSend,
+    onEditMessage,
+    onRevokeMessage,
+    onReplyMessage,
+    isEdited,
+    isRevoked,
+    isReply,
+    isGroup,
+    currentUserId,
+    hasReachedLimit,
+    isLastUserMessage = false,
+    isSendingMessage = false,
+    activeUserIds = [],
+}) => {
 
     const isDesktop = () => window.innerWidth > 1024;
 
@@ -441,11 +446,22 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = (props) => {
                                 onRevoke={revoke}
                                 onReply={reply}
                                 showActionsMobile={false}
-                                hasReachedLimit={hasReachedLimit}
+                                hasReachedLimit={hasReachedLimit || false}
                             />
                         </div>
 
                         {showText && Bubble}
+                        
+                        {isUser && !isRevoked && (
+                            <MessageStatus 
+                                message={msg}
+                                isGroup={isGroup || false}
+                                currentUserId={typeof currentUserId === 'string' ? parseInt(currentUserId) : (currentUserId || null)}
+                                isLastUserMessage={isLastUserMessage || false}
+                                isSendingMessage={isSendingMessage}
+                                activeUserIds={activeUserIds}
+                            />
+                        )}
                     </div>
                 </DraggableMessageContainer>
             )}
@@ -497,7 +513,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = (props) => {
                                     onRevoke={revoke}
                                     onReply={reply}
                                     showActionsMobile={false}
-                                    hasReachedLimit={hasReachedLimit}
+                                    hasReachedLimit={hasReachedLimit || false}
                                 />
                             )}
 

@@ -228,7 +228,7 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
                                     <UnMuteIcon  />
                                 )}
                             </div>
-                            <span className="text-xs text-gray-600">{currentIsQuiet ? t("Notifications off") : t("Mute")}</span>
+                            <span className="text-xs text-gray-600">{currentIsQuiet ? t("Unmute") : t("Mute")}</span>
                         </button>
                     </div>
                 </div>
@@ -250,7 +250,7 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
                         <h3 className="px-4 py-3 text-sm text-gray-500">Hành động khác</h3>
 
                         <button className="w-full flex flex-col px-4 py-3">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between" onClick={() => history.push(`/social-chat/t/${roomId}/view-attachments`)}>
                                 <div className="flex items-center gap-3">
                                     <MdOutlinePhotoLibrary className="text-gray-500 text-xl" />
                                     <span>Xem phương tiện đã chia sẻ</span>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useHistory, useParams } from "react-router-dom";
 import { useQueryClient } from "react-query";
 import { Capacitor } from "@capacitor/core";
@@ -67,6 +67,8 @@ export const useSocialChatThread = () => {
         updateMessage: updateMessageStore,
         updateMessageByTempId: updateMessageByTempIdStore,
         updateMessageWithServerResponse: updateMessageWithServerResponseStore,
+        updateMessagesReadStatusForActiveUsers,
+        updateOldMessagesWithReadStatus,
         updateMessageByCode,
         setLoadingMessages: setLoadingMessagesStore,
         removeMessage,
@@ -113,13 +115,23 @@ export const useSocialChatThread = () => {
     const {
         pingActiveRoom,
         setInactiveInRoom,
-        typing
+        activity,
+        typing,
+        typingUsers,
+        clearTypingUsers,
     } = useSocialSignalR(deviceInfo.deviceId ?? "", {
         roomId: roomId ?? "",
         refetchRoomData,
         autoConnect: true,
         enableDebugLogs: false,
+        onTypingUsers: (payload) => {
+        }
     });
+    const clearTypingAfterSend = useCallback(async () => {
+        clearTypingUsers();
+        await typing.off();
+    }, [clearTypingUsers, typing]);
+
     const usePeerUserId = (roomData?: any, myId?: number) => {
         const participants = roomData?.participants ?? [];
         const other = participants.find((p: any) => {
@@ -145,16 +157,42 @@ export const useSocialChatThread = () => {
     useEffect(() => {
         if (!roomId) return;
 
-        pingActiveRoom(roomId);
-        const interval = setInterval(() => {
-            pingActiveRoom(roomId);
-        }, 30000);
+        // vào phòng (nếu hook không tự join theo roomId prop)
+        // await joinChatRoom(roomId);  // đa số không cần vì hook đã làm
+
+        // Ping khi có tương tác UI (throttle sẵn trong hook)
+        const onFocus = () => activity.touch();
+        const onKey = () => activity.touch();
+        const onMove = () => activity.touch();
+        const onClick = () => activity.touch();
+        const onVisibility = () => {
+            if (document.visibilityState === "visible") activity.touch();
+            else activity.off(); // tab bị ẩn -> inactive
+        };
+        const onBeforeUnload = () => { activity.off(); };
+
+        window.addEventListener("focus", onFocus);
+        window.addEventListener("keydown", onKey);
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("click", onClick);
+        document.addEventListener("visibilitychange", onVisibility);
+        window.addEventListener("beforeunload", onBeforeUnload);
+
+        // touch ngay lập tức khi mount
+        activity.touch();
 
         return () => {
-            clearInterval(interval);
-            setInactiveInRoom(roomId);
+            document.removeEventListener("visibilitychange", onVisibility);
+            window.removeEventListener("focus", onFocus);
+            window.removeEventListener("keydown", onKey);
+            window.removeEventListener("pointermove", onMove);
+            window.removeEventListener("click", onClick);
+            // báo inactive khi rời màn
+            activity.off();
+            // hoặc: void leaveChatRoom(roomId); // nếu bạn muốn rời group thật sự
         };
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [roomId]);
 
     const messages = roomId ? getMessagesForRoom(roomId) : [];
     const isLoadingMessages = roomId ? getLoadingForRoom(roomId) : false;
@@ -168,12 +206,18 @@ export const useSocialChatThread = () => {
     const addMessage = (msg: ChatMessage) => {
         if (roomId) {
             addMessageStore(roomId, msg);
+            // Clear typing indicators when any message is added to prevent race conditions
+            clearTypingUsers();
         }
     };
 
     const addMessages = (msgs: ChatMessage[]) => {
         if (roomId) {
             addMessagesStore(roomId, msgs);
+            // Clear typing indicators when messages are added to prevent race conditions
+            if (msgs.length > 0) {
+                clearTypingUsers();
+            }
         }
     };
 
@@ -270,13 +314,18 @@ export const useSocialChatThread = () => {
         updateMessage,
         updateMessageByTempId,
         updateMessageWithServerResponse,
+        updateMessagesReadStatusForActiveUsers,
+        updateOldMessagesWithReadStatus,
         setLoadingMessages,
+        getLoadingForRoom,
         setReplyingToMessage,
         clearReplyingToMessage,
         replyingToMessage,
         scrollToBottom, messageValue, setMessageValue,
         expandValue, setExpandValue, expandTitle, expandPlaceholder,
         typing,
+        typingUsers,
+        clearTypingAfterSend,
         // Additional functions
         updateMessageByCode: updateMessageByCodeForCurrentRoom,
         removeMessage: removeMessageFromCurrentRoom,

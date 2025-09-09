@@ -28,6 +28,7 @@ interface UseSocialChatHandlersProps {
     addMessage: (message: ChatMessage) => void;
     updateMessageByTempId: (message: ChatMessage) => void;
     updateMessageWithServerResponse: (tempId: string, serverData: Partial<ChatMessage>) => void;
+    updateOldMessagesWithReadStatus: (roomId: string, newUserHasRead: any[], currentUserId: number) => void;
     setLoadingMessages: (loading: boolean) => void;
     onContainerScroll: any;
     hasNextPage?: boolean;
@@ -63,6 +64,7 @@ export function useSocialChatHandlers({
     addMessage,
     updateMessageByTempId,
     updateMessageWithServerResponse,
+    updateOldMessagesWithReadStatus,
     roomId,
     setLoadingMessages,
     onContainerScroll,
@@ -191,7 +193,6 @@ export function useSocialChatHandlers({
             isUploading: false,
         };
 
-        // ✅ Add message ngay với uploading overlay
         addMessage(finalMessage);
         setTimeout(() => scrollToBottom(), 100);
 
@@ -199,11 +200,8 @@ export function useSocialChatHandlers({
 
         try {
             setLoadingMessages(true);
-
-            // ✅ Upload files với progress tracking
             const uploadPromises = validFiles.map(async (file, index) => {
                 try {
-                    // ✅ Update progress 10%
                     updateMessageWithServerResponse(tempId, {
                         chatAttachments: finalMessage.chatAttachments.map((att, i) => {
                             if (i === index) {
@@ -229,8 +227,6 @@ export function useSocialChatHandlers({
                             localUrl: localUrl,
                             index: index
                         });
-
-                        // ✅ Update progress 70%
                         updateMessageWithServerResponse(tempId, {
                             chatAttachments: finalMessage.chatAttachments.map((att, i) => {
                                 if (i === index) {
@@ -243,21 +239,17 @@ export function useSocialChatHandlers({
                                 return att;
                             })
                         });
-
-                        // ✅ Preload và update với server URL
                         await new Promise<void>((resolve) => {
                             const preloadImage = new Image();
-
                             preloadImage.onload = () => {
-                                // ✅ Upload done, set to sending
                                 updateMessageWithServerResponse(tempId, {
                                     chatAttachments: finalMessage.chatAttachments.map((att, i) => {
                                         if (i === index) {
                                             return {
                                                 ...att,
                                                 serverUrl: serverUrl,
-                                                isUploading: false,  // ✅ Upload xong
-                                                isSending: true,     // ✅ Bắt đầu sending
+                                                isUploading: false, 
+                                                isSending: true,    
                                                 uploadProgress: 100,
                                             };
                                         }
@@ -274,7 +266,7 @@ export function useSocialChatHandlers({
                                             return {
                                                 ...att,
                                                 isUploading: false,
-                                                isSending: true,     // ✅ Vẫn sending dù preload fail
+                                                isSending: true,    
                                                 uploadProgress: 100,
                                             };
                                         }
@@ -284,7 +276,7 @@ export function useSocialChatHandlers({
                                 resolve();
                             };
 
-                            setTimeout(() => resolve(), 3000); // Shorter timeout
+                            setTimeout(() => resolve(), 3000); 
                             preloadImage.src = serverUrl;
                         });
                     } else {
@@ -320,11 +312,8 @@ export function useSocialChatHandlers({
             });
 
             await Promise.all(uploadPromises);
-
-            // ✅ Send message - all images should be in sending state now
             if (uploadedFiles.length > 0) {
                 uploadedFiles.sort((a, b) => a.index - b.index);
-
                 const payload: CreateSocialChatMessagePayload = {
                     chatCode: roomId || null,
                     messageText: "",
@@ -335,12 +324,9 @@ export function useSocialChatHandlers({
                             : null,
                     tempId,
                 };
-
                 try {
                     const serverMsg = await sendMessageMutation.mutateAsync(payload);
-
                     if (serverMsg) {
-                        // ✅ Final update - remove sending state
                         updateMessageWithServerResponse(tempId, {
                             id: serverMsg.id,
                             code: serverMsg.code,
@@ -374,14 +360,14 @@ export function useSocialChatHandlers({
                                         fileSize: att.fileSize,
                                         createDate: att.createDate,
                                         originalIndex: localAtt?.originalIndex ?? index,
-                                        isSending: false, // ✅ Remove sending flag
+                                        isSending: false,
                                         isUploading: false,
                                         uploadProgress: 100,
                                     };
                                 })
                                 : finalMessage.chatAttachments.map(att => ({
                                     ...att,
-                                    isSending: false, // ✅ Remove sending flag
+                                    isSending: false,
                                     isUploading: false,
                                     uploadProgress: 100,
                                 })),
@@ -390,13 +376,12 @@ export function useSocialChatHandlers({
                     }
                 } catch (e) {
                     console.error('Send message failed:', e);
-                    // ✅ Handle send error
                     updateMessageWithServerResponse(tempId, {
                         isError: true,
                         isSend: false,
                         chatAttachments: finalMessage.chatAttachments.map(att => ({
                             ...att,
-                            isSending: false, // ✅ Remove sending flag on error
+                            isSending: false,
                             isError: true,
                         })),
                         messageText: "Gửi tin nhắn thất bại"
@@ -433,29 +418,27 @@ export function useSocialChatHandlers({
     };
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files ?? []);
-
-        if (files.length === 0) {
-            e.target.value = "";
-            return;
-        }
+        if (files.length === 0) {e.target.value = ""; return;}
         const isImageFile = (f: File) =>
             (f.type && f.type.startsWith("image/")) ||
-            /\.(jpe?g|png|gif|webp|svg|heic|heif)$/i.test(f.name);
+            /\.(jpeg|png|gif|webp|svg|heic|heif)$/i.test(f.name);
         const imageFiles = files.filter(isImageFile);
         const invalidFiles = files.filter((f) => !isImageFile(f));
-
         if (invalidFiles.length > 0) {
             showToast(
                 `${invalidFiles.length} file không phải ảnh: ${invalidFiles.map(f => f.name).join(", ")}`,
                 4000,
                 "warning"
             );
+            return
         }
+        await sendPickedFiles(files);
         if (imageFiles.length === 0) {
             e.target.value = "";
             return;
         }
     }
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
@@ -575,6 +558,7 @@ export function useSocialChatHandlers({
             const serverMsg = await sendMessageMutation.mutateAsync(payload);
 
             if (serverMsg) {
+                console.log('Server response userHasRead:', serverMsg.userHasRead);
                 updateMessageWithServerResponse(tempId, {
                     id: serverMsg.id,
                     code: serverMsg.code,
@@ -594,6 +578,7 @@ export function useSocialChatHandlers({
                     userAvatar: serverMsg.userAvatar,
                     hasAttachment: serverMsg.hasAttachment,
                     isRead: serverMsg.isRead,
+                    userHasRead: serverMsg.userHasRead || [],
                     attachments: serverMsg.chatAttachments?.length > 0 ?
                         serverMsg.chatAttachments.map((att: any) => ({
                             fileUrl: att.fileUrl,
@@ -601,8 +586,21 @@ export function useSocialChatHandlers({
                             fileType: att.fileType,
                             createDate: att.createDate,
                         })) : pendingMsg.attachments,
-
+                    isSend: true,
+                    isError: false,
                 });
+                
+                // Update old messages with userHasRead from server response
+                if (serverMsg.userHasRead && serverMsg.userHasRead.length > 0) {
+                    updateOldMessagesWithReadStatus(
+                        roomId, 
+                        serverMsg.userHasRead, 
+                        pendingMsg.userId
+                    );
+                }
+                
+                // Set loading to false after successful update
+                setLoadingMessages(false);
             }
 
         } catch (error) {
@@ -612,12 +610,10 @@ export function useSocialChatHandlers({
                 isError: true,
                 isSend: false
             });
-        } finally {
             setLoadingMessages(false);
-
-            scrollToBottom();
-
         }
+        
+        scrollToBottom();
     };
 
     const handleScrollWithLoadMore = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -668,6 +664,7 @@ export function useSocialChatHandlers({
             }
         }
     }, [updateMessageByCode, updateMessageMutation, displayMessages]);
+
     const handleRevokeMessage = useCallback(async (messageCode: string | number) => {
         try {
             updateMessageByCode(String(messageCode), {

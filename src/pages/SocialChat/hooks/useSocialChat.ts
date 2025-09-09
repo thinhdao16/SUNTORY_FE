@@ -36,6 +36,10 @@ export interface RoomChatInfo {
         fromUserId: number;
         toUserId: number;
     };
+    isQuiet?: boolean;
+    activeUserIds?: number[];
+    activeUserCount?: number;
+    lastActiveTime?: string;
 }
 interface UseUpdateSocialChatMessageOptions {
     onSuccess?: (data: any, variables: UpdateSocialChatMessagePayload) => void;
@@ -95,7 +99,7 @@ export const useRemoveGroupMembers = (options?: UseRemoveGroupMembersOptions) =>
         }
     );
 };
-export const useUserChatRooms = (pageSize = 15) => {
+export const useUserChatRooms = (pageSize = 15,setChatRooms:any ) => {
     return useInfiniteQuery(
         ["chatRooms"],
         ({ pageParam = 0 }) => getUserChatRooms({ PageNumber: pageParam, PageSize: pageSize }),
@@ -104,6 +108,18 @@ export const useUserChatRooms = (pageSize = 15) => {
                 const totalLoaded = pages.flat().length;
                 if (lastPage.length < pageSize) return undefined;
                 return Math.floor(totalLoaded / pageSize);
+            },
+            onSuccess: (data) => {
+                try {
+                    const pages = data?.pages ?? [];
+                    const flat = Array.isArray(pages) ? pages.flat() : [];
+                    setChatRooms(flat);
+                } catch (e) {
+                    console.error("[useUserChatRooms] onSuccess log error", e);
+                }
+            },
+            onError: (err) => {
+                console.error("[useUserChatRooms] onError", err);
             },
             // keepPreviousData: true,
             // staleTime: 1000 * 60 * 5,

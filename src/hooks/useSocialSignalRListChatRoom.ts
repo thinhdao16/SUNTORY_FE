@@ -150,13 +150,21 @@ export function useSocialSignalRListChatRoom(
     connection.on("GroupChatCreated", () => {
       refetchRef.current?.();
     });
-
     connection.off("UserVsUserChatCreated");
     connection.on("UserVsUserChatCreated", (msg: any) => {
       log("UserVsUserChatCreated:", msg);
       refetchRef.current?.();
     });
 
+    connection.off("RoomChatUpdated");
+    connection.on("RoomChatUpdated", (msg: any) => {
+      console.log("RoomChatUpdated")
+      refetchUserChatRooms();
+    });
+    connection.off("GroupChatRemoved");
+    connection.on("GroupChatRemoved", (msg: any) => {
+      refetchUserChatRooms();
+    });
     connection.off("RoomChatAndFriendRequestReceived");
     connection.on("RoomChatAndFriendRequestReceived", (m: any) => {
       const current = useSocialChatStore.getState().notificationCounts;
@@ -175,7 +183,7 @@ export function useSocialSignalRListChatRoom(
       }
     });
     connection.off("GroupChatRemoved");
-    connection.on("GroupChatRemoved", (m:any) => {
+    connection.on("GroupChatRemoved", (m: any) => {
       refetchRef.current?.();
     });
     const handleUnread = (d: any) => {
@@ -188,9 +196,7 @@ export function useSocialSignalRListChatRoom(
       if (enableDebugLogs) log(`Unread ${chatCode}: -> ${my}`);
     };
     connection.off("UnreadCountChanged");
-    connection.off("unreadcountchanged");
     connection.on("UnreadCountChanged", handleUnread);
-    connection.on("unreadcountchanged", handleUnread);
 
     connection.onreconnecting((err) => {
       isConnectedRef.current = false;

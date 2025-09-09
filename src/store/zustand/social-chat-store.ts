@@ -10,6 +10,7 @@ interface SocialChatState {
 
     roomChatInfo: RoomChatInfo | null;
     setRoomChatInfo: (room: RoomChatInfo) => void;
+    updateRoomChatInfo: (updates: Partial<RoomChatInfo>) => void;
     clearRoomChatInfo: () => void;
 
     roomMembers: Member[];
@@ -27,6 +28,8 @@ interface SocialChatState {
     updateMessage: (roomId: string, msg: ChatMessage) => void;
     updateMessageByTempId: (roomId: string, msg: ChatMessage) => void;
     updateMessageWithServerResponse: (roomId: string, tempId: string, serverData: Partial<ChatMessage>) => void;
+    updateMessagesReadStatusForActiveUsers: (roomId: string, activeUserIds: number[], currentUserId: number) => void;
+    updateOldMessagesWithReadStatus: (roomId: string, newUserHasRead: any[], currentUserId: number) => void;
     updateMessageByCode: (roomId: string, messageCode: string, updatedData: Partial<ChatMessage>) => void;
     translateMessageByCode: (roomId: string, messageCode: string, updatedData: Partial<ChatMessage>) => void;
 
@@ -87,6 +90,12 @@ export const useSocialChatStore = create<SocialChatState>()(
 
         roomChatInfo: null,
         setRoomChatInfo: (room) => set({ roomChatInfo: room }),
+        updateRoomChatInfo: (updates) => 
+            set((state) => {
+                if (state.roomChatInfo) {
+                    Object.assign(state.roomChatInfo, updates);
+                }
+            }),
         clearRoomChatInfo: () => set({ roomChatInfo: null }),
 
         roomMembers: [],
@@ -210,13 +219,87 @@ export const useSocialChatStore = create<SocialChatState>()(
 
                 if (index !== -1) {
                     const msg = state.messagesByRoomId[roomId][index];
+                    console.log('Updating message with userHasRead:', serverData.userHasRead);
                     Object.assign(msg, {
                         ...serverData,
                         id: serverData.id !== undefined ? serverData.id : msg.id,
                         isSend: true,
                         isError: false,
                     });
+                    console.log('Message after update:', msg.userHasRead);
                 }
+            }),
+
+        updateMessagesReadStatusForActiveUsers: (roomId: string, activeUserIds: number[], currentUserId: number) =>
+            set((state) => {
+                const roomMessages = state.messagesByRoomId[roomId];
+                if (!roomMessages || !activeUserIds.length) return;
+
+                const activeUsersExcludingMe = activeUserIds.filter((id: number) => id !== currentUserId);
+                if (!activeUsersExcludingMe.length) return;
+
+                const recentMessages = roomMessages.slice(-20);
+                recentMessages.forEach((msg, index) => {
+                    if (msg.userId === currentUserId && msg.id !== undefined && msg.id !== null) {
+                        const actualIndex = roomMessages.length - 20 + index;
+                        if (actualIndex >= 0) {
+                            const currentReadUsers = msg.userHasRead || [];
+                            const newReadUsers = [...currentReadUsers];
+                            
+                            activeUsersExcludingMe.forEach((userId: number) => {
+                                const alreadyRead = currentReadUsers.some(user => user.userId === userId);
+                                if (!alreadyRead) {
+                                    newReadUsers.push({
+                                        userId,
+                                        userName: `User ${userId}`,
+                                        userAvatar: null,
+                                        readTime: new Date().toISOString()
+                                    });
+                                }
+                            });
+
+                            if (newReadUsers.length > currentReadUsers.length) {
+                                roomMessages[actualIndex] = {
+                                    ...msg,
+                                    userHasRead: newReadUsers
+                                };
+                            }
+                        }
+                    }
+                });
+            }),
+
+        updateOldMessagesWithReadStatus: (roomId: string, newUserHasRead: any[], currentUserId: number) =>
+            set((state) => {
+                const roomMessages = state.messagesByRoomId[roomId];
+                if (!roomMessages || !newUserHasRead.length) return;
+
+                const newReaderIds = newUserHasRead.map(user => user.userId);
+
+                let mostRecentUserMessageIndex = -1;
+                for (let i = roomMessages.length - 1; i >= 0; i--) {
+                    if (roomMessages[i].userId === currentUserId) {
+                        mostRecentUserMessageIndex = i;
+                        break;
+                    }
+                }
+
+                roomMessages.forEach((msg, index) => {
+                    if (msg.userId === currentUserId && 
+                        msg.userHasRead && 
+                        msg.userHasRead.length > 0 && 
+                        index !== mostRecentUserMessageIndex) {
+                        
+                        const filteredUserHasRead = msg.userHasRead.filter(reader => 
+                            !newReaderIds.includes(reader.userId)
+                        );
+                        
+                        roomMessages[index] = {
+                            ...msg,
+                            userHasRead: filteredUserHasRead
+                        };
+                    }
+                });
             }),
 
         updateMessageByCode: (roomId, messageCode, updatedData) =>
@@ -547,7 +630,6 @@ export const useSocialChatStore = create<SocialChatState>()(
         setRoomUnread: (roomCode, count) =>
             set((state) => {
                 state.unreadByRoom[roomCode] = Math.max(0, count | 0);
-
                 const idx = state.chatRooms.findIndex(r => r.code === roomCode);
                 if (idx !== -1) state.chatRooms[idx].unreadCount = state.unreadByRoom[roomCode];
             }),

@@ -1,0 +1,52 @@
+.typing-indicator-container {
+  padding: 0 10px;
+  margin-bottom: 8px;
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  background-color: #f1f1f1;
+  border-radius: 16px;
+  padding: 6px 12px;
+  width: fit-content;
+  max-width: 80%;
+}
+
+.typing-animation {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.typing-animation span {
+  height: 5px;
+  width: 5px;
+  margin: 0 1px;
+  background-color: #606060;
+  border-radius: 50%;
+  display: inline-block;
+  animation: bounce 1.3s linear infinite;
+}
+
+.typing-animation span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-animation span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.typing-text {
+  font-size: 12px;
+  color: #666;
+}
+
+@keyframes bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}

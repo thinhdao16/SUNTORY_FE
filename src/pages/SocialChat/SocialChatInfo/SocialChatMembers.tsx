@@ -14,6 +14,7 @@ import { t } from "@/lib/globalT";
 import ConfirmModal from '@/components/common/modals/ConfirmModal';
 import BackDefaultIcon from "@/icons/logo/back-default.svg?react";
 import { TbLogout } from 'react-icons/tb';
+import ActionButton from '@/components/loading/ActionButton';
 
 const SocialChatMembers: React.FC = () => {
     const { roomId } = useParams<{ roomId: string }>();
@@ -30,6 +31,9 @@ const SocialChatMembers: React.FC = () => {
     const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
     const [memberToRemove, setMemberToRemove] = useState<{ id: number, name: string } | null>(null);
 
+    // track current action loading to show spinner per-user / per-action
+    const [actionLoading, setActionLoading] = useState<{ type?: 'remove' | 'appoint' | 'leave', userId?: number } | null>(null);
+
     const currentUserIsAdmin = roomChatInfo?.participants?.find(
         (p) => p.userId === user?.id && p.isAdmin === 1
     ) || false;
@@ -42,7 +46,7 @@ const SocialChatMembers: React.FC = () => {
         return currentUserParticipant?.isAdmin === 1;
     }, [user, roomChatInfo]);
 
-    const { mutate: removeMember, isLoading: removing } = useRemoveGroupMembers({
+    const { mutateAsync: removeMemberAsync, isLoading: removing } = useRemoveGroupMembers({
         onSuccess: () => {
             refetch();
             showToast(t("Member removed successfully"), 2000, "success");
@@ -70,9 +74,12 @@ const SocialChatMembers: React.FC = () => {
     const handleLeaveGroup = async () => {
         if (!roomId) return;
         try {
+            setActionLoading({ type: 'leave' });
             await leaveRoom({ chatCode: roomId });
         } catch (error) {
             console.error('Leave group failed', error);
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -85,9 +92,6 @@ const SocialChatMembers: React.FC = () => {
         sheetExpand.open();
     };
 
-    const handleAddMembers = () => {
-        history.push(`/social-chat/t/${roomId}/add-members`);
-    };
 
     const handleRemoveFromGroup = (userId: number) => {
         if (!roomId || !userId) return;
@@ -107,14 +111,21 @@ const SocialChatMembers: React.FC = () => {
         sheetExpand.close();
     };
 
-    const confirmRemoveMember = () => {
+    const confirmRemoveMember = async () => {
         if (!roomId || !memberToRemove) return;
-        removeMember({
-            chatCode: roomId,
-            userIds: [memberToRemove.id]
-        });
-        setIsRemoveModalOpen(false);
-        setMemberToRemove(null);
+        try {
+            setActionLoading({ type: 'remove', userId: memberToRemove.id });
+            await removeMemberAsync({
+                chatCode: roomId,
+                userIds: [memberToRemove.id]
+            });
+            setIsRemoveModalOpen(false);
+            setMemberToRemove(null);
+        } catch (err) {
+            console.error('Remove member failed', err);
+        } finally {
+            setActionLoading(null);
+        }
     };
     const handleViewProfile = (userId: number) => {
         history.push(`/social-partner/profile/${userId}`);
@@ -159,13 +170,15 @@ const SocialChatMembers: React.FC = () => {
 
     const confirmAppointAdmin = async () => {
         if (!roomId || !memberToAppoint) return;
-        setIsAppointConfirmOpen(false);
         try {
+            setActionLoading({ type: 'appoint', userId: memberToAppoint.userId });
             await transferAdmin({ chatCode: roomId, newAdminUserId: memberToAppoint.userId });
+            setIsAppointConfirmOpen(false);
         } catch (err) {
             console.error("Transfer admin failed", err);
         } finally {
             setMemberToAppoint(null);
+            setActionLoading(null);
         }
     };
 
@@ -223,25 +236,36 @@ const SocialChatMembers: React.FC = () => {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <div className="font-medium flex items-end justify-center gap-1 ">{member?.user?.fullName} 
-                                                            {/* <span className='text-xs text-netural-200'>{member?.user?.id === user?.id ? t('(You)') : ''}</span> */}
+                                                        <div className="font-medium flex items-end justify-center gap-1 ">
+                                                            {member?.user?.fullName}
+                                                            {actionLoading?.userId === member.userId && (
+                                                                <span className="ml-2">
+                                                                    <svg className="animate-spin w-4 h-4 text-gray-500 inline-block" viewBox="0 0 24 24" fill="none" aria-hidden>
+                                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                                                    </svg>
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div className="text-xs text-gray-500">
                                                             {member.isAdmin ? t('Admin') : ''}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                {(currentUserIsAdmin || user?.id === member.userId) && (
-                                                    <button
+                                                    <ActionButton
+                                                        ariaLabel="member-actions"
                                                         onClick={() => handleUserAction(member)}
-                                                        className="w-8 h-8 flex items-center justify-center text-gray-500">
+                                                        disabled={!!actionLoading}
+                                                        loading={actionLoading?.userId === member.userId} // <-- pass loading per-member
+                                                        size="sm"
+                                                        variant="ghost"
+                                                    >
                                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                                                             <circle cx="12" cy="12" r="1"></circle>
                                                             <circle cx="12" cy="5" r="1"></circle>
                                                             <circle cx="12" cy="19" r="1"></circle>
                                                         </svg>
-                                                    </button>
-                                                )}
+                                                    </ActionButton>
                                             </div>
                                         ))}
                                     </div>
@@ -260,6 +284,7 @@ const SocialChatMembers: React.FC = () => {
                             onSendMessage={handleSendMessage}
                             onAppointAdmin={currentUserIsAdmin ? handleAppointAdmin : undefined}
                             onRemoveFromGroup={currentUserIsAdmin ? handleRemoveFromGroup : undefined}
+                            onLeaveGroup={() => setIsLeaveConfirmOpen(true)}
                             isAdmin={isAdmin}
                             isUser={selectedMember?.userId === user?.id}
                         />
@@ -268,14 +293,15 @@ const SocialChatMembers: React.FC = () => {
             </MotionStyles>
 
             <div className="px-4 pb-6">
-                <button
-                    className="w-full flex items-center gap-3 px-4 py-4 text-red-500 border-t border-gray-100 rounded-xl bg-white mt-3"
+                <ActionButton
+                    variant="danger"
+                    size="md"
                     onClick={() => setIsLeaveConfirmOpen(true)}
-                    disabled={isLeaving}
+                    loading={actionLoading?.type === 'leave' || isLeaving}
                 >
                     <TbLogout className="text-xl" />
-                    <span>{isLeaving ? t('Leaving...') : t('Leave group')}</span>
-                </button>
+                    <span className="ml-2">{(actionLoading?.type === 'leave' || isLeaving) ? t('Leaving...') : t('Leave group')}</span>
+                </ActionButton>
             </div>
 
             <ConfirmModal
@@ -285,7 +311,8 @@ const SocialChatMembers: React.FC = () => {
                 confirmText={t("Yes, remove")}
                 cancelText={t("Cancel")}
                 onConfirm={confirmRemoveMember}
-                onClose={() => setIsRemoveModalOpen(false)}
+                // disable closing via onClose until action completes (we control in confirmRemoveMember)
+                onClose={() => { if (!actionLoading) setIsRemoveModalOpen(false); }}
             />
 
             <ConfirmModal
@@ -295,10 +322,7 @@ const SocialChatMembers: React.FC = () => {
                 confirmText={t("Transfer")}
                 cancelText={t("Cancel")}
                 onConfirm={confirmAppointAdmin}
-                onClose={() => {
-                    setIsAppointConfirmOpen(false);
-                    setMemberToAppoint(null);
-                }}
+                onClose={() => { if (!actionLoading) { setIsAppointConfirmOpen(false); setMemberToAppoint(null); } }}
             />
 
             <ConfirmModal
@@ -308,7 +332,7 @@ const SocialChatMembers: React.FC = () => {
                 confirmText={t("Leave")}
                 cancelText={t("Cancel")}
                 onConfirm={() => {
-                    setIsLeaveConfirmOpen(false);
+                    // start leave action; modal will be closed after action completes
                     void handleLeaveGroup();
                 }}
                 onClose={() => setIsLeaveConfirmOpen(false)}

@@ -1,5 +1,6 @@
 import React from "react";
 import BottomSheet from "../../../../components/common/bottomSheet/BottomSheet";
+import { t } from "@/lib/globalT";
 
 interface ActionMemberProps {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface ActionMemberProps {
     onSendMessage: (user: any) => void;
     onAppointAdmin?: (userId: number) => void;
     onRemoveFromGroup?: (userId: number) => void;
+    onLeaveGroup?: () => void;
     isAdmin: boolean;
     isUser: boolean;
 }
@@ -29,6 +31,7 @@ const ActionMember: React.FC<ActionMemberProps> = ({
     onSendMessage,
     onAppointAdmin,
     onRemoveFromGroup,
+    onLeaveGroup,
     isAdmin,
     isUser,
 }) => {
@@ -74,19 +77,24 @@ const ActionMember: React.FC<ActionMemberProps> = ({
                                     Appoint as admin
                                 </button>
                             )}
+                            {!isUser && (
+                                <button
+                                    className="py-4 text-start  text-red-500"
+                                    onClick={() => onRemoveFromGroup?.(userId)}
+                                >
+                                    {t("Remove from this group")}
+                                </button>
+                            )}
 
-                            <button
-                                className="py-4 text-start  text-red-500"
-                                onClick={() => onRemoveFromGroup?.(userId)}
-                            >
-                                {isUser ? t("Leave group") : t("Remove from this group")}
-                            </button>
                         </>
                     )}
                     {isUser && (
                         <button
-                            className="py-4 text-start  text-red-500"
-                            onClick={() => onRemoveFromGroup?.(userId)}
+                            className="py-4 text-start text-red-500"
+                            onClick={() => {
+                                if (onLeaveGroup) onLeaveGroup();
+                                else onRemoveFromGroup?.(userId);
+                            }}
                         >
                             {t("Leave group")}
                         </button>

@@ -42,7 +42,8 @@ type ChatMessageListProps = {
     hasReachedLimit?: boolean;
     isNative?: boolean;
     inputBarHeight?: number;
-    
+    isSendingMessage?: boolean;
+    activeUserIds?: number[];
 };
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
@@ -55,13 +56,29 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     currentUserId = null,
     hasReachedLimit = false,
     isNative = false,
-    inputBarHeight
+    inputBarHeight,
+    isSendingMessage = false,
+    activeUserIds = []
 }) => {
     const { t } = useTranslation();
 
     const messageGroups = useMemo(() => {
         return groupMessagesByTime(allMessages, t, { isGroup, currentUserId });
     }, [allMessages, t, isGroup, currentUserId]);
+
+    const globalLastUserMessageCode = useMemo(() => {
+        for (let groupIndex = messageGroups.length - 1; groupIndex >= 0; groupIndex--) {
+            const group = messageGroups[groupIndex];
+            for (let msgIndex = group.messages.length - 1; msgIndex >= 0; msgIndex--) {
+                const msg = group.messages[msgIndex];
+                const isUser = !!msg._isUser || !!msg.isRight;
+                if (isUser) {
+                    return msg.code ?? msg.tempId ?? `${groupIndex}-${msgIndex}`;
+                }
+            }
+        }
+        return null;
+    }, [messageGroups]);
     useSyncDayjsLocale();
     return (
         <div className={`flex flex-col mx-auto pt-8 `}>
@@ -80,6 +97,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                         isGroup={isGroup}
                         currentUserId={currentUserId}
                         hasReachedLimit={hasReachedLimit}
+                        globalLastUserMessageId={globalLastUserMessageCode}
+                        isSendingMessage={isSendingMessage}
+                        activeUserIds={activeUserIds}
                     />
                 </div>
             ))}

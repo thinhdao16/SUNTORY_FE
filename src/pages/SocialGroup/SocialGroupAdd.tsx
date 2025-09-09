@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FiArrowLeft, FiSearch } from "react-icons/fi";
+import {FiSearch } from "react-icons/fi";
 import { HiX } from "react-icons/hi";
 import { useHistory } from "react-router";
 import { useFriendshipFriendsWithSearch } from "../SocialPartner/hooks/useSocialPartner";
@@ -14,6 +14,8 @@ import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import avatarGrayFallback from "@/icons/logo/social-chat/avt-gray-rounded.svg";
 import { t } from "@/lib/globalT";
 import { useDebounce } from "@/hooks/useDebounce";
+import ActionButton from "@/components/loading/ActionButton";
+import BackIcon from "@/icons/logo/back-default.svg?react";
 
 function SocialGroupAdd() {
   const isNative = Capacitor.isNativePlatform();
@@ -53,24 +55,32 @@ function SocialGroupAdd() {
   }, [debouncedSearch, search]);
 
   const toggleUser = (id: number) => {
+    if (creating) return; 
     setSelectedUsers((prev) =>
       prev.includes(id) ? prev.filter((uid) => uid !== id) : [...prev, id]
     );
   };
 
   const removeSelected = (id: number) => {
+    if (creating) return; 
     setSelectedUsers((prev) => prev.filter((uid) => uid !== id));
   };
   const handleCreateGroup = () => {
     if (selectedUsers.length === 0) return;
 
-    createGroup(
-      {
-        title: groupName || "New Group",
-        userIds: selectedUsers,
-      },
+    const trimmedName = (groupName || "").trim();
+    const selectedNames = selectedUsers
+      .map((id) => users.find((u) => u.id === id)?.fullName)
+      .filter(Boolean) as string[];
+    const namesTitle = selectedNames.join(", ");
+    const title =
+      trimmedName ||
+      (namesTitle ? (namesTitle.length > 60 ? namesTitle.slice(0, 57) + "..." : namesTitle) : "New Group");
 
-    );
+    createGroup({
+      title,
+      userIds: selectedUsers,
+    });
   };
 
   const handleClearSearch = () => {
@@ -99,12 +109,19 @@ function SocialGroupAdd() {
       <div className="px-6 space-y-4">
         <div className="flex justify-between items-center mb-4">
           <button onClick={() => history.goBack()} className="text-gray-500">
-            <FiArrowLeft className="text-xl" />
+            <BackIcon  />
           </button>
-          <h2 className="text-blue-600 font-semibold uppercase">  {t("Add Group")}</h2>
-          <button onClick={handleCreateGroup} disabled={creating || selectedUsers.length === 0}>
-            {selectedUsers.length > 0 ? <SendIcon /> : <SendEmptyIcon />}
-          </button>
+          <h2 className="font-semibold uppercase">  {t("Add Group")}</h2>
+          <ActionButton
+            onClick={handleCreateGroup}
+            disabled={selectedUsers.length === 0}
+            loading={creating}
+            variant={"ghost"}
+            size="none"
+            ariaLabel="create-group"
+          >
+            {creating ? "" : (selectedUsers.length > 0 ? <SendIcon /> : <SendEmptyIcon />)}
+          </ActionButton>
         </div>
         {selectedUsers.length > 0 && (
           <div className="flex gap-[15px] mb-3  overflow-x-auto w-full pt-2">
@@ -142,6 +159,7 @@ function SocialGroupAdd() {
             className="w-full border-none text-netural-300 outline-none"
             value={groupName}
             onChange={(e) => setGroupName(e?.target?.value)}
+            disabled={creating}
           />
         </div>
         <div className="flex items-center bg-chat-to rounded-lg px-4 py-2 ">
@@ -153,6 +171,7 @@ function SocialGroupAdd() {
             className="flex-grow bg-transparent text-sm focus:outline-none"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            disabled={creating}
           />
           {search && (
             <ClearInputIcon
@@ -208,6 +227,7 @@ function SocialGroupAdd() {
                     checked={selectedUsers.includes(user.id)}
                     onChange={() => toggleUser(user.id)}
                     className="peer hidden"
+                    disabled={creating}
                   />
                   <label
                     htmlFor={`checkbox-${user.id}`}

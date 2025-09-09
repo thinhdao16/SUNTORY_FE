@@ -35,7 +35,7 @@ export default function SocialChatRecent() {
     hasNextPage,
     isFetchingNextPage,
     refetch: refetchUserChatRooms
-  } = useUserChatRooms();
+  } = useUserChatRooms(15,setChatRooms);
   const {
     refetch: refetchFriendshipRequests
   } = useFriendshipReceivedRequests(20);
@@ -65,13 +65,12 @@ export default function SocialChatRecent() {
   // });
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (data?.pages) {
-      const allRooms = data.pages.flat();
-      setChatRooms(allRooms);
-    }
-  }, [data, setChatRooms]);
+  // useEffect(() => {
+  //   if (data?.pages) {
+  //     const allRooms = data.pages.flat();
+  //     setChatRooms(allRooms);
+  //   }
+  // }, [data ,setChatRooms]);
   const getDisplayMessageText = (room: RoomChatInfo, currentUserId: number) => {
     const storeLast = getLastMessageForRoom(room.code);
     const last = storeLast ?? room?.lastMessageInfo;
@@ -236,7 +235,7 @@ export default function SocialChatRecent() {
   };
 
   const sortedChatRooms = useMemo(() => {
-    const arr = [...data?.pages.flat() || chatRooms];
+    const arr = [...chatRooms];
     arr.sort((a, b) => {
       const ta = getSortTimestamp(a);
       const tb = getSortTimestamp(b);
@@ -264,7 +263,7 @@ export default function SocialChatRecent() {
     el?.addEventListener('scroll', handleScroll);
     return () => el?.removeEventListener('scroll', handleScroll);
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-  console.log(sortedChatRooms)
+
   return (
     <div className="h-screen">
       <div

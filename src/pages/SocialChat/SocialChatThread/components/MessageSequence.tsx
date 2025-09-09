@@ -1,4 +1,3 @@
-// src/pages/SocialChat/SocialChatThread/components/MessageSequence.tsx
 import React from "react";
 import ChatMessageItem from "./ChatMessageItem";
 import { ChatMessage } from "@/types/social-chat";
@@ -11,7 +10,9 @@ interface MessageSequenceProps {
     isGroup?: boolean;
     currentUserId?: number | string | null;
     hasReachedLimit?: boolean;
-    
+    globalLastUserMessageId?: string | number | null;
+    isSendingMessage?: boolean;
+    activeUserIds?: number[];
 }
 
 export const MessageSequence: React.FC<MessageSequenceProps> = ({
@@ -22,16 +23,23 @@ export const MessageSequence: React.FC<MessageSequenceProps> = ({
     isGroup = false,
     currentUserId = null,
     hasReachedLimit = false,
+    globalLastUserMessageId = null,
+    isSendingMessage = false,
+    activeUserIds = [],
 }) => {
+
     return (
         <div className="flex flex-col">
             {messages.map((msg, idx) => {
                 const isUser = !!msg._isUser || !!msg.isRight;
                 const shouldShowAvatar = msg._shouldShowAvatar !== false;
                 const isFirstInSequence = msg._isFirstInSequence !== false;
+                const messageCode = msg.code ?? msg.tempId ?? `${idx}`;
+                const isLastUserMessage = isUser && (
+                    messageCode === globalLastUserMessageId 
+                );
 
-                const key =
-                    msg.id ?? (msg.createdAt instanceof Date ? msg.createdAt.getTime() : msg.createdAt ?? idx);
+                const key = messageCode;
 
                 return (
                     <div key={key} className={`${!isFirstInSequence ? "mt-1" : "mt-3"}`}>
@@ -45,7 +53,7 @@ export const MessageSequence: React.FC<MessageSequenceProps> = ({
                             isUser={isUser}
                             isError={msg?.isError}
                             isSend={msg?.isSend}
-                            onEditMessage={onEditMessage ?? (() => { })}
+                            onEditMessage={onEditMessage ?? (() => { })}    
                             onRevokeMessage={onRevokeMessage ?? (() => { })}
                             onReplyMessage={onReplyMessage}
                             isEdited={msg.isEdited === 1}
@@ -53,7 +61,10 @@ export const MessageSequence: React.FC<MessageSequenceProps> = ({
                             isReply={msg.replyToMessageId !== undefined && msg.replyToMessageId !== null}
                             isGroup={isGroup}
                             currentUserId={currentUserId}
-                            hasReachedLimit={hasReachedLimit}
+                            hasReachedLimit={hasReachedLimit || false}
+                            isLastUserMessage={isLastUserMessage}
+                            isSendingMessage={isSendingMessage}
+                            activeUserIds={activeUserIds}
                         />
                     </div>
                 );
