@@ -135,7 +135,18 @@ const SocialChatThread: React.FC = () => {
     }, [serverMessages, messages, roomId, userInfo]);
 
     const userRightCount = useMemo(
-        () => displayMessages.reduce((acc, m) => acc + (m?.isRight ? 1 : 0), 0),
+        () => displayMessages.reduce((acc, m) => {
+            if (!m?.isRight) return acc;
+            try {
+                const parsedMessage = JSON.parse((m as any).messageText);
+                if (parsedMessage.Event === "NOTIFY_FRIENDLY_ACCEPTED") {
+                    return acc;
+                }
+            } catch (e) {
+            }
+            
+            return acc + 1;
+        }, 0),
         [displayMessages, messages, roomId, userInfo]
     );
     const hasReachedLimit = !roomData?.isFriend && userRightCount >= CountLimitChatDontFriend && roomChatInfo?.type === ChatInfoType.UserVsUser;
