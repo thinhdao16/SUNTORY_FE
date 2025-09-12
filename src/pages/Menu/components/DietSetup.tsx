@@ -70,6 +70,7 @@ const DietSetup: React.FC = () => {
                 name: item.name,
             }))
         };
+        sessionStorage.setItem('mt_allergies_initialized', '0');
         history.push('/menu-translation/confirm-setup', { payload: payload });
     };
     

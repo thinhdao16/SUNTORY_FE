@@ -37,6 +37,17 @@ export interface LoginResponse {
         healthConditions: any;
         currentMedications: any;
         organizations: any[];
+        friendNumber: number;
+        country: {
+            id: number;
+            code: string;
+            name: string;
+        };
+        language: {
+            code: string;
+            name: string;
+        };
+        currentMeasurement: any[];
     };
 }
 
@@ -73,4 +84,23 @@ export interface ChangePasswordPayload {
 }
 export interface LogoutPayload {
     deviceId: string;
+}
+
+export interface UpdateAccountInformationV3Payload {
+    firstName: string | null;
+    lastName: string | null;
+    gender: number | null;
+    yearOfBirth: number | null;
+    countryId: number | null;
+    languageId: number | null;
+}
+
+export interface UpdateHealthConditionV2Payload {
+    weight: number | null;
+    weightUnitId: number | null;
+    allergies: any[] | null;
+    lifestyleId: number | null;
+    healthConditions: any[] | null;
+    height: number | null;
+    heightUnitId: number | null;
 }

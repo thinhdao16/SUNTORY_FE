@@ -73,8 +73,8 @@ const BottomTabBar: React.FC = () => {
             label: t("Profile"),
             icon: ProfileIcon,
             iconActive: ProfileActiveIcon,
-            path: "/profile",
-            activePath: (pathname: string) => pathname.startsWith("/profile"),
+            path: "/my-profile",
+            activePath: (pathname: string) => pathname.startsWith("/my-profile"),
             classNameIcon: "",
         },
     ];

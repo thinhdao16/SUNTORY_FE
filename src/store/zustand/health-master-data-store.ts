@@ -10,6 +10,7 @@ interface HealthMasterData {
     severities: any[];
     medicationTimes: any[];
     medicationFrequencies: any[];
+    measurementUnits: any[];
 }
 
 interface HealthMasterDataState {
@@ -27,6 +28,7 @@ const defaultState: Partial<HealthMasterData> = {
     severities: [],
     medicationTimes: [],
     medicationFrequencies: [],
+    measurementUnits: [],
 };
 
 export const useHealthMasterDataStore = create<HealthMasterDataState>()(

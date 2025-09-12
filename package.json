@@ -61,6 +61,7 @@
     "dayjs": "^1.11.13",
     "dotenv": "^16.5.0",
     "firebase": "^12.1.0",
+    "flag-icons": "^7.5.0",
     "framer-motion": "^12.7.4",
     "html5-qrcode": "^2.3.8",
     "i18next": "^25.0.2",

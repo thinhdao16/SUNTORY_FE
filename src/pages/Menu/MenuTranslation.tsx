@@ -7,7 +7,6 @@ import AllergiesSetup from './components/AllergiesSetup';
 import DietSetup from './components/DietSetup';
 import AnalyzingSetup from './components/AnalyzingSetup';
 import ScanMenu from './components/ScanMenu';
-import MenuAnalyzing from './components/MenuAnalyzing';
 import { arrowBack, chevronBack } from 'ionicons/icons';
 
 const MenuTranslation: React.FC = () => {

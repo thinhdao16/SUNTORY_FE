@@ -1,4 +1,4 @@
-import { useHistory, useParams } from 'react-router-dom';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 import SocialChatHeader from './SocialChatHeader';
 import { useSocialChatLayout } from './useSocialChatLayout';
 import { motion } from "framer-motion";
@@ -6,12 +6,13 @@ import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { Capacitor } from '@capacitor/core';
 import { useKeyboardResize } from '@/hooks/useKeyboardResize';
 import { useTranslation } from 'react-i18next';
+import { useLanguageSwitcher } from '@/pages/Home/hooks/useLanguageSwitcher';
+import { useAuthInfo } from '../Auth/hooks/useAuthInfo';
 
 function ChatSocial() {
   const { t } = useTranslation();
   const history = useHistory();
   const { type, roomId, infoRoom } = useParams<{ type?: string; roomId?: string; infoRoom?: string }>();
-
   const goTo = (path: string) => history.push(path);
   const { setSearch, clearSearch, search, notificationCounts } = useSocialChatStore();
   const { contentComponent, leftIcon, rightIcon, inputOnFocus } = useSocialChatLayout(
@@ -28,6 +29,7 @@ function ChatSocial() {
       history.push('/social-qr-web');
     }
   };
+
   return (
     <>
       <div className={`${type === "camera" ? "h-screen" : "bg-white"} `}>
