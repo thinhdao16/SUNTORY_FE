@@ -1,6 +1,7 @@
 import React from "react";
 import ChatMessageItem from "./ChatMessageItem";
 import { ChatMessage } from "@/types/social-chat";
+import { SystemMessageType } from "@/constants/socialChat";
 
 interface MessageSequenceProps {
     messages: any[];
@@ -13,6 +14,8 @@ interface MessageSequenceProps {
     globalLastUserMessageId?: string | number | null;
     isSendingMessage?: boolean;
     activeUserIds?: number[];
+    allMessages?: any[];
+    roomData?: any;
 }
 
 export const MessageSequence: React.FC<MessageSequenceProps> = ({
@@ -26,8 +29,25 @@ export const MessageSequence: React.FC<MessageSequenceProps> = ({
     globalLastUserMessageId = null,
     isSendingMessage = false,
     activeUserIds = [],
+    allMessages = [],
+    roomData
 }) => {
 
+    const latestFriendlyAcceptedIndex = allMessages.reduce((latestIdx, msg, idx) => {
+        if (msg.messageType === 10 && msg.messageText) {
+            try {
+                const parsedMessage = JSON.parse(msg.messageText);
+                if (parsedMessage.Event === "NOTIFY_FRIENDLY_ACCEPTED") {
+                    return idx;
+                }
+            } catch (e) {
+            }
+        }
+        return latestIdx;
+    }, -1);
+    const latestFriendlyAcceptedCode = latestFriendlyAcceptedIndex >= 0 
+        ? (allMessages[latestFriendlyAcceptedIndex]?.code ?? allMessages[latestFriendlyAcceptedIndex]?.tempId)
+        : null;
     return (
         <div className="flex flex-col">
             {messages.map((msg, idx) => {
@@ -38,6 +58,12 @@ export const MessageSequence: React.FC<MessageSequenceProps> = ({
                 const isLastUserMessage = isUser && (
                     messageCode === globalLastUserMessageId 
                 );
+                
+                const isLastMessageInConversation = allMessages.length > 0 && 
+                    messageCode === (allMessages[allMessages.length - 1]?.code ?? allMessages[allMessages.length - 1]?.tempId);
+                
+                const isLatestFriendlyAccepted = latestFriendlyAcceptedCode && 
+                    messageCode === latestFriendlyAcceptedCode;
 
                 const key = messageCode;
 
@@ -63,8 +89,11 @@ export const MessageSequence: React.FC<MessageSequenceProps> = ({
                             currentUserId={currentUserId}
                             hasReachedLimit={hasReachedLimit || false}
                             isLastUserMessage={isLastUserMessage}
+                            isLastMessageInConversation={isLastMessageInConversation}
                             isSendingMessage={isSendingMessage}
                             activeUserIds={activeUserIds}
+                            isLatestFriendlyAccepted={isLatestFriendlyAccepted}
+                            roomData={roomData}
                         />
                     </div>
                 );

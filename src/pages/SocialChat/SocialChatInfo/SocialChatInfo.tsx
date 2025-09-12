@@ -33,6 +33,9 @@ import {
 
 import { uploadChatFile } from "@/services/file/file-service";
 import { t } from "@/lib/globalT";
+import { useSocialSignalR } from "@/hooks/useSocialSignalR";
+import useDeviceInfo from "@/hooks/useDeviceInfo";
+import { useUserActivity } from "@/hooks/useUserActivity";
 
 interface SocialChatInfoProps { }
 
@@ -40,7 +43,7 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
     const { roomId } = useParams<{ roomId: string }>();
     const history = useHistory();
 
-    const { roomChatInfo } = useSocialChatStore();
+    const { roomChatInfo, deleteRoom } = useSocialChatStore();
     const { user } = useAuthStore.getState();
     const showToast = useToastStore((s) => s.showToast);
 
@@ -53,9 +56,12 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
     const isUpdating = updateChatRoomMutation.isLoading;
 
     const { mutateAsync: leaveRoom, isLoading: isLeaving } = useLeaveChatRoom({
-        onSuccess: () => history.push("/social-chat"),
+        onSuccess: () => {
+            deleteRoom(roomId ?? "");
+            history.push("/social-chat");
+        },
     });
-
+    const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
     const toggleQuietMutation = useToggleQuietStatus();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -63,8 +69,20 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
     const [isQuietConfirmOpen, setIsQuietConfirmOpen] = useState(false);
     const { mutateAsync: removeChatRoom, isLoading: isDeleting } = useRemoveChatRoom({
-        onSuccess: () => history.push("/social-chat"),
+        onSuccess: () => {
+            deleteRoom(roomId ?? "");
+            history.push("/social-chat");
+        },
     });
+    const {activity} = useSocialSignalR(deviceInfo.deviceId ?? "", {
+        roomId: roomId ?? "",
+        refetchRoomData,
+        autoConnect: true,
+        enableDebugLogs: false,
+        onTypingUsers: (payload) => {
+        }
+    });
+    useUserActivity(activity, { enabled: !!roomId });
 
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
@@ -223,9 +241,9 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
                         >
                             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
                                 {currentIsQuiet ? (
-                                    <MuteIcon  />
-                                ):(
-                                    <UnMuteIcon  />
+                                    <MuteIcon />
+                                ) : (
+                                    <UnMuteIcon />
                                 )}
                             </div>
                             <span className="text-xs text-gray-600">{currentIsQuiet ? t("Unmute") : t("Mute")}</span>

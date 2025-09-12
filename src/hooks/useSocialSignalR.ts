@@ -17,11 +17,8 @@ export interface UseSocialSignalROptions {
 
 const TTL_ON_MS = 5000;
 const TTL_OFF_MS = 800;
-
-// Heartbeat (ping) config
-const PING_INTERVAL_MS = 20000;   // gửi định kỳ mỗi 20s
-const PING_MIN_GAP_MS = 8000;     // khoảng cách tối thiểu giữa 2 lần ping (tránh spam)
-const ACTIVITY_TOUCH_GAP_MS = 3000; // throttle khi có tương tác UI
+const HEARTBEAT_MS = 25_000;
+const ACTIVITY_MIN_GAP_MS = 25_000;
 
 export function useSocialSignalR(deviceId: string, options: UseSocialSignalROptions) {
     const { roomId, autoConnect = true, enableDebugLogs = false, refetchRoomData, onTypingUsers } = options;
@@ -29,9 +26,8 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
     const history = useHistory();
     const queryClient = useQueryClient();
     const { isAuthenticated, user: userInfo } = useAuthStore();
-    const { addMessage, updateMessageByCode, updateMessageAndRepliesByCode, deleteRoom, updateRoomChatInfo, updateMessagesReadStatusForActiveUsers } = useSocialChatStore();
+    const { addMessage, updateMessageAndRepliesByCode, deleteRoom, } = useSocialChatStore();
 
-    // refs chống stale
     const deviceIdRef = useRef(deviceId);
     const roomIdRef = useRef(roomId);
     const autoConnectRef = useRef(autoConnect);
@@ -47,19 +43,16 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
     useEffect(() => { onTypingUsersRef.current = onTypingUsers; }, [onTypingUsers]);
     useEffect(() => { userIdRef.current = userInfo?.id; }, [userInfo?.id]);
 
-    // signalR state
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const isConnectedRef = useRef(false);
     const currentRoomRef = useRef<string | null>(null);
 
-    // typing state
     const typingOnRef = useRef(false);
     const typingIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const typingHardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastStatusRef = useRef<"on" | "off" | null>(null);
     const lastSentAtRef = useRef<number>(0);
 
-    // activity (ping) state
     const pingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const lastPingAtRef = useRef<number>(0);
     const lastTouchAtRef = useRef<number>(0);
@@ -78,11 +71,9 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
             .build();
     }, []);
 
-    // ---- helpers
     const invokeWithTimeout = <T,>(p: Promise<T>, ms = 3000) =>
         Promise.race([p, new Promise<never>((_, r) => setTimeout(() => r(new Error("timeout")), ms))]);
 
-    // ---- typing
     const shouldSendStatus = (status: "on" | "off") => {
         const now = Date.now();
         const same = lastStatusRef.current === status;
@@ -100,16 +91,19 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
         const conn = connectionRef.current;
         const ready = !!conn && conn.state === signalR.HubConnectionState.Connected;
         const targetRoomId = roomIdRef.current || currentRoomRef.current;
-        if (!ready || !targetRoomId) return;
+        if (!ready || !targetRoomId) {
+            if (debugRef.current) console.log("[Typing] not ready:", { ready, targetRoomId });
+            return;
+        }
         if (!shouldSendStatus(status)) {
             if (debugRef.current) console.log("[Typing] skip duplicate:", status);
             return;
         }
         try {
-            await invokeWithTimeout(conn.invoke("Typing", { roomId: targetRoomId, status }), 3000);
-            if (debugRef.current) console.log(`[Typing] ${status} ✓`);
+            await invokeWithTimeout(conn.invoke("Typing", { roomId: targetRoomId, status }), 5000);
+            if (debugRef.current) console.log(`[Typing] ${status} ✓ to room:`, targetRoomId);
         } catch (e) {
-            if (!(e as Error).message?.includes("timeout")) console.warn("[Typing] invoke failed:", e);
+            console.warn("[Typing] invoke failed:", e, "room:", targetRoomId);
         }
     };
 
@@ -137,46 +131,40 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
         typingOnRef.current = false;
         try { await sendTyping("off"); } catch { }
     };
+    const canPing = (gap = HEARTBEAT_MS - 1000) =>
+        Date.now() - lastPingAtRef.current >= gap;
 
     const pingActiveRoom = useCallback(async (rid?: string): Promise<boolean> => {
         const conn = connectionRef.current;
         const room = rid ?? roomIdRef.current ?? currentRoomRef.current;
-        if (!room) return false;
-        if (!conn || conn.state !== signalR.HubConnectionState.Connected) return false;
+        if (!room || !conn || conn.state !== signalR.HubConnectionState.Connected) return false;
 
-        const now = Date.now();
-        if (now - lastPingAtRef.current < PING_MIN_GAP_MS) {
-            return true;
-        }
+        if (!canPing()) return true;
 
         try {
             await invokeWithTimeout(conn.invoke("PingActiveRoom", room), 3000);
-        } catch (e1) {
-            try {
-                await invokeWithTimeout(conn.invoke("PingActiveRoom", { roomId: room }), 3000);
-            } catch (e2) {
-                if (debugRef.current) console.warn("[Ping] failed", e1 ?? e2);
-                return false;
-            }
+        } catch {
+            try { await invokeWithTimeout(conn.invoke("PingActiveRoom", { roomId: room }), 3000); }
+            catch { return false; }
         }
-        lastPingAtRef.current = now;
-        if (debugRef.current) console.log("[Ping] ok ->", room);
+        lastPingAtRef.current = Date.now();
+        debugRef.current && console.log("[Ping] ok ->", room);
         return true;
-    }, []);
+    }, [invokeWithTimeout]);
 
     const startPingLoop = useCallback((rid: string) => {
         if (pingTimerRef.current) clearInterval(pingTimerRef.current);
 
-        const tick = async () => {
-            const now = Date.now();
-            if (now - lastPingAtRef.current >= PING_INTERVAL_MS) {
-                await pingActiveRoom(rid);
-            }
+        const fireOnce = async () => {
+            const conn = connectionRef.current;
+            if (!conn || conn.state !== signalR.HubConnectionState.Connected) return;
+            if (canPing()) await pingActiveRoom(rid);
         };
 
-        void pingActiveRoom(rid);
-        pingTimerRef.current = setInterval(tick, 2000); 
+        void fireOnce();
+        pingTimerRef.current = setInterval(() => { void fireOnce(); }, HEARTBEAT_MS);
     }, [pingActiveRoom]);
+
 
     const stopPingLoop = useCallback(() => {
         if (pingTimerRef.current) {
@@ -213,16 +201,20 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
     }, [log]);
 
     const activityTouch = useCallback(() => {
-        const now = Date.now();
-        if (now - lastTouchAtRef.current < ACTIVITY_TOUCH_GAP_MS) return; 
-        lastTouchAtRef.current = now;
-        void pingActiveRoom();
+        if (canPing(ACTIVITY_MIN_GAP_MS)) void pingActiveRoom();
     }, [pingActiveRoom]);
 
     const activityOff = useCallback(async () => {
         await setInactiveInRoom();
     }, [setInactiveInRoom]);
-
+    const activityObj = useMemo(() => ({
+        touch: activityTouch,
+        off: activityOff,
+        ready: () =>
+            !!(connectionRef.current &&
+                isConnectedRef.current &&
+                (roomIdRef.current || currentRoomRef.current)),
+    }), [activityTouch, activityOff]);
     const joinUserNotify = async () => {
         const conn = connectionRef.current;
         if (!conn || conn.state !== signalR.HubConnectionState.Connected) return false;
@@ -333,27 +325,14 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
         connection.on("FriendRequestEvent", () => {
             refetchRef.current?.();
         });
+
         connection.off("ActiveUsersUpdated");
         connection.on("ActiveUsersUpdated", (message: any) => {
             if (!message) return;
+
             const { chatCode, activeUserIds, activeUserCount, lastUpdatedTime } = message;
             if (String(chatCode) === String(roomId)) {
-                updateRoomChatInfo({
-                    activeUserIds: activeUserIds || [],
-                    activeUserCount: activeUserCount || 0,
-                    lastActiveTime: lastUpdatedTime
-                });
-                
                 setActiveUsers(activeUserIds || []);
-                
-                const currentUserId = useAuthStore.getState().user?.id;
-                if (currentUserId && activeUserIds && activeUserIds.length > 0) {
-                    updateMessagesReadStatusForActiveUsers(
-                        roomIdRef.current as string, 
-                        activeUserIds, 
-                        currentUserId
-                    );
-                }
             }
         });
 
@@ -371,7 +350,36 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
                 console.error("Error handling GroupChatRemoved:", err);
             }
         });
+        connection.off("UserLeftGroupChat");
+        connection.on("UserLeftGroupChat", (m: any) => {
+            const removedCode =
+                m?.chatCode || m?.chatInfo?.code || m?.roomId || m?.code || (typeof m === "string" ? m : null);
+            if (!removedCode) return;
+            if (m?.userId !== userInfo?.id) return;
+            try {
+                deleteRoom(removedCode);
+                try { history.replace("/social-chat"); }
+                catch { window.location.href = "/social-chat"; }
+                refetchRef.current?.();
+            } catch (err) {
+                console.error("Error handling GroupChatRemoved:", err);
+            }
+        });
 
+        connection.off("UserKickedFromGroupChat");
+        connection.on("UserKickedFromGroupChat", (m: any) => {
+            const removedCode =
+                m?.chatCode || m?.chatInfo?.code || m?.roomId || m?.code || (typeof m === "string" ? m : null);
+            if (!removedCode) return;
+            try {
+                deleteRoom(removedCode);
+                try { history.replace("/social-chat"); }
+                catch { window.location.href = "/social-chat"; }
+                refetchRef.current?.();
+            } catch (err) {
+                console.error("Error handling GroupChatRemoved:", err);
+            }
+        });
         connection.onreconnecting(() => { isConnectedRef.current = false; });
         connection.onreconnected(async () => {
             isConnectedRef.current = true;
@@ -381,7 +389,7 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
         connection.onclose(() => {
             isConnectedRef.current = false;
             void typingOff();
-            stopPingLoop();
+            // stopPingLoop();
         });
     };
 
@@ -419,7 +427,17 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
         if (autoConnectRef.current && isAuthenticated) {
             startConnection().catch((error) => log("Auto connection failed:", String(error)));
         }
-        return () => { void stopConnection(); };
+        return () => { 
+            const cleanup = async () => {
+                try {
+                    await setInactiveInRoom();
+                } catch (error) {
+                    log("Failed to set inactive on unmount:", error);
+                }
+                await stopConnection();
+            };
+            void cleanup();
+        };
     }, [isAuthenticated]);
 
     useEffect(() => {
@@ -438,7 +456,6 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
         !!roomIdRef.current;
 
     return {
-        // connection
         startConnection,
         stopConnection,
         getConnectionStatus: () => ({
@@ -447,25 +464,21 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
             currentRoom: currentRoomRef.current,
             connectionState: connectionRef.current?.state,
         }),
-
-        // rooms
+        activeUsers,
         joinChatRoom,
         leaveChatRoom,
         joinUserNotify,
 
-        // messages
         sendMessage,
 
-        // activity
-        pingActiveRoom,          // gọi thẳng nếu cần
-        setInactiveInRoom,       // báo inactive khi rời/ẩn
-        activity: {              // API dễ dùng từ UI
-            touch: activityTouch,  // user vừa tương tác -> ping (throttle)
-            off: activityOff,      // user rời/ẩn -> inactive
-            ready: () => !!(connectionRef.current && isConnectedRef.current && (roomIdRef.current || currentRoomRef.current)),
-        },
-
-        // typing
+        pingActiveRoom,
+        setInactiveInRoom,
+        // activity: {
+        //     touch: activityTouch,
+        //     off: activityOff,
+        //     ready: () => !!(connectionRef.current && isConnectedRef.current && (roomIdRef.current || currentRoomRef.current)),
+        // },
+        activity: activityObj,
         typingUsers,
         clearTypingUsers: () => setTypingUsers([]),
         typing: {
@@ -475,7 +488,6 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
             ready: typingReady,
         },
 
-        // expose states
         isConnected: isConnectedRef.current,
         currentRoom: currentRoomRef.current,
         connectionId: connectionRef.current?.connectionId,

@@ -15,6 +15,9 @@ import ConfirmModal from '@/components/common/modals/ConfirmModal';
 import BackDefaultIcon from "@/icons/logo/back-default.svg?react";
 import { TbLogout } from 'react-icons/tb';
 import ActionButton from '@/components/loading/ActionButton';
+import { useSocialSignalR } from '@/hooks/useSocialSignalR';
+import { useUserActivity } from '@/hooks/useUserActivity';
+import useDeviceInfo from '@/hooks/useDeviceInfo';
 
 const SocialChatMembers: React.FC = () => {
     const { roomId } = useParams<{ roomId: string }>();
@@ -31,7 +34,6 @@ const SocialChatMembers: React.FC = () => {
     const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
     const [memberToRemove, setMemberToRemove] = useState<{ id: number, name: string } | null>(null);
 
-    // track current action loading to show spinner per-user / per-action
     const [actionLoading, setActionLoading] = useState<{ type?: 'remove' | 'appoint' | 'leave', userId?: number } | null>(null);
 
     const currentUserIsAdmin = roomChatInfo?.participants?.find(
@@ -181,7 +183,16 @@ const SocialChatMembers: React.FC = () => {
             setActionLoading(null);
         }
     };
+    const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
 
+    const { activity } = useSocialSignalR(deviceInfo.deviceId ?? "", {
+        roomId: roomId ?? "",
+        autoConnect: true,
+        enableDebugLogs: false,
+        onTypingUsers: (payload) => {
+        }
+    });
+    useUserActivity(activity, { enabled: !!roomId });
     return (
         <>
             <MotionStyles
@@ -236,36 +247,37 @@ const SocialChatMembers: React.FC = () => {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <div className="font-medium flex items-end justify-center gap-1 ">
-                                                            {member?.user?.fullName}
-                                                            {actionLoading?.userId === member.userId && (
+                                                        <div className="font-medium flex items-end justify-start gap-1 ">
+                                                            <span> {member?.user?.fullName}</span>
+                                                            <span className='text-xs text-netural-200'>{member?.user?.id === user?.id ? t('(You)') : ''}</span>
+                                                            {/* {actionLoading?.userId === member.userId && (
                                                                 <span className="ml-2">
                                                                     <svg className="animate-spin w-4 h-4 text-gray-500 inline-block" viewBox="0 0 24 24" fill="none" aria-hidden>
                                                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                                                                     </svg>
                                                                 </span>
-                                                            )}
+                                                            )} */}
                                                         </div>
                                                         <div className="text-xs text-gray-500">
                                                             {member.isAdmin ? t('Admin') : ''}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                    <ActionButton
-                                                        ariaLabel="member-actions"
-                                                        onClick={() => handleUserAction(member)}
-                                                        disabled={!!actionLoading}
-                                                        loading={actionLoading?.userId === member.userId} // <-- pass loading per-member
-                                                        size="sm"
-                                                        variant="ghost"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                                                            <circle cx="12" cy="12" r="1"></circle>
-                                                            <circle cx="12" cy="5" r="1"></circle>
-                                                            <circle cx="12" cy="19" r="1"></circle>
-                                                        </svg>
-                                                    </ActionButton>
+                                                <ActionButton
+                                                    ariaLabel="member-actions"
+                                                    onClick={() => handleUserAction(member)}
+                                                    disabled={!!actionLoading}
+                                                    loading={actionLoading?.userId === member.userId}
+                                                    size="sm"
+                                                    variant="ghost"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                                                        <circle cx="12" cy="12" r="1"></circle>
+                                                        <circle cx="12" cy="5" r="1"></circle>
+                                                        <circle cx="12" cy="19" r="1"></circle>
+                                                    </svg>
+                                                </ActionButton>
                                             </div>
                                         ))}
                                     </div>
@@ -311,7 +323,6 @@ const SocialChatMembers: React.FC = () => {
                 confirmText={t("Yes, remove")}
                 cancelText={t("Cancel")}
                 onConfirm={confirmRemoveMember}
-                // disable closing via onClose until action completes (we control in confirmRemoveMember)
                 onClose={() => { if (!actionLoading) setIsRemoveModalOpen(false); }}
             />
 
@@ -332,7 +343,6 @@ const SocialChatMembers: React.FC = () => {
                 confirmText={t("Leave")}
                 cancelText={t("Cancel")}
                 onConfirm={() => {
-                    // start leave action; modal will be closed after action completes
                     void handleLeaveGroup();
                 }}
                 onClose={() => setIsLeaveConfirmOpen(false)}

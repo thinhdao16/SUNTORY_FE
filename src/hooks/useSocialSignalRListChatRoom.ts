@@ -44,6 +44,7 @@ export function useSocialSignalRListChatRoom(
     updateChatRoomFromMessage,
     setRoomUnread,
     setNotificationCounts,
+    deleteRoom
   } = useSocialChatStore();
 
   const refetchRef = useRef(refetchUserChatRooms);
@@ -122,6 +123,7 @@ export function useSocialSignalRListChatRoom(
   const attachHandlers = useCallback((connection: signalR.HubConnection) => {
     connection.off("ReceiveUserMessage");
     connection.on("ReceiveUserMessage", (message: any) => {
+      console.log("ReceiveUserMessage", message)
       const roomId = message?.chatInfo?.code || message?.roomId;
       if (!roomId) return;
       updateLastMessage(roomId, message);
@@ -158,12 +160,27 @@ export function useSocialSignalRListChatRoom(
 
     connection.off("RoomChatUpdated");
     connection.on("RoomChatUpdated", (msg: any) => {
-      console.log("RoomChatUpdated")
       refetchUserChatRooms();
+    });
+    connection.off("MemberAddedToGroupChat");
+    connection.on("MemberAddedToGroupChat", (msg: any) => {
+      refetchUserChatRooms();
+    });
+    connection.off("UserKickedFromGroupChat");
+    connection.on("UserKickedFromGroupChat", (msg: any) => {
+      const removedCode =
+        msg?.chatCode || msg?.chatInfo?.code || msg?.roomId || msg?.code || (typeof msg === "string" ? msg : null);
+
+      if (!removedCode) return;
+      deleteRoom(removedCode);
     });
     connection.off("GroupChatRemoved");
     connection.on("GroupChatRemoved", (msg: any) => {
-      refetchUserChatRooms();
+      const removedCode =
+        msg?.chatCode || msg?.chatInfo?.code || msg?.roomId || msg?.code || (typeof msg === "string" ? msg : null);
+
+      if (!removedCode) return;
+      deleteRoom(removedCode);
     });
     connection.off("RoomChatAndFriendRequestReceived");
     connection.on("RoomChatAndFriendRequestReceived", (m: any) => {
@@ -181,10 +198,6 @@ export function useSocialSignalRListChatRoom(
         setNotificationCounts(next);
         log("Updated notification counts:", next);
       }
-    });
-    connection.off("GroupChatRemoved");
-    connection.on("GroupChatRemoved", (m: any) => {
-      refetchRef.current?.();
     });
     const handleUnread = (d: any) => {
       const chatCode = d?.chatCode;

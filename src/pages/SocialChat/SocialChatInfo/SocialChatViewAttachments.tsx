@@ -8,9 +8,12 @@ import { IonContent, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/
 import { useGetChatRoomAttachments } from '../hooks/useSocialChat';
 import ImageLightbox from '@/components/common/ImageLightbox';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { formatDateUtil } from '@/utils/formatTime';
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
+import useDeviceInfo from '@/hooks/useDeviceInfo';
+import { useSocialSignalR } from '@/hooks/useSocialSignalR';
+import { useUserActivity } from '@/hooks/useUserActivity';
 
 type FilterType = 'all' | 'images' | 'files';
 
@@ -18,83 +21,86 @@ const SocialChatViewAttachments: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const history = useHistory();
   const { t, i18n } = useTranslation();
-  
+
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
-  const [modalUserInfo, setModalUserInfo] = useState<{name: string, avatar?: string} | undefined>();
-  
-  const { 
-    data, 
-    isLoading, 
-    fetchNextPage, 
-    hasNextPage, 
-    isFetchingNextPage 
-  } = useGetChatRoomAttachments(roomId, 20);
+  const [modalUserInfo, setModalUserInfo] = useState<{ name: string, avatar?: string } | undefined>();
 
-  // Process attachments and group by date
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useGetChatRoomAttachments(roomId, 20);
   const processedAttachments = React.useMemo(() => {
     if (!data?.pages) return [];
-    
+
     const allAttachments = data.pages.flatMap(page => {
       if (page?.data?.data) return page.data.data;
       return [];
     });
-
-    // Filter attachments based on activeFilter
     const filteredAttachments = allAttachments.filter(file => {
       const fileExt = file.fileName?.toLowerCase().split('.').pop() || '';
       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
       const isVideo = ['mp4', 'webm', 'mov', 'avi'].includes(fileExt);
-      
+
       if (activeFilter === 'images') return isImage || isVideo;
       if (activeFilter === 'files') return !isImage && !isVideo;
       return true;
     });
-    
-    // Group by date
+
     const groupedByDate = filteredAttachments.reduce((acc: any, file) => {
       const date = dayjs(file.createDate).format('YYYY-MM-DD');
       if (!acc[date]) acc[date] = [];
       acc[date].push(file);
       return acc;
     }, {});
-    
-    // Convert to array sorted by date
+
     return Object.entries(groupedByDate)
       .map(([date, files]) => ({ date, files }))
       .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
   }, [data, activeFilter]);
-  
-  // Generate preview images array
+
+  // Store all image files for reference
+  const allImageFiles = React.useMemo(() => {
+    return data?.pages.flatMap((page: any) => {
+      if (!page?.data?.data) return [];
+      return page.data.data.filter((file: any) => {
+        const fileExt = file.fileName?.toLowerCase().split('.').pop() || '';
+        return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
+      });
+    }) || [];
+  }, [data]);
+
   useEffect(() => {
     if (previewImage) {
-      const allImageFiles = data?.pages.flatMap((page: any) => {
-        if (!page?.data?.data) return [];
-        return page.data.data.filter((file: any) => {
-          const fileExt = file.fileName?.toLowerCase().split('.').pop() || '';
-          return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
-        });
-      }) || [];
-      
       const urls = allImageFiles.map((file: any) => file.fileUrl);
       setPreviewImages(urls);
       setPreviewIndex(urls.indexOf(previewImage));
-      
-      // Set user info for modal (you can customize this based on your data structure)
+
+      const currentImageFile = allImageFiles.find((file: any) => file.fileUrl === previewImage);
       setModalUserInfo({
-        name: "User", // Replace with actual user name from your data
-        avatar: undefined // Replace with actual user avatar if available
+        name: currentImageFile?.createUser?.fullName || "Unknown User",
+        avatar: currentImageFile?.createUser?.avatarLink || avatarFallback
       });
     }
-  }, [previewImage, data]);
+  }, [previewImage, allImageFiles]);
 
-  // Download functionality
+  const handleImageChange = (newIndex: number) => {
+    if (allImageFiles[newIndex]) {
+      const currentImageFile = allImageFiles[newIndex];
+      setModalUserInfo({
+        name: currentImageFile?.createUser?.fullName || "Unknown User",
+        avatar: currentImageFile?.createUser?.avatar || avatarFallback
+      });
+    }
+  };
   const handleDownload = async (imageUrl: string) => {
     try {
       if (Capacitor.isNativePlatform()) {
-        // For mobile devices
         const response = await fetch(imageUrl);
         const blob = await response.blob();
         const base64 = await new Promise<string>((resolve) => {
@@ -102,18 +108,16 @@ const SocialChatViewAttachments: React.FC = () => {
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(blob);
         });
-        
+
         const fileName = `image_${Date.now()}.jpg`;
         await Filesystem.writeFile({
           path: fileName,
           data: base64.split(',')[1],
           directory: Directory.Documents
         });
-        
-        // Show success message or toast
+
         console.log('Image saved successfully');
       } else {
-        // For web - trigger download
         const link = document.createElement('a');
         link.href = imageUrl;
         link.download = `image_${Date.now()}.jpg`;
@@ -139,10 +143,10 @@ const SocialChatViewAttachments: React.FC = () => {
   const formatDate = (dateStr: string) => {
     return formatDateUtil(dateStr, t, i18n.language);
   };
-  
+
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
-    
+
     if (['pdf'].includes(ext || '')) {
       return 'document-pdf';
     } else if (['doc', 'docx'].includes(ext || '')) {
@@ -155,14 +159,23 @@ const SocialChatViewAttachments: React.FC = () => {
       return 'document-generic';
     }
   };
-  
+
   const formatFileSize = (bytes: number): string => {
     if (!bytes || bytes === 0) return '0 B';
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
   };
+  const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
 
+  const { activity } = useSocialSignalR(deviceInfo.deviceId ?? "", {
+    roomId: roomId ?? "",
+    autoConnect: true,
+    enableDebugLogs: false,
+    onTypingUsers: (payload) => {
+    }
+  });
+  useUserActivity(activity, { enabled: !!roomId });
   return (
     <div className="h-screen flex flex-col bg-[#F0F3F9]">
       <div className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between bg-[#F0F3F9]">
@@ -173,8 +186,7 @@ const SocialChatViewAttachments: React.FC = () => {
           <h1 className="text-base font-medium ml-2">{t('Media')}</h1>
         </div>
       </div>
-      
-      {/* Filter tabs */}
+
       <div className="flex border-b border-gray-200 bg-white">
         <button
           className={`flex-1 py-3 text-center font-medium ${activeFilter === 'all' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
@@ -195,7 +207,7 @@ const SocialChatViewAttachments: React.FC = () => {
           {t('Files')}
         </button>
       </div>
-      
+
       <IonContent>
         {isLoading ? (
           <div className="flex justify-center items-center h-40">
@@ -217,23 +229,23 @@ const SocialChatViewAttachments: React.FC = () => {
                     {formatDate(group.date)}
                   </h3>
                 </div>
-                
+
                 {activeFilter !== 'files' ? (
                   <div className="grid grid-cols-3 gap-1 px-1">
                     {group?.files?.map((file: any, index: number) => {
                       const fileExt = file.fileName?.toLowerCase().split('.').pop() || '';
                       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
                       const isVideo = ['mp4', 'webm', 'mov', 'avi'].includes(fileExt);
-                      
+
                       if (isImage || isVideo) {
                         return (
-                          <div 
-                            key={`${file.id || index}-${group.date}`} 
+                          <div
+                            key={`${file.id || index}-${group.date}`}
                             className="aspect-square overflow-hidden bg-gray-100"
                             onClick={() => setPreviewImage(file.fileUrl)}
                           >
-                            <img 
-                              src={file.fileUrl} 
+                            <img
+                              src={file.fileUrl}
                               alt={file.fileName || `Media ${index}`}
                               className="w-full h-full object-cover"
                               onError={(e) => {
@@ -261,16 +273,16 @@ const SocialChatViewAttachments: React.FC = () => {
                       const fileExt = file?.fileName?.toLowerCase().split('.').pop() || '';
                       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
                       const isVideo = ['mp4', 'webm', 'mov', 'avi'].includes(fileExt);
-                      
+
                       if (!isImage && !isVideo) {
                         return (
-                          <div 
-                            key={`${file?.id || index}-${group?.date}`} 
+                          <div
+                            key={`${file?.id || index}-${group?.date}`}
                             className="p-3 bg-white rounded-lg flex items-center shadow-sm"
                           >
                             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                              <img 
-                                src={`/icons/file-types/${getFileIcon(file?.fileName)}.svg`} 
+                              <img
+                                src={`/icons/file-types/${getFileIcon(file?.fileName)}.svg`}
                                 alt={fileExt}
                                 className="w-6 h-6"
                                 onError={(e) => {
@@ -282,8 +294,8 @@ const SocialChatViewAttachments: React.FC = () => {
                               <div className="text-sm font-medium truncate">{file.fileName}</div>
                               <div className="text-xs text-gray-500">{formatFileSize(file.fileSize)}</div>
                             </div>
-                            <a 
-                              href={file.fileUrl} 
+                            <a
+                              href={file.fileUrl}
                               download={file.fileName}
                               className="ml-2 text-blue-500 px-3 py-1 rounded-full border border-blue-500 text-sm"
                             >
@@ -298,9 +310,9 @@ const SocialChatViewAttachments: React.FC = () => {
                 )}
               </div>
             ))}
-            
+
             <IonInfiniteScroll
-              threshold="100px" 
+              threshold="100px"
               onIonInfinite={handleInfiniteScroll}
               disabled={!hasNextPage || isFetchingNextPage}
             >
@@ -319,6 +331,7 @@ const SocialChatViewAttachments: React.FC = () => {
           onClose={() => setPreviewImage(null)}
           userInfo={modalUserInfo}
           onDownload={handleDownload}
+          onSlideChange={handleImageChange}
         />
       )}
     </div>

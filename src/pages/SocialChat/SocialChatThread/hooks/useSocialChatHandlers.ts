@@ -373,6 +373,14 @@ export function useSocialChatHandlers({
                                 })),
                             attachments: [],
                         });
+                        if (serverMsg.userHasRead && serverMsg.userHasRead.length > 1) {
+                            updateOldMessagesWithReadStatus(
+                                roomId, 
+                                serverMsg.userHasRead, 
+                                finalMessage.userId
+                            );
+                        }
+                        
                     }
                 } catch (e) {
                     console.error('Send message failed:', e);
@@ -590,8 +598,7 @@ export function useSocialChatHandlers({
                     isError: false,
                 });
                 
-                // Update old messages with userHasRead from server response
-                if (serverMsg.userHasRead && serverMsg.userHasRead.length > 0) {
+                if (serverMsg.userHasRead && serverMsg.userHasRead.length > 1) {
                     updateOldMessagesWithReadStatus(
                         roomId, 
                         serverMsg.userHasRead, 
@@ -599,7 +606,6 @@ export function useSocialChatHandlers({
                     );
                 }
                 
-                // Set loading to false after successful update
                 setLoadingMessages(false);
             }
 

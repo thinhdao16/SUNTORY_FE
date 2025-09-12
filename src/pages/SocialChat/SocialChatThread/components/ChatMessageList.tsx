@@ -44,6 +44,7 @@ type ChatMessageListProps = {
     inputBarHeight?: number;
     isSendingMessage?: boolean;
     activeUserIds?: number[];
+    roomData?: any;
 };
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
@@ -58,12 +59,39 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     isNative = false,
     inputBarHeight,
     isSendingMessage = false,
-    activeUserIds = []
+    activeUserIds = [],
+    roomData
 }) => {
     const { t } = useTranslation();
 
     const messageGroups = useMemo(() => {
-        return groupMessagesByTime(allMessages, t, { isGroup, currentUserId });
+        const latestFriendlyAcceptedIndex = allMessages.reduce((latestIdx, msg: any, idx) => {
+            if ((msg as any).messageType === 10 && (msg as any).messageText) {
+                try {
+                    const parsedMessage = JSON.parse((msg as any).messageText);
+                    if (parsedMessage.Event === "NOTIFY_FRIENDLY_ACCEPTED") {
+                        return idx;
+                    }
+                } catch (e) {
+                }
+            }
+            return latestIdx;
+        }, -1);
+
+        const filteredMessages = allMessages.filter((msg: any, idx) => {
+            if ((msg as any).messageType === 10 && (msg as any).messageText) {
+                try {
+                    const parsedMessage = JSON.parse((msg as any).messageText);
+                    if (parsedMessage.Event === "NOTIFY_FRIENDLY_ACCEPTED") {
+                        return idx === latestFriendlyAcceptedIndex;
+                    }
+                } catch (e) {
+                }
+            }
+            return true;
+        });
+
+        return groupMessagesByTime(filteredMessages, t, { isGroup, currentUserId });
     }, [allMessages, t, isGroup, currentUserId]);
 
     const globalLastUserMessageCode = useMemo(() => {
@@ -100,6 +128,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                         globalLastUserMessageId={globalLastUserMessageCode}
                         isSendingMessage={isSendingMessage}
                         activeUserIds={activeUserIds}
+                        allMessages={allMessages}
+                        roomData={roomData}
                     />
                 </div>
             ))}

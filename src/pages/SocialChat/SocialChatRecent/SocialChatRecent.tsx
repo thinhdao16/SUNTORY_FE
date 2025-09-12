@@ -10,7 +10,6 @@ import useDeviceInfo from '@/hooks/useDeviceInfo';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import { ChatInfoType, KEYCHATFORMATNOTI } from '@/constants/socialChat';
 import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
-import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { generatePreciseTimestampFromDate } from '@/utils/time-stamp';
 import dayjs from "dayjs";
@@ -18,6 +17,7 @@ import utc from "dayjs/plugin/utc";
 import { SystemMessageType } from "@/constants/socialChat";
 import MuteIcon from "@/icons/logo/social-chat/mute.svg?react"
 import UnMuteIcon from "@/icons/logo/social-chat/unmute.svg?react"
+import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 dayjs.extend(utc);
 
 export default function SocialChatRecent() {
@@ -57,12 +57,12 @@ export default function SocialChatRecent() {
     enableDebugLogs: false,
     refetchUserChatRooms
   });
-  // useSocialSignalR(deviceInfo.deviceId ?? "", {
-  //   roomId: "",
-  //   refetchRoomData: () => { void refetchFriendshipRequests(); void refetchUserChatRooms(); },
-  //   autoConnect: true,
-  //   enableDebugLogs: false,
-  // });
+  useSocialSignalR(deviceInfo.deviceId ?? "", {
+    roomId: "",
+    refetchRoomData: () => { void refetchFriendshipRequests(); void refetchUserChatRooms(); },
+    autoConnect: true,
+    enableDebugLogs: false,
+  });
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   // useEffect(() => {
@@ -111,14 +111,14 @@ export default function SocialChatRecent() {
 
         switch (eventType) {
           case "NOTIFY_GROUP_CHAT_CREATED": {
-            systemPreview = `🎉 ${actorName} ${t("has created the group!")}`;
+            systemPreview = `${actorName} ${t("has created the group!")}`;
             break;
           }
 
           case "NOTIFY_GROUP_CHAT_KICKED": {
             const kickedUser = systemObj.Users?.[0];
             const kickedName = kickedUser?.Id === currentUserId ? t("You") : kickedUser?.FullName || t("User");
-            systemPreview = `❌ ${actorName} ${t("has removed")} ${kickedName}`;
+            systemPreview = `${actorName} ${t("has removed")} ${kickedName}`;
             break;
           }
 
@@ -128,58 +128,48 @@ export default function SocialChatRecent() {
                 u.Id === currentUserId ? t("You") : u.FullName || u.UserName || "User"
               );
               if (names.length === 1) {
-                systemPreview = `➕ ${actorName} ${t("has added")} ${names[0]}`;
+                systemPreview = `${actorName} ${t("has added")} ${names[0]}`;
               } else if (names.length <= 2) {
-                systemPreview = `➕ ${actorName} ${t("has added")} ${names.join(t(" and "))}`;
+                systemPreview = `${actorName} ${t("has added")} ${names.join(t(" and "))}`;
               } else {
-                systemPreview = `➕ ${actorName} ${t("has added")} ${names.length} ${t("members")}`;
+                systemPreview = `${actorName} ${t("has added")} ${names.length} ${t("members")}`;
               }
             } else {
-              systemPreview = `➕ ${actorName} ${t("has added new member")}`;
+              systemPreview = `${actorName} ${t("has added new member")}`;
             }
             break;
           }
-
           case "NOTIFY_GROUP_CHAT_USER_LEAVE_GROUP": {
-            systemPreview = `🚶 ${actorName} ${t("has left the group")}`;
+            systemPreview = `${actorName} ${t("has left the group")}`;
             break;
           }
-
           case "NOTIFY_GROUP_CHAT_ADMIN_RENAME_GROUP": {
-            systemPreview = `✏️ ${actorName} ${t("has renamed the group")}`;
+            systemPreview = `${actorName} ${t("has renamed the group")}`;
             break;
           }
-
           case "NOTIFY_GROUP_CHAT_ADMIN_CHANGE_AVATAR_GROUP": {
-            systemPreview = `🖼️ ${actorName} ${t("has changed the group avatar")}`;
+            systemPreview = `${actorName} ${t("has changed the group avatar")}`;
             break;
           }
-
           case "NOTIFY_GROUP_CHAT_ADMIN_LEAVE_GROUP": {
-            systemPreview = `👋 ${actorName} ${t("has left the group as admin")}`;
+            systemPreview = `${actorName} ${t("has left the group as admin")}`;
             break;
           }
-
           case "NOTIFY_GROUP_CHAT_CHANGE_ADMIN": {
             const newAdmin = systemObj.Users?.[0];
             const newAdminName = newAdmin?.Id === currentUserId ? t("You") : newAdmin?.FullName || t("User");
-            systemPreview = `👑 ${actorName} ${t("has appointed")} ${newAdminName} ${t("as admin")}`;
+            systemPreview = `${actorName} ${t("has appointed")} ${newAdminName} ${t("as admin")}`;
             break;
           }
-
           case "NOTIFY_FRIENDLY_ACCEPTED": {
-            const friend = systemObj.Users?.[0];
-            const friendName = friend?.Id === currentUserId ? t("You") : friend?.FullName || t("User");
-            systemPreview = `💫 ${actorName} ${t("and")} ${friendName} ${t("are now friends")}`;
+            systemPreview = `${t("You")} ${t("and")} ${room?.title} ${t("are now friends")}`;
             break;
           }
-
           default:
-            systemPreview = `ℹ️ ${t("System notification")}`;
+            systemPreview = `${t("System notification")}`;
         }
       }
-    } catch {
-    }
+    } catch {}
     if (systemPreview) return systemPreview;
 
     let content = text || `📷 ${t('Photo')}`;
@@ -316,11 +306,6 @@ export default function SocialChatRecent() {
                       <MuteIcon className="w-[14px] h-[14px] inline-block mr-1" />
                     </p>
                   )}
-                  {/* {!room.isQuiet && (
-                    <p className="text-[11px] text-netural-300">
-                      <UnMuteIcon className="w-[14px] h-[14px] inline-block mr-1" />
-                    </p>
-                  )} */}
                   {isUnread && (
                     <button className="flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px] bg-main">
                       {unread > 99 ? '99+' : unread}

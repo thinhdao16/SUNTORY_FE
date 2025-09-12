@@ -19,6 +19,7 @@ import { useChatRoomByCode } from "../../hooks/useSocialChat";
 import { useAcceptFriendRequest, useCancelFriendRequest, useRejectFriendRequest, useSendFriendRequest, useUnfriend } from "@/pages/SocialPartner/hooks/useSocialPartner";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import { send } from "ionicons/icons";
+import { useUserActivity } from "@/hooks/useUserActivity";
 
 export type SheetExpandMode = "input" | "translate" | null;
 
@@ -67,7 +68,6 @@ export const useSocialChatThread = () => {
         updateMessage: updateMessageStore,
         updateMessageByTempId: updateMessageByTempIdStore,
         updateMessageWithServerResponse: updateMessageWithServerResponseStore,
-        updateMessagesReadStatusForActiveUsers,
         updateOldMessagesWithReadStatus,
         updateMessageByCode,
         setLoadingMessages: setLoadingMessagesStore,
@@ -119,6 +119,7 @@ export const useSocialChatThread = () => {
         typing,
         typingUsers,
         clearTypingUsers,
+        activeUsers
     } = useSocialSignalR(deviceInfo.deviceId ?? "", {
         roomId: roomId ?? "",
         refetchRoomData,
@@ -127,6 +128,29 @@ export const useSocialChatThread = () => {
         onTypingUsers: (payload) => {
         }
     });
+    const activeUsersData = useMemo(() => {
+        if (!activeUsers || !Array.isArray(activeUsers) || !roomChatInfo?.participants) {
+            return [];
+        }
+    
+        return activeUsers.map(userId => {
+            const participant = roomChatInfo.participants.find((p: any) => 
+                (p.userId === userId) || (p.user?.id === userId)
+            );
+            if (!participant) return null;
+            return {
+                userId: userId,
+                userName: participant.user?.fullName ||  'Unknown User',
+                userAvatar: participant.user?.avatar ||null,
+                readTime: new Date().toISOString()
+            };
+        }).filter(Boolean);
+    }, [activeUsers]);
+    useEffect(() => {
+        if (activeUsersData.length > 0 && roomId && userInfo?.id) {
+            updateOldMessagesWithReadStatus(roomId, activeUsersData, userInfo.id);
+        }
+    }, [activeUsersData, roomId, userInfo?.id]);
     const clearTypingAfterSend = useCallback(async () => {
         clearTypingUsers();
         await typing.off();
@@ -154,46 +178,7 @@ export const useSocialChatThread = () => {
             setActiveRoomId(null);
         };
     }, [roomId, setActiveRoomId]);
-    useEffect(() => {
-        if (!roomId) return;
-
-        // vào phòng (nếu hook không tự join theo roomId prop)
-        // await joinChatRoom(roomId);  // đa số không cần vì hook đã làm
-
-        // Ping khi có tương tác UI (throttle sẵn trong hook)
-        const onFocus = () => activity.touch();
-        const onKey = () => activity.touch();
-        const onMove = () => activity.touch();
-        const onClick = () => activity.touch();
-        const onVisibility = () => {
-            if (document.visibilityState === "visible") activity.touch();
-            else activity.off(); // tab bị ẩn -> inactive
-        };
-        const onBeforeUnload = () => { activity.off(); };
-
-        window.addEventListener("focus", onFocus);
-        window.addEventListener("keydown", onKey);
-        window.addEventListener("pointermove", onMove);
-        window.addEventListener("click", onClick);
-        document.addEventListener("visibilitychange", onVisibility);
-        window.addEventListener("beforeunload", onBeforeUnload);
-
-        // touch ngay lập tức khi mount
-        activity.touch();
-
-        return () => {
-            document.removeEventListener("visibilitychange", onVisibility);
-            window.removeEventListener("focus", onFocus);
-            window.removeEventListener("keydown", onKey);
-            window.removeEventListener("pointermove", onMove);
-            window.removeEventListener("click", onClick);
-            // báo inactive khi rời màn
-            activity.off();
-            // hoặc: void leaveChatRoom(roomId); // nếu bạn muốn rời group thật sự
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [roomId]);
-
+    useUserActivity(activity, { enabled: !!roomId });
     const messages = roomId ? getMessagesForRoom(roomId) : [];
     const isLoadingMessages = roomId ? getLoadingForRoom(roomId) : false;
 
@@ -314,7 +299,6 @@ export const useSocialChatThread = () => {
         updateMessage,
         updateMessageByTempId,
         updateMessageWithServerResponse,
-        updateMessagesReadStatusForActiveUsers,
         updateOldMessagesWithReadStatus,
         setLoadingMessages,
         getLoadingForRoom,

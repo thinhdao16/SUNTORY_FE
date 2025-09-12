@@ -7,7 +7,7 @@ import { MessageEditor } from "./MessageEditor";
 import { DraggableMessageContainer } from "./DraggableMessageContainer";
 import { ChatMessage } from "@/types/social-chat";
 import { Capacitor } from "@capacitor/core";
-import avatarFallback from "@/icons/logo/social-chat/avt-rounded-full.svg";
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import { useSocialChatStore } from "@/store/zustand/social-chat-store";
 import { useCreateTranslationChat } from "@/pages/Translate/hooks/useTranslationLanguages";
 import { useParams } from "react-router";
@@ -41,8 +41,11 @@ interface ChatMessageItemProps {
     currentUserId?: number | string | null;
     hasReachedLimit?: boolean;
     isLastUserMessage?: boolean;
+    isLastMessageInConversation?: boolean;
     isSendingMessage?: boolean;
     activeUserIds?: number[];
+    isLatestFriendlyAccepted?: boolean;
+    roomData?: any;
 }
 
 const REACTIONS = ["❤️", "🙂", "😮", "🤢", "😡", "😂"];
@@ -73,9 +76,12 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     isGroup,
     currentUserId,
     hasReachedLimit,
-    isLastUserMessage = false,
-    isSendingMessage = false,
-    activeUserIds = [],
+    isLastUserMessage,
+    isLastMessageInConversation,
+    isSendingMessage,
+    activeUserIds,
+    isLatestFriendlyAccepted = false,
+    roomData
 }) => {
 
     const isDesktop = () => window.innerWidth > 1024;
@@ -302,7 +308,8 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             <ChatSystemMessage
                 type={eventType}
                 data={systemData}
-                dataRoom={roomChatInfo}
+                roomData={roomData}
+                isLatestFriendlyAccepted={isLatestFriendlyAccepted}
             />
         );
     }
@@ -398,7 +405,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                             <img
                                 src={avatarUrl || avatarFallback}
                                 alt={msg.userName || "Avatar"}
-                                className="w-[30px] aspect-square object-cover rounded-full"
+                                className="w-[30px] aspect-square object-cover rounded-[12px]"
                                 onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarFallback; }}
                             />
                         </div>
@@ -458,6 +465,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                                 isGroup={isGroup || false}
                                 currentUserId={typeof currentUserId === 'string' ? parseInt(currentUserId) : (currentUserId || null)}
                                 isLastUserMessage={isLastUserMessage || false}
+                                isLastMessageInConversation={isLastMessageInConversation || false}
                                 isSendingMessage={isSendingMessage}
                                 activeUserIds={activeUserIds}
                             />

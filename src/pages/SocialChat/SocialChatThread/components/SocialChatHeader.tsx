@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import BackIcon from "@/icons/logo/back-default.svg?react";
 import { t } from "i18next";
-import avatarFallback from "@/icons/logo/social-chat/avt-rounded-full.svg";
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import AddFriendMainIcon from "@/icons/logo/social-chat/add-friend-main.svg?react";
 import CancelInnovationIcon from "@/icons/logo/social-chat/cancel-innovation.svg?react";
 import UnFriendIcon from "@/icons/logo/social-chat/unfriend.svg?react";
@@ -156,7 +156,7 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
                             <img
                                 src={src}
                                 alt={roomChatInfo?.title || "Avatar"}
-                                className="w-[34px] h-[34px] rounded-full object-cover flex-none"
+                                className="w-[34px] h-[34px] rounded-2xl object-cover flex-none"
                                 onError={(e) => {
                                     e.currentTarget.src = avatarFallback;
                                 }}

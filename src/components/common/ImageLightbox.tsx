@@ -15,23 +15,22 @@ interface ImageLightboxProps {
     images: string[];
     initialIndex: number;
     onClose: () => void;
-    // Tùy chọn hiển thị thông tin người dùng
     userInfo?: {
         name: string;
         avatar?: string;
     };
-    // Các tùy chọn UI
     options?: {
-        showDownload?: boolean;          // Hiển thị nút tải xuống
-        showPageIndicator?: boolean;     // Hiển thị chỉ số trang (1/20)
-        showNavButtons?: boolean;        // Hiển thị nút điều hướng trái/phải
-        showZoomControls?: boolean;      // Hiển thị nút zoom
-        enableZoom?: boolean;            // Cho phép zoom ảnh
-        showHeader?: boolean;            // Hiển thị phần header có nút back
-        effect?: 'slide' | 'coverflow';  // Hiệu ứng chuyển slide
-        spaceBetween?: number;           // Khoảng cách giữa các slide
+        showDownload?: boolean;
+        showPageIndicator?: boolean;
+        showNavButtons?: boolean;
+        showZoomControls?: boolean;
+        enableZoom?: boolean;
+        showHeader?: boolean;               
+        effect?: 'slide' | 'coverflow';     
+        spaceBetween?: number;              
     };
     onDownload?: (imageUrl: string) => void;
+    onSlideChange?: (newIndex: number) => void;
 }
 
 const ImageLightbox: React.FC<ImageLightboxProps> = ({
@@ -41,7 +40,8 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
     onClose,
     userInfo,
     options = {},
-    onDownload
+    onDownload,
+    onSlideChange
 }) => {
     // Set default options
     const {
@@ -93,6 +93,10 @@ const handleSlideChange = (swiper: any) => {
     const inst = zoomInstances[swiper.activeIndex];
     // reset sau 1 frame để Swiper ổn định layout
     if (inst) requestAnimationFrame(() => inst.resetTransform());
+  }
+  // Call parent callback to update user info
+  if (onSlideChange) {
+    onSlideChange(swiper.activeIndex);
   }
 };
 

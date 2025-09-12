@@ -4,7 +4,7 @@ interface ActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement
     loading?: boolean;
     children?: React.ReactNode;
     variant?: "primary" | "danger" | "ghost";
-    size?: "sm" | "md" | "lg";
+    size?: "sm" | "md" | "lg"| "none";
     ariaLabel?: string;
 }
 

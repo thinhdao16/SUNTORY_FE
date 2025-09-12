@@ -1,19 +1,21 @@
 import React from 'react';
 import { ChatMessage } from '@/types/social-chat';
 import { useTranslation } from 'react-i18next';
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 
 interface MessageStatusProps {
     message: ChatMessage;
     isGroup: boolean;
     currentUserId: number | null;
-    isLastUserMessage?: boolean;  
+    isLastUserMessage?: boolean;
+    isLastMessageInConversation?: boolean;
     isSendingMessage?: boolean;
     activeUserIds?: number[];
 }
 
-const MessageStatus: React.FC<MessageStatusProps> = ({ message, isGroup, currentUserId, isLastUserMessage = false, isSendingMessage = false, activeUserIds = [] }) => {
+const MessageStatus: React.FC<MessageStatusProps> = ({ message, isGroup, currentUserId, isLastUserMessage = false, isLastMessageInConversation = false, isSendingMessage = false, activeUserIds = [] }) => {
     const { t } = useTranslation();
-    
+
     if (message.userId !== currentUserId) {
         return null;
     }
@@ -26,12 +28,12 @@ const MessageStatus: React.FC<MessageStatusProps> = ({ message, isGroup, current
         if (message.tempId && (message.id === undefined || message.id === null)) {
             return 'sending';
         }
-
+        
         if (isSendingMessage && isLastUserMessage && message.tempId && (message.id === undefined || message.id === null)) {
             return 'sending';
         }
 
-        const hasUploadingAttachments = message.chatAttachments?.some(att => 
+        const hasUploadingAttachments = message.chatAttachments?.some(att =>
             (att as any).isUploading || (att as any).isSending
         );
         if (hasUploadingAttachments) {
@@ -43,17 +45,17 @@ const MessageStatus: React.FC<MessageStatusProps> = ({ message, isGroup, current
             if (readUsers.length > 0) {
                 return 'seen';
             }
-            
-            return isLastUserMessage ? 'sent' : null;
+
+            return isLastMessageInConversation ? 'sent' : null;
         } else {
             const readUsers = (message.userHasRead || []).filter(user => user.userId !== currentUserId);
             const otherUserRead = readUsers.length > 0;
-            
+
             if (otherUserRead) {
                 return 'seen';
             }
-            
-            return isLastUserMessage ? 'sent' : null;
+
+            return isLastMessageInConversation ? 'sent' : null;
         }
     };
 
@@ -97,7 +99,7 @@ const MessageStatus: React.FC<MessageStatusProps> = ({ message, isGroup, current
                             });
                         }
                     });
-                    
+
                     const visibleUsers = allSeenUsers.slice(0, 3);
                     const remainingCount = allSeenUsers.length - 3;
 
@@ -107,24 +109,27 @@ const MessageStatus: React.FC<MessageStatusProps> = ({ message, isGroup, current
                                 {visibleUsers.map((user) => (
                                     <div
                                         key={user.userId}
-                                        className="w-4 h-4 rounded-full border border-white bg-gray-200 overflow-hidden"
+                                        className="w-[18px] h-[18px] rounded-lg border border-white bg-gray-200 overflow-hidden"
                                         title={user.userName}
                                     >
-                                        {user.userAvatar ? (
-                                            <img
-                                                src={user.userAvatar}
-                                                alt={user.userName}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
+                                        {/* {user.userAvatar ? ( */}
+                                        <img
+                                            src={user?.userAvatar || avatarFallback}
+                                            alt={user?.userName}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.currentTarget.src = avatarFallback;
+                                            }}
+                                        />
+                                        {/* ) : (
                                             <div className="w-full h-full bg-gray-300 flex items-center justify-center text-xs text-gray-600">
-                                                {user.userName.charAt(0).toUpperCase()}
+                                                {user.userName?.charAt(0)?.toUpperCase() || '?'}
                                             </div>
-                                        )}
+                                        )} */}
                                     </div>
                                 ))}
                                 {remainingCount > 0 && (
-                                    <div className="w-4 h-4 rounded-full border border-white bg-gray-500 flex items-center justify-center text-white text-xs font-medium">
+                                    <div className="w-[18px] h-[18px] rounded-lg p-1 border border-white bg-gray-500 flex items-center justify-center text-white text-xs font-medium">
                                         +{remainingCount}
                                     </div>
                                 )}
@@ -135,35 +140,38 @@ const MessageStatus: React.FC<MessageStatusProps> = ({ message, isGroup, current
                     const readUsers = (message.userHasRead || []).filter(user => user.userId !== currentUserId) || [];
                     const otherUserRead = readUsers.find(user => user.userId !== currentUserId);
                     const otherUserActive = activeUserIds.find(userId => userId !== currentUserId);
-                    
+
                     if (otherUserRead) {
                         return (
                             <div className="flex items-center">
-                                <div className="w-4 h-4 rounded-full border border-white bg-gray-200 overflow-hidden" title={otherUserRead.userName}>
-                                    {otherUserRead.userAvatar ? (
+                                <div className="w-[18px] h-[18px] rounded-lg border border-white bg-gray-200 overflow-hidden" title={otherUserRead.userName}>
+                                    {/* {otherUserRead.userAvatar ? ( */}
                                         <img
-                                            src={otherUserRead.userAvatar}
-                                            alt={otherUserRead.userName}
+                                            src={otherUserRead?.userAvatar || avatarFallback}
+                                            alt={otherUserRead?.userName}
                                             className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.currentTarget.src = avatarFallback;
+                                            }}
                                         />
-                                    ) : (
+                                    {/* ) : (
                                         <div className="w-full h-full bg-gray-300 flex items-center justify-center text-xs text-gray-600">
-                                            {otherUserRead.userName.charAt(0).toUpperCase()}
+                                            {otherUserRead.userName?.charAt(0)?.toUpperCase() || '?'}
                                         </div>
-                                    )}
+                                    )} */}
                                 </div>
                             </div>
                         );
-                    } else if (otherUserActive) {                                                                                                                                                                                                                                                           
+                    } else if (otherUserActive) {
                         return (
                             <div className="flex items-center">
-                                <div className="w-4 h-4 rounded-full border border-white bg-blue-500 flex items-center justify-center" title="Active">
+                                <div className="w-[18px] h-[18px] rounded-lg border border-white bg-blue-500 flex items-center justify-center" title="Active">
                                     <div className="w-2 h-2 bg-white rounded-full"></div>
                                 </div>
                             </div>
                         );
                     }
-                    
+
                     return null;
                 }
 

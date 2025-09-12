@@ -29,7 +29,7 @@ import { useCompensateScrollOnFooterChange } from "@/hooks/useCompensateScrollOn
 import TypingIndicator from './components/TypingIndicator';
 
 const TypingIndicatorWrapper: React.FC<{
-    typingUsers: {userId: number, userName: string, avatar?: string}[];
+    typingUsers: { userId: number, userName: string, avatar?: string }[];
     onHeightChange: (height: number) => void;
 }> = ({ typingUsers, onHeightChange }) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -81,7 +81,7 @@ const SocialChatThread: React.FC = () => {
         setSelectedLanguageSocialChat, selectedLanguageSocialChat,
         pendingImages, pendingFiles, addPendingImages, addPendingFiles,
         removePendingImageByUrl, showToast,
-        userInfo, messages, addMessage, updateMessageByCode, updateMessageByTempId, updateMessageWithServerResponse, setLoadingMessages, addMessages, getLoadingForRoom, updateMessagesReadStatusForActiveUsers, updateOldMessagesWithReadStatus,
+        userInfo, messages, addMessage, updateMessageByCode, updateMessageByTempId, updateMessageWithServerResponse, setLoadingMessages, addMessages, getLoadingForRoom, updateOldMessagesWithReadStatus,
         replyingToMessage, setReplyingToMessage, clearReplyingToMessage,
         initialLoadRef, prevMessagesLength,
         translateSheet, sheetExpand, openInputExpandSheet, openTranslateExpandSheet, closeSheet, messageValue, setMessageValue,
@@ -132,22 +132,18 @@ const SocialChatThread: React.FC = () => {
             ...msg,
             botName: msg.botName === null ? undefined : msg.botName,
         }));
-    }, [serverMessages, messages, roomId,userInfo]);
+    }, [serverMessages, messages, roomId, userInfo]);
 
     const userRightCount = useMemo(
         () => displayMessages.reduce((acc, m) => acc + (m?.isRight ? 1 : 0), 0),
-        [displayMessages, messages,roomId , userInfo]
+        [displayMessages, messages, roomId, userInfo]
     );
     const hasReachedLimit = !roomData?.isFriend && userRightCount >= CountLimitChatDontFriend && roomChatInfo?.type === ChatInfoType.UserVsUser;
-    
+
     const isSendingMessage = getLoadingForRoom(roomId || "");
-    
-    useEffect(() => {
-        if (roomChatInfo?.activeUserIds?.length && userInfo?.id && roomId) {
-            updateMessagesReadStatusForActiveUsers(roomId, roomChatInfo.activeUserIds, userInfo.id);
-        }
-    }, [roomChatInfo?.activeUserIds, userInfo?.id, roomId, updateMessagesReadStatusForActiveUsers]);
-    
+
+
+
     const {
         handleScrollWithLoadMore,
         handleSendMessage: originalHandleSendMessage,
@@ -357,15 +353,18 @@ const SocialChatThread: React.FC = () => {
                                 ref={messagesContainerRef}
                                 onScroll={handleScrollWithLoadMore}
                             >
-                                {roomChatInfo?.type === ChatInfoType.UserVsUser && !hasNextPage && !isFetchingNextPage && !isLoadingMessages && userInfo && (
-                                    <ChatRelationshipBanner
-                                        roomData={roomData}
-                                        onAcceptFriend={acceptRequest.mutate}
-                                        onRejectFriend={rejectRequest.mutate}
-                                        currentUserId={userInfo.id}
-                                        userInfo={userInfo}
-                                    />
-                                )}
+                                {roomChatInfo?.type === ChatInfoType.UserVsUser &&
+                                    // !hasNextPage && !isFetchingNextPage && !isLoadingMessages && 
+                                    userInfo &&
+                                    (
+                                        <ChatRelationshipBanner
+                                            roomData={roomData}
+                                            onAcceptFriend={acceptRequest.mutate}
+                                            onRejectFriend={rejectRequest.mutate}
+                                            currentUserId={userInfo.id}
+                                            userInfo={userInfo}
+                                        />
+                                    )}
                                 {isFetchingNextPage && (
                                     <div className="flex justify-center py-2">
                                         <div className="text-sm text-gray-500">{t("Loading more messages...")}</div>
@@ -386,11 +385,12 @@ const SocialChatThread: React.FC = () => {
                                         hasReachedLimit={hasReachedLimit}
                                         isSendingMessage={isSendingMessage}
                                         activeUserIds={roomChatInfo?.activeUserIds || []}
+                                        roomData={roomData}
                                     />
                                 )}
                                 {typingUsers && typingUsers.length > 0 && (
-                                    <TypingIndicatorWrapper 
-                                        typingUsers={typingUsers} 
+                                    <TypingIndicatorWrapper
+                                        typingUsers={typingUsers}
                                         onHeightChange={setTypingIndicatorHeight}
                                     />
                                 )}

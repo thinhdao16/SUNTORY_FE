@@ -11,7 +11,6 @@ import { Capacitor } from "@capacitor/core";
 import SearchIcon from '@/icons/logo/social-chat/search.svg?react';
 import ClearInputIcon from '@/icons/logo/social-chat/clear-input.svg?react';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
-import avatarGrayFallback from "@/icons/logo/social-chat/avt-gray-rounded.svg";
 import { t } from "@/lib/globalT";
 import { useDebounce } from "@/hooks/useDebounce";
 import ActionButton from "@/components/loading/ActionButton";
@@ -22,6 +21,7 @@ function SocialGroupAdd() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [selectedUsersData, setSelectedUsersData] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [groupName, setGroupName] = useState("");
   const history = useHistory();
@@ -45,7 +45,7 @@ function SocialGroupAdd() {
 
   useEffect(() => {
     if (debouncedSearch) {
-      setSelectedUsers([]); 
+      // setSelectedUsers([]); 
     }
   }, [debouncedSearch]);
 
@@ -55,22 +55,30 @@ function SocialGroupAdd() {
   }, [debouncedSearch, search]);
 
   const toggleUser = (id: number) => {
-    if (creating) return; 
-    setSelectedUsers((prev) =>
-      prev.includes(id) ? prev.filter((uid) => uid !== id) : [...prev, id]
-    );
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+
+    setSelectedUsers((prev) => {
+      if (prev.includes(id)) {
+        setSelectedUsersData(prevData => prevData.filter(u => u.id !== id));
+        return prev.filter((uid) => uid !== id);
+      } else {
+        setSelectedUsersData(prevData => [...prevData, user]);
+        return [...prev, id];
+      }
+    });
   };
 
   const removeSelected = (id: number) => {
-    if (creating) return; 
     setSelectedUsers((prev) => prev.filter((uid) => uid !== id));
+    setSelectedUsersData(prevData => prevData.filter(u => u.id !== id));
   };
   const handleCreateGroup = () => {
     if (selectedUsers.length === 0) return;
 
     const trimmedName = (groupName || "").trim();
-    const selectedNames = selectedUsers
-      .map((id) => users.find((u) => u.id === id)?.fullName)
+    const selectedNames = selectedUsersData
+      .map((user) => user?.fullName)
       .filter(Boolean) as string[];
     const namesTitle = selectedNames.join(", ");
     const title =
@@ -125,31 +133,28 @@ function SocialGroupAdd() {
         </div>
         {selectedUsers.length > 0 && (
           <div className="flex gap-[15px] mb-3  overflow-x-auto w-full pt-2">
-            {selectedUsers.map((id) => {
-              const user = users.find((u) => u.id === id);
-              return (
-                <div key={id} className="relative z-9 text-center flex flex-col gap-1 items-center justify-center">
-                  <img
-                    src={user?.avatar || avatarGrayFallback}
-                    alt={user?.fullName}
-                    className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-2xl object-cover flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.src = avatarGrayFallback;
-                    }}
-                  />
-                  <button
-                    onClick={() => removeSelected(id)}
-                    className="absolute z-20 -top-1 -right-1"
-                  >
-                    <div className=" bg-success-500 text-black rounded-full w-5 h-5 flex items-center justify-center">
-                    <HiX className="text-[14px]" />
-                    
-                    </div>
-                  </button>
-                  <p className="text-xs text-center max-w-[40px] truncate">{user?.fullName}</p>
-                </div>
-              );
-            })}
+            {selectedUsersData.map((user) => (
+              <div key={user.id} className="relative z-9 text-center flex flex-col gap-1 items-center justify-center">
+                <img
+                  src={user?.avatar || avatarFallback}
+                  alt={user?.fullName}
+                  className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-2xl object-cover flex-shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.src = avatarFallback;
+                  }}
+                />
+                <button
+                  onClick={() => removeSelected(user.id)}
+                  className="absolute z-20 -top-1 -right-1"
+                >
+                  <div className=" bg-success-500 text-black rounded-full w-5 h-5 flex items-center justify-center">
+                  <HiX className="text-[14px]" />
+                  
+                  </div>
+                </button>
+                <p className="text-xs text-center max-w-[40px] truncate">{user?.fullName}</p>
+              </div>
+            ))}
           </div>
         )}
         <div className="">
