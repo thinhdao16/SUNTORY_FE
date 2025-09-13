@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { menuAnalyzing } from '@/services/menu/menu-service';
 import { useMenuTranslationStore } from '@/store/zustand/menuTranslationStore';
 import { useMenuSignalR } from '@/hooks/useMenuSignalR';
-import { set } from 'react-hook-form';
 
 interface LocationState {
     base64Img: string;
@@ -275,6 +274,9 @@ const MenuAnalyzing: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Bottom Spacer để tránh bị vướng với BottomTabBar */}
+                    <div className="h-20"></div>
                 </div>
             </IonContent>
         </IonPage>

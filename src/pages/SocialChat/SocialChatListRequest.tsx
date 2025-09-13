@@ -9,11 +9,11 @@ import { useToastStore } from '@/store/zustand/toast-store';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { createAnonymousChatRoom } from '@/services/social/social-chat-service';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
-import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 import { useListChatRooms, useNotificationCounts, useUserChatRooms } from './hooks/useSocialChat';
 import { RoomChatInfo } from '@/types/social-chat';
 import { useSocialSignalRListChatRoom } from '@/hooks/useSocialSignalRListChatRoom';
+import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 
 function SocialChatListRequest() {
     const history = useHistory();
@@ -53,12 +53,12 @@ function SocialChatListRequest() {
         enableDebugLogs: false,
         refetchUserChatRooms: () => { void refetch(); }
     });
-    // useSocialSignalR(deviceInfo.deviceId ?? "", {
-    //     roomId: "",
-    //     refetchRoomData: () => { void refetch(); },
-    //     autoConnect: true,
-    //     enableDebugLogs: false,
-    // });
+    useSocialSignalR(deviceInfo.deviceId ?? "", {
+        roomId: "",
+        refetchRoomData: () => { void refetch(); },
+        autoConnect: true,
+        enableDebugLogs: false,
+    });
     const users = data?.pages.flat() ?? [];
     const handleClickMessage = async (user: any) => {
         try {

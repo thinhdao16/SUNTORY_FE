@@ -10,6 +10,7 @@ interface SocialChatState {
 
     roomChatInfo: RoomChatInfo | null;
     setRoomChatInfo: (room: RoomChatInfo) => void;
+    updateRoomChatInfo: (updates: Partial<RoomChatInfo>) => void;
     clearRoomChatInfo: () => void;
 
     roomMembers: Member[];
@@ -27,6 +28,7 @@ interface SocialChatState {
     updateMessage: (roomId: string, msg: ChatMessage) => void;
     updateMessageByTempId: (roomId: string, msg: ChatMessage) => void;
     updateMessageWithServerResponse: (roomId: string, tempId: string, serverData: Partial<ChatMessage>) => void;
+    updateOldMessagesWithReadStatus: (roomId: string, activeUsersData: any[], currentUserId: number) => void;
     updateMessageByCode: (roomId: string, messageCode: string, updatedData: Partial<ChatMessage>) => void;
     translateMessageByCode: (roomId: string, messageCode: string, updatedData: Partial<ChatMessage>) => void;
 
@@ -51,6 +53,7 @@ interface SocialChatState {
     addChatRoom: (room: RoomChatInfo) => void;
     updateChatRoom: (roomCode: string, updatedRoom: Partial<RoomChatInfo>) => void;
     removeChatRoom: (roomCode: string) => void;
+    deleteRoom: (roomCode: string) => void;
     getChatRoomByCode: (code: string) => RoomChatInfo | undefined;
     sortChatRoomsByDate: () => void;
 
@@ -71,6 +74,7 @@ interface SocialChatState {
     updatePendingFriendRequestsCount: (count: number) => void;
     getTotalNotificationCount: () => number;
     resetNotificationCounts: () => void;
+
 }
 const toTs = (d?: string | null) => (d ? new Date(d).getTime() : 0);
 const pickLocalOnly = (r: RoomChatInfo | undefined) => r ? ({
@@ -83,13 +87,46 @@ export const useSocialChatStore = create<SocialChatState>()(
         setSearch: (value) => set({ search: value }),
         clearSearch: () => set({ search: "" }),
         unreadByRoom: {},
-
         roomChatInfo: null,
         setRoomChatInfo: (room) => set({ roomChatInfo: room }),
+        updateRoomChatInfo: (updates) => 
+            set((state) => {
+                if (state.roomChatInfo) {
+                    Object.assign(state.roomChatInfo, updates);
+                }
+            }),
         clearRoomChatInfo: () => set({ roomChatInfo: null }),
-
         roomMembers: [],
-        setRoomMembers: (members) => set({ roomMembers: members }),
+        setRoomMembers: (members) => set((state) => {
+            const updatedMessagesByRoomId = { ...state.messagesByRoomId };
+            if (Array.isArray(members)) {
+                Object.keys(updatedMessagesByRoomId).forEach(roomId => {
+                    const messages = updatedMessagesByRoomId[roomId];
+                    updatedMessagesByRoomId[roomId] = messages.map(msg => {
+                        if (msg.userHasRead && msg.userHasRead.length > 1) {
+                            const updatedUserHasRead = msg.userHasRead.map(readUser => {
+                                const member = members.find(m => m.userId === readUser.userId);
+                                if (member?.user && readUser.userName.startsWith('User ')) {
+                                    return {
+                                        ...readUser,
+                                        userName: member.user.userName || member.user.name || readUser.userName,
+                                        userAvatar: member.user.userAvatar || member.user.avatar || readUser.userAvatar
+                                    };
+                                }
+                                return readUser;
+                            });
+                            return { ...msg, userHasRead: updatedUserHasRead };
+                        }
+                        return msg;
+                    });
+                });
+            }
+            
+            return { 
+                roomMembers: Array.isArray(members) ? members : [],
+                messagesByRoomId: updatedMessagesByRoomId
+            };
+        }),
         clearRoomMembers: () => set({ roomMembers: [] }),
 
         messagesByRoomId: {},
@@ -149,10 +186,8 @@ export const useSocialChatStore = create<SocialChatState>()(
                     );
 
                     if (index === -1) {
-                        // Chưa có → thêm mới
                         roomMessages.push(newMsg);
                     } else {
-                        // Đã có → merge các field mới (giữ nguyên id, code, tempId, createDate cũ)
                         const existing = roomMessages[index];
                         roomMessages[index] = {
                             ...existing,
@@ -209,14 +244,68 @@ export const useSocialChatStore = create<SocialChatState>()(
 
                 if (index !== -1) {
                     const msg = state.messagesByRoomId[roomId][index];
+                    console.log('Updating message with userHasRead:', serverData.userHasRead);
                     Object.assign(msg, {
                         ...serverData,
                         id: serverData.id !== undefined ? serverData.id : msg.id,
                         isSend: true,
                         isError: false,
                     });
+                    console.log('Message after update:', msg.userHasRead);
                 }
             }),
+            updateOldMessagesWithReadStatus: (roomId: string, activeUsersData: any[], currentUserId: number) =>
+                set((state) => {
+                    const roomMessages = state.messagesByRoomId[roomId];
+                    if (!roomMessages || !activeUsersData.length) return;
+                    const activeUserIds = activeUsersData.map(user => user.userId);
+                    const recentMessagesByUser = new Map<number, number>();
+                    for (let i = roomMessages.length - 1; i >= 0; i--) {
+                        const msg = roomMessages[i];
+                        if (msg.userId && !recentMessagesByUser.has(msg.userId)) {
+                            recentMessagesByUser.set(msg.userId, i);
+                        }
+                    }
+                    recentMessagesByUser.forEach((messageIndex, userId) => {
+                        const msg = roomMessages[messageIndex];
+                        const currentReadUsers = msg.userHasRead || [];
+                        const newReadUsers = [...currentReadUsers];
+                        
+                        activeUsersData.forEach((activeUser) => {
+                            const alreadyRead = currentReadUsers.some(user => user.userId === activeUser.userId);
+                            if (!alreadyRead) {
+                                newReadUsers.push(activeUser);
+                            }
+                        });
+                        
+                        if (newReadUsers.length > currentReadUsers.length) {
+                            roomMessages[messageIndex] = {
+                                ...msg,
+                                userHasRead: newReadUsers
+                            };
+                        }
+                    });
+                    roomMessages.forEach((oldMsg:any, index) => {
+                        if (oldMsg.userHasRead && 
+                            oldMsg.userHasRead.length > 0 && 
+                            !recentMessagesByUser.has(oldMsg.userId) || 
+                            recentMessagesByUser.get(oldMsg.userId) !== index) {
+                            const hasActiveUsers = oldMsg.userHasRead.some((reader:any) => 
+                                activeUserIds.includes(reader.userId)
+                            );
+                            if (hasActiveUsers) {
+                                const filteredUserHasRead = oldMsg.userHasRead.filter((reader:any) => 
+                                    !activeUserIds.includes(reader.userId)
+                                );
+                                
+                                roomMessages[index] = {
+                                    ...oldMsg,
+                                    userHasRead: filteredUserHasRead
+                                };
+                            }
+                        }
+                    });
+                }),
 
         updateMessageByCode: (roomId, messageCode, updatedData) =>
             set((state) => {
@@ -429,6 +518,14 @@ export const useSocialChatStore = create<SocialChatState>()(
                 state.chatRooms = state.chatRooms.filter(r => r.code !== roomCode);
             }),
 
+        deleteRoom: (roomCode: string) =>
+            set((state) => {
+                state.chatRooms = state.chatRooms.filter(r => r.code !== roomCode);
+                if (state.roomChatInfo?.code === roomCode) state.roomChatInfo = null;
+                if (state.unreadByRoom && state.unreadByRoom[roomCode] !== undefined) delete state.unreadByRoom[roomCode];
+                if (state.lastMessageByRoomId && state.lastMessageByRoomId[roomCode] !== undefined) delete state.lastMessageByRoomId[roomCode];
+            }),
+
         getChatRoomByCode: (code) => {
             const state = get();
             return state.chatRooms.find(r => r.code === code);
@@ -460,6 +557,21 @@ export const useSocialChatStore = create<SocialChatState>()(
                     state.messagesByRoomId[roomId].push(msg);
                     state.lastMessageByRoomId[roomId] = msg;
 
+                    // for (let i = 0; i < roomMessages.length - 1; i++) {
+                    //     if (roomMessages[i].userHasRead && roomMessages[i].userHasRead!.length > 0) {
+                    //         const currentUserId = msg.userId;
+                    //         const otherUsersRead = roomMessages[i].userHasRead!.filter(reader => 
+                    //             !activeUserIds.includes(reader.userId)
+                    //         );
+                    //         if (otherUsersRead.length > 0) {
+                    //             roomMessages[i] = {
+                    //                 ...roomMessages[i],
+                    //                 userHasRead: []
+                    //             };
+                    //         }
+                    //     }
+                    // }
+
                     setTimeout(() => {
                         set((state) => {
                             const roomIndex = state.chatRooms.findIndex(r => r.code === roomId);
@@ -482,11 +594,7 @@ export const useSocialChatStore = create<SocialChatState>()(
 
                 if (roomIndex !== -1) {
                     const room = state.chatRooms[roomIndex];
-
-                    // Update room properties
                     room.updateDate = message.createDate || new Date().toISOString();
-
-                    // Update last message info
                     const displayText = message.isRevoked === 1
                         ? "Tin nhắn đã được thu hồi"
                         : message.isEdited === 1
@@ -500,14 +608,12 @@ export const useSocialChatStore = create<SocialChatState>()(
                         userAvatar: message.userAvatar
                     };
 
-                    // Move room to top only for new messages, not edited ones
                     if (message.isEdited !== 1) {
                         const updatedRoom = state.chatRooms.splice(roomIndex, 1)[0];
                         state.chatRooms.unshift(updatedRoom);
                     }
 
                 } else {
-                    // Create new room if not found (only for new messages)
                     if (message.chatInfo && message.isEdited !== 1) {
                         const newRoom: RoomChatInfo = {
                             id: message.chatInfo.id,
@@ -538,7 +644,6 @@ export const useSocialChatStore = create<SocialChatState>()(
         setRoomUnread: (roomCode, count) =>
             set((state) => {
                 state.unreadByRoom[roomCode] = Math.max(0, count | 0);
-
                 const idx = state.chatRooms.findIndex(r => r.code === roomCode);
                 if (idx !== -1) state.chatRooms[idx].unreadCount = state.unreadByRoom[roomCode];
             }),

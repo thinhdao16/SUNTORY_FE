@@ -56,7 +56,6 @@ export function groupMessagesByTime(
     const sortedMessages = [...messages].sort(
         (a, b) => getMessageTime(a) - getMessageTime(b)
     );
-
     sortedMessages.forEach((message) => {
         const messageTime = getMessageTime(message);
         const messageDayjs = dayjs(messageTime);
@@ -93,7 +92,17 @@ export function groupMessagesByTime(
         const timeDiff = messageTime - getMessageTime(last);
         const senderChanged = normalized._senderKey !== last._senderKey;
 
-        const breakSequence = senderChanged || timeDiff > MESSAGE_GROUP_THRESHOLD;
+        const lastWasSystemMessage = last.isNotifyRoomChat && last.messageText && 
+            (() => {
+                try {
+                    const parsed = JSON.parse(last.messageText);
+                    return parsed.Key && parsed.Even
+                } catch {
+                    return false;
+                }
+            })();
+
+        const breakSequence = senderChanged || timeDiff > MESSAGE_GROUP_THRESHOLD || lastWasSystemMessage;
 
         normalized._isFirstInSequence = breakSequence;
         normalized._shouldShowAvatar = breakSequence;

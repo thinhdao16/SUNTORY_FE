@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { useKeyboardResize } from "@/hooks/useKeyboardResize";
@@ -26,6 +26,39 @@ import { ChatMessage } from "@/types/social-chat";
 import MessageLimitNotice from "./components/MessageLimitNotice";
 import ExpandInputModal from "@/components/common/bottomSheet/ExpandInputModal";
 import { useCompensateScrollOnFooterChange } from "@/hooks/useCompensateScrollOnFooterChange";
+import TypingIndicator from './components/TypingIndicator';
+
+const TypingIndicatorWrapper: React.FC<{
+    typingUsers: { userId: number, userName: string, avatar?: string }[];
+    onHeightChange: (height: number) => void;
+}> = ({ typingUsers, onHeightChange }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const report = () => {
+            const h = el.offsetHeight;
+            onHeightChange(h);
+        };
+        const ro = new ResizeObserver(report);
+        ro.observe(el);
+        report();
+        return () => ro.disconnect();
+    }, [onHeightChange]);
+
+    useEffect(() => {
+        if (!typingUsers.length) {
+            onHeightChange(0);
+        }
+    }, [typingUsers.length, onHeightChange]);
+
+    return (
+        <div ref={containerRef}>
+            <TypingIndicator typingUsers={typingUsers} />
+        </div>
+    );
+};
 
 dayjs.extend(utc);
 
@@ -35,7 +68,12 @@ const SocialChatThread: React.FC = () => {
         isNative, isDesktop,
         messageTranslate, setMessageTranslate,
         inputValueTranslate, setInputValueTranslate,
-        inputBarHeight, setInputBarHeight,
+    } = useSocialChatThread();
+
+    const [inputBarHeight, setInputBarHeight] = useState(0);
+    const [typingIndicatorHeight, setTypingIndicatorHeight] = useState(0);
+
+    const {
         messagesEndRef, messagesContainerRef,
         messageRef, messageTranslateRef,
         translationLanguages, roomChatInfo,
@@ -43,13 +81,14 @@ const SocialChatThread: React.FC = () => {
         setSelectedLanguageSocialChat, selectedLanguageSocialChat,
         pendingImages, pendingFiles, addPendingImages, addPendingFiles,
         removePendingImageByUrl, showToast,
-        userInfo, messages, addMessage, updateMessageByCode, updateMessageByTempId, updateMessageWithServerResponse, setLoadingMessages, addMessages,
+        userInfo, messages, addMessage, updateMessageByCode, updateMessageByTempId, updateMessageWithServerResponse, setLoadingMessages, addMessages, getLoadingForRoom, updateOldMessagesWithReadStatus,
         replyingToMessage, setReplyingToMessage, clearReplyingToMessage,
         initialLoadRef, prevMessagesLength,
         translateSheet, sheetExpand, openInputExpandSheet, openTranslateExpandSheet, closeSheet, messageValue, setMessageValue,
         unfriendMutation, sendRequest, cancelRequest, acceptRequest, rejectRequest,
         translateActionStatus, setTranslateActionStatus,
         expandValue, setExpandValue, expandTitle, expandPlaceholder, usePeerUserId, roomData, createTranslationMutation, actionFieldSend, isTranslating, sheetExpandMode, typing,
+        typingUsers, clearTypingAfterSend,
     } = useSocialChatThread();
 
     const updateMessageMutation = useUpdateSocialChatMessage();
@@ -93,22 +132,38 @@ const SocialChatThread: React.FC = () => {
             ...msg,
             botName: msg.botName === null ? undefined : msg.botName,
         }));
-    }, [serverMessages, messages, roomId,userInfo]);
+    }, [serverMessages, messages, roomId, userInfo]);
 
     const userRightCount = useMemo(
-        () => displayMessages.reduce((acc, m) => acc + (m?.isRight ? 1 : 0), 0),
-        [displayMessages, messages,roomId , userInfo]
+        () => displayMessages.reduce((acc, m) => {
+            if (!m?.isRight) return acc;
+            try {
+                const parsedMessage = JSON.parse((m as any).messageText);
+                if (parsedMessage.Event === "NOTIFY_FRIENDLY_ACCEPTED") {
+                    return acc;
+                }
+            } catch (e) {
+            }
+            
+            return acc + 1;
+        }, 0),
+        [displayMessages, messages, roomId, userInfo]
     );
     const hasReachedLimit = !roomData?.isFriend && userRightCount >= CountLimitChatDontFriend && roomChatInfo?.type === ChatInfoType.UserVsUser;
+
+    const isSendingMessage = getLoadingForRoom(roomId || "");
+
+
+
     const {
         handleScrollWithLoadMore,
-        handleSendMessage,
+        handleSendMessage: originalHandleSendMessage,
         handleImageChange,
         handleEditMessage,
         handleRevokeMessage,
         handleTakePhoto,
         handleTranslate,
-        sendPickedFiles
+        sendPickedFiles,
     } = useSocialChatHandlers({
         addPendingImages,
         addPendingFiles,
@@ -122,6 +177,7 @@ const SocialChatThread: React.FC = () => {
         addMessage,
         updateMessageByTempId,
         updateMessageWithServerResponse,
+        updateOldMessagesWithReadStatus,
         roomId: roomId ?? "",
         setLoadingMessages,
         onContainerScroll,
@@ -145,6 +201,11 @@ const SocialChatThread: React.FC = () => {
         recalc
     });
 
+    const handleSendMessage = useCallback(async (e: any, field: string, force?: boolean) => {
+        await clearTypingAfterSend();
+        return originalHandleSendMessage(e, field, force);
+    }, [originalHandleSendMessage, clearTypingAfterSend]);
+
     // const handleSubmit = async (items: PhotoItem[]) => {
     //     const files = await Promise.all(items.map(photoItemToFile));
     //     await sendPickedFiles(files);
@@ -152,6 +213,11 @@ const SocialChatThread: React.FC = () => {
     useCompensateScrollOnFooterChange(messagesContainerRef, effectiveFooterHeight, {
         stickToBottomThreshold: 16,
         clampDelta: 800,
+    });
+
+    useCompensateScrollOnFooterChange(messagesContainerRef, typingIndicatorHeight, {
+        stickToBottomThreshold: 16,
+        clampDelta: 200,
     });
     useEffect(() => {
         if (messagesData?.pages) {
@@ -241,7 +307,6 @@ const SocialChatThread: React.FC = () => {
             }
         }
     }, [keyboardHeight]);
-
     return (
         <MotionStyles
             isOpen={translateSheet.isOpen || sheetExpand.isOpen}
@@ -283,6 +348,7 @@ const SocialChatThread: React.FC = () => {
                                     if (!peerUserId) return;
                                     unfriendMutation.mutate({ friendUserId: peerUserId, roomCode: roomId ?? undefined });
                                 }}
+                                roomId={roomId}
                             />
                             <div
                                 className={`flex-1 overflow-x-hidden overflow-y-auto px-6 min-h-0`}
@@ -298,15 +364,18 @@ const SocialChatThread: React.FC = () => {
                                 ref={messagesContainerRef}
                                 onScroll={handleScrollWithLoadMore}
                             >
-                                {roomChatInfo?.type === ChatInfoType.UserVsUser && !hasNextPage && !isFetchingNextPage && !isLoadingMessages && userInfo && (
-                                    <ChatRelationshipBanner
-                                        roomData={roomData}
-                                        onAcceptFriend={acceptRequest.mutate}
-                                        onRejectFriend={rejectRequest.mutate}
-                                        currentUserId={userInfo.id}
-                                        userInfo={userInfo}
-                                    />
-                                )}
+                                {roomChatInfo?.type === ChatInfoType.UserVsUser &&
+                                    // !hasNextPage && !isFetchingNextPage && !isLoadingMessages && 
+                                    userInfo &&
+                                    (
+                                        <ChatRelationshipBanner
+                                            roomData={roomData}
+                                            onAcceptFriend={acceptRequest.mutate}
+                                            onRejectFriend={rejectRequest.mutate}
+                                            currentUserId={userInfo.id}
+                                            userInfo={userInfo}
+                                        />
+                                    )}
                                 {isFetchingNextPage && (
                                     <div className="flex justify-center py-2">
                                         <div className="text-sm text-gray-500">{t("Loading more messages...")}</div>
@@ -325,7 +394,15 @@ const SocialChatThread: React.FC = () => {
                                         isGroup={roomChatInfo?.type !== ChatInfoType.UserVsUser}
                                         currentUserId={userInfo?.id}
                                         hasReachedLimit={hasReachedLimit}
-
+                                        isSendingMessage={isSendingMessage}
+                                        activeUserIds={roomChatInfo?.activeUserIds || []}
+                                        roomData={roomData}
+                                    />
+                                )}
+                                {typingUsers && typingUsers.length > 0 && (
+                                    <TypingIndicatorWrapper
+                                        typingUsers={typingUsers}
+                                        onHeightChange={setTypingIndicatorHeight}
                                     />
                                 )}
                                 {hasReachedLimit && (
@@ -384,7 +461,6 @@ const SocialChatThread: React.FC = () => {
                                         openTranslateExpandSheet={openTranslateExpandSheet}
                                         onTranslate={handleTranslate}
                                         setInputBarHeight={setInputBarHeight}
-                                        createTranslationMutation={createTranslationMutation}
                                         translateActionStatus={translateActionStatus}
                                         isTranslating={isTranslating}
                                         actionFieldSend={actionFieldSend}

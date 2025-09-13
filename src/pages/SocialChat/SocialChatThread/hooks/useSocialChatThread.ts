@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useHistory, useParams } from "react-router-dom";
 import { useQueryClient } from "react-query";
 import { Capacitor } from "@capacitor/core";
@@ -19,6 +19,7 @@ import { useChatRoomByCode } from "../../hooks/useSocialChat";
 import { useAcceptFriendRequest, useCancelFriendRequest, useRejectFriendRequest, useSendFriendRequest, useUnfriend } from "@/pages/SocialPartner/hooks/useSocialPartner";
 import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import { send } from "ionicons/icons";
+import { useUserActivity } from "@/hooks/useUserActivity";
 
 export type SheetExpandMode = "input" | "translate" | null;
 
@@ -67,6 +68,7 @@ export const useSocialChatThread = () => {
         updateMessage: updateMessageStore,
         updateMessageByTempId: updateMessageByTempIdStore,
         updateMessageWithServerResponse: updateMessageWithServerResponseStore,
+        updateOldMessagesWithReadStatus,
         updateMessageByCode,
         setLoadingMessages: setLoadingMessagesStore,
         removeMessage,
@@ -113,13 +115,47 @@ export const useSocialChatThread = () => {
     const {
         pingActiveRoom,
         setInactiveInRoom,
-        typing
+        activity,
+        typing,
+        typingUsers,
+        clearTypingUsers,
+        activeUsers
     } = useSocialSignalR(deviceInfo.deviceId ?? "", {
         roomId: roomId ?? "",
         refetchRoomData,
         autoConnect: true,
         enableDebugLogs: false,
+        onTypingUsers: (payload) => {
+        }
     });
+    const activeUsersData = useMemo(() => {
+        if (!activeUsers || !Array.isArray(activeUsers) || !roomChatInfo?.participants) {
+            return [];
+        }
+    
+        return activeUsers.map(userId => {
+            const participant = roomChatInfo.participants.find((p: any) => 
+                (p.userId === userId) || (p.user?.id === userId)
+            );
+            if (!participant) return null;
+            return {
+                userId: userId,
+                userName: participant.user?.fullName ||  'Unknown User',
+                userAvatar: participant.user?.avatar ||null,
+                readTime: new Date().toISOString()
+            };
+        }).filter(Boolean);
+    }, [activeUsers]);
+    useEffect(() => {
+        if (activeUsersData.length > 0 && roomId && userInfo?.id) {
+            updateOldMessagesWithReadStatus(roomId, activeUsersData, userInfo.id);
+        }
+    }, [activeUsersData, roomId, userInfo?.id]);
+    const clearTypingAfterSend = useCallback(async () => {
+        clearTypingUsers();
+        await typing.off();
+    }, [clearTypingUsers, typing]);
+
     const usePeerUserId = (roomData?: any, myId?: number) => {
         const participants = roomData?.participants ?? [];
         const other = participants.find((p: any) => {
@@ -142,20 +178,7 @@ export const useSocialChatThread = () => {
             setActiveRoomId(null);
         };
     }, [roomId, setActiveRoomId]);
-    useEffect(() => {
-        if (!roomId) return;
-
-        pingActiveRoom(roomId);
-        const interval = setInterval(() => {
-            pingActiveRoom(roomId);
-        }, 30000);
-
-        return () => {
-            clearInterval(interval);
-            setInactiveInRoom(roomId);
-        };
-    }, [roomId, pingActiveRoom, setInactiveInRoom]);
-
+    useUserActivity(activity, { enabled: !!roomId });
     const messages = roomId ? getMessagesForRoom(roomId) : [];
     const isLoadingMessages = roomId ? getLoadingForRoom(roomId) : false;
 
@@ -168,12 +191,18 @@ export const useSocialChatThread = () => {
     const addMessage = (msg: ChatMessage) => {
         if (roomId) {
             addMessageStore(roomId, msg);
+            // Clear typing indicators when any message is added to prevent race conditions
+            clearTypingUsers();
         }
     };
 
     const addMessages = (msgs: ChatMessage[]) => {
         if (roomId) {
             addMessagesStore(roomId, msgs);
+            // Clear typing indicators when messages are added to prevent race conditions
+            if (msgs.length > 0) {
+                clearTypingUsers();
+            }
         }
     };
 
@@ -270,13 +299,17 @@ export const useSocialChatThread = () => {
         updateMessage,
         updateMessageByTempId,
         updateMessageWithServerResponse,
+        updateOldMessagesWithReadStatus,
         setLoadingMessages,
+        getLoadingForRoom,
         setReplyingToMessage,
         clearReplyingToMessage,
         replyingToMessage,
         scrollToBottom, messageValue, setMessageValue,
         expandValue, setExpandValue, expandTitle, expandPlaceholder,
         typing,
+        typingUsers,
+        clearTypingAfterSend,
         // Additional functions
         updateMessageByCode: updateMessageByCodeForCurrentRoom,
         removeMessage: removeMessageFromCurrentRoom,

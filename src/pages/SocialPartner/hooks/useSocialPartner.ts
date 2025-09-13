@@ -1,6 +1,7 @@
 import {
     acceptFriendRequest,
     cancelFriendRequest,
+    getFriendsExcludeRoom,
     getFriendshipFriends,
     getFriendshipReceivedRequests,
     rejectFriendRequest,
@@ -34,7 +35,7 @@ export const useFriendshipFriendsWithSearch = (
     searchQuery?: string
 ) => {
     return useInfiniteQuery(
-        ["friendshipFriends", searchQuery], 
+        ["friendshipFriends", searchQuery],
         ({ pageParam = 0 }) => getFriendshipFriends(pageParam, limit, searchQuery),
         {
             getNextPageParam: (lastPage, pages) => {
@@ -43,7 +44,26 @@ export const useFriendshipFriendsWithSearch = (
             },
             enabled: true,
             refetchOnWindowFocus: false,
-            staleTime: 5 * 60 * 1000, 
+            // staleTime: 5 * 60 * 1000,
+        }
+    );
+};
+
+export const useFriendExcludeRoom = (
+    roomChatCode: string,
+    limit: number = 20,
+    searchQuery?: string,
+) => {
+    return useInfiniteQuery(
+        ["friendsExcludeRoom", searchQuery],
+        ({ pageParam = 0 }) => getFriendsExcludeRoom(roomChatCode, pageParam, limit, searchQuery),
+        {
+            getNextPageParam: (lastPage, pages) => {
+                const hasMore = lastPage?.length === limit;
+                return hasMore ? pages.length + 1 : undefined;
+            },
+            enabled: true,
+            refetchOnWindowFocus: false,
         }
     );
 };

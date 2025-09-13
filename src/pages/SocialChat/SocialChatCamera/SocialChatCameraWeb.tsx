@@ -28,7 +28,8 @@ const SocialChatCameraWeb: React.FC = () => {
         updateMessageByTempId,
         updateMessageWithServerResponse,
         setLoadingMessages,
-        replyingToMessageByRoomId
+        replyingToMessageByRoomId,
+        updateOldMessagesWithReadStatus
     } = useSocialChatStore();
 
     const showToast = useToastStore((state) => state.showToast);
@@ -69,6 +70,7 @@ const SocialChatCameraWeb: React.FC = () => {
                 fileType: 1,
                 fileSize: file.size,
                 createDate: dayjs.utc().format("YYYY-MM-DDTHH:mm:ss.SSS"),
+                isUploading: true,
             }],
             chatInfo: null,
             reactions: [],
@@ -135,8 +137,9 @@ const SocialChatCameraWeb: React.FC = () => {
                             userAvatar: serverMsg.userAvatar,
                             hasAttachment: serverMsg.hasAttachment,
                             isRead: serverMsg.isRead,
-                            chatAttachments: serverMsg.chatAttachments?.length > 0 ?
-                                serverMsg.chatAttachments.map((att: any) => ({
+                            userHasRead: serverMsg.userHasRead || [],
+                            chatAttachments: serverMsg.chatAttachments?.length
+                                ? serverMsg.chatAttachments.map((att: any) => ({
                                     id: att.id,
                                     chatMessageId: att.chatMessageId,
                                     fileUrl: att.fileUrl,
@@ -144,19 +147,50 @@ const SocialChatCameraWeb: React.FC = () => {
                                     fileType: att.fileType,
                                     fileSize: att.fileSize,
                                     createDate: att.createDate,
-                                })) : tempMessage.chatAttachments,
+                                    isSending: false,
+                                    isUploading: false,
+                                    uploadProgress: 100,
+                                }))
+                                : tempMessage.chatAttachments.map(att => ({
+                                    ...att,
+                                    isSending: false,
+                                    isUploading: false,
+                                    uploadProgress: 100,
+                                })),
+                            attachments: serverMsg.chatAttachments?.length > 0 ?
+                                serverMsg.chatAttachments.map((att: any) => ({
+                                    fileUrl: att.fileUrl,
+                                    fileName: att.fileName,
+                                    fileType: att.fileType,
+                                    createDate: att.createDate,
+                                })) : [],
+                            isSend: true,
+                            isError: false,
                         });
-                    }
 
-                } catch (error) {
-                    console.error('Send message failed:', error);
+                        if (serverMsg.userHasRead && serverMsg.userHasRead.length > 0) {
+                            updateOldMessagesWithReadStatus(
+                                roomId, 
+                                serverMsg.userHasRead, 
+                                tempMessage.userId
+                            );
+                        }
+                        
+                        setLoadingMessages(roomId, false);
+                    }
+                } catch (e) {
+                    console.error('Send message failed:', e);
                     updateMessageByTempId(roomId, {
                         ...tempMessage,
                         isError: true,
+                        isSend: false,
+                        chatAttachments: tempMessage.chatAttachments.map(att => ({
+                            ...att,
+                            isSending: false,
+                            isError: true,
+                        })),
                         messageText: "Gửi tin nhắn thất bại"
                     });
-                    showToast("Gửi tin nhắn thất bại", 3000, "error");
-                } finally {
                     setLoadingMessages(roomId, false);
                 }
             }

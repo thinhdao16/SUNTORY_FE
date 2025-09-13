@@ -1,0 +1,46 @@
+/* Thêm vào file custom-lightbox.css */
+
+/* Hiệu ứng tap */
+.yarl__slide.yarl__slide_zoomed::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  z-index: 1;
+}
+
+/* Thêm hint khi zoom */
+.yarl__slide.yarl__slide_zoomed::before {
+  content: 'Tap to reset zoom';
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.yarl__slide.yarl__slide_zoomed:active::before {
+  opacity: 1;
+}
+
+/* Reset button */
+.yarl__button.yarl__reset {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 4px 10px;
+  border-radius: 20px;
+}

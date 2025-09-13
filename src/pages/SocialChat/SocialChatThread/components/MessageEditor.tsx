@@ -1,4 +1,3 @@
-// src/pages/SocialChat/SocialChatThread/components/MessageEditor.tsx
 import React, { useState, useRef, useEffect } from "react";
 
 interface MessageEditorProps {

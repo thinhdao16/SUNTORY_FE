@@ -1,9 +1,8 @@
-// useCompensateScrollOnFooterChange.ts
 import { MutableRefObject, useEffect, useRef } from "react";
 
 type Opts = {
-    stickToBottomThreshold?: number; // nếu đang gần đáy -> dính đáy thay vì bù trừ
-    clampDelta?: number;             // giới hạn delta để tránh nhảy mạnh (px)
+    stickToBottomThreshold?: number; 
+    clampDelta?: number;             
 };
 
 export function useCompensateScrollOnFooterChange(
@@ -22,7 +21,6 @@ export function useCompensateScrollOnFooterChange(
         let delta = footerHeight - prevHeightRef.current;
         if (delta === 0) return;
 
-        // Giới hạn delta để tránh giật do đo sai/nhảy layout lớn
         if (Math.abs(delta) > clampDelta) {
             delta = Math.sign(delta) * clampDelta;
         }
@@ -32,10 +30,8 @@ export function useCompensateScrollOnFooterChange(
 
         const apply = () => {
             if (nearBottom) {
-                // Nếu đang sát đáy: dính đáy cho mượt
                 el.scrollTop = el.scrollHeight;
             } else {
-                // Không sát đáy: bù trừ scroll đúng bằng delta
                 el.scrollTop += delta;
             }
             prevHeightRef.current = footerHeight;

@@ -47,13 +47,13 @@ const SocialChatCamera: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const platform = Capacitor.getPlatform();
 
-    // Store và hooks
     const {
         addMessage,
         updateMessageByTempId,
         updateMessageWithServerResponse,
         setLoadingMessages,
-        replyingToMessageByRoomId
+        replyingToMessageByRoomId,
+        updateOldMessagesWithReadStatus
     } = useSocialChatStore();
 
     const showToast = useToastStore((state) => state.showToast);
@@ -90,7 +90,7 @@ const SocialChatCamera: React.FC = () => {
             chatInfoId: 1,
             code: roomId || "",
             status: 10,
-            attachments: [], // Bỏ attachments
+            attachments: [],
             isSend: false,
             isError: false,
             hasAttachment: 1,
@@ -133,12 +133,10 @@ const SocialChatCamera: React.FC = () => {
                     });
                 }
 
-                // Clean up local URL
                 URL.revokeObjectURL(tempMessage.chatAttachments[0].fileUrl);
                 return;
             }
 
-            // Upload file
             const uploaded = await uploadChatFile(file);
             // Clean up local URL after upload
             URL.revokeObjectURL(tempMessage.chatAttachments[0].fileUrl);
@@ -162,7 +160,6 @@ const SocialChatCamera: React.FC = () => {
                 //     isError: false
                 // });
 
-                // Tạo payload để gửi message
                 const payload = {
                     chatCode: roomId,
                     messageText: "",
@@ -195,7 +192,6 @@ const SocialChatCamera: React.FC = () => {
                             userAvatar: serverMsg.userAvatar,
                             hasAttachment: serverMsg.hasAttachment,
                             isRead: serverMsg.isRead,
-                            // Chỉ update chatAttachments từ server response
                             chatAttachments: serverMsg.chatAttachments?.length > 0 ?
                                 serverMsg.chatAttachments.map((att: any) => ({
                                     id: att.id,
@@ -207,10 +203,16 @@ const SocialChatCamera: React.FC = () => {
                                     createDate: att.createDate,
                                 })) : tempMessage.chatAttachments,
                         });
+                        if (serverMsg.userHasRead && serverMsg.userHasRead.length > 0) {
+                            updateOldMessagesWithReadStatus(
+                                roomId, 
+                                serverMsg.userHasRead, 
+                                tempMessage.userId
+                            );
+                        }
+                        history.goBack();
                     }
 
-                    // Quay lại màn hình chat sau khi gửi thành công
-                    history.goBack();
                 } catch (error) {
                     console.error('Send message failed:', error);
                     updateMessageByTempId(roomId, {
@@ -224,7 +226,6 @@ const SocialChatCamera: React.FC = () => {
                 }
             }
         } catch (error) {
-            // Clean up local URL on error
             URL.revokeObjectURL(tempMessage.chatAttachments[0].fileUrl);
 
             if (roomId) {
@@ -265,7 +266,6 @@ const SocialChatCamera: React.FC = () => {
 const handleCapture = async () => {
     if (isCapturing || !videoRef.current || isUploading) return;
 
-    // 🔹 Kiểm tra quyền trước khi chụp
     const hasPermission = await checkPermission();
     if (!hasPermission) {
         present({
@@ -305,7 +305,6 @@ const handleCapture = async () => {
         if (base64Img) {
             const file = base64ToFile(base64Img, `gallery_${Date.now()}.png`);
 
-            // Lưu ảnh để preview thay vì upload ngay
             setCapturedImage(base64Img);
             setCapturedFile(file);
         }
@@ -314,7 +313,6 @@ const handleCapture = async () => {
     const handleSendImage = async () => {
         if (capturedFile) {
             await handleUploadImageFile(capturedFile);
-            // Reset sau khi gửi
             setCapturedImage(null);
             setCapturedFile(null);
         }
@@ -325,7 +323,7 @@ const handleCapture = async () => {
         setTimeout(() => {
             setCapturedImage(null);
             setCapturedFile(null);
-        }, 300); // Wait for animation
+        }, 300); 
     };
 
     const openDeviceSettings = async () => {
@@ -477,7 +475,6 @@ const handleCapture = async () => {
 
     return (
         <div className="h-full relative bg-black grid items-center px-6">
-            {/* Top bar */}
             <div className="fixed top-6 left-0 right-0 z-10 p-6 flex items-center justify-between">
                 {!capturedImage && (
                     <button onClick={handleToggleFlash} disabled={isUploading}>
@@ -499,10 +496,8 @@ const handleCapture = async () => {
                 </button>
             </div>
 
-            {/* Camera preview hoặc Captured image preview */}
             <div className="flex justify-center items-center w-full h-full xl:max-w-[410px]">
                 {capturedImage ? (
-                    // Preview captured image
                     <div className="relative w-full">
                         <img
                             src={capturedImage}
@@ -516,7 +511,6 @@ const handleCapture = async () => {
                             }}
                         />
 
-                        {/* Upload overlay */}
                         {isUploading && (
                             <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-2xl">
                                 <div className="text-center text-white">
@@ -527,7 +521,6 @@ const handleCapture = async () => {
                         )}
                     </div>
                 ) : (
-                    // Camera preview
                     <>
                         <video
                             ref={videoRef}
@@ -545,10 +538,8 @@ const handleCapture = async () => {
                 )}
             </div>
 
-            {/* Bottom bar */}
             <div className="fixed bottom-6 left-0 right-0 p-6 z-10 flex justify-between items-center">
                 {capturedImage ? (
-                    // Preview mode buttons
                     <div className="flex gap-4 w-full max-w-sm mx-auto">
                         <button
                             onClick={handleRetake}
@@ -579,7 +570,6 @@ const handleCapture = async () => {
                         </button>
                     </div>
                 ) : (
-                    // Camera mode buttons
                     <>
                         <button
                             onClick={handleChooseFromGallery}

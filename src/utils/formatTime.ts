@@ -34,3 +34,31 @@ export const formatTimeFromNow = (isoTime: string, t: TFunction) => {
 
     return target.format("DD/MM/YYYY");
 };
+export function formatDateUtil(
+    dateStr: string,
+    t: (key: string) => string,
+    locale: string = ""
+): string {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    function isSameDay(d1: Date, d2: Date) {
+        return d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate();
+    }
+
+    if (isSameDay(date, today)) {
+        return t("Today");
+    } else if (isSameDay(date, yesterday)) {
+        return t("Yesterday");
+    } else {
+        return date.toLocaleDateString(locale, {
+            year: "numeric",
+            month: "short",
+            day: "numeric"
+        });
+    }
+}

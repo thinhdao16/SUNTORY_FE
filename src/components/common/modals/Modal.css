@@ -1,0 +1,25 @@
+ion-modal.auto-height {
+    &.bottom {
+        align-items: flex-end;
+    }
+
+    --height: auto;
+
+    .ion-page {
+
+        position: relative;
+        display: block;
+        contain: content;
+
+        .inner-content {
+            max-height: 90vh;
+            overflow: auto;
+            height: auto;
+        }
+    }
+}
+
+.auto-height::part(content) {
+    --border-radius: 16px;
+    width: 400px;
+}

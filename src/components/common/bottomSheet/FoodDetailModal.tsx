@@ -33,8 +33,8 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
         if (e.target === e.currentTarget) onClose();
     };
 
-    const SHEET_MAX_VH = 85; // percent of viewport height
-    const HEADER_PX = 56; // approximate header height
+    const SHEET_MAX_VH = 85; 
+    const HEADER_PX = 56; 
 
     return (
         <AnimatePresence>

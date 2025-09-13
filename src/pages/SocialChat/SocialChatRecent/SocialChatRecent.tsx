@@ -8,13 +8,16 @@ import { formatTimeFromNow } from '@/utils/formatTime';
 import { useSocialSignalRListChatRoom } from '@/hooks/useSocialSignalRListChatRoom';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
-import { ChatInfoType } from '@/constants/socialChat';
+import { ChatInfoType, KEYCHATFORMATNOTI } from '@/constants/socialChat';
 import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
-import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { generatePreciseTimestampFromDate } from '@/utils/time-stamp';
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { SystemMessageType } from "@/constants/socialChat";
+import MuteIcon from "@/icons/logo/social-chat/mute.svg?react"
+import UnMuteIcon from "@/icons/logo/social-chat/unmute.svg?react"
+import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 dayjs.extend(utc);
 
 export default function SocialChatRecent() {
@@ -32,7 +35,7 @@ export default function SocialChatRecent() {
     hasNextPage,
     isFetchingNextPage,
     refetch: refetchUserChatRooms
-  } = useUserChatRooms();
+  } = useUserChatRooms(15,setChatRooms);
   const {
     refetch: refetchFriendshipRequests
   } = useFriendshipReceivedRequests(20);
@@ -54,21 +57,20 @@ export default function SocialChatRecent() {
     enableDebugLogs: false,
     refetchUserChatRooms
   });
-  // useSocialSignalR(deviceInfo.deviceId ?? "", {
-  //   roomId: "",
-  //   refetchRoomData: () => { void refetchFriendshipRequests(); void refetchUserChatRooms(); },
-  //   autoConnect: true,
-  //   enableDebugLogs: false,
-  // });
+  useSocialSignalR(deviceInfo.deviceId ?? "", {
+    roomId: "",
+    refetchRoomData: () => { void refetchFriendshipRequests(); void refetchUserChatRooms(); },
+    autoConnect: true,
+    enableDebugLogs: false,
+  });
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (data?.pages) {
-      const allRooms = data.pages.flat();
-      setChatRooms(allRooms);
-    }
-  }, [data, setChatRooms]);
+  // useEffect(() => {
+  //   if (data?.pages) {
+  //     const allRooms = data.pages.flat();
+  //     setChatRooms(allRooms);
+  //   }
+  // }, [data ,setChatRooms]);
   const getDisplayMessageText = (room: RoomChatInfo, currentUserId: number) => {
     const storeLast = getLastMessageForRoom(room.code);
     const last = storeLast ?? room?.lastMessageInfo;
@@ -96,13 +98,86 @@ export default function SocialChatRecent() {
     if (!text && attachments.length === 0) {
       return t('This message was removed');
     }
+
+    let systemPreview = "";
+    try {
+      const systemObj = JSON.parse(text);
+      if (systemObj && systemObj.Event && systemObj.Key === KEYCHATFORMATNOTI) {
+        const actor = systemObj.Actor;
+        const actorName = actor?.Id === currentUserId ? t("You") : actor?.FullName || t("Admin");
+
+        const eventType = systemObj.Event;
+        const eventValue = SystemMessageType[eventType as keyof typeof SystemMessageType];
+
+        switch (eventType) {
+          case "NOTIFY_GROUP_CHAT_CREATED": {
+            systemPreview = `${actorName} ${t("has created the group!")}`;
+            break;
+          }
+
+          case "NOTIFY_GROUP_CHAT_KICKED": {
+            const kickedUser = systemObj.Users?.[0];
+            const kickedName = kickedUser?.Id === currentUserId ? t("You") : kickedUser?.FullName || t("User");
+            systemPreview = `${actorName} ${t("has removed")} ${kickedName}`;
+            break;
+          }
+
+          case "NOTIFY_GROUP_CHAT_ADD_MEMBER": {
+            if (systemObj.Users && systemObj.Users.length > 0) {
+              const names = systemObj.Users.map((u: any) =>
+                u.Id === currentUserId ? t("You") : u.FullName || u.UserName || "User"
+              );
+              if (names.length === 1) {
+                systemPreview = `${actorName} ${t("has added")} ${names[0]}`;
+              } else if (names.length <= 2) {
+                systemPreview = `${actorName} ${t("has added")} ${names.join(t(" and "))}`;
+              } else {
+                systemPreview = `${actorName} ${t("has added")} ${names.length} ${t("members")}`;
+              }
+            } else {
+              systemPreview = `${actorName} ${t("has added new member")}`;
+            }
+            break;
+          }
+          case "NOTIFY_GROUP_CHAT_USER_LEAVE_GROUP": {
+            systemPreview = `${actorName} ${t("has left the group")}`;
+            break;
+          }
+          case "NOTIFY_GROUP_CHAT_ADMIN_RENAME_GROUP": {
+            systemPreview = `${actorName} ${t("has renamed the group")}`;
+            break;
+          }
+          case "NOTIFY_GROUP_CHAT_ADMIN_CHANGE_AVATAR_GROUP": {
+            systemPreview = `${actorName} ${t("has changed the group avatar")}`;
+            break;
+          }
+          case "NOTIFY_GROUP_CHAT_ADMIN_LEAVE_GROUP": {
+            systemPreview = `${actorName} ${t("has left the group as admin")}`;
+            break;
+          }
+          case "NOTIFY_GROUP_CHAT_CHANGE_ADMIN": {
+            const newAdmin = systemObj.Users?.[0];
+            const newAdminName = newAdmin?.Id === currentUserId ? t("You") : newAdmin?.FullName || t("User");
+            systemPreview = `${actorName} ${t("has appointed")} ${newAdminName} ${t("as admin")}`;
+            break;
+          }
+          case "NOTIFY_FRIENDLY_ACCEPTED": {
+            systemPreview = `${t("You")} ${t("and")} ${room?.title} ${t("are now friends")}`;
+            break;
+          }
+          default:
+            systemPreview = `${t("System notification")}`;
+        }
+      }
+    } catch {}
+    if (systemPreview) return systemPreview;
+
     let content = text || `📷 ${t('Photo')}`;
     if (room.type === ChatInfoType.UserVsUser) {
       if (last.userId === currentUserId) {
         content = `${t('You')}: ${content}`;
       }
     }
-
     if (room.type === ChatInfoType.Group) {
       if (last.userId !== currentUserId && last.userName) {
         content = `${last.userName}: ${content}`;
@@ -110,7 +185,6 @@ export default function SocialChatRecent() {
         content = `${t('You')}: ${content}`;
       }
     }
-
     return content;
   };
 
@@ -179,7 +253,7 @@ export default function SocialChatRecent() {
     el?.addEventListener('scroll', handleScroll);
     return () => el?.removeEventListener('scroll', handleScroll);
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-  console.log(sortedChatRooms)
+
   return (
     <div className="h-screen">
       <div
@@ -203,30 +277,35 @@ export default function SocialChatRecent() {
                 }}
                 className="py-2 flex items-center justify-between bg-white hover:bg-gray-100 cursor-pointer"
               >
-                <div className="flex items-center">
+                <div className="flex items-center flex-1 min-w-0">
                   <img
                     src={room?.avatarRoomChat || avatarFallback}
                     alt={room?.title}
-                    className={`w-[50px] h-[50px] rounded-2xl object-cover `}
+                    className="w-[50px] h-[50px] rounded-2xl object-cover flex-none"
                     onError={(e) => { e.currentTarget.src = avatarFallback; }}
                   />
-                  <div className="ml-3">
-                    <p className="text-base font-semibold truncate max-w-xs">{room.title}</p>
+                  <div className="ml-3 min-w-0 flex-1 overflow-hidden">
+                    <p className="text-base font-semibold truncate">{room.title}</p>
                     <p
-                      className={`text-xs max-w-xs  text-netural-300 ${isUnread && "font-semibold "} overflow-hidden text-ellipsis whitespace-nowrap`}
+                      className={`text-xs text-netural-300 ${isUnread ? "font-semibold" : ""} truncate`}
                     >
                       {(() => {
                         const text = getDisplayMessageText(room, userInfo?.id || 0);
-                        return text.length > 38 ? text.slice(0, 38) + "..." : text;
+                        return text.length > 80 ? text.slice(0, 80) + "..." : text;
                       })()}
                     </p>
                   </div>
                 </div>
 
-                <div className="text-right min-w-[64px] flex flex-col items-end gap-2 justify-center">
-                  <p className={`text-xs text-netural-500 ${isUnread && 'font-semibold '}`}>
+                <div className="flex-shrink-0 text-right w-[92px] flex flex-col items-end gap-2 justify-center">
+                  <p className={`text-xs text-netural-500 ${isUnread ? 'font-semibold' : ''}`}>
                     {formatTimeFromNow(getLatestUpdateDate(room), t)}
                   </p>
+                  {room.isQuiet && (
+                    <p className="text-[11px] text-netural-300">
+                      <MuteIcon className="w-[14px] h-[14px] inline-block mr-1" />
+                    </p>
+                  )}
                   {isUnread && (
                     <button className="flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px] bg-main">
                       {unread > 99 ? '99+' : unread}

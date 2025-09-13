@@ -287,10 +287,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 function labelToTimestamp(label: string) {
   if (label === "Today") return dayjs().valueOf();
   if (label === "Yesterday") return dayjs().subtract(1, "day").valueOf();
-  // "5 days ago"
   const match = label.match(/^(\d+)\s+days\s+ago$/);
   if (match) return dayjs().subtract(Number(match[1]), "day").valueOf();
-  // Nếu là ISO date
   if (dayjs(label).isValid()) return dayjs(label).valueOf();
   return 0;
 }

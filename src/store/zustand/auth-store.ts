@@ -1,11 +1,10 @@
 import { User } from "@/types/user";
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
 import { googleLogout } from '@react-oauth/google';
 import { logoutApi } from "@/services/auth/auth-service";
-import useDeviceInfo from "@/hooks/useDeviceInfo";
-import { App } from "@capacitor/app";
 
 interface AuthState {
     user: User | null;
@@ -20,79 +19,107 @@ interface AuthState {
     setUser: (user: User) => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-    user: null,
-    token: localStorage.getItem("token"),
-    refreshToken: localStorage.getItem("refreshToken"),
-    isAuthenticated: !!localStorage.getItem("token"),
-
-    setAuthData: (data: User) => {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("refreshToken", data.refreshToken);
-        set({
-            user: data,
-            token: data.token,
-            refreshToken: data.refreshToken,
-            isAuthenticated: true,
-        });
-    },
-
-    setProfile: (user: User) => set({ user }),
-
-    logout: async (deviceId?: string) => {
-        try {
-            if (deviceId) {
-                await logoutApi({ deviceId });
-                console.log("✅ Logout API called successfully");
-            }
-        } catch (error) {
-            console.error("❌ Logout API failed:", error);
-        }
-
-        try {
-            if (Capacitor.getPlatform() === "web") {
-                googleLogout();
-            } else {
-                await GoogleAuth.signOut();
-            }
-        } catch (error) {
-            console.error("Third-party logout failed:", error);
-        }
-
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
-        localStorage.removeItem("registerEmail");
-        localStorage.removeItem("otpLastSent");
-        sessionStorage.clear();
-
-        set({
+export const useAuthStore = create<AuthState>()(
+    persist(
+        (set, get) => ({
+            // Khởi tạo từ localStorage hoặc sessionStorage cho các thông tin không persist
             user: null,
-            token: null,
-            refreshToken: null,
-            isAuthenticated: false,
-        });
+            token: localStorage.getItem("token"),
+            refreshToken: localStorage.getItem("refreshToken"),
+            isAuthenticated: !!localStorage.getItem("token"),
 
-        console.log("✅ Logout completed");
-        if (Capacitor.getPlatform() === "web") {
-            location.reload()
-        } else {
+            setAuthData: (data: User) => {
+                // Lưu token và refreshToken vào localStorage riêng
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("refreshToken", data.refreshToken);
+                
+                set({
+                    user: data,
+                    token: data.token,
+                    refreshToken: data.refreshToken,
+                    isAuthenticated: true,
+                });
+            },
+
+            setProfile: (user: User) => {
+                const currentUser = get().user || {};
+                set({ user: { ...currentUser, ...user } });
+            },
+
+            logout: async (deviceId?: string) => {
+                try {
+                    if (deviceId) {
+                        await logoutApi({ deviceId });
+                        console.log("✅ Logout API called successfully");
+                    }
+                } catch (error) {
+                    console.error("❌ Logout API failed:", error);
+                }
+
+                try {
+                    if (Capacitor.getPlatform() === "web") {
+                        googleLogout();
+                    } else {
+                        await GoogleAuth.signOut();
+                    }
+                } catch (error) {
+                    console.error("Third-party logout failed:", error);
+                }
+
+                // Xóa token và refresh token khỏi localStorage
+                localStorage.removeItem("token");
+                localStorage.removeItem("refreshToken");
+                localStorage.removeItem("registerEmail");
+                localStorage.removeItem("otpLastSent");
+                sessionStorage.clear();
+
+                set({
+                    user: null,
+                    token: null,
+                    refreshToken: null,
+                    isAuthenticated: false,
+                });
+
+                console.log("✅ Logout completed");
+                if (Capacitor.getPlatform() === "web") {
+                    location.reload();
+                }
+            },
+
+            setUserAfterRegister: (data) => {
+                // Lưu token và refreshToken vào localStorage riêng
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("refreshToken", data.refreshToken);
+                
+                set({
+                    user: data,
+                    token: data.token,
+                    refreshToken: data.refreshToken,
+                    isAuthenticated: false,
+                });
+            },
+
+            setAuthenticated: (token, refreshToken) => {
+                // Lưu token và refreshToken vào localStorage riêng
+                localStorage.setItem("token", token);
+                localStorage.setItem("refreshToken", refreshToken);
+                
+                set({
+                    token,
+                    refreshToken,
+                    isAuthenticated: !!token
+                });
+            },
+
+            setUser: (user) => set({ user }),
+        }),
+        {
+            name: 'auth-storage', 
+            storage: createJSONStorage(() => localStorage),
+            // Chỉ lưu user vào localStorage thông qua zustand persist
+            partialize: (state) => ({
+                user: state.user,
+            }),
         }
-    },
-    setUserAfterRegister: (data) => {
-        set({
-            user: data,
-            token: data.token,
-            refreshToken: data.refreshToken,
-            isAuthenticated: false,
-        });
-    },
-
-    setAuthenticated: (token, refreshToken) => set({
-        token,
-        refreshToken,
-        isAuthenticated: !!token
-    }),
-
-    setUser: (user) => set({ user }),
-}));
+    )
+);

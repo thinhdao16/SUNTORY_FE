@@ -25,6 +25,7 @@ export interface CreateChatStreamPayload {
     topic: number;
     files?: { name: string }[];
     language: string;
+    deviceId: string | null;
 }
 export interface ChatHistoryLastModuleItem {
     id: number;
