@@ -5,10 +5,10 @@ import useAppInit from '@/hooks/useAppInit';
 import PageContainer from '@/components/layout/PageContainer';
 import AppImage from '@/components/common/AppImage';
 
-import medicalSupportSvg from "@/icons/logo/home/medical_support.png";
-import documentTranslationSvg from "@/icons/logo/home/document_translation.png";
-import menuTranslation from "@/icons/logo/home/menu_translation.png";
-import foodDiscoverySvg from "@/icons/logo/home/food_discovery.png";
+import medicalSupportSvg from "@/icons/logo/home/medical_support.webp";
+import documentTranslationSvg from "@/icons/logo/home/document_translation.webp";
+import menuTranslation from "@/icons/logo/home/menu_translation.webp";
+import foodDiscoverySvg from "@/icons/logo/home/food_discovery.webp";
 
 import { HomeHeader } from './components/HomeHeader';
 import { FeatureGrid } from './components/FeatureGrid';
