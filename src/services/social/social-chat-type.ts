@@ -24,3 +24,25 @@ export interface NotificationCounts {
     unreadRoomsCount: number;
     pendingFriendRequestsCount: number;
 }
+export interface AddGroupMembersPayload {
+    chatCode: string;
+    userIds: number[];
+}
+export interface UseAddGroupMembersOptions {
+    onSuccess?: (data: any, variables: AddGroupMembersPayload) => void;
+    onError?: (error: any) => void;
+}
+export interface RemoveGroupMembersPayload {
+    chatCode: string;
+    userIds: number[];
+}
+export interface UseRemoveGroupMembersOptions {
+    onSuccess?: (data: any, variables: RemoveGroupMembersPayload) => void;
+    onError?: (error: any) => void;
+}
+export interface UpdateChatRoomPayload {
+    chatCode: string;
+    title?: string;
+    avatarRoomChat?: string;
+    userIds?: number[];
+}

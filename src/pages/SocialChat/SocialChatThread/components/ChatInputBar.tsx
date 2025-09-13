@@ -2,9 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import CameraIcon from "@/icons/logo/chat/cam.svg?react";
 import ImageIcon from "@/icons/logo/chat/image.svg?react";
 import SendIcon from "@/icons/logo/social-chat/send.svg?react";
-import SendTranslateIcon from "@/icons/logo/social-chat/send-translate.svg?react";
-import ExpandTranslateIcon from "@/icons/logo/social-chat/expland-translate.svg?react";
-import ExpandInputIcon from "@/icons/logo/social-chat/expland-input.svg?react"
+import ExpandInputIcon from "@/icons/logo/social-chat/expland-input.svg?react";
 import TranslateIcon from "@/icons/logo/social-chat/translate.svg?react";
 import TranslateFocusIcon from "@/icons/logo/social-chat/translate-focus.svg?react";
 import LanguageDropdown from "./LanguageDropdown";
@@ -16,480 +14,357 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { t } from "@/lib/globalT";
 
 type TypingAPI = {
-    touch: () => void;
-    off: () => void;
-    setStatus?: (s: "on" | "off") => void;
+  touch: () => void;
+  off: () => void;
+  setStatus?: (s: "on" | "off") => void;
 };
+
 interface ChatInputBarProps {
-    messageValue: string;
-    setMessageValue: (v: string) => void;
-    messageRef: React.RefObject<HTMLTextAreaElement>;
-    handleSendMessage: (e: any, field: string, force?: boolean) => void;
-    handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onTakePhoto: () => void;
-    uploadImageMutation: any;
-    addPendingImages: (images: string[]) => void;
-    isNative?: boolean;
-    isDesktop?: boolean;
-    messageTranslateRef: React.RefObject<HTMLTextAreaElement>;
-    messageTranslate: string;
-    setMessageTranslate: (v: string) => void;
-    openModalTranslate: () => void;
-    selectedLanguageSocialChat: Language;
-    languagesSocialChat: Language[];
-    setSelectedLanguageSocialChat: (v: Language) => void;
-    replyingToMessage?: ChatMessage | null;
-    setReplyingToMessage?: (v: ChatMessage | null) => void;
-    onCancelReply?: () => void;
-    hasReachedLimit?: boolean;
-    openInputExpandSheet: () => void;
-    openTranslateExpandSheet: () => void;
-    onTranslate: (text: string) => Promise<void>
-    setInputBarHeight: (h: number) => void;
-    createTranslationMutation: any;
-    actionFieldSend: string;
-    isTranslating: boolean;
-    translateActionStatus: boolean;
-    setTranslateActionStatus: (value: boolean) => void
-    typing: TypingAPI;
+  messageValue: string;
+  setMessageValue: (v: string) => void;
+  messageRef: React.RefObject<HTMLTextAreaElement>;
+  handleSendMessage: (e: any, field: string, force?: boolean) => void;
+  handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onTakePhoto: () => void;
+  uploadImageMutation: any;
+  addPendingImages: (images: string[]) => void;
+  isDesktop?: boolean;
+  messageTranslateRef: React.RefObject<HTMLTextAreaElement>;
+  messageTranslate: string;
+  setMessageTranslate: (v: string) => void;
+  openModalTranslate: () => void;
+  selectedLanguageSocialChat: Language;
+  languagesSocialChat: Language[];
+  setSelectedLanguageSocialChat: (v: Language) => void;
+  replyingToMessage?: ChatMessage | null;
+  setReplyingToMessage?: (v: ChatMessage | null) => void;
+  onCancelReply?: () => void;
+  hasReachedLimit?: boolean;
+  openInputExpandSheet: () => void;
+  openTranslateExpandSheet: () => void;
+  onTranslate: (text: string) => Promise<void>;
+  setInputBarHeight: (h: number) => void;
+  actionFieldSend: string;
+  isTranslating: boolean;
+  translateActionStatus: boolean;
+  setTranslateActionStatus: (value: boolean) => void;
+  typing: TypingAPI;
+  isNative: boolean;
 }
 
-const ChatInputBar: React.FC<ChatInputBarProps> = ({
-    messageValue,
-    setMessageValue,
-    messageRef,
-    handleSendMessage,
-    handleImageChange,
-    onTakePhoto,
-    uploadImageMutation,
-    addPendingImages,
-    isNative,
-    isDesktop,
-    messageTranslate,
-    setMessageTranslate,
-    openModalTranslate,
-    selectedLanguageSocialChat,
-    languagesSocialChat,
-    setSelectedLanguageSocialChat,
-    replyingToMessage,
-    setReplyingToMessage,
-    onCancelReply,
-    messageTranslateRef,
-    hasReachedLimit,
-    openInputExpandSheet,
-    openTranslateExpandSheet,
-    onTranslate,
-    setInputBarHeight,
-    createTranslationMutation,
-    actionFieldSend,
-    isTranslating,
-    translateActionStatus,
-    setTranslateActionStatus,
-    typing
-}) => {
-    const [focused, setFocused] = useState({ input: false, translate: false });
-    const [open, setOpen] = useState(false);
-    const [dots, setDots] = React.useState(".");
-    const [isSending, setIsSending] = useState(false);
-    const [typingInput, setTypingInput] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const sendBtnRef = useRef<HTMLButtonElement>(null);
-    const lastSentTimeRef = useRef<number>(0);
+const ChatInputBar: React.FC<ChatInputBarProps> = (props) => {
+  const {
+    messageValue, setMessageValue, messageRef,
+    handleSendMessage, handleImageChange, onTakePhoto,
+    uploadImageMutation, addPendingImages, isDesktop,
+    messageTranslate, setMessageTranslate, openModalTranslate,
+    selectedLanguageSocialChat, languagesSocialChat, setSelectedLanguageSocialChat,
+    replyingToMessage, setReplyingToMessage, onCancelReply, messageTranslateRef,
+    hasReachedLimit, openInputExpandSheet, openTranslateExpandSheet, onTranslate,
+    setInputBarHeight, actionFieldSend, isTranslating,
+    translateActionStatus, setTranslateActionStatus, typing
+  } = props;
 
-    const tAPI: TypingAPI = typing ?? { touch: () => { }, off: () => { } };
+  const [focused, setFocused] = useState({ input: false, translate: false });
+  const [open, setOpen] = useState(false);
+  const [dots, setDots] = useState(".");
+  const [isSending, setIsSending] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sendBtnRef = useRef<HTMLButtonElement>(null);
+  const lastSentTimeRef = useRef<number>(0);
 
-    const preventBlur = (e: React.SyntheticEvent) => e.preventDefault();
-    const keepFocus = () => messageRef.current?.focus({ preventScroll: true });
+  // IME + idle timer
+  const composingRef = useRef(false);
+  const typingIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const handleSendWithDebounce = (e: any, field: string, force?: boolean) => {
-        const now = Date.now();
-        if (now - lastSentTimeRef.current < 2) {
-            return;
-        }
-        if (isSending) { return; }
-        setIsSending(true);
-        lastSentTimeRef.current = now;
-        try {
-            handleSendMessage(e, field, force);
-        } finally {
-            setTimeout(() => {
-                setIsSending(false);
-            }, 1);
-        }
+  const forceTypingOff = () => {
+    if (typingIdleTimerRef.current) {
+      clearTimeout(typingIdleTimerRef.current);
+      typingIdleTimerRef.current = null;
+    }
+    typing.setStatus?.("off");
+    typing.off?.();
+  };
+
+  // Chỉ touch + trailing off 1.5s, không setStatus('on') mỗi ký tự
+  const handleTypingActivity = () => {
+    typing.touch?.();
+    if (typingIdleTimerRef.current) clearTimeout(typingIdleTimerRef.current);
+    typingIdleTimerRef.current = setTimeout(() => {
+      if (!composingRef.current) forceTypingOff();
+    }, 1500);
+  };
+
+  useEffect(() => () => forceTypingOff(), []);
+
+  // auto-resize & report height
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const report = () => {
+      let h = el.offsetHeight;
+      const cs = getComputedStyle(el);
+      h += parseFloat(cs.marginTop) + parseFloat(cs.marginBottom) + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + 50;
+      setInputBarHeight(h);
     };
-    const onFocus = (field: string) => {
-        if (field === "input") {
-            setFocused({ ...focused, [field]: true, translate: false });
-            tAPI.touch();
-            const textarea = messageRef.current;
-            if (textarea) {
-                textarea.focus();
-                const len = textarea.value.length;
-                textarea.setSelectionRange(len, len);
-            }
-        }
-        if (field === "translate") {
-            setFocused({ ...focused, [field]: true, input: false });
-            tAPI.touch();
-            const textareaTranslate = messageTranslateRef.current;
-            if (textareaTranslate) {
-                textareaTranslate.focus();
-                const len = textareaTranslate.value.length;
-                textareaTranslate.setSelectionRange(len, len);
-            }
-        }
-        setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
-    };
+    const ro = new ResizeObserver(report);
+    ro.observe(el);
+    report();
+    return () => ro.disconnect();
+  }, [setInputBarHeight]);
 
-    const onBlur = (field: string) => {
-        setFocused((prev) => ({ ...prev, [field]: false }));
-        tAPI.off();
-    };
+  useEffect(() => {
+    if (isTranslating) {
+      let i = 1;
+      const id = setInterval(() => {
+        i = (i % 3) + 1;
+        setDots(".".repeat(i));
+      }, 300);
+      return () => clearInterval(id);
+    }
+  }, [isTranslating]);
 
-    const handleChangeInput = (value: string) => {
-        setMessageValue(value);
-        tAPI.touch();
-        if (value.trim() === "") setMessageTranslate("");
-        setTypingInput(!!value);
-    };
+  // autosize textareas
+  useEffect(() => {
+    if (messageRef.current) {
+      messageRef.current.style.height = "auto";
+      messageRef.current.style.height = `${messageRef.current.scrollHeight}px`;
+    }
+  }, [messageValue, focused]);
+  useEffect(() => {
+    if (messageRef.current) {
+      messageRef.current.style.height = "auto";
+      messageRef.current.style.height = `${messageRef.current.scrollHeight}px`;
+    }
+    if (messageTranslateRef.current) {
+      messageTranslateRef.current.style.height = "auto";
+      messageTranslateRef.current.style.height = `${messageTranslateRef.current.scrollHeight}px`;
+    }
+  }, [messageValue, messageTranslate, focused]);
 
-    const handleChangeTranslate = (v: string) => {
-        setMessageTranslate(v);
-        tAPI.touch();
-        setTypingInput(!!v);
-    };
-    const handleTranslate = () => {
-        setTranslateActionStatus(!translateActionStatus);
-    };
-    const disableIsTranslating = useMemo(() => {
-        return isTranslating || typingInput || hasReachedLimit;
-    }, [isTranslating, typingInput, hasReachedLimit]);
+  // dịch tự động – debounce 900ms, không chạy khi IME
+  const debouncedSource = useDebounce(messageValue, 900);
+  useEffect(() => {
+    if (!translateActionStatus) return;
+    if (composingRef.current) return;
+    if (!debouncedSource.trim()) return;
+    void onTranslate(debouncedSource);
+  }, [translateActionStatus, debouncedSource, selectedLanguageSocialChat]);
 
-    useEffect(() => {
-        if (replyingToMessage && setReplyingToMessage) {
-            setReplyingToMessage(null);
-        }
-    }, [setReplyingToMessage, replyingToMessage]);
+  // clear replying khi gõ
+  useEffect(() => {
+    if (replyingToMessage && props.setReplyingToMessage) {
+      props.setReplyingToMessage(null);
+    }
+  }, [props.setReplyingToMessage, replyingToMessage]);
 
-    useEffect(() => {
-        if (messageRef.current) {
-            messageRef.current.style.height = 'auto';
-            messageRef.current.style.height = `${messageRef.current.scrollHeight}px`;
-        }
-    }, [messageValue, focused]);
-    useEffect(() => {
-        if (messageRef.current) {
-            messageRef.current.style.height = 'auto';
-            messageRef.current.style.height = `${messageRef.current.scrollHeight}px`;
-        }
-        if (messageTranslateRef.current) {
-            messageTranslateRef.current.style.height = 'auto';
-            messageTranslateRef.current.style.height = `${messageTranslateRef.current.scrollHeight}px`;
-        }
-    }, [messageValue, messageTranslate, focused]);
+  const preventBlur = (e: React.SyntheticEvent) => e.preventDefault();
 
+  // gửi có debounce 300ms
+  const handleSendWithDebounce = async (e: any, field: string, force?: boolean) => {
+    const now = Date.now();
+    if (now - lastSentTimeRef.current < 300 || isSending) return;
+    setIsSending(true);
+    lastSentTimeRef.current = now;
+    forceTypingOff();
+    try {
+      await handleSendMessage(e, field, force);
+    } finally {
+      setTimeout(() => setIsSending(false), 1);
+    }
+  };
 
-    const debouncedSource = useDebounce(messageValue, 400);
+  const onFocus = (field: "input" | "translate") => {
+    setFocused({ input: field === "input", translate: field === "translate" });
+    const ta = field === "input" ? messageRef.current : messageTranslateRef.current;
+    if (ta) {
+      ta.focus();
+      const len = ta.value.length;
+      ta.setSelectionRange(len, len);
+    }
+    setTimeout(() => window.dispatchEvent(new Event("resize")), 100);
+  };
 
-    useEffect(() => {
-        if (translateActionStatus && debouncedSource.trim()) {
-            onTranslate(debouncedSource);
-        }
-    }, [translateActionStatus, debouncedSource, selectedLanguageSocialChat]);
-    useEffect(() => {
-        const el = containerRef.current;
-        if (!el) return;
+  const onBlur = (field: "input" | "translate") => {
+    setFocused((prev) => ({ ...prev, [field]: false }));
+    // nếu muốn tắt cưỡng bức khi blur thì bật dòng sau:
+    // forceTypingOff();
+  };
 
-        const report = () => {
-            let h = el.offsetHeight;
-            const cs = getComputedStyle(el);
-            h += parseFloat(cs.marginTop) + parseFloat(cs.marginBottom) + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + 50;
-            setInputBarHeight(h);
-        };
+  const handleChangeInput = (v: string) => {
+    setMessageValue(v);
+    if (v.trim()) handleTypingActivity();
+    else forceTypingOff();
+    if (!v.trim()) setMessageTranslate("");
+  };
 
-        const ro = new ResizeObserver(report);
-        ro.observe(el);
-        report();
-        return () => ro.disconnect();
-    }, [setInputBarHeight]);
-    useEffect(() => {
-        if (!isTranslating) return;
-        let count = 1;
-        const interval = setInterval(() => {
-            count = count % 3 + 1;
-            setDots(".".repeat(count));
-        }, 300);
-        return () => clearInterval(interval);
-    }, [isTranslating]);
-    useEffect(() => () => tAPI.off(), []);
-    useEffect(() => {
-        if (messageValue.trim() || messageTranslate.trim()) {
-            setTypingInput(true);
+  const handleChangeTranslate = (v: string) => {
+    setMessageTranslate(v);
+    if (v.trim()) handleTypingActivity();
+    else forceTypingOff();
+  };
 
-            const timer = setTimeout(() => {
-                setTypingInput(false);
-            }, 500  );
+  const handleTranslate = () => setTranslateActionStatus(!translateActionStatus);
 
-            return () => clearTimeout(timer);
-        } else {
-            setTypingInput(false);
-        }
-    }, [messageValue, messageTranslate]);
-    return (
-        <div
-            ref={containerRef}
-            className={`pb-1 bg-white relative ${hasReachedLimit ? "pointer-events-none opacity-50" : ""
-                }`}
-        >
-            {replyingToMessage && (
-                <ReplyMessageBar
-                    replyingToMessage={replyingToMessage}
-                    onCancelReply={onCancelReply ?? (() => { })}
-                />
+  return (
+    <div ref={containerRef} className={`pb-1 bg-white relative ${hasReachedLimit ? "pointer-events-none opacity-50" : ""}`}>
+      {replyingToMessage && (
+        <ReplyMessageBar replyingToMessage={replyingToMessage} onCancelReply={onCancelReply ?? (() => {})} />
+      )}
+
+      {translateActionStatus && (
+        <div className="flex items-end gap-4 px-6 py-2 border-t-1 border-netural-50">
+          <div className="relative flex-1">
+            {isTranslating && !messageTranslate && (
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-netural-200 pointer-events-none flex">
+                {t("Translating")}
+                <span className="flex">{dots.split("").map((d, i) => (
+                  <span key={i} className="animate-bounce" style={{ animationDelay: `${i * 0.15}s` }}>{d}</span>
+                ))}</span>
+              </div>
             )}
-            {translateActionStatus && (
-                <div className="flex items-end gap-4 px-6 py-2 border-t-1 border-netural-50">
-                    <div className="relative flex-1">
-                        {isTranslating && !messageTranslate && (
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-netural-200 pointer-events-none flex">
-                                {t("Translating")}
-                                <span className="flex">
-                                    {dots.split("").map((dot, i) => (
-                                        <span
-                                            key={i}
-                                            className="animate-bounce"
-                                            style={{ animationDelay: `${i * 0.15}s` }}
-                                        >
-                                            {dot}
-                                        </span>
-                                    ))}
-                                </span>
-                            </div>
-                        )}
-                        <textarea
-                            placeholder={
-                                isTranslating
-                                    ? ""
-                                    : t("Translate to...")
-                            }
-                            ref={messageTranslateRef}
-                            value={messageTranslate}
-                            onChange={(e) => handleChangeTranslate(e.target.value)}
-                            rows={1}
-                            disabled={hasReachedLimit || isTranslating}
-                            className={`flex-1 w-full min-h-[35px] ${focused.translate
-                                ? "max-h-20 overflow-y-auto whitespace-normal"
-                                : "!max-h-[35px] !truncate whitespace-nowrap overflow-hidden"
-                                } min-w-0 max-w-full resize-none overflow-y-auto px-4 pt-4 rounded-3xl focus:outline-none placeholder:text-netural-200`}
-                            onFocus={() => onFocus("translate")}
-                            onClick={() => onFocus("translate")}
-                            onBlur={() => onBlur("translate")}
-                            onKeyDown={(e) => {
-                                if (hasReachedLimit) return; 
-                                const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
-                                tAPI.touch();
+            <textarea
+              placeholder={isTranslating ? "" : t("Translate to...")}
+              ref={messageTranslateRef}
+              value={messageTranslate}
+              onChange={(e) => handleChangeTranslate(e.target.value)}
+              rows={1}
+              disabled={hasReachedLimit || isTranslating}
+              className={`flex-1 w-full min-h-[35px] ${focused.translate ? "max-h-20 overflow-y-auto whitespace-normal" : "!max-h-[35px] !truncate whitespace-nowrap overflow-hidden"} min-w-0 max-w-full resize-none overflow-y-auto px-4 pt-4 rounded-3xl focus:outline-none placeholder:text-netural-200`}
+              onFocus={() => onFocus("translate")}
+              onClick={() => onFocus("translate")}
+              onBlur={() => onBlur("translate")}
+              onCompositionStart={() => { composingRef.current = true; handleTypingActivity(); }}
+              onCompositionEnd={(e) => { composingRef.current = false; e.currentTarget.value.trim() ? handleTypingActivity() : forceTypingOff(); }}
+              onKeyDown={(e) => {
+                if (hasReachedLimit) return;
+                const ev = e as unknown as { key: string; shiftKey: boolean; preventDefault: () => void; stopPropagation: () => void; };
+                if (ev.key === "Enter" && !ev.shiftKey) {
+                  if (composingRef.current) return;
+                  e.preventDefault(); e.stopPropagation();
+                  if (messageTranslate.trim() && !isSending) {
+                    handleSendWithDebounce(e, "inputTranslate", true);
+                  }
+                  setMessageTranslate("");
+                }
+              }}
+            />
+          </div>
 
-                                if (event.key === 'Enter' && !event.shiftKey) {
-                                    if (event.isComposing) { return; }
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (messageTranslate.trim().length > 0 && !isSending) {
-                                        handleSendWithDebounce(e, "inputTranslate", true);
-                                    }
-                                    setMessageTranslate("");
-                                    tAPI.off();
-                                }
-                            }}
-                        />
-                    </div>
-                    <div className=" gap-4 flex items-center h-fit pb-2">
-                        <button onClick={openTranslateExpandSheet}>
-                            <ExpandInputIcon />
-                        </button>
-
-                        {/* {messageTranslate.trim() && (
-                            <button
-                                ref={sendTranslateBtnRef}
-                                disabled={hasReachedLimit}
-                                className="rounded-full p-2 flex items-center justify-center bg-chat-to"
-                                type="button"
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={(e) => handleSendMessage(e, "inputTranslate", true)}
-                            >
-                                <SendTranslateIcon />
-                            </button>
-                        )} */}
-                        {
-                            disableIsTranslating ? (
-                                <div className="w-6 h-6 animate-spin border-2 border-t-transparent border-gray-500 rounded-full" />
-
-                            ) : (
-                                <>
-                                    {(messageValue.trim().length > 0 || messageTranslate.trim().length > 0) && translateActionStatus && (
-                                        <button
-                                            ref={sendBtnRef}
-                                            type="button"
-                                            disabled={hasReachedLimit || isSending}
-                                            onMouseDown={preventBlur}
-                                            onTouchStart={preventBlur}
-                                            onClick={(e) => {
-                                                if (isSending) return;
-                                                if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
-                                                keepFocus();
-                                                tAPI.off();
-                                                // requestAnimationFrame(() => {
-                                                    handleSendWithDebounce(e, actionFieldSend, false);
-                                                    // requestAnimationFrame(() => {
-                                                        setMessageValue("");
-                                                        keepFocus();
-                                                    // });
-                                                // });
-                                            }}
-                                        >
-                                            <SendIcon />
-                                        </button>
-                                    )}
-                                </>
-                            )
-                        }
-
-                    </div>
-                    {/* <button className="bg-chat-to rounded-full p-2 flex items-center justify-center">
-                        <SendTranslateIcon />
-                    </button> */}
-                </div>
+          <div className="gap-4 flex items-center h-fit pb-2">
+            <button onClick={openTranslateExpandSheet}><ExpandInputIcon /></button>
+            {( (messageValue.trim() || messageTranslate.trim()) && translateActionStatus ) && (
+              <button
+                ref={sendBtnRef}
+                type="button"
+                disabled={hasReachedLimit || isSending}
+                onMouseDown={preventBlur}
+                onTouchStart={preventBlur}
+                onClick={(e) => {
+                  if (isSending) return;
+                  if (!messageValue.trim() && !messageTranslate.trim()) return;
+                  handleSendWithDebounce(e, actionFieldSend, false);
+                  setMessageValue("");
+                }}
+              >
+                <SendIcon />
+              </button>
             )}
-            <div className="flex items-end gap-4 transition-all py-2 px-6" onMouseDown={preventBlur}>
-                <textarea
-                    placeholder={t("Type a message...")}
-                    ref={messageRef}
-                    value={messageValue}
-                    onChange={(e) => handleChangeInput(e.target.value)}
-                    rows={1}
-                    disabled={hasReachedLimit}
-                    data-virtualkeyboard="true"
-                    className={`flex-1 min-h-[35px] ${focused.input
-                        //    &&  actionStatus
-                        ? 'max-h-30 overflow-y-auto whitespace-normal'
-                        : '!max-h-[35px]  !truncate whitespace-nowrap overflow-hidden'
-                        } min-w-0 max-w-full resize-none overflow-y-auto px-4 py-2 rounded-3xl bg-chat-to focus:outline-none placeholder:text-netural-100-100`}
-                    onFocus={() => onFocus('input')}
-                    onClick={() => onFocus('input')}
-                    onBlur={() => onBlur('input')}
-                    onKeyDown={(e) => {
-                        if (hasReachedLimit) return; 
-                        const event = e as unknown as { isComposing?: boolean; key: string; shiftKey: boolean; preventDefault: () => void };
-                        tAPI.touch();
-
-                        if (event.key === 'Enter' && !event.shiftKey) {
-                            if (event.isComposing) {
-                                return;
-                            }
-                            
-                            e.preventDefault();
-                            e.stopPropagation();
-
-                            if (messageValue.trim().length > 0 && !isSending) {
-                                handleSendWithDebounce(e, actionFieldSend, false);
-                            }
-                            setMessageValue("");
-                            tAPI.off();
-                        }
-                    }}
-                    onPaste={async (e) => {
-                        tAPI.touch();
-                        const items = e.clipboardData?.items;
-                        if (!items) return;
-                        for (const item of items) {
-                            if (item.type.startsWith('image/')) {
-                                const file = item.getAsFile();
-                                if (file) {
-                                    const uploaded = await uploadImageMutation.mutateAsync(file);
-                                    if (uploaded && uploaded.length) addPendingImages([uploaded[0].linkImage]);
-                                }
-                            }
-                        }
-                    }}
-                />
-                <div className="pb-2 gap-4 flex items-center h-fit">
-                    <button onClick={openInputExpandSheet}>
-                        <ExpandInputIcon />
-                    </button>
-                    {(messageValue.trim().length > 0 || messageTranslate.trim().length > 0) && !translateActionStatus && (
-                        <button
-                            ref={sendBtnRef}
-                            type="button"
-                            disabled={hasReachedLimit || isSending}
-                            onMouseDown={preventBlur}
-                            onTouchStart={preventBlur}
-                            onClick={(e) => {
-                                if (isSending) return;
-                                if (messageValue.trim().length === 0 && messageTranslate.trim().length === 0) return;
-                                tAPI.off();
-                                requestAnimationFrame(() => {
-                                    handleSendWithDebounce(e, actionFieldSend, false);
-                                    requestAnimationFrame(() => {
-                                        setMessageValue("");
-                                    });
-                                });
-                            }}
-                        >
-                            <SendIcon />
-                        </button>
-                    )}
-                </div>
-            </div>
-            <div className="flex items-center justify-between px-6 pt-2"    >
-                <div className="flex  ">
-                    <button className="flex space-x-4" disabled={hasReachedLimit}>
-                        {isNative || isDesktop ? (
-                            <button
-                                type="button"
-                                onMouseDown={preventBlur}
-                                onClick={onTakePhoto}
-                            >
-                                <CameraIcon className="w-6 h-6" />
-                            </button>
-                        ) : (
-                            <SocialChatCameraWeb />
-                        )}
-                        <label onMouseDown={preventBlur}>
-                            <ImageIcon className="w-6 h-6" />
-                            <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                disabled={hasReachedLimit}
-                                className="hidden"
-                                onChange={handleImageChange}
-                            />
-                        </label>
-                        <button
-                            onMouseDown={preventBlur}
-                            type="button"
-                            onClick={handleTranslate}
-                        >
-                            {translateActionStatus ? (
-                                <TranslateFocusIcon />
-                            ) : (
-                                <TranslateIcon />
-                            )}
-                        </button>
-                    </button>
-                </div>
-                {translateActionStatus && (
-                    <LanguageDropdown
-                        open={open}
-                        setOpen={setOpen}
-                        selected={selectedLanguageSocialChat}
-                        setSelected={setSelectedLanguageSocialChat}
-                        languagesSocialChat={languagesSocialChat}
-                        openModalTranslate={openModalTranslate}
-                    />
-                )}
-            </div>
+          </div>
         </div>
-    );
+      )}
+
+      <div className="flex items-end gap-4 transition-all py-2 px-6" onMouseDown={preventBlur}>
+        <textarea
+          placeholder={t("Type a message...")}
+          ref={messageRef}
+          value={messageValue}
+          onChange={(e) => handleChangeInput(e.target.value)}
+          rows={1}
+          disabled={hasReachedLimit}
+          data-virtualkeyboard="true"
+          className={`flex-1 min-h-[35px] ${focused.input ? "max-h-30 overflow-y-auto whitespace-normal" : "!max-h-[35px] !truncate whitespace-nowrap overflow-hidden"} min-w-0 max-w-full resize-none overflow-y-auto px-4 py-2 rounded-3xl bg-chat-to focus:outline-none placeholder:text-netural-100-100`}
+          onFocus={() => onFocus("input")}
+          onClick={() => onFocus("input")}
+          onBlur={() => onBlur("input")}
+          onCompositionStart={() => { composingRef.current = true; handleTypingActivity(); }}
+          onCompositionEnd={(e) => { composingRef.current = false; e.currentTarget.value.trim() ? handleTypingActivity() : forceTypingOff(); }}
+          onKeyDown={(e) => {
+            if (hasReachedLimit) return;
+            const ev = e as unknown as { key: string; shiftKey: boolean; preventDefault: () => void; stopPropagation: () => void; };
+            if (ev.key === "Enter" && !ev.shiftKey) {
+              if (composingRef.current) return;
+              e.preventDefault(); e.stopPropagation();
+              if (messageValue.trim() && !isSending) {
+                handleSendWithDebounce(e, actionFieldSend, false);
+              }
+              setMessageValue("");
+            }
+          }}
+          onPaste={async (e) => {
+            const items = e.clipboardData?.items; if (!items) return;
+            for (const item of items) {
+              if (item.type.startsWith("image/")) {
+                const file = item.getAsFile();
+                if (file) {
+                  const uploaded = await uploadImageMutation.mutateAsync(file);
+                  if (uploaded?.length) addPendingImages([uploaded[0].linkImage]);
+                }
+              }
+            }
+          }}
+        />
+        <div className="pb-2 gap-4 flex items-center h-fit">
+          <button onClick={openInputExpandSheet}><ExpandInputIcon /></button>
+          {( (messageValue.trim() || messageTranslate.trim()) && !translateActionStatus ) && (
+            <button
+              ref={sendBtnRef}
+              type="button"
+              disabled={hasReachedLimit || isSending}
+              onMouseDown={preventBlur}
+              onTouchStart={preventBlur}
+              onClick={(e) => {
+                if (isSending) return;
+                if (!messageValue.trim() && !messageTranslate.trim()) return;
+                handleSendWithDebounce(e, actionFieldSend, false);
+                setMessageValue("");
+              }}
+            >
+              <SendIcon />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-6 pt-2">
+        <div className="flex space-x-4">
+          {isDesktop ? (
+            <button type="button" onMouseDown={preventBlur} onClick={onTakePhoto}><CameraIcon className="w-6 h-6" /></button>
+          ) : <SocialChatCameraWeb />}
+
+          <label onMouseDown={preventBlur}>
+            <ImageIcon className="w-6 h-6" />
+            <input type="file" accept="image/*" multiple disabled={!!hasReachedLimit} className="hidden" onChange={handleImageChange} />
+          </label>
+
+          <button onMouseDown={preventBlur} type="button" onClick={() => setTranslateActionStatus(!translateActionStatus)}>
+            {translateActionStatus ? <TranslateFocusIcon /> : <TranslateIcon />}
+          </button>
+        </div>
+
+        {translateActionStatus && (
+          <LanguageDropdown
+            open={open}
+            setOpen={setOpen}
+            selected={selectedLanguageSocialChat}
+            setSelected={setSelectedLanguageSocialChat}
+            languagesSocialChat={languagesSocialChat}
+            openModalTranslate={openModalTranslate}
+          />
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default ChatInputBar;

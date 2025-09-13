@@ -31,10 +31,10 @@ const TextToSpeechButton: React.FC<TextToSpeechButtonProps> = ({
           category: "ambient",
         });
       } else {
-        console.warn(t("No text to read.")); // Sử dụng i18n ở đây
+        console.warn(t("No text to read.")); 
       }
     } catch (error) {
-      console.error(t("TextToSpeech error:"), error); // Sử dụng i18n ở đây
+      console.error(t("TextToSpeech error:"), error); 
     }
   };
 

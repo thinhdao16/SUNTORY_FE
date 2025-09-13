@@ -19,6 +19,7 @@ import { GOOGLE_WEB_CLIENT_ID, initGoogleAuth } from "@/config/google";
 import useAppInit from "./hooks/useAppInit";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { NotificationList } from "./components/notify/NotificationList";
+
 setupIonicReact();
 initGoogleAuth();
 

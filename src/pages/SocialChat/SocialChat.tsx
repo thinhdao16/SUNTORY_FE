@@ -5,12 +5,21 @@ import { motion } from "framer-motion";
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { Capacitor } from '@capacitor/core';
 import { useKeyboardResize } from '@/hooks/useKeyboardResize';
+import { useTranslation } from 'react-i18next';
+
 function ChatSocial() {
+  const { t } = useTranslation();
   const history = useHistory();
-  const { type } = useParams<{ type?: string }>();
+  const { type, roomId, infoRoom } = useParams<{ type?: string; roomId?: string; infoRoom?: string }>();
+
   const goTo = (path: string) => history.push(path);
   const { setSearch, clearSearch, search, notificationCounts } = useSocialChatStore();
-  const { contentComponent, leftIcon, rightIcon, inputOnFocus } = useSocialChatLayout(type, goTo, clearSearch);
+  const { contentComponent, leftIcon, rightIcon, inputOnFocus } = useSocialChatLayout(
+    type,
+    goTo,
+    clearSearch,
+    infoRoom
+  );
   const isNative = Capacitor.isNativePlatform();
   const handleQR = () => {
     if (isNative) {

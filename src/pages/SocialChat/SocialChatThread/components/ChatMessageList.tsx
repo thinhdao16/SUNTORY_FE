@@ -42,6 +42,9 @@ type ChatMessageListProps = {
     hasReachedLimit?: boolean;
     isNative?: boolean;
     inputBarHeight?: number;
+    isSendingMessage?: boolean;
+    activeUserIds?: number[];
+    roomData?: any;
 };
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
@@ -54,13 +57,56 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     currentUserId = null,
     hasReachedLimit = false,
     isNative = false,
-    inputBarHeight
+    inputBarHeight,
+    isSendingMessage = false,
+    activeUserIds = [],
+    roomData
 }) => {
     const { t } = useTranslation();
 
     const messageGroups = useMemo(() => {
-        return groupMessagesByTime(allMessages, t, { isGroup, currentUserId });
+        const latestFriendlyAcceptedIndex = allMessages.reduce((latestIdx, msg: any, idx) => {
+            if ((msg as any).messageType === 10 && (msg as any).messageText) {
+                try {
+                    const parsedMessage = JSON.parse((msg as any).messageText);
+                    if (parsedMessage.Event === "NOTIFY_FRIENDLY_ACCEPTED") {
+                        return idx;
+                    }
+                } catch (e) {
+                }
+            }
+            return latestIdx;
+        }, -1);
+
+        const filteredMessages = allMessages.filter((msg: any, idx) => {
+            if ((msg as any).messageType === 10 && (msg as any).messageText) {
+                try {
+                    const parsedMessage = JSON.parse((msg as any).messageText);
+                    if (parsedMessage.Event === "NOTIFY_FRIENDLY_ACCEPTED") {
+                        return idx === latestFriendlyAcceptedIndex;
+                    }
+                } catch (e) {
+                }
+            }
+            return true;
+        });
+
+        return groupMessagesByTime(filteredMessages, t, { isGroup, currentUserId });
     }, [allMessages, t, isGroup, currentUserId]);
+
+    const globalLastUserMessageCode = useMemo(() => {
+        for (let groupIndex = messageGroups.length - 1; groupIndex >= 0; groupIndex--) {
+            const group = messageGroups[groupIndex];
+            for (let msgIndex = group.messages.length - 1; msgIndex >= 0; msgIndex--) {
+                const msg = group.messages[msgIndex];
+                const isUser = !!msg._isUser || !!msg.isRight;
+                if (isUser) {
+                    return msg.code ?? msg.tempId ?? `${groupIndex}-${msgIndex}`;
+                }
+            }
+        }
+        return null;
+    }, [messageGroups]);
     useSyncDayjsLocale();
     return (
         <div className={`flex flex-col mx-auto pt-8 `}>
@@ -79,6 +125,11 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                         isGroup={isGroup}
                         currentUserId={currentUserId}
                         hasReachedLimit={hasReachedLimit}
+                        globalLastUserMessageId={globalLastUserMessageCode}
+                        isSendingMessage={isSendingMessage}
+                        activeUserIds={activeUserIds}
+                        allMessages={allMessages}
+                        roomData={roomData}
                     />
                 </div>
             ))}

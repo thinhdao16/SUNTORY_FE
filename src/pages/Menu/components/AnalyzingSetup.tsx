@@ -13,17 +13,21 @@ interface LocationState {
 
 const AnalyzingSetup: React.FC = () => {
     const history = useHistory();
-    const { t } = useTranslation();
     const [progress, setProgress] = useState(0);
     const location = useLocation<LocationState>();
     const { setDiet, setSavedAllergiesStore, setSelectedAllergiesStore } = useMenuTranslationStore();
 
-    const data = location.state?.payload || [];
+    const data = location.state?.payload;
 
     // Call API and handle response
     const handleUpdateHealth = async () => {
         try {
-            const result = await updateHealthCondition(data);
+            const payload: any = {
+                lifestyleId: data?.lifestyleId || "0",
+                allergies: data?.allergies || []
+            };
+            console.log(payload);
+            const result = await updateHealthCondition(payload);
             if (result.data === true) {
                 // Animate to 100%
                 const finalInterval = setInterval(() => {

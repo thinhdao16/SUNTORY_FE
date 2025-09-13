@@ -1,4 +1,3 @@
-// src/hooks/useBottomSheet.ts
 import React, { useRef, useState } from "react";
 import {
     handleTouchStart as handleTouchStartUtil,
@@ -17,7 +16,6 @@ export function useBottomSheet() {
     const startTime = useRef<number | null>(null);
 
     const open = () => {
-        console.log("first")
         setIsOpen(true);
         setTranslateY(0);
     };

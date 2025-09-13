@@ -74,7 +74,7 @@ const ChatRelationshipBanner: React.FC<Props> = ({
 
     if (isIncoming) {
         return (
-            <div className="my-4 flex justify-center sticky top-0 z-10">
+            <div className="my-4 flex justify-center sticky top-0 z-11">
                 <div className="w-full max-w-md rounded-2xl bg-chat-to shadow-[0px_2px_4px_2px_#0000001A] ring-1 ring-blue-100 py-2 px-3">
                     <div className="flex items-center gap-2">
                         <img
@@ -115,43 +115,43 @@ const ChatRelationshipBanner: React.FC<Props> = ({
         );
     }
 
-    if (isFriend) {
-        return (
-            <div className="my-4 flex justify-center">
-                <div className="relative w-full max-w-lg overflow-hidden rounded-xl bg-white  shadow-[0px_2px_4px_2px_#0000001A] p-4">
-                    <div className="pointer-events-none absolute h-[60px] top-0 inset-0 flex items-center justify-center opacity-60">
-                        <img
-                            src={CongratulationFriend}
-                            alt="Congratulation"
-                            className="w-full h-[60px] object-contain"
-                        />
-                    </div>
+    // if (isFriend) {
+    //     return (
+    //         <div className="my-4 flex justify-center">
+    //             <div className="relative w-full max-w-lg overflow-hidden rounded-xl bg-white  shadow-[0px_2px_4px_2px_#0000001A] p-4">
+    //                 <div className="pointer-events-none absolute h-[60px] top-0 inset-0 flex items-center justify-center opacity-60">
+    //                     <img
+    //                         src={CongratulationFriend}
+    //                         alt="Congratulation"
+    //                         className="w-full h-[60px] object-contain"
+    //                     />
+    //                 </div>
 
-                    <div className="relative z-10 flex flex-col items-center gap-2 ">
-                        <div className="flex items-center -space-x-2 ">
-                            <img
-                                src={targetAvatar}
-                                alt="Friend Avatar"
-                                className="h-[60px] w-[60px] rounded-full object-cover"
-                                onError={(e) => (e.currentTarget.src = avatarFallback)}
-                            />
-                            <img
-                                src={userInfo?.avatarLink || avatarFallback}
-                                alt="My Avatar"
-                                className="h-[60px] w-[60px] rounded-full object-cover border border-white"
-                                onError={(e) => (e.currentTarget.src = avatarFallback)}
-                            />
-                        </div>
-                        <p className="mt-2 font-semibold text-gray-800">
-                            {t("friendship.nowFriends", { name: title || t("yourFriend") })}
-                        </p>
+    //                 <div className="relative z-10 flex flex-col items-center gap-2 ">
+    //                     <div className="flex items-center -space-x-2 ">
+    //                         <img
+    //                             src={targetAvatar}
+    //                             alt="Friend Avatar"
+    //                             className="h-[60px] w-[60px] rounded-full object-cover"
+    //                             onError={(e) => (e.currentTarget.src = avatarFallback)}
+    //                         />
+    //                         <img
+    //                             src={userInfo?.avatarLink || avatarFallback}
+    //                             alt="My Avatar"
+    //                             className="h-[60px] w-[60px] rounded-full object-cover border border-white"
+    //                             onError={(e) => (e.currentTarget.src = avatarFallback)}
+    //                         />
+    //                     </div>
+    //                     <p className="mt-2 font-semibold text-gray-800">
+    //                         {t("friendship.nowFriends", { name: title || t("yourFriend") })}
+    //                     </p>
 
-                        <p className="text-sm text-neutral-500">{t("Send a hi to chat!")}</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    //                     <p className="text-sm text-neutral-500">{t("Send a hi to chat!")}</p>
+    //                 </div>
+    //             </div>
+    //         </div>
+    //     );
+    // }
 
 
     return null;

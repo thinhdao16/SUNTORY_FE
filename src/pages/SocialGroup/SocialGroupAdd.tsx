@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FiArrowLeft, FiSearch } from "react-icons/fi";
+import {FiSearch } from "react-icons/fi";
 import { HiX } from "react-icons/hi";
 import { useHistory } from "react-router";
 import { useFriendshipFriendsWithSearch } from "../SocialPartner/hooks/useSocialPartner";
@@ -11,15 +11,17 @@ import { Capacitor } from "@capacitor/core";
 import SearchIcon from '@/icons/logo/social-chat/search.svg?react';
 import ClearInputIcon from '@/icons/logo/social-chat/clear-input.svg?react';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
-import avatarGrayFallback from "@/icons/logo/social-chat/avt-gray-rounded.svg";
 import { t } from "@/lib/globalT";
 import { useDebounce } from "@/hooks/useDebounce";
+import ActionButton from "@/components/loading/ActionButton";
+import BackIcon from "@/icons/logo/back-default.svg?react";
 
 function SocialGroupAdd() {
   const isNative = Capacitor.isNativePlatform();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [selectedUsersData, setSelectedUsersData] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [groupName, setGroupName] = useState("");
   const history = useHistory();
@@ -43,7 +45,7 @@ function SocialGroupAdd() {
 
   useEffect(() => {
     if (debouncedSearch) {
-      setSelectedUsers([]); 
+      // setSelectedUsers([]); 
     }
   }, [debouncedSearch]);
 
@@ -53,24 +55,40 @@ function SocialGroupAdd() {
   }, [debouncedSearch, search]);
 
   const toggleUser = (id: number) => {
-    setSelectedUsers((prev) =>
-      prev.includes(id) ? prev.filter((uid) => uid !== id) : [...prev, id]
-    );
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+
+    setSelectedUsers((prev) => {
+      if (prev.includes(id)) {
+        setSelectedUsersData(prevData => prevData.filter(u => u.id !== id));
+        return prev.filter((uid) => uid !== id);
+      } else {
+        setSelectedUsersData(prevData => [...prevData, user]);
+        return [...prev, id];
+      }
+    });
   };
 
   const removeSelected = (id: number) => {
     setSelectedUsers((prev) => prev.filter((uid) => uid !== id));
+    setSelectedUsersData(prevData => prevData.filter(u => u.id !== id));
   };
   const handleCreateGroup = () => {
     if (selectedUsers.length === 0) return;
 
-    createGroup(
-      {
-        title: groupName || "New Group",
-        userIds: selectedUsers,
-      },
+    const trimmedName = (groupName || "").trim();
+    const selectedNames = selectedUsersData
+      .map((user) => user?.fullName)
+      .filter(Boolean) as string[];
+    const namesTitle = selectedNames.join(", ");
+    const title =
+      trimmedName ||
+      (namesTitle ? (namesTitle.length > 60 ? namesTitle.slice(0, 57) + "..." : namesTitle) : "New Group");
 
-    );
+    createGroup({
+      title,
+      userIds: selectedUsers,
+    });
   };
 
   const handleClearSearch = () => {
@@ -99,40 +117,44 @@ function SocialGroupAdd() {
       <div className="px-6 space-y-4">
         <div className="flex justify-between items-center mb-4">
           <button onClick={() => history.goBack()} className="text-gray-500">
-            <FiArrowLeft className="text-xl" />
+            <BackIcon  />
           </button>
-          <h2 className="text-blue-600 font-semibold uppercase">  {t("Add Group")}</h2>
-          <button onClick={handleCreateGroup} disabled={creating || selectedUsers.length === 0}>
-            {selectedUsers.length > 0 ? <SendIcon /> : <SendEmptyIcon />}
-          </button>
+          <h2 className="font-semibold uppercase">  {t("Add Group")}</h2>
+          <ActionButton
+            onClick={handleCreateGroup}
+            disabled={selectedUsers.length === 0}
+            loading={creating}
+            variant={"ghost"}
+            size="none"
+            ariaLabel="create-group"
+          >
+            {creating ? "" : (selectedUsers.length > 0 ? <SendIcon /> : <SendEmptyIcon />)}
+          </ActionButton>
         </div>
         {selectedUsers.length > 0 && (
           <div className="flex gap-[15px] mb-3  overflow-x-auto w-full pt-2">
-            {selectedUsers.map((id) => {
-              const user = users.find((u) => u.id === id);
-              return (
-                <div key={id} className="relative z-9 text-center flex flex-col gap-1 items-center justify-center">
-                  <img
-                    src={user?.avatar || avatarGrayFallback}
-                    alt={user?.fullName}
-                    className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-2xl object-cover flex-shrink-0"
-                    onError={(e) => {
-                      e.currentTarget.src = avatarGrayFallback;
-                    }}
-                  />
-                  <button
-                    onClick={() => removeSelected(id)}
-                    className="absolute z-20 -top-1 -right-1"
-                  >
-                    <div className=" bg-success-500 text-black rounded-full w-5 h-5 flex items-center justify-center">
-                    <HiX className="text-[14px]" />
-                    
-                    </div>
-                  </button>
-                  <p className="text-xs text-center max-w-[40px] truncate">{user?.fullName}</p>
-                </div>
-              );
-            })}
+            {selectedUsersData.map((user) => (
+              <div key={user.id} className="relative z-9 text-center flex flex-col gap-1 items-center justify-center">
+                <img
+                  src={user?.avatar || avatarFallback}
+                  alt={user?.fullName}
+                  className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-2xl object-cover flex-shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.src = avatarFallback;
+                  }}
+                />
+                <button
+                  onClick={() => removeSelected(user.id)}
+                  className="absolute z-20 -top-1 -right-1"
+                >
+                  <div className=" bg-success-500 text-black rounded-full w-5 h-5 flex items-center justify-center">
+                  <HiX className="text-[14px]" />
+                  
+                  </div>
+                </button>
+                <p className="text-xs text-center max-w-[40px] truncate">{user?.fullName}</p>
+              </div>
+            ))}
           </div>
         )}
         <div className="">
@@ -142,6 +164,7 @@ function SocialGroupAdd() {
             className="w-full border-none text-netural-300 outline-none"
             value={groupName}
             onChange={(e) => setGroupName(e?.target?.value)}
+            disabled={creating}
           />
         </div>
         <div className="flex items-center bg-chat-to rounded-lg px-4 py-2 ">
@@ -153,6 +176,7 @@ function SocialGroupAdd() {
             className="flex-grow bg-transparent text-sm focus:outline-none"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            disabled={creating}
           />
           {search && (
             <ClearInputIcon
@@ -161,7 +185,6 @@ function SocialGroupAdd() {
             />
           )}
         </div>
-        {/* ✅ Show search status */}
         {search && debouncedSearch !== search && (
           <div className="text-sm text-gray-500 text-center">
             {t("Searching...")}
@@ -209,6 +232,7 @@ function SocialGroupAdd() {
                     checked={selectedUsers.includes(user.id)}
                     onChange={() => toggleUser(user.id)}
                     className="peer hidden"
+                    disabled={creating}
                   />
                   <label
                     htmlFor={`checkbox-${user.id}`}

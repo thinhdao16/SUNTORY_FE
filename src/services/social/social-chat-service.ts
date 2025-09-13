@@ -1,5 +1,5 @@
 import httpClient from "@/config/http-client";
-import { CreateSocialChatMessagePayload, GetSocialChatMessagesParams, NotificationCounts, RevokeSocialChatMessagePayload, UpdateSocialChatMessagePayload } from "./social-chat-type";
+import { AddGroupMembersPayload, CreateSocialChatMessagePayload, GetSocialChatMessagesParams, NotificationCounts, RemoveGroupMembersPayload, RevokeSocialChatMessagePayload, UpdateSocialChatMessagePayload,UpdateChatRoomPayload } from "./social-chat-type";
 
 export const getUserChatRooms = async (params: { PageNumber?: number; PageSize?: number; Keyword?: string } = {}) => {
     const { PageNumber = 0, PageSize = 100, Keyword } = params;
@@ -43,7 +43,56 @@ export async function revokeSocialChatMessageApi(payload: RevokeSocialChatMessag
     const res = await httpClient.put("/api/v1/chat-user/message/revoke", payload);
     return res.data.data;
 };
-    export const getNotificationCounts = async (): Promise<NotificationCounts> => {
+export const getNotificationCounts = async (): Promise<NotificationCounts> => {
     const response = await httpClient.get('/api/v1/chat-user/notifications/counts');
     return response.data.data;
+};
+export const chatRoomAttachments = async ({
+    ChatCode,
+    PageNumber = 0,
+    PageSize = 20
+}: {
+    ChatCode: string;
+    PageNumber?: number;
+    PageSize?: number;
+}) => {
+    const response = await httpClient.get('/api/v1/chat-user/chatroom/attachments', {
+        params: {
+            ChatCode,
+            PageNumber,
+            PageSize
+        }
+    });
+    return response.data;
+};
+
+export const addGroupMembersApi = async (payload: AddGroupMembersPayload) => {
+    const response = await httpClient.post('/api/v1/chat-user/chatroom/member/add', payload);
+    return response.data;
+};
+
+export const removeGroupMembersApi = async (payload: RemoveGroupMembersPayload) => {
+    const response = await httpClient.post('/api/v1/chat-user/chatroom/member/remove', payload);
+    return response.data;
+};
+
+export const leaveChatRoomApi = async (payload: { chatCode: string; newAdminUserId?: number }) => {
+    const response = await httpClient.post('/api/v1/chat-user/chatroom/leave', payload);
+    return response.data;
+};
+export const removeChatRoomApi = async (payload: { chatCode: string }) => {
+    const response = await httpClient.delete('/api/v1/chat-user/chatroom/remove', { data: payload });
+    return response.data;
+};
+export const updateChatRoomApi = async (payload: UpdateChatRoomPayload) => {
+    const res = await httpClient.put("/api/v1/chat-user/chatroom/update", payload);
+    return res.data;
+};
+export const toggleChatRoomQuietStatusApi = async (payload: { chatCode: string; isQuiet: boolean }) => {
+    const res = await httpClient.put("/api/v1/chat-user/chatroom/quiet-status", payload);
+    return res.data;
+};
+export const transferAdminApi = async (payload: { chatCode: string; newAdminUserId: number }) => {
+    const res = await httpClient.post("/api/v1/chat-user/chatroom/transfer-admin", payload);
+    return res.data;
 };

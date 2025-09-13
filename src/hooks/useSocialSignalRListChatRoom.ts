@@ -10,7 +10,7 @@ export interface UseSocialSignalRListChatRoomOptions {
   autoConnect?: boolean;
   enableDebugLogs?: boolean;
   refetchUserChatRooms: () => void;
-  preferWebSockets?: boolean; 
+  preferWebSockets?: boolean;
 }
 
 export function useSocialSignalRListChatRoom(
@@ -44,6 +44,7 @@ export function useSocialSignalRListChatRoom(
     updateChatRoomFromMessage,
     setRoomUnread,
     setNotificationCounts,
+    deleteRoom
   } = useSocialChatStore();
 
   const refetchRef = useRef(refetchUserChatRooms);
@@ -122,6 +123,7 @@ export function useSocialSignalRListChatRoom(
   const attachHandlers = useCallback((connection: signalR.HubConnection) => {
     connection.off("ReceiveUserMessage");
     connection.on("ReceiveUserMessage", (message: any) => {
+      console.log("ReceiveUserMessage", message)
       const roomId = message?.chatInfo?.code || message?.roomId;
       if (!roomId) return;
       updateLastMessage(roomId, message);
@@ -150,13 +152,36 @@ export function useSocialSignalRListChatRoom(
     connection.on("GroupChatCreated", () => {
       refetchRef.current?.();
     });
-
     connection.off("UserVsUserChatCreated");
     connection.on("UserVsUserChatCreated", (msg: any) => {
       log("UserVsUserChatCreated:", msg);
       refetchRef.current?.();
     });
 
+    connection.off("RoomChatUpdated");
+    connection.on("RoomChatUpdated", (msg: any) => {
+      refetchUserChatRooms();
+    });
+    connection.off("MemberAddedToGroupChat");
+    connection.on("MemberAddedToGroupChat", (msg: any) => {
+      refetchUserChatRooms();
+    });
+    connection.off("UserKickedFromGroupChat");
+    connection.on("UserKickedFromGroupChat", (msg: any) => {
+      const removedCode =
+        msg?.chatCode || msg?.chatInfo?.code || msg?.roomId || msg?.code || (typeof msg === "string" ? msg : null);
+
+      if (!removedCode) return;
+      deleteRoom(removedCode);
+    });
+    connection.off("GroupChatRemoved");
+    connection.on("GroupChatRemoved", (msg: any) => {
+      const removedCode =
+        msg?.chatCode || msg?.chatInfo?.code || msg?.roomId || msg?.code || (typeof msg === "string" ? msg : null);
+
+      if (!removedCode) return;
+      deleteRoom(removedCode);
+    });
     connection.off("RoomChatAndFriendRequestReceived");
     connection.on("RoomChatAndFriendRequestReceived", (m: any) => {
       const current = useSocialChatStore.getState().notificationCounts;
@@ -174,7 +199,6 @@ export function useSocialSignalRListChatRoom(
         log("Updated notification counts:", next);
       }
     });
-
     const handleUnread = (d: any) => {
       const chatCode = d?.chatCode;
       if (!chatCode) return;
@@ -185,9 +209,7 @@ export function useSocialSignalRListChatRoom(
       if (enableDebugLogs) log(`Unread ${chatCode}: -> ${my}`);
     };
     connection.off("UnreadCountChanged");
-    connection.off("unreadcountchanged");
     connection.on("UnreadCountChanged", handleUnread);
-    connection.on("unreadcountchanged", handleUnread);
 
     connection.onreconnecting((err) => {
       isConnectedRef.current = false;
@@ -196,7 +218,7 @@ export function useSocialSignalRListChatRoom(
 
     connection.onreconnected(async (id) => {
       isConnectedRef.current = true;
-      joinedUserNotifyRef.current = false;  
+      joinedUserNotifyRef.current = false;
       log("Reconnected:", id);
       await joinUserNotify();
       if (activeRoomsRef.current.length) await joinChatRooms(activeRoomsRef.current);
@@ -219,7 +241,7 @@ export function useSocialSignalRListChatRoom(
     setNotificationCounts,
   ]);
 
-      const connect = useCallback(async () => {
+  const connect = useCallback(async () => {
     const curr = connectionRef.current;
     if (curr) {
       const s = curr.state;

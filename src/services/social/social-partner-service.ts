@@ -31,6 +31,20 @@ export const getFriendshipFriends = async ( page: number = 0,
   });
   return res.data.data.data;
 };
+
+export const getFriendsExcludeRoom = async (roomChatCode: string, page: number = 0,
+    limit: number = 20,
+    search?: string) => {
+  const res = await httpClient.get("/api/v1/chat-user/chatroom/friends-exclude-room", {
+    params: {
+      PageNumber: page,
+      PageSize: limit,
+      keyword: search,
+      roomChatCode: roomChatCode
+    },
+  });
+  return res.data.data.data;
+};
 export const getFriendshipReceivedRequests = async (page: number, pageSize: number) => {
   const res = await httpClient.get("/api/v1/friendship/received-requests", {
     params: {
