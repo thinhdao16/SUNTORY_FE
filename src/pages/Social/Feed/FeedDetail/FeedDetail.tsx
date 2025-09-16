@@ -23,6 +23,8 @@ import ReactHeartIcon from "@/icons/logo/social-feed/react-heart.svg?react";
 import CommentsIcon from "@/icons/logo/social-feed/comments.svg?react";
 import RetryIcon from "@/icons/logo/social-feed/retry.svg?react";
 import SendIcon from "@/icons/logo/social-feed/send.svg?react";
+import { usePostSignalR } from '@/hooks/usePostSignalR';
+import useDeviceInfo from '@/hooks/useDeviceInfo';
 
 const FeedDetail: React.FC = () => {
     const { t, i18n } = useTranslation();
@@ -44,6 +46,7 @@ const FeedDetail: React.FC = () => {
     const createCommentMutation = useCreateComment();
     const postLikeMutation = usePostLike();
     const commentLikeMutation = useCommentLike();
+    const deviceInfo = useDeviceInfo();
 
     const { post, isLoadingPost, postError, data: fetchedPost } = useFeedDetail(postCode, true);
     const { 
@@ -55,6 +58,38 @@ const FeedDetail: React.FC = () => {
         refetch: refetchComments 
     } = useInfiniteComments(postCode);
     
+    // SignalR connection for real-time post updates
+    const postSignalR = usePostSignalR(deviceInfo.deviceId ?? '', {
+        postId: postCode || '',
+        autoConnect: true,
+        enableDebugLogs: true,
+        onPostUpdated: (data) => {
+            console.log('Real-time post updated:', data);
+        },
+        onCommentAdded: (data) => {
+            console.log('Real-time comment added:', data);
+        },
+        onCommentUpdated: (data) => {
+            console.log('Real-time comment updated:', data);
+        },
+        onCommentDeleted: (data) => {
+            console.log('Real-time comment deleted:', data);
+        },
+        onPostLiked: (data) => {
+            console.log('Real-time post liked:', data);
+        },
+        onPostUnliked: (data) => {
+            console.log('Real-time post unliked:', data);
+        },
+        onCommentLiked: (data) => {
+            console.log('Real-time comment liked:', data);
+        },
+        onCommentUnliked: (data) => {
+            console.log('Real-time comment unliked:', data);
+        },
+    });
+postSignalR.joinPostUpdates(postCode || '');
+
     const allComments = commentsData?.pages?.flatMap(page => page?.data || []) || [];
     
     const organizeComments = (comments: any[]) => {
