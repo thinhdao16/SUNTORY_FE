@@ -16,7 +16,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import ActionButton from "@/components/loading/ActionButton";
 import BackIcon from "@/icons/logo/back-default.svg?react";
 
-function SocialGroupAdd() {
+function SocialGroupAdd( { isProfile }: { isProfile?: boolean } ) {
   const isNative = Capacitor.isNativePlatform();
   const inputRef = useRef<HTMLInputElement>(null);
 

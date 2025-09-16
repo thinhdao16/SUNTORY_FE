@@ -12,7 +12,6 @@ import { useAuthStore } from "@/store/zustand/auth-store";
 import ChatSidebarLayout from "@/components/layout/ChatSidebarLayout";
 import useAppInit from "@/hooks/useAppInit";
 import TranslateHistory from "@/pages/Translate/TranslateHistory";
-import FoodList from "@/pages/Menu/components/FoodList";
 
 const routes = {
   Chat: lazy(() => import("@/pages/ChatStream/ChatStream")),
@@ -28,7 +27,7 @@ const routes = {
   NewPassword: lazy(() => import("@/pages/Auth/NewPassword/NewPassword")),
   NotFound: lazy(() => import("@/pages/NotFound/NotFound")),
   Otp: lazy(() => import("@/pages/Auth/Otp/Otp")),
-  Profile: lazy(() => import("@/pages/Profile/Profile")),
+  ProfileSetting: lazy(() => import("@/pages/Profile/ProfileSetting")),
   ProfileAllergyInfo: lazy(() => import("@/pages/Profile/HealthInformationEdit/AllergyInfo/AllergyInfo")),
   ProfileHealthInfo: lazy(() => import("@/pages/Profile/HealthInformationEdit/HealthInfo/HealthInfo")),
   ProfileMedicineInfo: lazy(() => import("@/pages/Profile/HealthInformationEdit/MedicineInfo/MedicineInfo")),
@@ -51,6 +50,11 @@ const routes = {
   AnalyzingSetup: lazy(() => import("@/pages/Menu/components/AnalyzingSetup")),
   ScanMenu: lazy(() => import("@/pages/Menu/components/ScanMenu")),
   MenuAnalyzing: lazy(() => import("@/pages/Menu/components/MenuAnalyzing")),
+  MyProfile: lazy(() => import("@/pages/Profile/MyProfile")),
+  MyInformation: lazy(() => import("@/pages/Profile/AccountEdit/MyInformation")),
+  AiProfileInformation: lazy(() => import("@/pages/Profile/AiHealthInformationEdit/AiProfileInformation")),
+  FriendList: lazy(() => import("@/pages/Profile/Friend/FriendList")),
+  FriendRequestSent: lazy(() => import("@/pages/Profile/Friend/FriendRequestSent")),
 };
 
 const authRoutes = ["/login", "/register"];
@@ -68,7 +72,7 @@ const AppRoutes: React.FC = () => {
   useAppInit();
 
   if (isAuthenticated && authRoutes.includes(location.pathname)) {
-    return <Redirect to="/home" />;
+    return <Redirect to="/social-chat" />;
   }
   return (
     <>
@@ -103,11 +107,16 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/social-qr-native" component={routes.SocialQRNative} exact />
           <PrivateRoute path="/translate" component={routes.Translate} exact />
           <PrivateRoute path="/translate/history" component={TranslateHistory} exact />
-          <PrivateRoute path="/profile/:section?" component={routes.Profile} exact />
           <PrivateRoute path="/change-password" component={routes.ChangePassword} exact />
           <PrivateRoute path="/menu-translation/:section?" component={routes.MenuTranslation} exact />
           <PrivateRoute path="/menu-analyzing" component={routes.MenuAnalyzing} exact />
           <PrivateRoute path="/food-list" component={routes.FoodList} exact />
+          <PrivateRoute path="/my-profile" component={routes.MyProfile} exact />
+          <PrivateRoute path="/profile-setting" component={routes.ProfileSetting} exact />
+          <PrivateRoute path="/my-information" component={routes.MyInformation} exact />
+          <PrivateRoute path="/ai-profile-setting" component={routes.AiProfileInformation} exact />
+          <PrivateRoute path="/friend-list" component={routes.FriendList} exact />
+          <PrivateRoute path="/friend-request-sent" component={routes.FriendRequestSent} exact />
           <Route exact path="/" render={() => <Redirect to="/social-chat" />} />
           <Route path="*" component={routes.NotFound} />
         </Switch>

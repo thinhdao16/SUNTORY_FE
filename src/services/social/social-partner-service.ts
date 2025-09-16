@@ -74,3 +74,13 @@ export const unfriend = async (friendUserId: number) => {
   const res = await httpClient.post("/api/v1/friendship/unfriend", { friendUserId });
   return res.data.data;
 };
+
+export const getListSentRequests = async (page: number, pageSize: number) => {
+  const res = await httpClient.get("/api/v1/friendship/sent-requests", {
+    params: {
+      PageNumber: page,
+      PageSize: pageSize,
+    },
+  });
+  return res.data.data.data;
+};

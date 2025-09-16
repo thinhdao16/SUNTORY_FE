@@ -56,7 +56,7 @@ const AllergiesSetup: React.FC = () => {
                         setSavedAllergiesStore(fromProfile);
                     }
 
-                    if (res.data.groupedLifestyles != null) {
+                    if (res.data.groupedLifestyles !=  null) {
                         const dietStyle: number = res.data.groupedLifestyles.find(
                             (g: any) => g.category?.name === "Diet"
                         )?.lifestyles.map((item: any) => item.id);

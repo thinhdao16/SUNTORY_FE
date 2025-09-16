@@ -175,7 +175,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ userInfo }) => {
                         isRight: true,
                     }
                 ]);
-                    history.push(`/chat/50`);
+                history.push(`/chat/50`);
 
                 let res: any
                 res = await createChatApi(payload);
@@ -189,7 +189,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ userInfo }) => {
                                 const serverMsg = res.data.userChatMessage;
                                 return {
                                     ...msg,
-                                    id: serverMsg.id, 
+                                    id: serverMsg.id,
                                     code: serverMsg.code,
                                     text: serverMsg.messageText || msg.text,
                                     createdAt: serverMsg.createDate || msg.createdAt,
@@ -203,7 +203,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ userInfo }) => {
                                     chatInfoId: serverMsg.chatInfoId,
                                     userName: serverMsg.userName,
                                     chatCode: serverMsg.chatInfo?.code,
-                                    messageState: "SENT", 
+                                    messageState: "SENT",
                                     hasAttachment: serverMsg.hasAttachment,
                                     isRead: serverMsg.isRead,
                                     attachments: serverMsg.chatAttachments?.length > 0 ?
@@ -262,7 +262,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ userInfo }) => {
                         <NavBarHomeIcon />
                     </button>
 
-                    <LanguageSwitcher {...languageSwitcher} />
+                    <LanguageSwitcher {...languageSwitcher} userLanguageCode={userInfo?.language?.code} isFeeching={true} />
                 </div>
 
                 <div className="flex justify-between items-end">
