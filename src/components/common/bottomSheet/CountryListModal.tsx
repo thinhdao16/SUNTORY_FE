@@ -206,7 +206,7 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
                             </div>
 
                             {/* List */}
-                            <div className="px-2 pt-0 pb-4">
+                            <div className="px-2 pt-0 pb-4 h-160">
                                 {currentItems.map((c) => (
                                     <motion.button
                                         initial={{ opacity: 0, translateY: 6 }}
@@ -230,7 +230,7 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
                             </div>
                             {/* Sticky Save inside scroll area, floating like design */}
                             {(tempSelected && tempSelected !== selectedCode) && (
-                                <div className="sticky bottom-3 flex justify-center px-4 py-4 border-t border-gray-100">
+                                <div className="sticky bottom flex justify-center px-4 py-4 border-t border-gray-100">
                                     <IonButton
                                         expand="block"
                                         shape="round"

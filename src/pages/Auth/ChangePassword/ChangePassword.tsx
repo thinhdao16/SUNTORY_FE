@@ -5,12 +5,12 @@ import { useAuthStore } from "@/store/zustand/auth-store";
 import AuthCardLayout from "@/components/layout/AuthCardLayout";
 import InputPasswordField from "@/components/input/InputPasswordField";
 import MainButton from "@/components/common/MainButton";
-import SocialLoginActions from "@/components/common/SocialLoginActions";
 import { useChangePassword } from "../hooks/useAuth";
-import LogoIcon from "@/icons/logo/logo.svg?react";
-import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
-import CloseIcon from "@/icons/logo/close.svg?react";
+import BackIcon from "@/icons/logo/back.svg?react";
+
 import { t } from "@/lib/globalT";
+import { IonIcon } from "@ionic/react";
+import { arrowBack } from "ionicons/icons";
 interface ChangePasswordForm {
     currentPassword: string;
     password: string;
@@ -56,13 +56,13 @@ const ChangePassword: React.FC = () => {
         <AuthCardLayout>
             <div className="flex items-center justify-between mb-6">
                 <button
-                    className="w-10 h-10 flex items-center justify-center text-main font-medium rounded-full hover:bg-gray-100"
+                    className="w-10 h-10 flex items-center justify-center font-medium rounded-full hover:bg-gray-100 p-2"
                     onClick={() => history.goBack()}
                     type="button"
                 >
-                    <CloseIcon aria-label="Back" />
+                    <IonIcon icon={arrowBack} className="text-black" style={{ width: 20, height: 20, color: 'black', textEmphasisColor: 'black' }} />
                 </button>
-                <h1 className="flex-1 text-2xl text-center font-semibold text-main darkk:text-gray-200">
+                <h1 className="flex-1 text-2xl text-center font-semibold text-black darkk:text-gray-200">
                     {t("Change Password")}
                 </h1>
                 {/* Spacer to balance header width with back button */}

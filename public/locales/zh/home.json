@@ -645,5 +645,6 @@
   "Country updated successfully": "国家更新成功",
   "Diet updated successfully": "饮食更新成功",
   "Failed to update diet. Please try again.": "更新饮食失败，请重试",
-  "Height updated successfully": "身高更新成功"
+  "Height updated successfully": "身高更新成功",
+  "Failed to update health conditions. Please try again.": "更新健康状况失败，请重试"
 }

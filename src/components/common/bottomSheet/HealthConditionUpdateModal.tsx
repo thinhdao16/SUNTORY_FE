@@ -7,6 +7,7 @@ import { useHealthMasterDataStore } from "@/store/zustand/health-master-data-sto
 import { updateHealthConditionV2 } from "@/services/auth/auth-service";
 import { UpdateHealthConditionV2Payload } from "@/services/auth/auth-types";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
+import { useToastStore } from "@/store/zustand/toast-store";
 
 interface HealthConditionItem {
     healthConditionId: number;
@@ -45,6 +46,7 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
     const [isSaving, setIsSaving] = useState(false);
     const healthMasterData = useHealthMasterDataStore((state) => state.masterData);
     const { refetch } = useAuthInfo();
+    const showToast = useToastStore.getState().showToast;
     // Mock data - sẽ được thay thế bằng data thật sau
     const mockHealthConditions: HealthConditionItem[] = [
         { healthConditionId: 1, name: 'Peanuts' },
@@ -197,8 +199,10 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
             await refetch();
             setSavedHealthConditions([]);
             setSelectedHealthConditions([]);
+            showToast(t("Health conditions updated successfully"), 2000, "success");
             onClose();
         } catch (error) {
+            showToast(t("Failed to update health conditions. Please try again."), 3000, "error");
             console.error('Error updating health conditions:', error);
         } finally {
             setIsSaving(false);

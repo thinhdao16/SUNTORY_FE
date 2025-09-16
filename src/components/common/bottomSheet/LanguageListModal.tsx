@@ -196,7 +196,7 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
                             </div>
 
                             {/* List */}
-                            <div className="px-2 pt-0 pb-4">
+                            <div className="px-2 pt-0 pb-4 h-160">
                                 {loading && (
                                     <div className="px-3 py-3 text-sm text-gray-500">{t('Loading...')}</div>
                                 )}

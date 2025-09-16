@@ -84,7 +84,13 @@ const BottomTabBar: React.FC = () => {
             icon: ProfileIcon,
             iconActive: ProfileActiveIcon,
             path: "/my-profile",
-            activePath: (pathname: string) => pathname.startsWith("/my-profile"),
+            activePath: (pathname: string) => pathname.startsWith("/my-profile") 
+            || pathname.startsWith("/profile-setting")
+            || pathname.startsWith("/my-information")
+            || pathname.startsWith("/ai-profile-setting")
+            || pathname.startsWith("/profile/help")
+            || pathname.startsWith("/friend-list")
+            || pathname.startsWith("/friend-request-sent"),
             classNameIcon: "",
         },
     ];
