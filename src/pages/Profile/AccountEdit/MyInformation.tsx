@@ -26,8 +26,8 @@ const MyInformation: React.FC = () => {
     const [isYearOfBirthUpdateModalOpen, setIsYearOfBirthUpdateModalOpen] = useState(false);
     const [isLanguageListModalOpen, setIsLanguageListModalOpen] = useState(false);
     // Minimal handlers to satisfy props; implement drag later if needed
-    const handleTouchStart = () => {};
-    const handleTouchMove = () => {};
+    const handleTouchStart = () => { };
+    const handleTouchMove = () => { };
     const handleTouchEnd = () => { setTranslateY(0); };
     const handleCountrySelect = (code: string) => {
         // TODO: hook update if needed; for now just close
@@ -65,7 +65,7 @@ const MyInformation: React.FC = () => {
                             onClick={() => history.push('/profile-setting')}
                             className="ml-2"
                         >
-                            <IonIcon icon={arrowBack} className="text-gray-700 font-bold text-2xl" />
+                            <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
                         </IonButton>
                     </IonButtons>
                     <IonTitle className="text-center font-semibold text-lg">
@@ -91,13 +91,13 @@ const MyInformation: React.FC = () => {
                         >
                             <span className="text-black font-semibold text-[15px]">{t('Name')}</span>
                             <div className="flex items-center gap-2 max-w-[60%]">
-                                <span className="text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis" title={`${userInfo?.firstname ?? ''} ${userInfo?.lastname ?? ''}`}>{userInfo?.firstname} {userInfo?.lastname}</span>
-                                <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
+                                <span className="text-black whitespace-nowrap overflow-hidden text-ellipsis" title={`${userInfo?.firstname ?? ''} ${userInfo?.lastname ?? ''}`}>{userInfo?.firstname} {userInfo?.lastname}</span>
+                                <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
                             </div>
                         </button>
                         <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
-                            <span className="text-gray-800 font-semibold text-[15px]">{t('Email')}</span>
-                            <span className="text-gray-800 max-w-[60%] whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.email}>{userInfo?.email}</span>
+                            <span className="text-gray-500 font-semibold text-[15px]">{t('Email')}</span>
+                            <span className="text-gray-500 max-w-[60%] whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.email}>{userInfo?.email}</span>
                         </div>
                         <button
                             type="button"
@@ -108,10 +108,10 @@ const MyInformation: React.FC = () => {
                         >
                             <span className="text-black font-semibold text-[15px]">{t('Gender')}</span>
                             <div className="flex items-center gap-2 max-w-[60%]">
-                                <span className="text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.gender === 1 ? t('Male') : userInfo?.gender === 2 ? t('Female') : t('Other')}>
+                                <span className="text-black whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.gender === 1 ? t('Male') : userInfo?.gender === 2 ? t('Female') : t('Other')}>
                                     {userInfo?.gender === 1 ? t('Male') : userInfo?.gender === 2 ? t('Female') : t('Other')}
                                 </span>
-                                <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
+                                <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
                             </div>
                         </button>
                         <button
@@ -123,10 +123,10 @@ const MyInformation: React.FC = () => {
                         >
                             <span className="text-black font-semibold text-[15px]">{t('Year of birth')}</span>
                             <div className="flex items-center gap-2 max-w-[60%]">
-                                <span className="text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.dateOfBirth ? new Date(userInfo.dateOfBirth).getFullYear().toString() : ''}>
-                                    {userInfo?.dateOfBirth ? new Date(userInfo.dateOfBirth).getFullYear() : ''}
+                                <span className="text-black whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.dateOfBirth ? new Date(userInfo.dateOfBirth).getFullYear().toString() : ''}>
+                                    {userInfo?.dateOfBirth ? new Date(userInfo.dateOfBirth).getUTCFullYear() : ''}
                                 </span>
-                                <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
+                                <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
                             </div>
                         </button>
                     </div>
@@ -140,8 +140,8 @@ const MyInformation: React.FC = () => {
                         >
                             <span className="text-black font-semibold text-[15px]">{t('Country')}</span>
                             <div className="flex items-center gap-2 max-w-[60%]">
-                                <span className="text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.country?.name}>{userInfo?.country?.name}</span>
-                                <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
+                                <span className="text-black whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.country?.name}>{userInfo?.country?.name}</span>
+                                <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
                             </div>
                         </button>
                         <button
@@ -151,8 +151,8 @@ const MyInformation: React.FC = () => {
                         >
                             <span className="text-black font-semibold text-[15px]">{t('Language')}</span>
                             <div className="flex items-center gap-2 max-w-[60%]">
-                                <span className="text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.language?.name}>{userInfo?.language?.name}</span>
-                                <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
+                                <span className="text-black whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.language?.name}>{t(userInfo?.language?.name ?? '')}</span>
+                                <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
                             </div>
                         </button>
                     </div>

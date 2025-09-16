@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { updateAccountInformationV3 } from "@/services/auth/auth-service";
 import { UpdateAccountInformationV3Payload } from "@/services/auth/auth-types";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
+import { useToastStore } from "@/store/zustand/toast-store";
 
 interface NameUpdateListModalProps {
     isOpen: boolean;
@@ -32,7 +33,7 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
 }) => {
     const { t } = useTranslation();
     const { refetch } = useAuthInfo();
-
+    const showToast = useToastStore.getState().showToast;
     const [firstName, setFirstName] = useState(currentFirstName);
     const [lastName, setLastName] = useState(currentLastName);
     const [isLoading, setIsLoading] = useState(false);
@@ -55,7 +56,16 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
     }, [isOpen, currentFirstName, currentLastName]);
 
     const handleSave = async () => {
-        if (!firstName.trim() || !lastName.trim()) {
+        if (!firstName.trim() && !lastName.trim()) {
+            showToast(t("First name and last name are required"), 1000, "error");
+            return;
+        }
+        if (!firstName.trim()) {
+            showToast(t("First name is required"), 1000, "error");
+            return;
+        }
+        if (!lastName.trim()) {
+            showToast(t("Last name is required"), 1000, "error");
             return;
         }
 
@@ -74,12 +84,12 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
             onClose();
         } catch (error) {
             console.error('Error updating name:', error);
+            showToast(t("Failed to update name"), 3000, "error");
         } finally {
             setIsLoading(false);
         }
     };
-    const isFormValid = firstName.trim() && lastName.trim() && hasNameChanged;
-    
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -177,20 +187,20 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
                             {/* Save Button - Fixed at bottom, moves up with keyboard */}
                             {hasNameChanged && (
                                 <div className="px-4 py-4 border-t border-gray-100">
-                                <IonButton
-                                    expand="block"
-                                    shape="round"
-                                    onClick={handleSave}
-                                    className="h-14"
-                                    style={{
-                                        '--background': '#1152F4',
-                                        '--background-hover': '#2563eb',
-                                        'font-weight': '600'
-                                    }}
-                                >
-                                    {isLoading ? <IonSpinner name="crescent" /> : t('Save')}
-                                </IonButton>
-                            </div>
+                                    <IonButton
+                                        expand="block"
+                                        shape="round"
+                                        onClick={handleSave}
+                                        className="h-14"
+                                        style={{
+                                            '--background': '#1152F4',
+                                            '--background-hover': '#2563eb',
+                                            'font-weight': '600'
+                                        }}
+                                    >
+                                        {isLoading ? <IonSpinner name="crescent" /> : t('Save')}
+                                    </IonButton>
+                                </div>
                             )}
                         </div>
                     </div>

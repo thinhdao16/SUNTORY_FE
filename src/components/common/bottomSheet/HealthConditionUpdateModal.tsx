@@ -36,6 +36,7 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
 }) => {
     const { t } = useTranslation();
     const [inputValue, setInputValue] = useState('');
+    const [debouncedInputValue, setDebouncedInputValue] = useState('');
     const [isIconSendStyle, setIsIconSendStyle] = useState('black');
     const [savedHealthConditions, setSavedHealthConditions] = useState<HealthConditionItem[]>([]);
     const [selectedHealthConditions, setSelectedHealthConditions] = useState<HealthConditionItem[]>([]);
@@ -92,16 +93,27 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
         setSavedHealthConditions(healthConditions);
     }, [healthConditions]);
 
+    // Debounce search input
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedInputValue(inputValue);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [inputValue]);
+
     // Function để search health conditions
     const handleInputChange = (value: string) => {
         setInputValue(value);
         setIsIconSendStyle(value ? 'blue' : 'black');
+    };
 
-        if (value) {
+    // Handle debounced search
+    useEffect(() => {
+        if (debouncedInputValue) {
             const allHealthConditions = getAllHealthConditions();
-            // Filter health conditions dựa trên input
+            // Filter health conditions dựa trên debounced input
             const filtered = allHealthConditions.filter(healthCondition =>
-                healthCondition.name.toLowerCase().includes(value.toLowerCase()) &&
+                healthCondition.name.toLowerCase().includes(debouncedInputValue.toLowerCase()) &&
                 !selectedHealthConditions.some(selected => selected.healthConditionId === healthCondition.healthConditionId) &&
                 !savedHealthConditions.some(saved => saved.healthConditionId === healthCondition.healthConditionId)
             );
@@ -111,7 +123,7 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
             setSearchResults([]);
             setShowDropdown(false);
         }
-    };
+    }, [debouncedInputValue, selectedHealthConditions, savedHealthConditions]);
 
     // Function để chọn từ dropdown
     const selectFromDropdown = (healthConditionItem: HealthConditionItem) => {
@@ -249,10 +261,10 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
                                         <IonItem lines="none" className="rounded-xl border border-neutral-200 shadow-sm" style={{ '--background': '#ffffff' } as any}>
                                             <IonInput
                                                 value={inputValue}
-                                                placeholder={t('e.g., Peanuts, Shellfish')}
+                                                placeholder={t('e.g., Pregnancy, Diabetes')}
                                                 onIonInput={(e) => handleInputChange((e.detail.value ?? '').toString())}
                                                 onIonFocus={() => {
-                                                    if (inputValue.trim().length > 0 && searchResults.length > 0) {
+                                                    if (debouncedInputValue.trim().length > 0 && searchResults.length > 0) {
                                                         setShowDropdown(true);
                                                     }
                                                 }}

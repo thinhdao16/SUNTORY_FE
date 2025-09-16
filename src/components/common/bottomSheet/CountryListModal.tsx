@@ -8,6 +8,7 @@ import { Country } from "@/services/country/country-type";
 import { updateAccountInformationV3 } from "@/services/auth/auth-service";
 import { UpdateAccountInformationV3Payload } from "@/services/auth/auth-types";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
+import { useToastStore } from "@/store/zustand/toast-store";
 
 interface CountryListModalProps {
     isOpen: boolean;
@@ -31,6 +32,7 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
     const SHEET_MAX_VH = 80;
     const HEADER_PX = 56;
     const [query, setQuery] = useState('');
+    const [debouncedQuery, setDebouncedQuery] = useState('');
     const [countries, setCountries] = useState<Country[]>([]);
     const [tempSelected, setTempSelected] = useState<string | undefined>(selectedCode);
     const PAGE_SIZE = 20;
@@ -38,7 +40,7 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { refetch } = useAuthInfo();
-
+    const { showToast } = useToastStore();  
     useEffect(() => {
         // Reset temp selection each time modal opens with current selection
         if (isOpen) {
@@ -51,16 +53,24 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
         fetchCountries();
     }, []);
 
+    // Debounce search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedQuery(query);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [query]);
+
     const fetchCountries = async () => {
         const countries = await getListCountry();
         setCountries(countries.data);
     };
 
     const filtered = useMemo(() => {
-        const q = query.trim().toLowerCase();
+        const q = debouncedQuery.trim().toLowerCase();
         if (!q) return countries;
         return countries.filter((c) => c.name.toLowerCase().includes(q));
-    }, [countries, query]);
+    }, [countries, debouncedQuery]);
 
     // Put ONLY the initially selected country on top (do not change when picking temp)
     const ordered = useMemo(() => {
@@ -88,12 +98,15 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
                     yearOfBirth: null,
                 };
                 await updateAccountInformationV3(payload);
+                showToast(t("Country updated successfully!"), 2000, "success");
                 await refetch(); // Cập nhật thông tin user
                 onSelect(tempSelected); // Cập nhật state local
+                setQuery('');
                 onClose();
             }
         } catch (error) {
             console.error('Error updating country:', error);
+            showToast(t("Failed to update country. Please try again."), 3000, "error");
         } finally {
             setIsSaving(false);
         }
@@ -163,7 +176,10 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
                             </div>
                             <IonButton
                                 fill="clear"
-                                onClick={onClose}
+                                onClick={() => {
+                                    setQuery('');
+                                    onClose();
+                                }}
                                 style={{ width: 56, height: HEADER_PX, outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                                 <IonIcon icon={close} style={{ width: 24, height: 24, color: '#000000' }} />

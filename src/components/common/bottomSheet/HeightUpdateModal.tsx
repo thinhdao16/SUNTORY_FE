@@ -3,10 +3,11 @@ import { IonButton, IonIcon, IonSpinner } from "@ionic/react";
 import { close, add, remove } from "ionicons/icons";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { updateAccountInformationV3, updateHealthConditionV2 } from "@/services/auth/auth-service";
-import { UpdateAccountInformationV3Payload, UpdateHealthConditionV2Payload } from "@/services/auth/auth-types";
+import { updateHealthConditionV2 } from "@/services/auth/auth-service";
+import { UpdateHealthConditionV2Payload } from "@/services/auth/auth-types";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import { useHealthMasterData } from "@/hooks/common/useHealth";
+import { useToastStore } from "@/store/zustand/toast-store";
 
 interface HeightUpdateModalProps {
     isOpen: boolean;
@@ -17,6 +18,7 @@ interface HeightUpdateModalProps {
     handleTouchEnd: () => void;
     showOverlay?: boolean;
     currentHeight?: number;
+    currentHeightUnit?: string;
 }
 
 const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
@@ -27,25 +29,43 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
     handleTouchStart,
     handleTouchMove,
     handleTouchEnd,
-    showOverlay = true
+    showOverlay = true,
+    currentHeightUnit
 }) => {
     const { t } = useTranslation();
+    const { showToast } = useToastStore();
     const { data: userInfo, refetch } = useAuthInfo();
     const { data: masterData } = useHealthMasterData();
     const heightUnits = masterData?.measurementUnits?.find((a: any) => a?.category?.categoryName?.toLowerCase() === 'height');
-    const MAX_CM = 300;
-    const MAX_FT = Math.round(300 / 30.48);
-    const [unit, setUnit] = useState<'cm' | 'ft'>('cm');
+    const MAX_CM = 305;
+    const MAX_FT = 10;
+    const [unit, setUnit] = useState<'cm' | 'ft'>(currentHeightUnit?.toLowerCase() === 'ft' ? 'ft' : 'cm');
     const [isSaving, setIsSaving] = useState(false);
-    const [valueKg, setValueKg] = useState<number>(() => {
+    const [valueCm, setValueCm] = useState<number>(() => {
         const num = Number(currentHeight);
-        const safe = Number.isFinite(num) ? Math.round(num) : 160;
-        return Math.max(0, Math.min(MAX_CM, safe));
+        if (!Number.isFinite(num)) return 160;
+        
+        // If currentHeightUnit is 'ft', convert to cm first
+        if (currentHeightUnit?.toLowerCase() === 'ft') {
+            const cmValue = Math.round(num * 30.48);
+            return Math.max(0, Math.min(MAX_CM, cmValue));
+        }
+        
+        // Otherwise treat as cm
+        return Math.max(0, Math.min(MAX_CM, Math.round(num)));
     });
-    const [valueLbs, setValueLbs] = useState<number>(() => {
+    const [valueFt, setValueFt] = useState<number>(() => {
         const num = Number(currentHeight);
-        const safe = Number.isFinite(num) ? Math.round(num / 30.48) : 5;
-        return Math.max(0, Math.min(MAX_FT, safe));
+        if (!Number.isFinite(num)) return 5;
+        
+        // If currentHeightUnit is 'ft', use directly
+        if (currentHeightUnit?.toLowerCase() === 'ft') {
+            return Math.max(0, Math.min(MAX_FT, Math.round(num)));
+        }
+        
+        // Otherwise convert from cm to ft
+        const ftValue = Math.floor(num / 30.48);
+        return Math.max(0, Math.min(MAX_FT, ftValue));
     });
 
     // Enhanced smooth drag system
@@ -84,25 +104,42 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
 
     useEffect(() => {
         if (isOpen) {
-            // restore unit preference
+            // Set unit based on currentHeightUnit or localStorage preference
+            const preferredUnit = currentHeightUnit?.toLowerCase() === 'ft' ? 'ft' : 'cm';
             try {
-                const u = localStorage.getItem('heightUnit') as 'cm' | 'ft' | null;
-                if (u === 'cm' || u === 'ft') setUnit(u);
-            } catch { }
+                const storedUnit = localStorage.getItem('heightUnit') as 'cm' | 'ft' | null;
+                if (storedUnit === 'cm' || storedUnit === 'ft') {
+                    setUnit(storedUnit);
+                } else {
+                    setUnit(preferredUnit);
+                }
+            } catch { 
+                setUnit(preferredUnit);
+            }
 
             const parsed = Number(currentHeight);
             if (Number.isFinite(parsed)) {
-                const initCm = Math.max(0, Math.min(MAX_CM, Math.round(parsed)));
-                const initFt = Math.max(0, Math.min(MAX_FT, Math.round(parsed / 30.48)));
-                setValueKg(initCm);
-                setValueLbs(initFt);
+                // Convert based on the actual unit of currentHeight
+                if (currentHeightUnit?.toLowerCase() === 'ft') {
+                    // currentHeight is in feet, convert to both units
+                    const cmValue = Math.round(parsed * 30.48);
+                    const ftValue = Math.round(parsed);
+                    setValueCm(Math.max(0, Math.min(MAX_CM, cmValue)));
+                    setValueFt(Math.max(0, Math.min(MAX_FT, ftValue)));
+                } else {
+                    // currentHeight is in cm, convert to both units
+                    const cmValue = Math.round(parsed);
+                    const ftValue = Math.floor(parsed / 30.48);
+                    setValueCm(Math.max(0, Math.min(MAX_CM, cmValue)));
+                    setValueFt(Math.max(0, Math.min(MAX_FT, ftValue)));
+                }
             } else {
                 // fallback to previous state to avoid hard reset
-                setValueKg(prev => Math.max(0, Math.min(MAX_CM, prev || 160)));
-                setValueLbs(prev => Math.max(0, Math.min(MAX_FT, prev || 5)));
+                setValueCm(prev => Math.max(0, Math.min(MAX_CM, prev || 160)));
+                setValueFt(prev => Math.max(0, Math.min(MAX_FT, prev || 5)));
             }
         }
-    }, [isOpen, currentHeight]);
+    }, [isOpen, currentHeight, currentHeightUnit]);
 
     // Cleanup on unmount to prevent memory leaks on mobile
     useEffect(() => {
@@ -124,27 +161,27 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
             }
         }
     }, [isHolding, holdTimer]);
-    const displayValue = unit === 'cm' ? valueKg : valueLbs;
+    const displayValue = unit === 'cm' ? valueCm : valueFt;
 
     const decrement = () => {
         if (canDecrease()) {
-            if (unit === 'cm') setValueKg(prev => Math.max(0, Math.min(MAX_CM, Math.round(prev - 1))));
-            else setValueLbs(prev => Math.max(0, Math.min(MAX_FT, Math.round(prev - 1))));
+            if (unit === 'cm') setValueCm(prev => Math.max(0, Math.min(MAX_CM, Math.round(prev - 1))));
+            else setValueFt(prev => Math.max(0, Math.min(MAX_FT, Math.floor(prev - 1))));
         }
     };
     const increment = () => {
         // Make sure this is a clean increment, not affected by hold logic
         if (unit === 'cm') {
-            setValueKg(prev => Math.max(0, Math.min(MAX_CM, Math.round(prev + 1))));
+            setValueCm(prev => Math.max(0, Math.min(MAX_CM, Math.round(prev + 1))));
         } else {
-            setValueLbs(prev => Math.max(0, Math.min(MAX_FT, Math.round(prev + 1))));
+            setValueFt(prev => Math.max(0, Math.min(MAX_FT, Math.floor(prev + 1))));
         }
     };
 
     // Helper function to update height with boundary checking
     const updateHeight = (delta: number) => {
         if (unit === 'cm') {
-            setValueKg(prev => {
+            setValueCm(prev => {
                 const newValue = Math.round(prev + delta);
                 const finalValue = Math.max(0, Math.min(MAX_CM, newValue));
                 // If we hit the boundary (0) from above, only stop hold timers
@@ -161,8 +198,8 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
                 return finalValue;
             });
         } else {
-            setValueLbs(prev => {
-                const newValue = Math.round(prev + delta);
+            setValueFt(prev => {
+                const newValue = Math.floor(prev + delta);
                 const finalValue = Math.max(0, Math.min(MAX_FT, newValue));
 
                 // If we hit the boundary (0) from above, only stop hold timers
@@ -183,12 +220,12 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
 
     // Check if we can decrease (not at minimum)
     const canDecrease = () => {
-        const currentValue = unit === 'cm' ? valueKg : valueLbs;
+        const currentValue = unit === 'cm' ? valueCm : valueFt;
         return currentValue > 0;
     };
     // Check if we can increase (not at maximum)
     const canIncrease = () => {
-        const currentValue = unit === 'cm' ? valueKg : valueLbs;
+        const currentValue = unit === 'cm' ? valueCm : valueFt;
         return unit === 'cm' ? currentValue < MAX_CM : currentValue < MAX_FT;
     };
 
@@ -362,7 +399,7 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
             }
 
             // If at boundary 0, reverse momentum direction to "bounce back"
-            const currentHeight = unit === 'cm' ? valueKg : valueLbs;
+            const currentHeight = unit === 'cm' ? valueCm : valueFt;
             if (currentHeight === 0 && currentVelocity > 0) {
                 currentVelocity = -Math.abs(currentVelocity) * 0.3; // Reverse with reduced strength
             }
@@ -540,7 +577,7 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
 
         if (steps > 0 && Math.abs(deltaX) >= sensitivity) {
             const direction = deltaX > 0 ? -1 : 1;
-            const currentHeight = unit === 'cm' ? valueKg : valueLbs;
+            const currentHeight = unit === 'cm' ? valueCm : valueFt;
 
             // Check both boundaries
             if (direction < 0 && !canDecrease()) {
@@ -668,7 +705,7 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
 
         if (Math.abs(steps) >= 1) {
             const direction = -steps;
-            const currentHeight = unit === 'cm' ? valueKg : valueLbs;
+            const currentHeight = unit === 'cm' ? valueCm : valueFt;
 
             // Check both boundaries
             if (direction < 0 && !canDecrease()) {
@@ -721,23 +758,30 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
     };
 
     const handleSave = async () => {
+        if (valueCm === 0 || valueFt === 0) {
+            showToast(t("Please enter a valid height"), 1000, "error");
+            return;
+        }
         setIsSaving(true);
         try {
+            // Always save in the current unit, not convert to cm
             const payload: UpdateHealthConditionV2Payload = {
-                height: unit === 'cm' ? valueKg : valueLbs,
-                heightUnitId: unit === 'cm' ? heightUnits?.measurementUnits.find((a: any) => a.symbol === 'cm')?.id : heightUnits?.measurementUnits.find((a: any) => a.symbol === 'ft')?.id,
+                height: unit === 'cm' ? valueCm : valueFt,
+                heightUnitId: unit === 'cm' 
+                    ? heightUnits?.measurementUnits.find((a: any) => a.symbol === 'cm')?.id 
+                    : heightUnits?.measurementUnits.find((a: any) => a.symbol === 'ft')?.id,
                 weight: null,
                 weightUnitId: null,
                 allergies: null,
                 lifestyleId: null,
                 healthConditions: null,
             };
-            console.log("payload", payload);
             await updateHealthConditionV2(payload);
             await refetch();
             onClose();
         } catch (error) {
             console.error('Error updating height:', error);
+            showToast(t("Failed to update height. Please try again."), 1000, "error");
         } finally {
             setIsSaving(false);
         }
@@ -838,7 +882,8 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
                                             className={`${unit === 'cm' ? 'bg-[#EEF0F3] font-semibold text-gray-900' : 'bg-white text-gray-700'} text-base`}
                                             onClick={() => {
                                                 setUnit('cm');
-                                                setValueKg(Math.max(0, Math.round(valueLbs * 30.48)));
+                                                const newCm = Math.max(0, Math.min(MAX_CM, Math.round(valueFt * 30.48)));
+                                                setValueCm(newCm);
                                                 try { localStorage.setItem('heightUnit', 'cm'); } catch { }
                                             }}
                                         >
@@ -850,7 +895,8 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
                                             className={`${unit === 'ft' ? 'bg-[#EEF0F3] font-semibold text-gray-900' : 'bg-white text-gray-700'} text-base`}
                                             onClick={() => {
                                                 setUnit('ft');
-                                                setValueLbs(Math.max(0, Math.round(valueKg / 30.48)));
+                                                const newFt = Math.max(0, Math.min(MAX_FT, Math.floor(valueCm / 30.48)));
+                                                setValueFt(newFt);
                                                 try { localStorage.setItem('heightUnit', 'ft'); } catch { }
                                             }}
                                         >
@@ -906,7 +952,7 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
                                                 onMouseLeave={handleRulerMouseUp}
                                             >
                                                 {Array.from({ length: 21 }).map((_, i) => {
-                                                    const base = unit === 'cm' ? valueKg : valueLbs;
+                                                    const base = unit === 'cm' ? valueCm : valueFt;
                                                     const rounded = Math.round(base);
                                                     const v = rounded - 10 + i;
                                                     const max = unit === 'cm' ? MAX_CM : MAX_FT;
@@ -992,7 +1038,7 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
                                                 }}
                                             >
                                                 {Array.from({ length: 21 }).map((_, i) => {
-                                                    const base = unit === 'cm' ? valueKg : valueLbs;
+                                                    const base = unit === 'cm' ? valueCm : valueFt;
                                                     const rounded = Math.round(base);
                                                     const v = rounded - 10 + i;
                                                     const max = unit === 'cm' ? MAX_CM : MAX_FT;

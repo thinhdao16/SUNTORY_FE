@@ -12,6 +12,7 @@ import ConfirmModal from '@/components/common/modals/ConfirmModal';
 interface FriendItem {
     id: number;
     name: string;
+    fullName: string;
     code: string;
     avatar: string;
     roomChatId?: number;
@@ -38,7 +39,7 @@ const FriendRequestSent: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchInput, setSearchInput] = useState('');
     const [page, setPage] = useState(0);
-    const [pageSize] = useState(10);
+    const [pageSize] = useState(30);
     const [hasNextPage, setHasNextPage] = useState(true);
     const isFetchingRef = useRef(false);
     const [confirmState, setConfirmState] = useState<ConfirmState>({
@@ -57,18 +58,20 @@ const FriendRequestSent: React.FC = () => {
                 setLoading(true);
             }
             const apiList: any[] = await getListSentRequests(currentPage, pageSize);
-            console.log(apiList);
-            const mapped: FriendItem[] = (apiList || []).map((it: any) => ({
-                id: Number(it?.id) || 0,
-                name: it?.fullName || `${it?.firstname ?? ''} ${it?.lastname ?? ''}`.trim(),
-                code: it?.code ?? '',
-                avatar: it?.toUser?.avatar ?? '',
-                roomChatId: it?.roomChat?.id,
-                roomChatCode: it?.roomChat?.code,
-                roomChatTitle: it?.roomChat?.title,
-                roomChatAvatar: it?.roomChat?.avatarRoomChat,
-                isOnline: Boolean(it?.isOnline)
-            }));
+            const mapped: FriendItem[] = (apiList || [])
+                .map((it: any) => ({
+                    id: Number(it?.id) || 0,
+                    name: it?.toUser?.fullName || `${it?.toUser?.firstname ?? ''} ${it?.toUser?.lastname ?? ''}`.trim() || '',
+                    fullName: it?.toUser?.fullName || `${it?.toUser?.firstname ?? ''} ${it?.toUser?.lastname ?? ''}`.trim() || '',
+                    code: it?.toUser?.code ?? '',
+                    avatar: it?.toUser?.avatar ?? '',
+                    roomChatId: it?.roomChat?.id,
+                    roomChatCode: it?.roomChat?.code,
+                    roomChatTitle: it?.roomChat?.title,
+                    roomChatAvatar: it?.roomChat?.avatarRoomChat,
+                    isOnline: Boolean(it?.isOnline)
+                }))
+                .filter((it: FriendItem) => searchQuery?.toLowerCase() === '' || it?.fullName?.toLowerCase().includes(searchQuery?.toLowerCase()));
 
             if (mapped.length > 0) {
                 if (isLoadMore) {

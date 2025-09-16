@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { updateAccountInformationV3 } from "@/services/auth/auth-service";
 import { UpdateAccountInformationV3Payload } from "@/services/auth/auth-types";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
+import { useToastStore } from "@/store/zustand/toast-store";
 
 interface YearOfBirthUpdateModalProps {
     isOpen: boolean;
@@ -30,6 +31,7 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
 }) => {
     const { t } = useTranslation();
     const { refetch } = useAuthInfo();
+    const { showToast } = useToastStore();
 
     const [year, setYear] = useState<string>(currentYearOfBirth ? String(currentYearOfBirth) : "");
     const [isSaving, setIsSaving] = useState(false);
@@ -52,10 +54,11 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
     const isValidYear =
         year.length === 4 && !Number.isNaN(yearNum) && yearNum >= 1900 && yearNum <= currentYear;
 
-    const hasChanged = (currentYearOfBirth ?? "") !== (isValidYear ? yearNum : ("" as any));
-
     const handleSave = async () => {
-        if (!isValidYear) return;
+        if (!isValidYear) {
+            showToast(t("Please enter a valid year from 1900 to current year"), 1000, "error");
+            return;
+        }
         setIsSaving(true);
         try {
             const payload: UpdateAccountInformationV3Payload = {
@@ -67,10 +70,12 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
                 yearOfBirth: yearNum,
             };
             await updateAccountInformationV3(payload);
+            showToast(t("Year of birth updated successfully!"), 2000, "success");
             await refetch();
             onClose();
         } catch (error) {
             console.error("Error updating year of birth:", error);
+            showToast(t("Failed to update year of birth. Please try again."), 3000, "error");
         } finally {
             setIsSaving(false);
         }

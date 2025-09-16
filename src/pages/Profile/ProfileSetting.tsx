@@ -68,26 +68,26 @@ const Profile: React.FC = () => {
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                                 <button
                                     type="button"
-                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
+                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-black hover:bg-gray-50 transition"
                                     onClick={() => history.push('/my-information')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={personCircleOutline} className="text-gray-700 text-xl" />
+                                        <IonIcon icon={personCircleOutline} className="text-black text-2xl" />
                                         <span>{t('My information')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
                                 </button>
                                 <hr className="border-gray-100" />
                                 <button
                                     type="button"
-                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
+                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-black hover:bg-gray-50 transition"
                                     onClick={() => history.push('/ai-profile-setting')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={starOutline} className="text-gray-700 text-xl" />
+                                        <IonIcon icon={starOutline} className="text-black text-2xl" />
                                         <span>{t('AI health profile')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
                                 </button>
                             </div>
 
@@ -95,26 +95,26 @@ const Profile: React.FC = () => {
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                                 <button
                                     type="button"
-                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
+                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-black hover:bg-gray-50 transition"
                                     onClick={() => history.push('/friend-list')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={peopleOutline} className="text-gray-700 text-xl" />
+                                        <IonIcon icon={peopleOutline} className="text-black text-2xl" />
                                         <span>{t('Friend list')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
                                 </button>
                                 <hr className="border-gray-100" />
                                 <button
                                     type="button"
-                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
+                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-black hover:bg-gray-50 transition"
                                     onClick={() => history.push('/friend-request-sent')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={personAddOutline} className="text-gray-700 text-xl" />
+                                        <IonIcon icon={personAddOutline} className="text-black text-2xl" />
                                         <span>{t('Friend request sent')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
                                 </button>
                             </div>
 
@@ -122,35 +122,35 @@ const Profile: React.FC = () => {
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                                 <button
                                     type="button"
-                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
+                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-black hover:bg-gray-50 transition"
                                     onClick={() => history.push('/change-password')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={lockClosedOutline} className="text-gray-700 text-xl" />
+                                        <IonIcon icon={lockClosedOutline} className="text-black text-2xl" />
                                         <span>{t('Reset password')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
                                 </button>
                                 <hr className="border-gray-100" />
                                 <button
                                     type="button"
-                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
+                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-black hover:bg-gray-50 transition"
                                     onClick={() => history.push('/profile/help')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={helpCircleOutline} className="text-gray-700 text-xl" />
+                                        <IonIcon icon={helpCircleOutline} className="text-black text-2xl" />
                                         <span>{t('Help & Feedbacks')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
                                 </button>
                                 <hr className="border-gray-100" />
                                 <button
                                     type="button"
-                                    className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-red-500 hover:bg-red-50 transition"
+                                    className="w-full flex items-center justify-bet ween px-4 py-[15px] text-left text-[15px] text-red-500 hover:bg-red-50 transition"
                                     onClick={() => { handleLogout() }}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={logOutOutline} className="text-red-500 text-xl" />
+                                        <IonIcon icon={logOutOutline} className="text-red-500 text-2xl" />
                                         <span className="font-medium">{t('Log out')}</span>
                                     </div>
                                 </button>

@@ -7,6 +7,7 @@ import { updateAccountInformationV3, updateHealthConditionV2 } from "@/services/
 import { UpdateAccountInformationV3Payload, UpdateHealthConditionV2Payload } from "@/services/auth/auth-types";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import { useHealthMasterData } from "@/hooks/common/useHealth";
+import { useToastStore } from "@/store/zustand/toast-store";
 
 interface WeightUpdateModalProps {
     isOpen: boolean;
@@ -17,6 +18,7 @@ interface WeightUpdateModalProps {
     handleTouchEnd: () => void;
     showOverlay?: boolean;
     currentWeight?: number;
+    currentWeightUnit?: string;
 }
 
 const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
@@ -27,25 +29,45 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
     handleTouchStart,
     handleTouchMove,
     handleTouchEnd,
-    showOverlay = true
+    showOverlay = true,
+    currentWeightUnit
 }) => {
     const { t } = useTranslation();
+    const { showToast } = useToastStore();
     const { data: userInfo, refetch } = useAuthInfo();
     const { data: masterData } = useHealthMasterData();
     const units = masterData?.measurementUnits?.find((a: any) => a?.category?.categoryName?.toLowerCase() === 'weight');
+    // Weight limits: 500kg = 1102.31lbs, so we use 1102lbs (499.04kg) as max for lbs
+    // This ensures consistent conversion and prevents values > 500kg
     const MAX_KG = 500;
-    const MAX_LBS = Math.round(500 * 2.20462);
-    const [unit, setUnit] = useState<'kg' | 'lbs'>('kg');
+    const MAX_LBS = Math.floor(500 * 2.20462); // 1102 lbs (499.04kg)
+    const [unit, setUnit] = useState<'kg' | 'lbs'>(currentWeightUnit?.toLowerCase() === 'lbs' ? 'lbs' : 'kg');
     const [isSaving, setIsSaving] = useState(false);
     const [valueKg, setValueKg] = useState<number>(() => {
         const num = Number(currentWeight);
-        const safe = Number.isFinite(num) ? Math.round(num) : 60;
-        return Math.max(0, Math.min(MAX_KG, safe));
+        if (!Number.isFinite(num)) return 60;
+        
+        // If currentWeightUnit is 'lbs', convert to kg first
+        if (currentWeightUnit?.toLowerCase() === 'lbs') {
+            const kgValue = Math.round(num / 2.20462);
+            return Math.max(0, Math.min(MAX_KG, kgValue));
+        }
+        
+        // Otherwise treat as kg
+        return Math.max(0, Math.min(MAX_KG, Math.round(num)));
     });
     const [valueLbs, setValueLbs] = useState<number>(() => {
         const num = Number(currentWeight);
-        const safe = Number.isFinite(num) ? Math.round(num * 2.20462) : 132;
-        return Math.max(0, Math.min(MAX_LBS, safe));
+        if (!Number.isFinite(num)) return 132;
+        
+        // If currentWeightUnit is 'lbs', use directly
+        if (currentWeightUnit?.toLowerCase() === 'lbs') {
+            return Math.max(0, Math.min(MAX_LBS, Math.floor(num)));
+        }
+        
+        // Otherwise convert from kg to lbs
+        const lbsValue = Math.floor(num * 2.20462);
+        return Math.max(0, Math.min(MAX_LBS, lbsValue));
     });
 
     // Enhanced smooth drag system
@@ -84,25 +106,42 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
 
     useEffect(() => {
         if (isOpen) {
-            // restore unit preference
+            // Set unit based on currentWeightUnit or localStorage preference
+            const preferredUnit = currentWeightUnit?.toLowerCase() === 'lbs' ? 'lbs' : 'kg';
             try {
-                const u = localStorage.getItem('weightUnit') as 'kg' | 'lbs' | null;
-                if (u === 'kg' || u === 'lbs') setUnit(u);
-            } catch { }
+                const storedUnit = localStorage.getItem('weightUnit') as 'kg' | 'lbs' | null;
+                if (storedUnit === 'kg' || storedUnit === 'lbs') {
+                    setUnit(storedUnit);
+                } else {
+                    setUnit(preferredUnit);
+                }
+            } catch { 
+                setUnit(preferredUnit);
+            }
 
             const parsed = Number(currentWeight);
             if (Number.isFinite(parsed)) {
-                const initKg = Math.max(0, Math.min(MAX_KG, Math.round(parsed)));
-                const initLbs = Math.max(0, Math.min(MAX_LBS, Math.round(parsed * 2.20462)));
-                setValueKg(initKg);
-                setValueLbs(initLbs);
+                // Convert based on the actual unit of currentWeight
+                if (currentWeightUnit?.toLowerCase() === 'lbs') {
+                    // currentWeight is in lbs, convert to both units
+                    const kgValue = Math.round(parsed / 2.20462);
+                    const lbsValue = Math.floor(parsed);
+                    setValueKg(Math.max(0, Math.min(MAX_KG, kgValue)));
+                    setValueLbs(Math.max(0, Math.min(MAX_LBS, lbsValue)));
+                } else {
+                    // currentWeight is in kg, convert to both units
+                    const kgValue = Math.round(parsed);
+                    const lbsValue = Math.floor(parsed * 2.20462);
+                    setValueKg(Math.max(0, Math.min(MAX_KG, kgValue)));
+                    setValueLbs(Math.max(0, Math.min(MAX_LBS, lbsValue)));
+                }
             } else {
                 // fallback to previous state to avoid resetting to default 60 when reopening without prop change
                 setValueKg(prev => Math.max(0, Math.min(MAX_KG, prev || 60)));
                 setValueLbs(prev => Math.max(0, Math.min(MAX_LBS, prev || 132)));
             }
         }
-    }, [isOpen, currentWeight]);
+    }, [isOpen, currentWeight, currentWeightUnit]);
 
     // Cleanup on unmount to prevent memory leaks on mobile
     useEffect(() => {
@@ -129,7 +168,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
     const decrement = () => {
         if (canDecrease()) {
             if (unit === 'kg') setValueKg(prev => Math.max(0, Math.min(MAX_KG, Math.round(prev - 1))));
-            else setValueLbs(prev => Math.max(0, Math.min(MAX_LBS, Math.round(prev - 1))));
+            else setValueLbs(prev => Math.max(0, Math.min(MAX_LBS, Math.floor(prev - 1))));
         }
     };
     const increment = () => {
@@ -137,7 +176,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
         if (unit === 'kg') {
             setValueKg(prev => Math.max(0, Math.min(MAX_KG, Math.round(prev + 1))));
         } else {
-            setValueLbs(prev => Math.max(0, Math.min(MAX_LBS, Math.round(prev + 1))));
+            setValueLbs(prev => Math.max(0, Math.min(MAX_LBS, Math.floor(prev + 1))));
         }
     };
 
@@ -162,7 +201,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
             });
         } else {
             setValueLbs(prev => {
-                const newValue = Math.round(prev + delta);
+                const newValue = Math.floor(prev + delta);
                 const finalValue = Math.max(0, Math.min(MAX_LBS, newValue));
 
                 // If we hit the boundary (0) from above, only stop hold timers
@@ -727,6 +766,10 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
     };
 
     const handleSave = async () => {
+        if (valueKg === 0 || valueLbs === 0) {
+            showToast(t("Please enter a valid weight"), 1000, "error");
+            return;
+        }
         setIsSaving(true);
         try {
             const payload: UpdateHealthConditionV2Payload = {
@@ -743,6 +786,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
             onClose();
         } catch (error) {
             console.error('Error updating weight:', error);
+            showToast(t("Failed to update weight. Please try again."), 1000, "error");
         } finally {
             setIsSaving(false);
         }
@@ -843,10 +887,8 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                                             className={`${unit === 'kg' ? 'bg-[#EEF0F3] font-semibold text-gray-900' : 'bg-white text-gray-700'} text-base`}
                                             onClick={() => {
                                                 setUnit('kg');
-                                                setValueKg(prev => {
-                                                    const converted = Math.round(valueLbs / 2.20462);
-                                                    return Math.max(0, Math.min(MAX_KG, converted));
-                                                });
+                                                const newKg = Math.max(0, Math.min(MAX_KG, Math.round(valueLbs / 2.20462)));
+                                                setValueKg(newKg);
                                                 try { localStorage.setItem('weightUnit', 'kg'); } catch { }
                                             }}
                                         >
@@ -858,10 +900,8 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                                             className={`${unit === 'lbs' ? 'bg-[#EEF0F3] font-semibold text-gray-900' : 'bg-white text-gray-700'} text-base`}
                                             onClick={() => {
                                                 setUnit('lbs');
-                                                setValueLbs(prev => {
-                                                    const converted = Math.round(valueKg * 2.20462);
-                                                    return Math.max(0, Math.min(MAX_LBS, converted));
-                                                });
+                                                const newLbs = Math.max(0, Math.min(MAX_LBS, Math.floor(valueKg * 2.20462)));
+                                                setValueLbs(newLbs);
                                                 try { localStorage.setItem('weightUnit', 'lbs'); } catch { }
                                             }}
                                         >

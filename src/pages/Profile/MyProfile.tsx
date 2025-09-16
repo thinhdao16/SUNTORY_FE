@@ -39,6 +39,61 @@ const mockPosts = [
       "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=400&fit=crop",
       "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=400&fit=crop"
     ]
+  },
+  {
+    id: 3,
+    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
+    hashtags: ["#yoga", "#healthy"],
+    likes: 2500,
+    comments: 800,
+    reposts: 450,
+    shares: 8,
+    timeAgo: "1m",
+    isPublic: false,
+  },
+  {
+    id: 4,
+    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
+    hashtags: ["#yoga", "#healthy"],
+    likes: 2500,
+    comments: 800,
+    reposts: 450,
+    shares: 8,
+    timeAgo: "1m",
+    isPublic: false,
+  },
+  {
+    id: 5,
+    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
+    hashtags: ["#yoga", "#healthy"],
+    likes: 2500,
+    comments: 800,
+    reposts: 450,
+    shares: 8,
+    timeAgo: "1m",
+    isPublic: false,
+  },
+  {
+    id: 6,
+    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
+    hashtags: ["#yoga", "#healthy"],
+    likes: 2500,
+    comments: 800,  
+    reposts: 450,
+    shares: 8,
+    timeAgo: "1m",
+    isPublic: false,
+  },
+  {
+    id: 7,
+    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
+    hashtags: ["#yoga", "#healthy"],
+    likes: 2500,
+    comments: 800,
+    reposts: 450,
+    shares: 8,
+    timeAgo: "1m",
+    isPublic: false,
   }
 ];
 
@@ -128,6 +183,8 @@ const TabNavigation: React.FC<{
 
 // Post Item Component
 const PostItem: React.FC<{ post: any }> = ({ post }) => {
+  const hashtags = Array.isArray(post?.hashtags) ? post.hashtags : [];
+  const images = Array.isArray(post?.images) ? post.images : [];
   return (
     <div className="border-b border-gray-100 p-4">
       {/* Post Header */}
@@ -160,9 +217,9 @@ const PostItem: React.FC<{ post: any }> = ({ post }) => {
       {/* Post Content */}
       <div className="mb-3">
         <p className="text-gray-900 mb-2">{post.content}</p>
-        {post.hashtags.length > 0 && (
+        {hashtags.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {post.hashtags.map((tag: string, index: number) => (
+            {hashtags.map((tag: string, index: number) => (
               <span key={index} className="text-blue-500 text-sm">
                 {tag}
               </span>
@@ -172,9 +229,9 @@ const PostItem: React.FC<{ post: any }> = ({ post }) => {
       </div>
 
       {/* Post Images */}
-      {post.images.length > 0 && (
-        <div className={`grid gap-2 mb-3 ${post.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          {post.images.map((image: string, index: number) => (
+      {images.length > 0 && (
+        <div className={`grid gap-2 mb-3 ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          {images.map((image: string, index: number) => (
             <img
               key={index}
               src={image}
@@ -189,23 +246,23 @@ const PostItem: React.FC<{ post: any }> = ({ post }) => {
       <div className="flex items-center space-x-6 text-gray-500 text-sm">
         <div className="flex items-center space-x-1">
           <HeartIcon className="w-4 h-4 text-red-500" />
-          <span>{post.likes.toLocaleString()}</span>
+          <span>{(post.likes || 0).toLocaleString()}</span>
         </div>
         <div className="flex items-center space-x-1">
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
           </svg>
-          <span>{post.comments.toLocaleString()}</span>
+          <span>{(post.comments || 0).toLocaleString()}</span>
         </div>
         <div className="flex items-center space-x-1">
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
           </svg>
-          <span>{post.reposts.toLocaleString()}</span>
+          <span>{(post.reposts || 0).toLocaleString()}</span>
         </div>
         <div className="flex items-center space-x-1">
           <ShareIcon className="w-4 h-4" />
-          <span>{post.shares.toLocaleString()}</span>
+          <span>{(post.shares || 0).toLocaleString()}</span>
         </div>
       </div>
     </div>
@@ -349,28 +406,27 @@ const MyProfile: React.FC = () => {
 
   return (
     <PageContainer>
-      <IonPage>
-        <IonContent>
-          <div className="min-h-screen bg-white">
-            <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', '--ion-background-color': '#ffffff' } as any}>
-              <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
-                <IonButtons slot="start">
-                  <IonButton className="opacity-0 pointer-events-none" fill="clear">
-                    <IonIcon icon={createOutline} />
-                  </IonButton>
-                </IonButtons>
-                <IonTitle className="text-2xl font-bold text-gray-900 text-center">
-                  {t('My profile')}
-                </IonTitle>
-                <IonButtons slot="end">
-                  <IonButton fill="clear">
-                    <IonIcon icon={createOutline} className="text-black size-7 text-transform-uppercase" />
-                  </IonButton>
-                </IonButtons>
-              </IonToolbar>
-            </IonHeader>
+      <IonPage style={{ '--background': 'white'} as any}>
+        <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', '--ion-background-color': '#ffffff' } as any}>
+          <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+            <IonButtons slot="start">
+              <IonButton className="opacity-0 pointer-events-none" fill="clear">
+                <IonIcon icon={createOutline} />
+              </IonButton>
+            </IonButtons>
+            <IonTitle className="text-2xl font-bold text-gray-900 text-center">
+              {t('My profile')}
+            </IonTitle>
+            <IonButtons slot="end">
+              <IonButton fill="clear">
+                <IonIcon icon={createOutline} className="text-black size-7 text-transform-uppercase" />
+              </IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent style={{ '--background': 'white'} as any}>
+          <div className="bg-white">
             <hr className="border-gray-100" />
-
             {/* Profile Header */}
             {userInfo && (
               <div className="px-6 pt-4 pb-6">
@@ -380,13 +436,12 @@ const MyProfile: React.FC = () => {
                     <div className="flex items-center space-x-2 mb-2">
                       <h1 className="text-[25px] font-bold text-gray-900">{userInfo?.name}</h1>
                       {/* Vietnam flag icon */}
-                      <span className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`} style={{ width: 18, height: 18, borderRadius: 9999 }} ></span>
+                      <span className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`} style={{ width: 20, height: 20, borderRadius: 9999 }} ></span>
                     </div>
                     <div className="flex items-center space-x-2 mb-1">
                       <p
                         className="text-black overflow-hidden max-w-[110px] truncate text-[15px]"
                         style={{
-                          fontFamily: 'Inter',
                           fontWeight: 400,
                           fontSize: '15px',
                           lineHeight: '21px',
@@ -398,14 +453,12 @@ const MyProfile: React.FC = () => {
                       {/* Copy icon */}
                       <IonIcon icon={copyOutline} className="w-4 h-4 text-black text-transform-uppercase hover:text-blue-500" onClick={() => { navigator.clipboard.writeText(userInfo.code || "") }} />
                     </div>
-                    <div className="flex items-center space-x-2 mb-4" onClick={() => {
+                    <div className="flex items-center space-x-1 mb-4" onClick={() => {
                       history.push('/friend-list');
                     }}>
                       <p
-                        className="text-black mb-0 text-[15px]"
+                        className="text-black mb-0 text-[15px] font-bold"
                         style={{
-                          fontFamily: 'Inter',
-                          fontWeight: 500,
                           fontSize: '15px',
                           lineHeight: '21px',
                           letterSpacing: '0%'
@@ -416,7 +469,6 @@ const MyProfile: React.FC = () => {
                       <p
                         className="text-gray-800 mb-0 text-[15px]"
                         style={{
-                          fontFamily: 'Inter',
                           fontWeight: 400,
                           fontSize: '15px',
                           lineHeight: '21px',
@@ -540,6 +592,7 @@ const MyProfile: React.FC = () => {
               {renderTabContent()}
             </div>
           </div>
+          <div style={{ height: 'calc(112px + env(safe-area-inset-bottom, 0px))' }} />
         </IonContent>
       </IonPage>
     </PageContainer>

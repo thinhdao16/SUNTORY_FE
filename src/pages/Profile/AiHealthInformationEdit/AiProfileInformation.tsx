@@ -91,7 +91,7 @@ const AiProfileInformation: React.FC = () => {
                             onClick={() => history.push('/profile-setting')}
                             className="ml-2"
                         >
-                            <IonIcon icon={arrowBack} className="text-gray-700 font-bold text-2xl" />
+                            <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
                         </IonButton>
                     </IonButtons>
                     <IonTitle className="text-center font-semibold text-lg">
@@ -149,7 +149,7 @@ const AiProfileInformation: React.FC = () => {
                                 className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
                                 onClick={() => setIsAllergiesUpdateModalOpen(true)}
                             >
-                                <span>{t('Food allergies')}</span>
+                                <span className="font-semibold text-[15px] text-gray-900">{t('Food allergies')}</span>
                                 <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
                             </button>
                             <hr className="border-gray-100" />
@@ -158,7 +158,7 @@ const AiProfileInformation: React.FC = () => {
                                 className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
                                 onClick={() => setIsHealthConditionsUpdateModalOpen(true)}
                             >
-                                <span>{t('Health Status')}</span>
+                                <span className="font-semibold text-[15px] text-gray-900">{t('Health Status')}</span>
                                 <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
                             </button>
                         </div>
@@ -182,6 +182,7 @@ const AiProfileInformation: React.FC = () => {
                 handleTouchStart={handleTouchStart}
                 handleTouchMove={handleTouchMove}
                 handleTouchEnd={handleTouchEnd}
+                currentHeightUnit={heightUnit}
             />
             <DietLifeStyleModal
                 isOpen={isDietLifeStyleModalOpen}

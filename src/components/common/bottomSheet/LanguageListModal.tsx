@@ -7,6 +7,7 @@ import { UpdateAccountInformationV3Payload } from "@/services/auth/auth-types";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import { getListLanguage } from "@/services/language/language-service";
 import { useTranslation } from "react-i18next";
+import { useToastStore } from "@/store/zustand/toast-store";
 
 interface LanguageListModalProps {
     isOpen: boolean;
@@ -31,11 +32,12 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
     const { t } = useTranslation();
     const { i18n } = useTranslation();
     const { refetch } = useAuthInfo();
-
+    const { showToast } = useToastStore();
     const SHEET_MAX_VH = 80;
     const HEADER_PX = 56;
 
     const [query, setQuery] = useState("");
+    const [debouncedQuery, setDebouncedQuery] = useState("");
     const [languages, setLanguages] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -52,6 +54,14 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
         }
     }, [isOpen, selectedCode]);
 
+    // Debounce search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedQuery(query);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [query]);
+
     const fetchLanguages = async () => {
         setLoading(true);
         try {
@@ -63,11 +73,11 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
     };
 
     const filtered = useMemo(() => {
-        const q = query.trim().toLowerCase();
+        const q = debouncedQuery.trim().toLowerCase();
         const list = languages;
         if (!q) return list;
         return list.filter((l) => (l?.name || "").toLowerCase().includes(q));
-    }, [languages, query]);
+    }, [languages, debouncedQuery]);
 
     // Put ONLY the initially selected language on top (do not change when picking temp)
     const ordered = useMemo(() => {
@@ -98,12 +108,14 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
                 yearOfBirth: null,
             };
             await updateAccountInformationV3(payload);
+            showToast(t("Language updated successfully!"), 2000, "success");
             onSelect(tempSelected);
             await handleUpdateUserLanguage(tempSelected);
             await refetch();
             onClose();
         } catch (e) {
             console.error("Error updating language:", e);
+            showToast(t("Failed to update language. Please try again."), 3000, "error");
         } finally {
             setIsSaving(false);
         }
@@ -157,7 +169,10 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
                             </div>
                             <IonButton
                                 fill="clear"
-                                onClick={onClose}
+                                onClick={() => {
+                                    setQuery('');
+                                    onClose();
+                                }}
                                 style={{ width: 56, height: HEADER_PX, outline: "none", display: "flex", alignItems: "center", justifyContent: "center" }}
                             >
                                 <IonIcon icon={close} style={{ width: 24, height: 24, color: "#000000" }} />

@@ -36,6 +36,7 @@ const AllergiesUpdateModal: React.FC<AllergiesUpdateModalProps> = ({
 }) => {
     const { t } = useTranslation();
     const [inputValue, setInputValue] = useState('');
+    const [debouncedInputValue, setDebouncedInputValue] = useState('');
     const [isIconSendStyle, setIsIconSendStyle] = useState('black');
     const [savedAllergies, setSavedAllergies] = useState<AllergyItem[]>([]);
     const [selectedAllergies, setSelectedAllergies] = useState<AllergyItem[]>([]);
@@ -92,16 +93,27 @@ const AllergiesUpdateModal: React.FC<AllergiesUpdateModalProps> = ({
         setSavedAllergies(allergies);
     }, [allergies]);
 
+    // Debounce search input
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedInputValue(inputValue);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [inputValue]);
+
     // Function để search allergies
     const handleInputChange = (value: string) => {
         setInputValue(value);
         setIsIconSendStyle(value ? 'blue' : 'black');
+    };
 
-        if (value) {
+    // Handle debounced search
+    useEffect(() => {
+        if (debouncedInputValue) {
             const allAllergies = getAllAllergies();
-            // Filter allergies dựa trên input
+            // Filter allergies dựa trên debounced input
             const filtered = allAllergies.filter(allergy =>
-                allergy.name.toLowerCase().includes(value.toLowerCase()) &&
+                allergy.name.toLowerCase().includes(debouncedInputValue.toLowerCase()) &&
                 !selectedAllergies.some(selected => selected.allergyId === allergy.allergyId) &&
                 !savedAllergies.some(saved => saved.allergyId === allergy.allergyId)
             );
@@ -111,7 +123,7 @@ const AllergiesUpdateModal: React.FC<AllergiesUpdateModalProps> = ({
             setSearchResults([]);
             setShowDropdown(false);
         }
-    };
+    }, [debouncedInputValue, selectedAllergies, savedAllergies]);
 
     // Function để chọn từ dropdown
     const selectFromDropdown = (allergyItem: AllergyItem) => {
@@ -252,7 +264,7 @@ const AllergiesUpdateModal: React.FC<AllergiesUpdateModalProps> = ({
                                                 placeholder={t('e.g., Peanuts, Shellfish')}
                                                 onIonInput={(e) => handleInputChange((e.detail.value ?? '').toString())}
                                                 onIonFocus={() => {
-                                                    if (inputValue.trim().length > 0 && searchResults.length > 0) {
+                                                    if (debouncedInputValue.trim().length > 0 && searchResults.length > 0) {
                                                         setShowDropdown(true);
                                                     }
                                                 }}

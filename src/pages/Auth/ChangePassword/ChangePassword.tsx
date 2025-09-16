@@ -42,7 +42,7 @@ const ChangePassword: React.FC = () => {
                 onSuccess: () => {
                     setTimeout(() => {
                         if (isAuthenticated) {
-                            history.replace("/profile");
+                            history.replace("/profile-setting");
                         } else {
                             history.replace("/login");
                         }
