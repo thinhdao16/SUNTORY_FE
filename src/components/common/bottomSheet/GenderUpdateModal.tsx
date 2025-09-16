@@ -114,7 +114,7 @@ const GenderUpdateModal: React.FC<GenderUpdateModalProps> = ({
                                     overflow: 'hidden'
                                 }}
                             >
-                                {t('My sex assigned at birth')}
+                                {t('My gender assigned at birth')}
                             </div>
                             <IonButton
                                 fill="clear"

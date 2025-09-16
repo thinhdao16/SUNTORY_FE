@@ -78,6 +78,7 @@ const DietLifeStyleModal: React.FC<DietLifeStyleModalProps> = ({
     };
 
     const handleSave = async () => {
+
         setIsSaving(true);
         try {
             const payload: UpdateHealthConditionV2Payload = {
