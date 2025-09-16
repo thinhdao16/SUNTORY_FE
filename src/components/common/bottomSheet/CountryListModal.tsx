@@ -39,7 +39,7 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { refetch } = useAuthInfo();
-    const { showToast } = useToastStore();  
+    const { showToast } = useToastStore();
     useEffect(() => {
         // Reset temp selection each time modal opens with current selection
         if (isOpen) {
@@ -224,28 +224,28 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
                                         )}
                                     </motion.button>
                                 ))}
-
+                                {/* Sticky Save inside scroll area, floating like design */}
+                                {(tempSelected && tempSelected !== selectedCode) && (
+                                    <>
+                                        <div className="sticky bottom-0 left-0 right-0 z-50 bg-white px-4 py-3">
+                                            <IonButton
+                                                expand="block"
+                                                shape="round"
+                                                onClick={() => handleSave(tempSelected!)}
+                                                className="h-12"
+                                                style={{
+                                                    '--background': '#1152F4',
+                                                    '--background-hover': '#2563eb',
+                                                    'font-weight': '600',
+                                                }}
+                                            >
+                                                {isSaving ? <IonSpinner name="crescent" /> : t('Save')}
+                                            </IonButton>
+                                        </div>
+                                    </>
+                                )}
+                                {/* Fixed Footer */}
                             </div>
-                            {/* Sticky Save inside scroll area, floating like design */}
-                            {(tempSelected && tempSelected !== selectedCode) && (
-                                <div className="sticky bottom flex justify-center px-4 py-4 border-t border-gray-100">
-                                    <IonButton
-                                        expand="block"
-                                        shape="round"
-                                        onClick={() => handleSave(tempSelected!)}
-                                        className="h-14"
-                                        style={{
-                                            '--background': '#1152F4',
-                                            '--background-hover': '#2563eb',
-                                            'font-weight': '600',
-                                            width: '100%',
-                                        }}
-                                    >
-                                        {isSaving ? <IonSpinner name="crescent" /> : t('Save')}
-                                    </IonButton>
-                                </div>
-                            )}
-                            {/* Fixed Footer */}
                         </div>
                     </div>
                 </motion.div>

@@ -588,7 +588,7 @@ const MyProfile: React.FC = () => {
                       justifyContent: 'center',
                       minWidth: 0
                     }}
-                    onClick={() => history.push('/social-partner/add')}
+                    onClick={() => history.push('/share-profile')}
                   >
                     {t('Share profile')}
                   </IonButton>

@@ -55,6 +55,7 @@ const routes = {
   AiProfileInformation: lazy(() => import("@/pages/Profile/AiHealthInformationEdit/AiProfileInformation")),
   FriendList: lazy(() => import("@/pages/Profile/Friend/FriendList")),
   FriendRequestSent: lazy(() => import("@/pages/Profile/Friend/FriendRequestSent")),
+  ShareProfile: lazy(() => import("@/pages/Profile/ShareProfile/ShareProfile")),
 };
 
 const authRoutes = ["/login", "/register"];
@@ -103,6 +104,7 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/social-group" component={() => <Redirect to="/social-group/add" />} />
           <PrivateRoute path="/social-partner/add" component={routes.SocialPartner} exact />
           <PrivateRoute path="/social-partner" component={() => <Redirect to="/social-partner/add" />} />
+          <PrivateRoute path="/share-profile" component={routes.ShareProfile} exact />
           <PrivateRoute path="/social-qr-web" component={routes.SocialQRWeb} exact />
           <PrivateRoute path="/social-qr-native" component={routes.SocialQRNative} exact />
           <PrivateRoute path="/translate" component={routes.Translate} exact />

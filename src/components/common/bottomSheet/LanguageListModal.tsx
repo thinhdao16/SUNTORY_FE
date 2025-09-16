@@ -13,6 +13,9 @@ interface LanguageListModalProps {
     isOpen: boolean;
     onClose: () => void;
     translateY: number;
+    handleTouchStart: (e: React.TouchEvent) => void;
+    handleTouchMove: (e: React.TouchEvent) => void;
+    handleTouchEnd: () => void;
     showOverlay?: boolean;
     selectedCode?: string; // ui code like 'en', 'vi', 'zh'
     onSelect: (langCode: string) => void;
@@ -27,6 +30,9 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
     selectedCode,
     onSelect,
     translateY,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
     showOverlay = true,
 }) => {
     const { t } = useTranslation();
@@ -151,6 +157,9 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
                             willChange: "transform",
                         }}
                         onClick={(e) => e.stopPropagation()}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
                     >
                         {/* Header */}
                         <div className="px-2" style={{ minHeight: HEADER_PX, display: "flex", alignItems: "center", touchAction: "none" }}>
@@ -177,9 +186,9 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
                             </IonButton>
                         </div>
 
-                        {/* Body */}
+                        {/* Body (scroll area) */}
                         <div
-                            style={{ height: `calc(${SHEET_MAX_VH}vh - ${HEADER_PX}px)`, overflowY: "auto" }}
+                            style={{ height: `calc(${SHEET_MAX_VH}vh - ${HEADER_PX}px - 68px)`, overflowY: "auto" }}
                         >
                             {/* Search */}
                             <div className="px-4 pt-1 pb-2">
@@ -194,7 +203,7 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
                             </div>
 
                             {/* List */}
-                            <div className="px-2 pt-0 pb-4 h-160">
+                            <div className="px-2 pt-0 pb-4 h-140">
                                 {loading && (
                                     <div className="px-3 py-3 text-sm text-gray-500">{t('Loading...')}</div>
                                 )}
@@ -223,15 +232,18 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
                                     );
                                 })}
                             </div>
+                            {/* Spacer to avoid last items hidden behind footer */}
+                            <div style={{ height: 68 }} />
                         </div>
-                        {/* Sticky Save at very bottom */}
+
+                        {/* Fixed Footer outside scroll area */}
                         {(tempSelected && tempSelected !== selectedCode) && (
-                            <div className="sticky bottom-3 flex justify-center px-4 py-4 border-t border-gray-100">
+                            <div className="px-4 py-3 border-t border-gray-100 bg-white">
                                 <IonButton
                                     expand="block"
                                     shape="round"
                                     onClick={() => handleSave()}
-                                    className="h-14"
+                                    className="h-12"
                                     style={{
                                         '--background': '#1152F4',
                                         '--background-hover': '#2563eb',
@@ -243,11 +255,10 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
                                 </IonButton>
                             </div>
                         )}
-                        {/* Fixed Footer */}
                     </div>
                 </motion.div>
             )}
-        </AnimatePresence>
+        </AnimatePresence >
     );
 };
 

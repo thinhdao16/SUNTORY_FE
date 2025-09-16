@@ -35,6 +35,7 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
 
     const [year, setYear] = useState<string>(currentYearOfBirth ? String(currentYearOfBirth) : "");
     const [isSaving, setIsSaving] = useState(false);
+    const [keyboardOffset, setKeyboardOffset] = useState(0);
 
     const SHEET_MAX_VH = 80;
     const HEADER_PX = 56;
@@ -48,6 +49,18 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) onClose();
     };
+
+    useEffect(() => {
+        const vv = (window as any).visualViewport;
+        if (!vv) return;
+        const handleResize = () => {
+            const offset = Math.max(0, (window.innerHeight - vv.height - vv.offsetTop));
+            setKeyboardOffset(offset);
+        };
+        handleResize();
+        vv.addEventListener('resize', handleResize);
+        return () => vv.removeEventListener('resize', handleResize);
+    }, []);
 
     const currentYear = new Date().getFullYear();
     const yearNum = Number(year);
@@ -154,8 +167,16 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
                                 />
                             </div>
 
-                            {/* Save Button - fixed at bottom */}
-                            <div className="px-4 py-4 border-t border-gray-100">
+                            {/* Save Button - sticky and lifts above keyboard */}
+                            <div className="px-4 py-4 border-t border-gray-100"
+                                style={{
+                                    position: 'sticky',
+                                    bottom: 0,
+                                    background: '#ffffff',
+                                    paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px)`,
+                                    zIndex: 10
+                                }}
+                            >
                                 <IonButton
                                     expand="block"
                                     shape="round"
@@ -177,5 +198,4 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
         </AnimatePresence>
     );
 };
-
 export default YearOfBirthUpdateModal;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { IonPage, IonContent, IonHeader, IonToolbar, IonButton, IonIcon, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent, IonSearchbar } from '@ionic/react';
+import { IonPage, IonContent, IonHeader, IonToolbar, IonButton, IonIcon, IonSkeletonText, IonInfiniteScroll, IonSearchbar, IonTitle, IonButtons } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
@@ -152,7 +152,7 @@ const FriendRequestSent: React.FC = () => {
     };
 
     const truncate = (text: string | undefined, max: number = 15) => {
-        if (!text) return '';   
+        if (!text) return '';
         return text.length > max ? text.slice(0, max) + '…' : text;
     };
 
@@ -180,7 +180,7 @@ const FriendRequestSent: React.FC = () => {
             <div className="flex items-center gap-4 min-w-0">
                 <div className="relative flex-shrink-0">
                     <img
-                        src={requestSent.avatar}
+                        src={requestSent?.avatar || avatarFallback}
                         alt={requestSent.name}
                         className="w-12 h-12 rounded-full object-cover"
                         onError={(e) => {
@@ -216,33 +216,25 @@ const FriendRequestSent: React.FC = () => {
     return (
         <IonPage className="ion-page" style={{ '--background': 'white', height: '100%' } as any}>
             {/* Fixed Header */}
-            <IonHeader className="ion-no-border">
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    minHeight: '56px',
-                    paddingTop: 'env(safe-area-inset-top, 0)',
-                    backgroundColor: 'white',
-                    borderBottom: '2px solid #eef2f7'
-                }}>
+            <IonToolbar style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
+                <IonButtons slot="start">
                     <IonButton
                         fill="clear"
-                        onClick={handleBack}
-                        style={{ margin: 0, padding: '8px', minWidth: 'auto' }}
+                        onClick={() => history.goBack()}
+                        className="ml-2"
                     >
-                        <IonIcon icon={arrowBack} className="text-black" />
+                        <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
                     </IonButton>
-                    <div style={{
-                        flex: 1,
-                        textAlign: 'center',
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        marginLeft: '-48px'
-                    }}>
-                        {t('Request sent')}
-                    </div>
-                </div>
-            </IonHeader>
+                </IonButtons>
+                <IonTitle className="text-center font-semibold text-lg">
+                    {t('Request sent')}
+                </IonTitle>
+                <IonButtons slot="end">
+                    <IonButton className="opacity-0 pointer-events-none" fill="clear">
+                        <IonIcon icon={arrowBack} />
+                    </IonButton>
+                </IonButtons>
+            </IonToolbar>
 
             {/* Fixed Search Bar */}
             <div className="px-3 py-3 bg-white">

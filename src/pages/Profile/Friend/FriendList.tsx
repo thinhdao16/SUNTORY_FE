@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { IonPage, IonContent, IonHeader, IonToolbar, IonButton, IonIcon, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent, IonSearchbar } from '@ionic/react';
+import { IonPage, IonContent, IonHeader, IonToolbar, IonButton, IonIcon, IonSkeletonText, IonInfiniteScroll, IonSearchbar, IonTitle, IonButtons } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
@@ -186,7 +186,7 @@ const FriendList: React.FC = () => {
             <div className="flex items-center gap-4 min-w-0">
                 <div className="relative flex-shrink-0">
                     <img
-                        src={friend.avatar}
+                        src={friend?.avatar || avatarFallback}
                         alt={friend.name}
                         className="w-12 h-12 rounded-full object-cover"
                         onError={(e) => {
@@ -199,10 +199,10 @@ const FriendList: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                     <h3 className="font-semibold text-gray-900 text-[17px] truncate" title={friend.name}>
-                        {truncate(friend.name, 18)}
+                        {truncate(friend?.name, 18)}
                     </h3>
                     <p className="text-[14px] text-gray-700 truncate" title={friend.code}>
-                        {truncate(friend.code, 15)}
+                        {truncate(friend?.code, 15)}
                     </p>
                 </div>
             </div>
@@ -228,33 +228,25 @@ const FriendList: React.FC = () => {
     return (
         <IonPage className="ion-page" style={{ '--background': 'white', height: '100%' } as any}>
             {/* Fixed Header */}
-            <IonHeader className="ion-no-border">
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    minHeight: '56px',
-                    paddingTop: 'env(safe-area-inset-top, 0)',
-                    backgroundColor: 'white',
-                    borderBottom: '2px solid #eef2f7'
-                }}>
+            <IonToolbar style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
+                <IonButtons slot="start">
                     <IonButton
                         fill="clear"
-                        onClick={handleBack}
-                        style={{ margin: 0, padding: '8px', minWidth: 'auto' }}
+                        onClick={() => history.goBack()}
+                        className="ml-2"
                     >
-                        <IonIcon icon={arrowBack} className="text-black" />
+                        <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
                     </IonButton>
-                    <div style={{
-                        flex: 1,
-                        textAlign: 'center',
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        marginLeft: '-48px'
-                    }}>
-                        {t('Friend list')}
-                    </div>
-                </div>
-            </IonHeader>
+                </IonButtons>
+                <IonTitle className="text-center font-semibold text-lg">
+                    {t('Friend list')}
+                </IonTitle>
+                <IonButtons slot="end">
+                    <IonButton className="opacity-0 pointer-events-none" fill="clear">
+                        <IonIcon icon={arrowBack} />
+                    </IonButton>
+                </IonButtons>
+            </IonToolbar>
 
             {/* Fixed Search Bar */}
             <div className="px-3 py-3 bg-white">
@@ -347,7 +339,7 @@ const FriendList: React.FC = () => {
                         handleRemoveFriend(confirmState.targetId);
                     }
                     if (confirmState.type === "unfriend" && confirmState.targetId) {
-                        handleRemoveFriend(confirmState.targetId);  
+                        handleRemoveFriend(confirmState.targetId);
                     }
                     setConfirmState({ open: false, type: confirmState.type, targetId: confirmState.targetId, userName: confirmState.userName });
                 }}

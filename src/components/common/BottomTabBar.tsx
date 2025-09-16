@@ -90,7 +90,8 @@ const BottomTabBar: React.FC = () => {
             || pathname.startsWith("/ai-profile-setting")
             || pathname.startsWith("/profile/help")
             || pathname.startsWith("/friend-list")
-            || pathname.startsWith("/friend-request-sent"),
+            || pathname.startsWith("/friend-request-sent")
+            || pathname.startsWith("/share-profile"),
             classNameIcon: "",
         },
     ];

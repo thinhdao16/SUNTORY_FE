@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { t } from "@/lib/globalT";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import { useHistory } from "react-router";
@@ -10,6 +10,11 @@ import HeightUpdateModal from "@/components/common/bottomSheet/HeightUpdateModal
 import DietLifeStyleModal from "@/components/common/bottomSheet/DietLifeStyleModal";
 import AllergiesUpdateModal from "@/components/common/bottomSheet/AllergiesUpdateModal";
 import HealthConditionUpdateModal from "@/components/common/bottomSheet/HealthConditionUpdateModal";
+import {
+    handleTouchStart as handleTouchStartUtil,
+    handleTouchMove as handleTouchMoveUtil,
+    handleTouchEnd as handleTouchEndUtil,
+} from "@/utils/translate-utils";
 
 interface AllergyItem {
     allergyId: number;
@@ -38,12 +43,44 @@ const AiProfileInformation: React.FC = () => {
         name: '',
     });
     const [translateY, setTranslateY] = useState(0);
-    const handleTouchStart = () => { };
-    const handleTouchMove = () => { };
-    const handleTouchEnd = () => { setTranslateY(0); };
+    const startYRef = useRef<number | null>(null);
+    const startTimeRef = useRef<number | null>(null);
+    const screenHeightRef = useRef(window.innerHeight);
+    const velocityThreshold = 0.4;
+
+    const handleCloseModal = () => {
+        // Animate panel xuống trước khi đóng
+        setTranslateY(screenHeightRef.current);
+        setTimeout(() => {
+            setIsWeightUpdateModalOpen(false);
+            setIsHeightUpdateModalOpen(false);
+            setIsDietLifeStyleModalOpen(false);
+            setIsAllergiesUpdateModalOpen(false);
+            setIsHealthConditionsUpdateModalOpen(false);
+            setTranslateY(0);
+        }, 300);
+    };
+    const handleTouchStart = (e: React.TouchEvent) => {
+        handleTouchStartUtil(e, startYRef, startTimeRef);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        handleTouchMoveUtil(e, startYRef, screenHeightRef, setTranslateY);
+    };
+
+    const handleTouchEnd = () => {
+        handleTouchEndUtil(
+            translateY,
+            startYRef,
+            startTimeRef,
+            screenHeightRef,
+            velocityThreshold,
+            handleCloseModal,
+            setTranslateY
+        );
+    };
 
     useEffect(() => {
-        refetch();
         const weightUnit =
             userInfo?.currentMeasurement?.find((a: any) => a?.weightUnit)?.weightUnit?.symbol
             ?? userInfo?.currentMeasurement?.find((a: any) => a?.weightUnitId)?.weightUnit?.symbol
@@ -55,7 +92,7 @@ const AiProfileInformation: React.FC = () => {
             ?? 'cm';
         const dietStyle: { id: number, name: string }[] = userInfo?.groupedLifestyles?.find(
             (g: any) => g.category?.name === "Diet"
-        )?.lifestyles.map((item: any) => ({
+        )?.lifestyles?.map((item: any) => ({
             id: item.id,
             name: item.name,
         }));

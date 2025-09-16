@@ -42,7 +42,7 @@
   "Carbohydrates": "Carbohydrate",
   "Fiber": "Chất xơ",
   "Sugar": "Đường",
-  "My sex assigned at birth": "Giới tính khi sinh",
+  "My gender assigned at birth": "Giới tính khi sinh",
   "Female": "Nữ",
   "Male": "Nam",
   "Enter your health conditions": "Nhập tình trạng sức khỏe của bạn",
@@ -645,5 +645,7 @@
   "Country updated successfully": "Cập nhật thành công",
   "Diet updated successfully": "Cập nhật thành công",
   "Failed to update diet. Please try again.": "Không thể cập nhật chế độ dinh dưỡng. Vui lòng thử lại.",
-  "Height updated successfully": "Cập nhật thành công"
+  "Height updated successfully": "Cập nhật thành công",
+  "Failed to update health conditions. Please try again.": "Không thể cập nhật tình trạng sức khỏe. Vui lòng thử lại.",
+  "Share Profile": "Chia sẻ hồ sơ"
 }

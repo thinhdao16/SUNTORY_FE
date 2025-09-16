@@ -31,7 +31,7 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
     translateY,
     handleTouchStart,
     handleTouchMove,
-    handleTouchEnd, 
+    handleTouchEnd,
     healthConditions,
     showOverlay = true
 }) => {
@@ -46,6 +46,7 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
     const [isSaving, setIsSaving] = useState(false);
     const healthMasterData = useHealthMasterDataStore((state) => state.masterData);
     const { refetch } = useAuthInfo();
+    console.log('healthConditions', savedHealthConditions);
     const showToast = useToastStore.getState().showToast;
     // Mock data - sẽ được thay thế bằng data thật sau
     const mockHealthConditions: HealthConditionItem[] = [
@@ -93,7 +94,7 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
 
     useEffect(() => {
         setSavedHealthConditions(healthConditions);
-    }, [healthConditions]);
+    }, [healthConditions, isOpen]);
 
     // Debounce search input
     useEffect(() => {
@@ -197,6 +198,8 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
             };
             await updateHealthConditionV2(payload);
             await refetch();
+            setSavedHealthConditions([]);
+            setSelectedHealthConditions([]);
             showToast(t("Health conditions updated successfully"), 2000, "success");
             onClose();
         } catch (error) {

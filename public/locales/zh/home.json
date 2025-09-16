@@ -42,7 +42,7 @@
   "Carbohydrates": "碳水化合物",
   "Fiber": "纤维",
   "Sugar": "糖",
-  "My sex assigned at birth": "我的性别",
+  "My gender assigned at birth": "我的性别",
   "Female": "女",
   "Male": "男",
   "Enter your health conditions": "输入您的健康状况",
@@ -646,5 +646,6 @@
   "Diet updated successfully": "饮食更新成功",
   "Failed to update diet. Please try again.": "更新饮食失败，请重试",
   "Height updated successfully": "身高更新成功",
-  "Failed to update health conditions. Please try again.": "更新健康状况失败，请重试"
+  "Failed to update health conditions. Please try again.": "更新健康状况失败，请重试",
+  "Share Profile": "分享个人资料"
 }

@@ -37,6 +37,19 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
     const [firstName, setFirstName] = useState(currentFirstName);
     const [lastName, setLastName] = useState(currentLastName);
     const [isLoading, setIsLoading] = useState(false);
+    const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+    useEffect(() => {
+        const vv = (window as any).visualViewport;
+        if (!vv) return;
+        const handleResize = () => {
+            const offset = Math.max(0, (window.innerHeight - vv.height - vv.offsetTop));
+            setKeyboardOffset(offset);
+        };
+        handleResize();
+        vv.addEventListener('resize', handleResize);
+        return () => vv.removeEventListener('resize', handleResize);
+    }, []);
 
     // Check if name has changed from current values
     const hasNameChanged = firstName.trim() !== currentFirstName || lastName.trim() !== currentLastName;
@@ -123,16 +136,14 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
                         >
                             {/* Left spacer to balance the close button so title stays centered */}
                             <div style={{ width: 56, height: HEADER_PX }} />
-                            <div
+                            <div className="text-center font-semibold text-lg"
                                 style={{
                                     flex: 1,
-                                    textAlign: 'center',
-                                    fontWeight: 700,
                                     lineHeight: 1.2,
                                     wordBreak: 'break-word',
                                     overflow: 'hidden'
                                 }}
-                            >
+                            >   
                                 {t('My name')}
                             </div>
                             <IonButton
@@ -185,9 +196,17 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
                                 </div>
                             </div>
 
-                            {/* Save Button - Fixed at bottom, moves up with keyboard */}
+                            {/* Save Button - sticky and lifts above keyboard */}
                             {hasNameChanged && (
-                                <div className="px-4 py-4 border-t border-gray-100">
+                                <div className="px-4 py-4 border-t border-gray-100"
+                                    style={{
+                                        position: 'sticky',
+                                        bottom: 0,
+                                        background: '#ffffff',
+                                        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px)`,
+                                        zIndex: 10
+                                    }}
+                                >
                                     <IonButton
                                         expand="block"
                                         shape="round"

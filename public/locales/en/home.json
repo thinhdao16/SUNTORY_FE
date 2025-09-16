@@ -42,7 +42,7 @@
   "Carbohydrates": "Carbohydrates",
   "Fiber": "Fiber",
   "Sugar": "Sugar",
-  "My sex assigned at birth": "My sex assigned at birth",
+  "My gender assigned at birth": "My gender assigned at birth",
   "Female": "Female",
   "Male": "Male",
   "Enter your health conditions": "Enter your health conditions",
@@ -649,5 +649,7 @@
   "Country updated successfully": "Country updated successfully",
   "Diet updated successfully": "Diet updated successfully",
   "Failed to update diet. Please try again.": "Failed to update diet. Please try again.",
-  "Height updated successfully": "Height updated successfully"
+  "Height updated successfully": "Height updated successfully",
+  "Failed to update health conditions. Please try again.": "Failed to update health conditions. Please try again.",
+  "Share Profile": "Share Profile"
 }

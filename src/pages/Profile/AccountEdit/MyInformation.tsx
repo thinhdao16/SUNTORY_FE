@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { t } from "@/lib/globalT";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
@@ -14,6 +14,11 @@ import NameUpdateListModal from "@/components/common/bottomSheet/NameUpdateListM
 import GenderUpdateModal from "@/components/common/bottomSheet/GenderUpdateModal";
 import YearOfBirthUpdateModal from "@/components/common/bottomSheet/YearOfBirthUpdateModal";
 import LanguageListModal from "@/components/common/bottomSheet/LanguageListModal";
+import {
+    handleTouchStart as handleTouchStartUtil,
+    handleTouchMove as handleTouchMoveUtil,
+    handleTouchEnd as handleTouchEndUtil,
+} from "@/utils/translate-utils";
 
 const MyInformation: React.FC = () => {
     const history = useHistory();
@@ -21,14 +26,43 @@ const MyInformation: React.FC = () => {
     // Country bottom sheet state/handlers
     const [isCountryListModalOpen, setIsCountryListModalOpen] = useState(false);
     const [translateY, setTranslateY] = useState(0);
+    const startYRef = useRef<number | null>(null);
+    const startTimeRef = useRef<number | null>(null);
+    const screenHeightRef = useRef(window.innerHeight);
+    const velocityThreshold = 0.4;
     const [isNameUpdateListModalOpen, setIsNameUpdateListModalOpen] = useState(false);
     const [isGenderUpdateModalOpen, setIsGenderUpdateModalOpen] = useState(false);
     const [isYearOfBirthUpdateModalOpen, setIsYearOfBirthUpdateModalOpen] = useState(false);
     const [isLanguageListModalOpen, setIsLanguageListModalOpen] = useState(false);
-    // Minimal handlers to satisfy props; implement drag later if needed
-    const handleTouchStart = () => { };
-    const handleTouchMove = () => { };
-    const handleTouchEnd = () => { setTranslateY(0); };
+    const handleCloseModal = () => {
+        setTranslateY(screenHeightRef.current);
+        setTimeout(() => {
+            if (isCountryListModalOpen) setIsCountryListModalOpen(false);
+            if (isNameUpdateListModalOpen) setIsNameUpdateListModalOpen(false);
+            if (isGenderUpdateModalOpen) setIsGenderUpdateModalOpen(false);
+            if (isYearOfBirthUpdateModalOpen) setIsYearOfBirthUpdateModalOpen(false);
+            if (isLanguageListModalOpen) setIsLanguageListModalOpen(false);
+            setTranslateY(0);
+        }, 300);
+    };
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        handleTouchStartUtil(e, startYRef, startTimeRef);
+    };
+    const handleTouchMove = (e: React.TouchEvent) => {
+        handleTouchMoveUtil(e, startYRef, screenHeightRef, setTranslateY);
+    };
+    const handleTouchEnd = () => {
+        handleTouchEndUtil(
+            translateY,
+            startYRef,
+            startTimeRef,
+            screenHeightRef,
+            velocityThreshold,
+            handleCloseModal,
+            setTranslateY
+        );
+    };
     const handleCountrySelect = (code: string) => {
         // TODO: hook update if needed; for now just close
         setIsCountryListModalOpen(false);
@@ -197,6 +231,9 @@ const MyInformation: React.FC = () => {
                 handleTouchEnd={handleTouchEnd}
             />
             <LanguageListModal
+                handleTouchStart={handleTouchStart}
+                handleTouchMove={handleTouchMove}
+                handleTouchEnd={handleTouchEnd}
                 isOpen={isLanguageListModalOpen}
                 onClose={() => setIsLanguageListModalOpen(false)}
                 translateY={translateY}
