@@ -1,17 +1,16 @@
 import { useInfiniteQuery } from 'react-query';
 import { SocialCommentService } from '@/services/social/social-comment-service';
 
-export const useInfiniteComments = (postId: number | null, pageSize: number = 20) => {
+export const useInfiniteComments = (postCode: string | null | undefined, pageSize: number = 20) => {
   return useInfiniteQuery(
-    ['comments', postId],
+    ['comments', postCode],
     ({ pageParam = 0 }) => {
-      if (!postId) return null;
-      return SocialCommentService.getCommentsByPostId(postId, pageParam, pageSize);
+      if (!postCode) return null;
+      return SocialCommentService.getCommentsByPostCode(postCode, pageParam, pageSize);
     },
     {
-      enabled: !!postId,
+      enabled: !!postCode,
       getNextPageParam: (lastPage, allPages) => {
-        console.log(lastPage)
         if (!lastPage) {
           return undefined;
         }

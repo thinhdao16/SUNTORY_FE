@@ -12,10 +12,11 @@ import FeedDetail from './FeedDetail/FeedDetail';
 
 
 export function useFeedLayout(
-  type: string | undefined, 
-  goTo: (path: string) => void, 
+  type: string | undefined,
+  goTo: (path: string) => void,
   clearSearch?: () => void,
-  infoRoom?: string
+  infoRoom?: string,
+  tabName?: string
 ) {
   let contentComponent = null;
   let leftIcon = null;
@@ -50,8 +51,46 @@ export function useFeedLayout(
       );
       inputOnFocus = () => goTo('/social-feed/search');
       break;
+    case 'recent':
+      let activeTab = 'everyone';
+      let specificHashtag = '';
+      if (tabName) {
+        const decodedTab = decodeURIComponent(tabName);
+        if (decodedTab.startsWith('Hashtags=')) {
+          const hashtag = decodedTab.split('=')[1];
+          activeTab = `#${hashtag}`; 
+          specificHashtag = hashtag;
+        } else {
+          switch (decodedTab) {
+            case 'your-friends':
+            case 'your%20friends':
+              activeTab = 'your-friends';
+              break;
+            case 'for-you':
+            case 'for%20you':
+              activeTab = 'for-you';
+              break;
+            case 'Hashtags':
+              activeTab = 'Hashtags';
+              break;
+            case 'Everyone':
+            case 'everyone':
+              activeTab = 'everyone';
+              break;
+            default:
+              activeTab = 'everyone';
+          }
+        }
+      }
+      
+      contentComponent = <SocialFeedList activeTab={activeTab} specificHashtag={specificHashtag} />;
+      leftIcon = (
+        <SearchIcon onClick={() => goTo('/social-feed/search')} />
+      );
+      inputOnFocus = () => goTo('/social-feed/search');
+      break;
     default:
-      contentComponent = <SocialFeedList />;
+      contentComponent = <SocialFeedList activeTab="everyone" />;
       leftIcon = (
         <SearchIcon onClick={() => goTo('/social-feed/search')} />
       );

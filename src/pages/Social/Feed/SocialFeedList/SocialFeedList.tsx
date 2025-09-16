@@ -1,28 +1,99 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { useSocialFeedQuery } from '@/pages/Social/Feed/hooks/useSocialFeed';
-import { SocialFeedCard } from '@/pages/Social/Feed/components/SocialFeedCard';
+import { useSocialFeed } from '../hooks/useSocialFeed';
 import { PrivacyPostType } from '@/types/privacy';
-import { IonPage } from '@ionic/react';
+import { SocialFeedService, HashtagInterest } from '@/services/social/social-feed-service';
 import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
+import { useScrollRestoration } from '../hooks/useScrollRestoration';
+import { useAuthStore } from '@/store/zustand/auth-store';
 import { usePostLike } from '@/pages/Social/Feed/hooks/usePostLike';
+import { usePostRepost } from '../hooks/usePostRepost';
+import { TabNavigation, HashtagInput, PostsList, LoadingStates } from './components';
+import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
+import { useIonToast } from '@ionic/react';
 
 interface SocialFeedListProps {
   privacy?: PrivacyPostType;
   className?: string;
+  activeTab?: string;
+  specificHashtag?: string;
 }
 
 export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   privacy,
-  className = ''
+  className = '',
+  activeTab: initialActiveTab,
+  specificHashtag
 }) => {
   const { t } = useTranslation();
   const history = useHistory();
   const [refreshing, setRefreshing] = useState(false);
-  const lastPostElementRef = useRef<HTMLDivElement>(null);
-  const { setCurrentPost, feedPosts, setFeedPosts } = useSocialFeedStore();
+  const [activeTab, setActiveTab] = useState(initialActiveTab || 'everyone');
+  const [currentPrivacy, setCurrentPrivacy] = useState<PrivacyPostType | undefined>(privacy);
+  const [selectedHashtag, setSelectedHashtag] = useState<string>(specificHashtag || '');
+  const [recentHashtags, setRecentHashtags] = useState<string[]>([]);
+  const [isLoadingHashtags, setIsLoadingHashtags] = useState(false);
+  const [repostingPostCode, setRepostingPostCode] = useState<string | null>(null);
+  const [showPrivacySheet, setShowPrivacySheet] = useState(false);
+  const [selectedPrivacy, setSelectedPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
+
+  const getTabsConfig = () => {
+    const staticTabs = [
+      { key: 'everyone', label: 'Everyone', type: 'static' as const },
+      { key: 'your-friends', label: 'Your friends', type: 'static' as const },
+      // { key: 'for-you', label: 'For you', type: 'static' as const },
+    ];
+
+    const hashtagTabs = recentHashtags.map(hashtag => ({
+      key: `#${hashtag}`,
+      label: `#${hashtag}`,
+      type: 'hashtag' as const
+    }));
+
+    return [...staticTabs, ...hashtagTabs];
+  };
+  useEffect(() => {
+    const fetchRecentHashtags = async () => {
+      setIsLoadingHashtags(true);
+      try {
+        const response = await SocialFeedService.getHashtagInterests();
+        if (response.success && response.data) {
+          const hashtagNames = response.data.map((hashtag: HashtagInterest) => hashtag.name);
+          setRecentHashtags(hashtagNames.slice(0, 5));
+        } else {
+          setRecentHashtags(['sức khỏe', 'thói quen', 'yêu thương', 'thói quen', 'sức khỏe']);
+        }
+      } catch (error) {
+        console.error('Failed to fetch recent hashtags:', error);
+        setRecentHashtags(['sức khỏe', 'thói quen', 'yêu thương', 'thói quen', 'sức khỏe']);
+      } finally {
+        setIsLoadingHashtags(false);
+      }
+    };
+
+    fetchRecentHashtags();
+  }, []);
+
+  useEffect(() => {
+    if (initialActiveTab) {
+      setActiveTab(initialActiveTab);
+    }
+  }, [initialActiveTab]);
+
+  const { setCurrentPost, getFeedPosts } = useSocialFeedStore();
+  const { user } = useAuthStore();
+  const [present] = useIonToast();
   const postLikeMutation = usePostLike();
+  const postRepostMutation = usePostRepost();
+
+  // Scroll restoration hook
+  const { setScrollContainer } = useScrollRestoration({
+    feedType: currentPrivacy ? Number(currentPrivacy) : undefined,
+    hashtagNormalized: (activeTab === 'Hashtags' && selectedHashtag) ? selectedHashtag.replace('#', '') : 
+                      (activeTab.startsWith('#')) ? activeTab.substring(1) : undefined,
+    enabled: true
+  });
 
   const {
     posts,
@@ -33,39 +104,13 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     refetch,
     isRefetching,
     isFetchingNextPage
-  } = useSocialFeedQuery({
+  } = useSocialFeed({
     pageSize: 20,
-    privacy: privacy ? Number(privacy) : undefined,
+    feedType: currentPrivacy ? Number(currentPrivacy) : undefined,
+    hashtagNormalized: (activeTab === 'Hashtags' && selectedHashtag) ? selectedHashtag.replace('#', '') : 
+                      (activeTab.startsWith('#')) ? activeTab.substring(1) : undefined,
     enabled: true
   });
-
-console.log(feedPosts)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const lastEntry = entries[0];
-        if (lastEntry.isIntersecting && hasNextPage && !isFetchingNextPage && !loading) {
-          fetchNextPage();
-        }
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '100px'
-      }
-    );
-
-    const currentRef = lastPostElementRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [hasNextPage, isFetchingNextPage, loading, fetchNextPage]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -73,35 +118,111 @@ console.log(feedPosts)
     setRefreshing(false);
   }, [refetch]);
 
-  const handleLike = useCallback((postId: number) => {
-    const post = feedPosts.find(p => p.id === postId);
+  const handleLike = useCallback((postCode: string) => {
+    const post = posts.find((p: any) => p.code === postCode);
     if (!post) return;
-    
+
     postLikeMutation.mutate({
-      postId: postId,
+      postCode,
       isLiked: post.isLike || false
     });
-  }, [feedPosts, postLikeMutation]);
+  }, [posts, postLikeMutation]);
 
-  const handleComment = useCallback((postId: number) => {
-    console.log('Comment on post:', postId);
-  }, []);
+  const handleComment = useCallback((postCode: string) => {
+    const selectedPost = posts.find((post: any) => post.code === postCode);
 
-  const handlePostClick = useCallback((postId: number) => {
-    const selectedPost = feedPosts.find(post => post.id === postId);
     if (selectedPost) {
       setCurrentPost(selectedPost);
     }
-    history.push(`/social-feed/f/${postId}`);
-  }, [feedPosts, setCurrentPost, history]);
+    history.push(`/social-feed/f/${postCode}`);
+  }, [posts, setCurrentPost, history]);
 
-  const handleShare = useCallback((postId: number) => {
-    console.log('Share post:', postId);
+  const handlePostClick = useCallback((postCode: string) => {
+    const selectedPost = posts.find((post: any) => post.code === postCode);
+    if (selectedPost) {
+      setCurrentPost(selectedPost);
+    }
+    history.push(`/social-feed/f/${postCode}`);
+  }, [posts, setCurrentPost, history]);
+
+  const handleShare = useCallback((postCode: string) => {
   }, []);
 
-  const handleRepost = useCallback((postId: number) => {
-    console.log('Repost:', postId);
+  const handleRepost = useCallback((postCode: string) => {
+      // Find the post to check ownership
+    const post = posts.find((p: any) => p.code === postCode);
+    if (!post || !user) return;
+
+    // Check if this is user's own post (either original post or repost)
+    const isOwnPost = post.user.id === user.id;
+    const isOwnOriginalPost = post.isRepost && post.originalPost && post.originalPost.user.id === user.id;
+
+    if (isOwnPost || isOwnOriginalPost) {
+      present({
+        message: t('You cannot repost your own post'),
+        duration: 3000,
+        position: 'bottom',
+        color: 'warning'
+      });
+      return;
+    }
+
+    setRepostingPostCode(postCode);
+    setShowPrivacySheet(true);
+  }, [posts, user, present, t]);
+
+  const handleSelectPrivacy = useCallback((privacy: PrivacyPostType) => {
+    if (repostingPostCode) {
+      postRepostMutation.mutate({
+        postCode: repostingPostCode,
+        caption: "Repost", 
+        privacy: Number(privacy)
+      });
+      setRepostingPostCode(null);
+    }
+    setSelectedPrivacy(privacy);
+    setShowPrivacySheet(false);
+  }, [repostingPostCode, postRepostMutation]);
+
+  const handleCloseModal = useCallback(() => {
+    setRepostingPostCode(null);
+    setShowPrivacySheet(false);
   }, []);
+
+  useEffect(() => {
+    let newPrivacy: PrivacyPostType | undefined;
+    if (activeTab.startsWith('#')) {
+      newPrivacy = PrivacyPostType.Hashtag;
+    } else {
+      switch (activeTab) {
+        case 'everyone':
+          newPrivacy = PrivacyPostType.Public;
+          break;
+        case 'your-friends':
+          newPrivacy = PrivacyPostType.Friend;
+          break;
+        case 'for-you':
+          newPrivacy = PrivacyPostType.Private;
+          break;
+        case 'Hashtags':
+          newPrivacy = PrivacyPostType.Hashtag;
+          break;
+        default:
+          newPrivacy = undefined;
+      }
+    }
+    setCurrentPrivacy(newPrivacy);
+  }, [activeTab]);
+
+  const handleTabChange = useCallback((tab: string) => {
+    if (tab.startsWith('#')) {
+      const hashtag = tab.substring(1);
+      const encodedTab = `Hashtags=${hashtag}`;
+      history.push(`/social-feed/recent/${encodedTab}`);
+    } else {
+      history.push(`/social-feed/recent/${tab}`);
+    }
+  }, [history]);
 
   if (error && posts.length === 0) {
     return (
@@ -124,107 +245,57 @@ console.log(feedPosts)
   }
 
   return (
+    <div 
+      className={`${className}`}
+      ref={setScrollContainer}
+      style={{ height: '100vh'}}
+    >
+      <TabNavigation
+        tabs={getTabsConfig()}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        isLoadingHashtags={isLoadingHashtags}
+      />
 
-    <div className={`${className}`}>
-      {(isRefetching || refreshing) && (
-        <div className="flex justify-center py-4">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm text-gray-600">{t('Refreshing...')}</span>
-          </div>
-        </div>
+      {activeTab === 'Hashtags' && (
+        <HashtagInput
+          selectedHashtag={selectedHashtag}
+          onHashtagChange={setSelectedHashtag}
+          onSearch={refetch}
+        />
       )}
 
-      <div className="space-y-0">
-        {feedPosts.map((post, index) => {
-          const isLastPost = index === feedPosts.length - 1;
-          
-          return (
-            <div
-              key={post.id}
-              ref={isLastPost ? lastPostElementRef : undefined}
-            >
-              <SocialFeedCard
-                post={post}
-                onLike={handleLike}
-                onComment={handleComment}
-                onShare={handleShare}
-                onRepost={handleRepost}
-                onPostClick={handlePostClick}
-              />
-            </div>
-          );
-        })}
-      </div>
+      <PostsList
+        posts={posts}
+        hasNextPage={hasNextPage || false}
+        isFetchingNextPage={isFetchingNextPage || false}
+        loading={loading}
+        onFetchNextPage={fetchNextPage}
+        onLike={handleLike}
+        onComment={handleComment}
+        onShare={handleShare}
+        onRepost={handleRepost}
+        onPostClick={handlePostClick}
+      />
 
-      {loading && feedPosts.length > 0 && (
-        <div className="flex justify-center py-6">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm text-gray-600">{t('Loading more posts...')}</span>
-          </div>
-        </div>
-      )}
+      <LoadingStates
+        loading={loading}
+        isFetchingNextPage={isFetchingNextPage || false}
+        isRefetching={isRefetching}
+        refreshing={refreshing}
+        hasNextPage={hasNextPage || false}
+        posts={posts}
+        error={error}
+        onRefresh={handleRefresh}
+        onFetchNextPage={fetchNextPage}
+      />
 
-      {/* Load more button (fallback for intersection observer) */}
-      {hasNextPage && !loading && feedPosts.length > 0 && (
-        <div className="flex justify-center py-6">
-          <button
-            onClick={() => fetchNextPage()}
-            className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            {t('Load more posts')}
-          </button>
-        </div>
-      )}
-
-      {/* No more posts indicator */}
-      {!hasNextPage && feedPosts.length > 0 && (
-        <div className="text-center py-6">
-          <p className="text-gray-500 text-sm">{t('No more posts to load')}</p>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {feedPosts.length === 0 && !loading && !error && (
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="text-center">
-            <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('No posts yet')}</h3>
-            <p className="text-gray-500 mb-4">{t('Be the first to share something!')}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Initial loading state */}
-      {feedPosts.length === 0 && loading && (
-        <div className="space-y-4">
-          {[...Array(3)].map((_, index) => (
-            <div key={index} className="bg-white border-b border-gray-100 p-4 animate-pulse">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-                <div className="flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-1"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              </div>
-              <div className="h-48 bg-gray-200 rounded mt-3"></div>
-              <div className="flex items-center gap-6 mt-4">
-                <div className="h-4 bg-gray-200 rounded w-12"></div>
-                <div className="h-4 bg-gray-200 rounded w-12"></div>
-                <div className="h-4 bg-gray-200 rounded w-12"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <PrivacyBottomSheet
+        isOpen={showPrivacySheet}
+        closeModal={handleCloseModal}
+        selectedPrivacy={selectedPrivacy}
+        onSelectPrivacy={handleSelectPrivacy}
+      />
     </div>
-
   );
 };

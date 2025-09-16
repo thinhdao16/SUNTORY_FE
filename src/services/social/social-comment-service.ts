@@ -1,7 +1,7 @@
 import httpClient from '@/config/http-client';
 
 export interface CreateCommentRequest {
-  postId: number;
+  postCode: string;
   replyCommentId?: number;
   content: string;
   mediaFilenames?: string[];
@@ -45,7 +45,7 @@ export class SocialCommentService {
     return response.data;
   }
 
-  static async getCommentsByPostId(postId: number, pageNumber: number = 0, pageSize: number = 20): Promise<{
+  static async getCommentsByPostCode(postCode: string, pageNumber: number = 0, pageSize: number = 20): Promise<{
     pageNumber: number;
     pageSize: number;
     firstPage: number;
@@ -58,7 +58,7 @@ export class SocialCommentService {
   }> {
     const response = await httpClient.get('/api/v1/social/comments', {
       params: { 
-        PostId: postId,
+        PostCode: postCode,
         PageNumber: pageNumber,
         PageSize: pageSize
       }

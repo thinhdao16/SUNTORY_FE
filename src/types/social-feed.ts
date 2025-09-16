@@ -18,9 +18,16 @@ export interface SocialHashtag {
 
 export interface SocialMediaFile {
   id: number;
-  url: string;
-  type: 'image' | 'video' | 'audio';
-  filename?: string;
+  s3BucketName: string;
+  s3Key: string;
+  s3Region: string | null;
+  fileType: string;
+  fileSize: number;
+  width: number | null;
+  height: number | null;
+  fileName: string;
+  isPublic: number;
+  urlFile: string;
 }
 
 export interface SocialPost {
@@ -44,6 +51,8 @@ export interface SocialPost {
   shareCount: number;
   isLike: boolean;
   originalPost: SocialPost | null;
+  lastScore?: number;
+  score?: number;
 }
 
 export interface PaginationInfo {

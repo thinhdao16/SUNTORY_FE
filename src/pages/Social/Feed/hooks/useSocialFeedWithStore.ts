@@ -1,0 +1,204 @@
+import { useCallback, useEffect } from 'react';
+import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
+import { SocialFeedService } from '@/services/social/social-feed-service';
+import { SocialPost } from '@/types/social-feed';
+
+interface UseSocialFeedWithStoreOptions {
+  feedType?: number;
+  hashtagNormalized?: string;
+  pageSize?: number;
+  autoLoad?: boolean;
+}
+
+export const useSocialFeedWithStore = (options: UseSocialFeedWithStoreOptions = {}) => {
+  const {
+    feedType,
+    hashtagNormalized,
+    pageSize = 20,
+    autoLoad = true
+  } = options;
+
+  const {
+    feedPosts,
+    feedParams,
+    currentPage,
+    hasNextPage,
+    totalPages,
+    totalRecords,
+    isLoadingFeed,
+    isLoadingMore,
+    feedError,
+    setFeedPosts,
+    appendFeedPosts,
+    clearFeedPosts,
+    setFeedParams,
+    setFeedLoading,
+    setLoadingMore,
+    setFeedError,
+    setPaginationInfo,
+    resetFeedState,
+    updatePostReaction,
+    optimisticUpdatePostReaction
+  } = useSocialFeedStore();
+
+  // Load initial feed data
+  const loadFeed = useCallback(async (reset = false) => {
+    try {
+      if (reset) {
+        resetFeedState();
+      }
+      
+      setFeedLoading(true);
+      setFeedError(null);
+
+      const params = {
+        feedType,
+        hashtagNormalized,
+        pageNumber: reset ? 0 : currentPage,
+        pageSize
+      };
+
+      const response = await SocialFeedService.getFeed(params);
+      
+      if (response.data) {
+        const posts = response.data.data || [];
+        
+        if (reset) {
+          setFeedPosts(posts);
+        } else {
+          appendFeedPosts(posts);
+        }
+
+        setPaginationInfo({
+          currentPage: response.data.pageNumber,
+          hasNextPage: response.data.nextPage,
+          totalPages: response.data.totalPages,
+          totalRecords: response.data.totalRecords
+        });
+
+        setFeedParams({ feedType, hashtagNormalized, pageSize });
+      }
+    } catch (error: any) {
+      console.error('Failed to load feed:', error);
+      setFeedError(error.message || 'Failed to load feed');
+    } finally {
+      setFeedLoading(false);
+    }
+  }, [
+    feedType,
+    hashtagNormalized,
+    pageSize,
+    currentPage,
+    setFeedPosts,
+    appendFeedPosts,
+    setFeedLoading,
+    setFeedError,
+    setPaginationInfo,
+    setFeedParams,
+    resetFeedState
+  ]);
+
+  // Load more posts (pagination)
+  const loadMore = useCallback(async () => {
+    if (!hasNextPage || isLoadingMore) return;
+
+    try {
+      setLoadingMore(true);
+      setFeedError(null);
+
+      const params = {
+        feedType,
+        hashtagNormalized,
+        pageNumber: currentPage + 1,
+        pageSize
+      };
+
+      const response = await SocialFeedService.getFeed(params);
+      
+      if (response.data) {
+        const posts = response.data.data || [];
+        appendFeedPosts(posts);
+
+        setPaginationInfo({
+          currentPage: response.data.pageNumber,
+          hasNextPage: response.data.nextPage,
+          totalPages: response.data.totalPages,
+          totalRecords: response.data.totalRecords
+        });
+      }
+    } catch (error: any) {
+      console.error('Failed to load more posts:', error);
+      setFeedError(error.message || 'Failed to load more posts');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [
+    feedType,
+    hashtagNormalized,
+    pageSize,
+    currentPage,
+    hasNextPage,
+    isLoadingMore,
+    appendFeedPosts,
+    setLoadingMore,
+    setFeedError,
+    setPaginationInfo
+  ]);
+
+  // Refresh feed
+  const refresh = useCallback(() => {
+    return loadFeed(true);
+  }, [loadFeed]);
+
+  // Handle post like/unlike
+  const handleLike = useCallback(async (postId: number) => {
+    const post = feedPosts.find(p => p.id === postId);
+    if (!post) return;
+
+    // Optimistic update
+    optimisticUpdatePostReaction(postId);
+
+    try {
+      await SocialFeedService.likePost(postId, post.isLike);
+      // The optimistic update will remain if successful
+    } catch (error) {
+      console.error('Failed to like/unlike post:', error);
+      // Revert optimistic update on error
+      optimisticUpdatePostReaction(postId);
+    }
+  }, [feedPosts, optimisticUpdatePostReaction]);
+
+  // Auto-load on mount or when parameters change
+  useEffect(() => {
+    if (autoLoad) {
+      loadFeed(true);
+    }
+  }, [feedType, hashtagNormalized, pageSize, autoLoad, loadFeed]);
+
+  return {
+    // Data
+    posts: feedPosts,
+    currentPage,
+    hasNextPage,
+    totalPages,
+    totalRecords,
+    
+    // Loading states
+    isLoading: isLoadingFeed,
+    isLoadingMore,
+    
+    // Error state
+    error: feedError,
+    
+    // Actions
+    loadFeed: () => loadFeed(true),
+    loadMore,
+    refresh,
+    handleLike,
+    clearFeed: clearFeedPosts,
+    
+    // Store actions (for advanced usage)
+    updatePostReaction,
+    optimisticUpdatePostReaction
+  };
+};

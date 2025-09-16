@@ -8,24 +8,24 @@ export const usePostLike = () => {
   const [present] = useIonToast();
 
   return useMutation(
-    async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
+    async ({ postCode, isLiked }: { postCode: string; isLiked: boolean }) => {
       if (isLiked) {
-        await SocialFeedService.unlikePost(postId);
+        await SocialFeedService.unlikePost(postCode);
       } else {
-        await SocialFeedService.likePost(postId, false);
+        await SocialFeedService.likePost(postCode, false);
       }
-      return { postId, isLiked };
+      return { postCode, isLiked };
     },
     {
-      onMutate: async ({ postId }) => {
+      onMutate: async ({ postCode }) => {
         // Optimistic update using store
-        optimisticUpdatePostReaction(postId);
-        return { postId };
+        optimisticUpdatePostReaction(postCode);
+        return { postCode };
       },
       onError: (err, variables, context) => {
         // Rollback optimistic update on error
-        if (context?.postId) {
-          optimisticUpdatePostReaction(context.postId);
+        if (context?.postCode) {
+          optimisticUpdatePostReaction(context.postCode);
         }
         
         // Show error toast
@@ -38,7 +38,7 @@ export const usePostLike = () => {
       },
       onSuccess: (data) => {
         // Server response successful, no need to update again since optimistic update was correct
-        console.log('Like/unlike successful for post:', data.postId);
+        console.log('Like/unlike successful for post:', data.postCode);
       }
     }
   );

@@ -32,7 +32,7 @@ function ChatSocial() {
   return (
     <>
       <div className={`${type === "camera" ? "h-screen" : "bg-white"} `}>
-        {(type === 'search' || type === 'search-result' || type === undefined || type === "recent/search-result" || type === "list-request") && (
+        {(type === 'search' || type === 'search-result' || type === undefined || type === "recent/search-result" || type === "list-request" || type === "recent") && (
           <SocialChatHeader
             leftIcon={leftIcon}
             rightIcon={rightIcon}

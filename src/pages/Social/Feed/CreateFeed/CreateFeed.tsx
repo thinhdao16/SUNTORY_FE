@@ -23,7 +23,7 @@ const CreateFeed: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
     const [postText, setPostText] = useState("");
-    const [selectedPrivacy, setSelectedPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Friend);
+    const [selectedPrivacy, setSelectedPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
     const { images, isUploading, setIsUploading, addImages, addAudioItem, removeImage, clearImages } = useImageUploadState();
     const {
         audioBlob,
@@ -38,7 +38,6 @@ const CreateFeed: React.FC = () => {
         handleRemoveAudio,
         clearAudio
     } = useAudioUploadState();
-console.log(audioUploadMutation.isLoading)
     const { handleImageUpload, handleCameraCapture, handleGallerySelect } = useImageUploadHandlers({
         addImages,
         clearAudio
@@ -104,6 +103,8 @@ console.log(audioUploadMutation.isLoading)
     const handleClose = () => {
         history.goBack();
     };
+
+    console.log(images)
     const handlePost = async () => {
         if (!postText.trim() && images.length === 0 && !audioBlob) {
             return;
@@ -234,7 +235,7 @@ console.log(audioUploadMutation.isLoading)
                 )}
             </div>
 
-            <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-netural-50 p-4">
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-netural-50 p-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         {

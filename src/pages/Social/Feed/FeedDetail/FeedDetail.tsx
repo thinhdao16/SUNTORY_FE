@@ -3,9 +3,6 @@ import { useParams, useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
 import { useFeedDetail } from '@/pages/Social/Feed/hooks/useFeedDetail';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/vi';
 import { useKeyboardResize } from '@/hooks/useKeyboardResize';
 import { Capacitor } from '@capacitor/core';
 import { parseHashtagsWithClick } from '@/utils/hashtagHighlight';
@@ -14,8 +11,18 @@ import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import { useCreateComment } from '@/pages/Social/Feed/hooks/useCreateComment';
 import { useInfiniteComments } from '@/pages/Social/Feed/hooks/useInfiniteComments';
 import { usePostLike } from '@/pages/Social/Feed/hooks/usePostLike';
-
-dayjs.extend(relativeTime);
+import { useCommentLike } from '@/pages/Social/Feed/hooks/useCommentLike';
+import { MediaDisplay } from '@/components/social/MediaDisplay';
+import { formatTimeFromNow } from '@/utils/formatTime';
+import { PrivacyPostType } from '@/types/privacy';
+import GlobalIcon from "@/icons/logo/social-feed/global-default.svg?react";
+import FriendIcon from "@/icons/logo/social-feed/friend-default.svg?react";
+import LockIcon from "@/icons/logo/social-feed/lock-default.svg?react";
+import { GoDotFill } from 'react-icons/go';
+import ReactHeartIcon from "@/icons/logo/social-feed/react-heart.svg?react";
+import CommentsIcon from "@/icons/logo/social-feed/comments.svg?react";
+import RetryIcon from "@/icons/logo/social-feed/retry.svg?react";
+import SendIcon from "@/icons/logo/social-feed/send.svg?react";
 
 const FeedDetail: React.FC = () => {
     const { t, i18n } = useTranslation();
@@ -24,19 +31,21 @@ const FeedDetail: React.FC = () => {
 
     const [commentText, setCommentText] = useState('');
     const [replyingTo, setReplyingTo] = useState<number | null>(null);
-    const [replyText, setReplyText] = useState('');
+    const [replyingToUser, setReplyingToUser] = useState<string>('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const lastCommentElementRef = useRef<HTMLDivElement>(null);
-    const postId = feedId ? parseInt(feedId) : null;
+    const inputRef = useRef<HTMLInputElement>(null);
+    const postCode = feedId; 
     const isNative = Capacitor.isNativePlatform();
 
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
     const { user } = useAuthStore()
-    const { currentPost, isLoadingPostDetail, postDetailError } = useSocialFeedStore();
+    const { currentPost, isLoadingPostDetail, postDetailError, setCurrentPost } = useSocialFeedStore();
     const createCommentMutation = useCreateComment();
     const postLikeMutation = usePostLike();
+    const commentLikeMutation = useCommentLike();
 
-    const { post, isLoadingPost, postError, data: fetchedPost } = useFeedDetail(postId, true);
+    const { post, isLoadingPost, postError, data: fetchedPost } = useFeedDetail(postCode, true);
     const { 
         data: commentsData, 
         isLoading: isLoadingComments, 
@@ -44,21 +53,22 @@ const FeedDetail: React.FC = () => {
         hasNextPage,
         isFetchingNextPage,
         refetch: refetchComments 
-    } = useInfiniteComments(postId);
+    } = useInfiniteComments(postCode);
     
     const allComments = commentsData?.pages?.flatMap(page => page?.data || []) || [];
     
-    // Organize comments into nested structure (display max 2 levels, but allow deeper nesting)
     const organizeComments = (comments: any[]) => {
         const topLevelComments = comments.filter(comment => !comment.replyCommentId);
         const allReplies = comments.filter(comment => comment.replyCommentId);
         
         return topLevelComments.map(comment => {
-            // Get all replies for this top-level comment (including nested replies)
             const getAllRepliesForComment = (parentId: number): any[] => {
                 const directReplies = allReplies.filter(reply => reply.replyCommentId === parentId);
-                const nestedReplies = directReplies.flatMap(reply => getAllRepliesForComment(reply.id));
-                return [...directReplies, ...nestedReplies];
+                const sortedDirectReplies = directReplies.sort((a, b) => 
+                    new Date(a.createDate).getTime() - new Date(b.createDate).getTime()
+                );
+                const nestedReplies = sortedDirectReplies.flatMap(reply => getAllRepliesForComment(reply.id));
+                return [...sortedDirectReplies, ...nestedReplies];
             };
             
             return {
@@ -73,58 +83,66 @@ const FeedDetail: React.FC = () => {
     const isLoading = isLoadingPost;
 
     const formatTimeAgo = (dateString: string) => {
-        const locale = i18n.language === 'vi' ? 'vi' : 'en';
-        return dayjs(dateString).locale(locale).fromNow();
+        return formatTimeFromNow(dateString, t);
     };
 
     const handleSendComment = async () => {
-        if (!commentText.trim() || !postId) return;
+        if (!commentText.trim() || !postCode) return;
         
         try {
-            await createCommentMutation.mutateAsync({
-                postId: postId,
-                content: commentText.trim()
-            });
+            if (replyingTo) {
+                await createCommentMutation.mutateAsync({
+                    postCode: postCode,
+                    replyCommentId: replyingTo,
+                    content: commentText.trim()
+                });
+            } else {
+                await createCommentMutation.mutateAsync({
+                    postCode: postCode,
+                    content: commentText.trim()
+                });
+            }
             setCommentText('');
+            setReplyingTo(null);
+            setReplyingToUser('');
             refetchComments();
         } catch (error) {
             console.error('Failed to post comment:', error);
         }
     };
 
-    const handleSendReply = async (parentCommentId: number) => {
-        if (!replyText.trim() || !postId) return;
-        
-        try {
-            await createCommentMutation.mutateAsync({
-                postId: postId,
-                replyCommentId: parentCommentId,
-                content: replyText.trim()
-            });
-            setReplyText('');
-            setReplyingTo(null);
-            refetchComments();
-        } catch (error) {
-            console.error('Failed to post reply:', error);
-        }
-    };
 
-    const handleReplyClick = (commentId: number) => {
+    const handleReplyClick = (commentId: number, userName: string) => {
         setReplyingTo(commentId);
-        setReplyText('');
+        setReplyingToUser(userName);
+        setCommentText('');
+        setTimeout(() => {
+            inputRef.current?.focus();
+        }, 100);
     };
 
     const handleCancelReply = () => {
         setReplyingTo(null);
-        setReplyText('');
+        setReplyingToUser('');
+        setCommentText('');
     };
 
     const handleLikePost = () => {
-        if (!displayPost || !postId) return;
+        if (!displayPost) return;
         
         postLikeMutation.mutate({
-            postId: postId,
+            postCode: displayPost.code,
             isLiked: displayPost.isLike || false
+        });
+    };
+
+    const handleLikeComment = (commentCode: string, isLiked: boolean) => {
+        if (!postCode) return;
+        
+        commentLikeMutation.mutate({
+            commentCode,
+            isLiked,
+            postCode
         });
     };
 
@@ -133,7 +151,6 @@ const FeedDetail: React.FC = () => {
             (entries) => {
                 const lastEntry = entries[0];
                 if (lastEntry.isIntersecting && hasNextPage && !isFetchingNextPage && !isLoadingComments) {
-                    console.log('Fetching next page of comments...');
                     fetchNextPage();
                 }
             },
@@ -142,10 +159,8 @@ const FeedDetail: React.FC = () => {
                 rootMargin: '50px'
             }
         );
-
         const currentRef = lastCommentElementRef.current;
         if (currentRef && allComments.length > 0) {
-            console.log('Observing last comment element for infinite scroll');
             observer.observe(currentRef);
         }
 
@@ -157,7 +172,6 @@ const FeedDetail: React.FC = () => {
     }, [hasNextPage, isFetchingNextPage, isLoadingComments, fetchNextPage, allComments.length]);
 
     const handleHashtagClick = (hashtag: string) => {
-        console.log('Hashtag clicked:', hashtag);
     };
 
     if (isLoading) {
@@ -172,9 +186,7 @@ const FeedDetail: React.FC = () => {
                 <div className="relative flex items-center justify-between px-6 h-[50px] border-b border-gray-100">
                     <div className="flex items-center gap-4 z-10">
                         <button onClick={() => history.goBack()}>
-                            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
+                            <RetryIcon className="w-6 h-6 text-gray-600 rotate-180" />
                         </button>
                     </div>
                     <div className="absolute left-0 right-0 flex justify-center pointer-events-none">
@@ -203,9 +215,7 @@ const FeedDetail: React.FC = () => {
                 <div className="relative flex items-center justify-between px-6 h-[50px] border-b border-gray-100">
                     <div className="flex items-center gap-4 z-10">
                         <button onClick={() => history.goBack()}>
-                            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
+                            <RetryIcon className="w-6 h-6 text-gray-600 rotate-180" />
                         </button>
                     </div>
                     <div className="absolute left-0 right-0 flex justify-center pointer-events-none">
@@ -215,9 +225,7 @@ const FeedDetail: React.FC = () => {
 
                 {/* Error Content */}
                 <div className="flex-1 flex flex-col items-center justify-center px-6">
-                    <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    <GlobalIcon className="w-12 h-12 text-gray-400 mb-4" />
                     <p className="text-gray-500 text-center mb-4">{postDetailError || t('Post not found')}</p>
                     <button
                         onClick={() => history.goBack()}
@@ -243,9 +251,7 @@ const FeedDetail: React.FC = () => {
             <div className="relative flex items-center justify-between px-6 h-[50px] border-b border-gray-100">
                 <div className="flex items-center gap-4 z-10">
                     <button onClick={() => history.goBack()}>
-                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
+                        <RetryIcon className="w-6 h-6 text-gray-600 rotate-180" />
                     </button>
                 </div>
 
@@ -255,7 +261,7 @@ const FeedDetail: React.FC = () => {
 
                 <div className="flex items-center justify-end z-10">
                     <button>
-                        <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-5 h-5 fill-current text-gray-600" viewBox="0 0 20 20">
                             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                         </svg>
                     </button>
@@ -302,82 +308,36 @@ const FeedDetail: React.FC = () => {
 
                     {/* Post media */}
                     {post.media && post.media.length > 0 && (
-                        <div className={post.media.length === 1 ? "" : "grid grid-cols-2 gap-1"}>
-                            {post.media.slice(0, 4).map((media, index) => (
-                                <div key={media.id} className="relative">
-                                    {media.type === 'image' ? (
-                                        <img
-                                            src={media.url}
-                                            alt=""
-                                            className={post.media.length === 1 ? "w-full max-h-96 object-cover rounded-lg" : "w-full aspect-square object-cover"}
-                                        />
-                                    ) : media.type === 'video' ? (
-                                        <video
-                                            src={media.url}
-                                            controls
-                                            className={post.media.length === 1 ? "w-full max-h-96 rounded-lg" : "w-full aspect-square object-cover"}
-                                        />
-                                    ) : (
-                                        <div className="bg-gray-100 p-4 rounded-lg">
-                                            <div className="flex items-center gap-2">
-                                                <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v6.114a4.369 4.369 0 00-1.045-.063 3.983 3.983 0 00-4 4c0 2.206 1.794 4 4 4s4-1.794 4-4V7.041l8-1.6v4.675a4.369 4.369 0 00-1.045-.063 3.983 3.983 0 00-4 4c0 2.206 1.794 4 4 4s4-1.794 4-4V3z" />
-                                                </svg>
-                                                <span className="text-sm text-gray-600">{t('Audio file')}</span>
-                                            </div>
-                                            <audio src={media.url} controls className="w-full mt-2" />
-                                        </div>
-                                    )}
-                                    {index === 3 && post.media.length > 4 && (
-                                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                            <span className="text-white font-semibold">+{post.media.length - 4}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                        <MediaDisplay mediaFiles={post.media} />
                     )}
 
                     {/* Post actions */}
                     <div className="flex items-center justify-between p-4 border-b border-gray-100">
                         <div className="flex items-center gap-6">
                             <button 
-                                className="flex items-center gap-2 hover:bg-gray-50 px-2 py-1 rounded-lg transition-colors"
+                                className={`flex items-center gap-2 transition-colors ${displayPost?.isLike ? 'text-red-500' : 'text-netural-900'}`}
                                 onClick={handleLikePost}
                                 disabled={postLikeMutation.isLoading}
                             >
-                                <svg 
-                                    className={`w-5 h-5 transition-colors ${displayPost?.isLike ? 'text-red-500 fill-current' : 'text-gray-600'}`} 
-                                    fill={displayPost?.isLike ? "currentColor" : "none"} 
-                                    stroke="currentColor" 
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                </svg>
-                                <span className={`text-sm transition-colors ${displayPost?.isLike ? 'text-red-500 font-medium' : 'text-gray-600'}`}>
+                                <ReactHeartIcon />
+                                <span className="">
                                     {displayPost?.reactionCount?.toLocaleString() || 0}
                                 </span>
                             </button>
 
-                            <button className="flex items-center gap-2">
-                                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                </svg>
-                                <span className="text-sm text-gray-600">{post.commentCount.toLocaleString()}</span>
+                            <button className="flex items-center gap-2 text-netural-900 hover:text-blue-500 transition-colors">
+                                <CommentsIcon />
+                                <span className="">{post.commentCount.toLocaleString()}</span>
                             </button>
 
-                            <button className="flex items-center gap-2">
-                                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                                </svg>
-                                <span className="text-sm text-gray-600">{post.shareCount}</span>
+                            <button className="flex items-center gap-2 text-netural-900 hover:text-purple-500 transition-colors">
+                                <RetryIcon />
+                                <span className="">{post.repostCount}</span>
                             </button>
 
-                            <button className="flex items-center gap-2">
-                                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                <span className="text-sm text-gray-600">{post.repostCount}</span>
+                            <button className="flex items-center gap-2 text-netural-900 hover:text-green-500 transition-colors">
+                                <SendIcon />
+                                <span className="">{post.shareCount}</span>
                             </button>
                         </div>
                     </div>
@@ -395,7 +355,9 @@ const FeedDetail: React.FC = () => {
                         {organizedComments.map((comment: any) => (
                             <div key={comment.id}>
                                 {/* Main Comment */}
-                                <div className="flex gap-3 p-4 border-b border-gray-50">
+                                <div className={`flex gap-3 p-4 border-b border-gray-50 transition-colors ${
+                                    replyingTo === comment.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                                }`}>
                                     <img
                                         src={comment.user.avatarUrl || avatarFallback}
                                         alt={comment.user.fullName}
@@ -413,15 +375,17 @@ const FeedDetail: React.FC = () => {
                                             {parseHashtagsWithClick(comment.content, handleHashtagClick)}
                                         </div>
                                         <div className="flex items-center gap-4 mt-2">
-                                            <button className={`flex items-center gap-1 ${comment.isLike ? 'text-red-500' : 'text-gray-500'}`}>
-                                                <svg className="w-4 h-4" fill={comment.isLike ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                                </svg>
+                                            <button 
+                                                className={`flex items-center gap-1 ${comment.isLike ? 'text-red-500' : 'text-gray-500'}`}
+                                                onClick={() => handleLikeComment(comment.code, comment.isLike || false)}
+                                                disabled={commentLikeMutation.isLoading}
+                                            >
+                                                <ReactHeartIcon className="w-4 h-4" />
                                                 <span className="text-xs">{comment.reactionCount}</span>
                                             </button>
                                             <button 
                                                 className="text-xs text-gray-500 hover:text-blue-500"
-                                                onClick={() => handleReplyClick(comment.id)}
+                                                onClick={() => handleReplyClick(comment.id, comment.user.fullName)}
                                             >
                                                 {t('Reply')}
                                             </button>
@@ -432,58 +396,14 @@ const FeedDetail: React.FC = () => {
                                             )}
                                         </div>
 
-                                        {/* Reply Input */}
-                                        {replyingTo === comment.id && (
-                                            <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <img
-                                                        src={user?.avatar || avatarFallback}
-                                                        alt={user?.name}
-                                                        className="w-6 h-6 rounded-full object-cover"
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).src = avatarFallback;
-                                                        }}
-                                                    />
-                                                    <span className="text-xs text-gray-500">
-                                                        {t(`Replying to ${comment.user.fullName}`)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={replyText}
-                                                        onChange={(e) => setReplyText(e.target.value)}
-                                                        placeholder={t('Write a reply...')}
-                                                        className="flex-1 px-3 py-2 bg-white rounded-lg text-sm outline-none border border-gray-200 focus:border-blue-500"
-                                                        onKeyPress={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                handleSendReply(comment.id);
-                                                            }
-                                                        }}
-                                                        autoFocus
-                                                    />
-                                                    <button
-                                                        onClick={() => handleSendReply(comment.id)}
-                                                        disabled={!replyText.trim() || createCommentMutation.isLoading}
-                                                        className="bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-medium disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600"
-                                                    >
-                                                        {createCommentMutation.isLoading ? t('Posting...') : t('Reply')}
-                                                    </button>
-                                                    <button
-                                                        onClick={handleCancelReply}
-                                                        className="text-gray-500 px-2 py-2 rounded-lg text-xs hover:bg-gray-200"
-                                                    >
-                                                        {t('Cancel')}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 
                                 {/* Replies */}
                                 {comment.replies && comment.replies.map((reply: any) => (
-                                    <div key={reply.id} className="flex gap-3 p-4 pl-12 border-b border-gray-50 bg-gray-25">
+                                    <div key={reply.id} className={`flex gap-3 p-4 pl-12 border-b border-gray-50 bg-gray-25 transition-colors ${
+                                        replyingTo === reply.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                                    }`}>
                                         <img
                                             src={reply.user.avatarUrl || avatarFallback}
                                             alt={reply.user.fullName}
@@ -498,70 +418,29 @@ const FeedDetail: React.FC = () => {
                                                 <span className="text-gray-500 text-xs">{formatTimeAgo(reply.createDate)}</span>
                                                 <span className="text-gray-400 text-xs">• {t('Reply')}</span>
                                             </div>
-                                            <div className="text-gray-800 text-sm leading-relaxed">
-                                                {parseHashtagsWithClick(reply.content, handleHashtagClick)}
+                                            <div className="flex items-center gap-2">
+                                              <span className='font-semibold text-main text-sm'>{reply.user.fullName}</span>
+                                                <div className="text-gray-800 text-sm leading-relaxed">
+                                                    {parseHashtagsWithClick(reply.content, handleHashtagClick)}
+                                                </div>
                                             </div>
                                             <div className="flex items-center gap-4 mt-2">
-                                                <button className={`flex items-center gap-1 ${reply.isLike ? 'text-red-500' : 'text-gray-500'}`}>
-                                                    <svg className="w-4 h-4" fill={reply.isLike ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                                    </svg>
+                                                <button 
+                                                    className={`flex items-center gap-1 ${reply.isLike ? 'text-red-500' : 'text-gray-500'}`}
+                                                    onClick={() => handleLikeComment(reply.code, reply.isLike || false)}
+                                                    disabled={commentLikeMutation.isLoading}
+                                                >
+                                                    <ReactHeartIcon className="w-4 h-4" />
                                                     <span className="text-xs">{reply.reactionCount}</span>
                                                 </button>
                                                 <button 
                                                     className="text-xs text-gray-500 hover:text-blue-500"
-                                                    onClick={() => handleReplyClick(reply.id)}
+                                                    onClick={() => handleReplyClick(reply.id, reply.user.fullName)}
                                                 >
                                                     {t('Reply')}
                                                 </button>
                                             </div>
 
-                                            {/* Reply Input for nested replies */}
-                                            {replyingTo === reply.id && (
-                                                <div className="mt-3 p-3 bg-gray-100 rounded-lg">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <img
-                                                            src={user?.avatar || avatarFallback}
-                                                            alt={user?.name}
-                                                            className="w-6 h-6 rounded-full object-cover"
-                                                            onError={(e) => {
-                                                                (e.target as HTMLImageElement).src = avatarFallback;
-                                                            }}
-                                                        />
-                                                        <span className="text-xs text-gray-500">
-                                                            {t(`Replying to ${reply.user.fullName}`)}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <input
-                                                            type="text"
-                                                            value={replyText}
-                                                            onChange={(e) => setReplyText(e.target.value)}
-                                                            placeholder={t('Write a reply...')}
-                                                            className="flex-1 px-3 py-2 bg-white rounded-lg text-sm outline-none border border-gray-200 focus:border-blue-500"
-                                                            onKeyPress={(e) => {
-                                                                if (e.key === 'Enter') {
-                                                                    handleSendReply(reply.id);
-                                                                }
-                                                            }}
-                                                            autoFocus
-                                                        />
-                                                        <button
-                                                            onClick={() => handleSendReply(reply.id)}
-                                                            disabled={!replyText.trim() || createCommentMutation.isLoading}
-                                                            className="bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-medium disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600"
-                                                        >
-                                                            {createCommentMutation.isLoading ? t('Posting...') : t('Reply')}
-                                                        </button>
-                                                        <button
-                                                            onClick={handleCancelReply}
-                                                            className="text-gray-500 px-2 py-2 rounded-lg text-xs hover:bg-gray-200"
-                                                        >
-                                                            {t('Cancel')}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -610,11 +489,27 @@ const FeedDetail: React.FC = () => {
                                     (e.target as HTMLImageElement).src = avatarFallback;
                                 }}
                             />
+                            {replyingTo && (
+                                <div className="absolute -top-8 left-0 right-0 bg-blue-50 px-3 py-1 rounded-t-xl border border-blue-200 border-b-0">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-blue-600">
+                                            {t('Reply to')} <span className="font-bold">{replyingToUser}</span>
+                                        </span>
+                                        <button 
+                                            onClick={handleCancelReply}
+                                            className="text-blue-400 hover:text-blue-600"
+                                        >
+                                            <RetryIcon className="w-4 h-4 rotate-45" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                             <input
+                                ref={inputRef}
                                 type="text"
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
-                                placeholder={t(`Reply to ${displayPost?.user?.fullName}...`)}
+                                placeholder={replyingTo ? `${t('Reply to')} ${replyingToUser}...` : t(`Reply to ${displayPost?.user?.fullName}...`)}
                                 className="w-full pl-10 pr-1 py-2 bg-netural-50 rounded-xl text-sm outline-none placeholder:text-netural-300"
                                 onKeyPress={(e) => {
                                     if (e.key === 'Enter') {

@@ -11,7 +11,7 @@ export const useAudioUpload = () => {
         mutationFn: async (audioFile: File): Promise<UploadResponse & { filename?: string }> => {
             const response = await uploadSocialFiles({ files: [audioFile] });
             const uploadData = response.data[0];
-            const filename = uploadData?.name ? uploadData.name.split('/').pop() : '';
+            const filename = uploadData?.name 
             return { 
                 url: uploadData?.linkImage || '',
                 filename: filename

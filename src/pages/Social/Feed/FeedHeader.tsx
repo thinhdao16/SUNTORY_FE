@@ -28,7 +28,7 @@ const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, 
                 <img
                     src={user?.avatar || avatarFallback}
                     alt={user?.name}
-                    className="w-9 h-9  rounded-lg object-cover"
+                    className="w-9 h-9  rounded-2xl object-cover"
                     onError={(e) => {
                         (e.target as HTMLImageElement).src = avatarFallback;
                     }}

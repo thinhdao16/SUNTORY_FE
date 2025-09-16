@@ -3,23 +3,23 @@ import { SocialFeedService } from '@/services/social/social-feed-service';
 import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
 import { useEffect } from 'react';
 
-export const useFeedDetail = (postId: number | null, enabled: boolean = true) => {
-  const { setCurrentPost, clearCurrentPost } = useSocialFeedStore();
+export const useFeedDetail = (postCode: string | null | undefined, enabled: boolean = true) => {
+  const { setCurrentPost, clearCurrentPost, currentPost } = useSocialFeedStore();
 
   useEffect(() => {
-    if (postId) {
+    if (postCode) {
       clearCurrentPost();
     }
-  }, [postId, clearCurrentPost]);
+  }, [postCode, clearCurrentPost]);
 
   const query = useQuery(
-    ['feedDetail', postId],
+    ['feedDetail', postCode],
     async () => {
-      if (!postId) return null;
-      return await SocialFeedService.getPostById(postId);
+      if (!postCode) return null;
+      return await SocialFeedService.getPostByCode(postCode);
     },
     {
-      enabled: enabled && !!postId,
+      enabled: enabled && !!postCode,
       staleTime: 1000 * 60 * 5,
       refetchOnWindowFocus: false,
       refetchOnMount: true,
