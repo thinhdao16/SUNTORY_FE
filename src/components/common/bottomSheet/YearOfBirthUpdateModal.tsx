@@ -173,7 +173,7 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
                                     position: 'sticky',
                                     bottom: 0,
                                     background: '#ffffff',
-                                    paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px)`,
+                                    paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px + 12px)`,
                                     zIndex: 10
                                 }}
                             >
@@ -185,7 +185,11 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
                                     style={{
                                         '--background': '#1152F4',
                                         '--background-hover': '#2563eb',
-                                        'font-weight': '600'
+                                        'font-weight': '700',
+                                        'borderRadius': '9999px',
+                                        'boxShadow': '0 8px 20px rgba(17, 82, 244, 0.35)',
+                                        'textTransform': 'uppercase',
+                                        'letterSpacing': '0.5px'
                                     }}
                                 >
                                     {isSaving ? <IonSpinner name="crescent" /> : t('Save')}
