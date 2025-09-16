@@ -113,11 +113,9 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
                         >
                             {/* Left spacer to keep title centered */}
                             <div style={{ width: 56, height: HEADER_PX }} />
-                            <div
+                            <div className="text-center font-semibold text-lg"
                                 style={{
                                     flex: 1,
-                                    textAlign: 'center',
-                                    fontWeight: 700,
                                     lineHeight: 1.2,
                                     wordBreak: 'break-word',
                                     overflow: 'hidden'

@@ -240,7 +240,16 @@ const AllergiesUpdateModal: React.FC<AllergiesUpdateModalProps> = ({
                         {/* Header */}
                         <div className="px-2" style={{ minHeight: HEADER_PX, display: 'flex', alignItems: 'center', touchAction: 'none' }}>
                             <div style={{ width: 56, height: HEADER_PX }} />
-                            <div style={{ flex: 1, textAlign: 'center', fontWeight: 700 }}>{t('Enter your food allergies')}</div>
+                            <div className="text-center font-semibold text-lg"
+                                style={{
+                                    flex: 1,
+                                    lineHeight: 1.2,
+                                    wordBreak: 'break-word',
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                {t('Enter your food allergies')}
+                            </div>
                             <IonButton fill="clear" onClick={onClose} style={{ width: 56, height: HEADER_PX, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <IonIcon icon={close} style={{ width: 24, height: 24, color: '#000000' }} />
                             </IonButton>

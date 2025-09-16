@@ -161,11 +161,9 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
                         >
                             {/* Left spacer to balance the close button so title stays centered */}
                             <div style={{ width: 56, height: HEADER_PX }} />
-                            <div
+                            <div className="text-center font-semibold text-lg"
                                 style={{
                                     flex: 1,
-                                    textAlign: 'center',
-                                    fontWeight: 700,
                                     lineHeight: 1.2,
                                     wordBreak: 'break-word',
                                     overflow: 'hidden'

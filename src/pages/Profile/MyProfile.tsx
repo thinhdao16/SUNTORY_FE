@@ -434,7 +434,7 @@ const MyProfile: React.FC = () => {
                   {/* Left side - User info */}
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h1 className="text-[25px] font-bold text-gray-900">{userInfo?.name}</h1>
+                      <h1 className="text-[25px] font-bold text-gray-900 overflow-hidden max-w-[150px] truncate">{userInfo?.name}</h1>
                       {/* Vietnam flag icon */}
                       <span className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`} style={{ width: 20, height: 20, borderRadius: 9999 }} ></span>
                     </div>
@@ -537,7 +537,7 @@ const MyProfile: React.FC = () => {
                   <IonButton
                     fill="clear"
                     onClick={() => history.push('/profile-setting')}
-                    className="transition-all duration-200 hover:bg-gray-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                    className="transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                     style={{
                       flex: 1,
                       height: '40px',
@@ -547,6 +547,11 @@ const MyProfile: React.FC = () => {
                       borderColor: '#A3A8AF',
                       padding: '8px',
                       backgroundColor: 'white',
+                      ['--background' as any]: 'white',
+                      ['--background-hover' as any]: 'white',
+                      ['--background-focused' as any]: 'white',
+                      ['--background-activated' as any]: 'white',
+                      ['--ripple-color' as any]: 'transparent',
                       color: 'black',
                       textTransform: 'none',
                       opacity: 1,
@@ -560,7 +565,7 @@ const MyProfile: React.FC = () => {
                   </IonButton>
                   <IonButton
                     fill="clear"
-                    className="bg-white hover:bg-blue-50 active:bg-blue-100 hover:shadow-md transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                    className="transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                     style={{
                       flex: 1,
                       height: '40px',
@@ -570,6 +575,11 @@ const MyProfile: React.FC = () => {
                       borderColor: '#A3A8AF',
                       padding: '8px',
                       backgroundColor: 'white',
+                      ['--background' as any]: 'white',
+                      ['--background-hover' as any]: 'white',
+                      ['--background-focused' as any]: 'white',
+                      ['--background-activated' as any]: 'white',
+                      ['--ripple-color' as any]: 'transparent',
                       color: 'black',
                       textTransform: 'none',
                       opacity: 1,
