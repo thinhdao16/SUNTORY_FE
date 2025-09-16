@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { IonButton, IonIcon } from "@ionic/react";
+import { IonButton, IonIcon, IonSpinner } from "@ionic/react";
 import { close } from "ionicons/icons";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -152,19 +152,20 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
                             </div>
 
                             {/* Save Button - fixed at bottom */}
-                            <div className="sticky bottom-0 p-4">
-                                <button
-                                    type="button"
+                            <div className="px-4 py-4 border-t border-gray-100">
+                                <IonButton
+                                    expand="block"
+                                    shape="round"
                                     onClick={handleSave}
-                                    disabled={isSaving || !isValidYear || !hasChanged}
-                                    className={`w-full h-12 rounded-2xl font-semibold transition-colors ${
-                                        isSaving || !isValidYear || !hasChanged
-                                            ? 'bg-gray-300 text-white cursor-not-allowed'
-                                            : 'bg-blue-600 text-white active:opacity-90'
-                                    }`}
+                                    className="h-14"
+                                    style={{
+                                        '--background': '#1152F4',
+                                        '--background-hover': '#2563eb',
+                                        'font-weight': '600'
+                                    }}
                                 >
-                                    {isSaving ? t('Saving...') : t('Save')}
-                                </button>
+                                    {isSaving ? <IonSpinner name="crescent" /> : t('Save')}
+                                </IonButton>
                             </div>
                         </div>
                     </div>

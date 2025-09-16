@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { IonButton, IonIcon } from "@ionic/react";
+import { IonButton, IonIcon, IonSpinner } from "@ionic/react";
 import { checkmarkCircle, close, code } from "ionicons/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateAccountInformationV3 } from "@/services/auth/auth-service";
@@ -38,6 +38,7 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
     const [query, setQuery] = useState("");
     const [languages, setLanguages] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [tempSelected, setTempSelected] = useState<string | undefined>(selectedCode);
 
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -84,6 +85,7 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
 
     const handleSave = async () => {
         if (!tempSelected || tempSelected === selectedCode) return;
+        setIsSaving(true);
         try {
             const lang = languages.find((l) => (l?.code ?? l?.data?.code) === tempSelected);
             if (!lang) return;
@@ -102,6 +104,8 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
             onClose();
         } catch (e) {
             console.error("Error updating language:", e);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -195,7 +199,7 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
                                                 className="w-full flex items-center justify-between px-3 py-3 hover:bg-gray-50 rounded-xl"
                                             >
                                                 <span className={`text-[15px] ${isActive ? 'font-semibold' : ''}`}>
-                                                    {l?.name}
+                                                    {t(l?.name)}
                                                 </span>
                                                 {isActive && (
                                                     <IonIcon icon={checkmarkCircle} className="text-blue-500 text-3xl" />
@@ -209,16 +213,24 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
                         </div>
                         {/* Sticky Save at very bottom */}
                         {(tempSelected && tempSelected !== selectedCode) && (
-                            <div className="sticky bottom-3 px-4 flex items-center justify-center">
-                                <button
-                                    type="button"
+                            <div className="sticky bottom-3 flex justify-center px-4 py-4 border-t border-gray-100">
+                                <IonButton
+                                    expand="block"
+                                    shape="round"
                                     onClick={() => handleSave()}
-                                    className="w-full h-11 rounded-2xl bg-blue-600 text-white font-semibold shadow-md active:opacity-90"
+                                    className="h-14"
+                                    style={{
+                                        '--background': '#1152F4',
+                                        '--background-hover': '#2563eb',
+                                        'font-weight': '600',
+                                        width: '100%',
+                                    }}
                                 >
-                                    {t('Save')}
-                                </button>
+                                    {isSaving ? <IonSpinner name="crescent" /> : t('Save')}
+                                </IonButton>
                             </div>
                         )}
+                        {/* Fixed Footer */}
                     </div>
                 </motion.div>
             )}

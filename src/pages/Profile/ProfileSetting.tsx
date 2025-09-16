@@ -96,7 +96,7 @@ const Profile: React.FC = () => {
                                 <button
                                     type="button"
                                     className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
-                                    onClick={() => history.push('/profile/friends')}
+                                    onClick={() => history.push('/friend-list')}
                                 >
                                     <div className="flex items-center gap-3">
                                         <IonIcon icon={peopleOutline} className="text-gray-700 text-xl" />
@@ -108,7 +108,7 @@ const Profile: React.FC = () => {
                                 <button
                                     type="button"
                                     className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
-                                    onClick={() => history.push('/profile/friend-requests')}
+                                    onClick={() => history.push('/friend-request-sent')}
                                 >
                                     <div className="flex items-center gap-3">
                                         <IonIcon icon={personAddOutline} className="text-gray-700 text-xl" />
@@ -123,7 +123,7 @@ const Profile: React.FC = () => {
                                 <button
                                     type="button"
                                     className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
-                                    onClick={() => history.push('/profile/change-password')}
+                                    onClick={() => history.push('/change-password')}
                                 >
                                     <div className="flex items-center gap-3">
                                         <IonIcon icon={lockClosedOutline} className="text-gray-700 text-xl" />

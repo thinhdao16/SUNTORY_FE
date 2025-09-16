@@ -15,7 +15,7 @@ import avatarGrayFallback from "@/icons/logo/social-chat/avt-gray-rounded.svg";
 import { t } from "@/lib/globalT";
 import { useDebounce } from "@/hooks/useDebounce";
 
-function SocialGroupAdd() {
+function SocialGroupAdd( { isProfile }: { isProfile?: boolean } ) {
   const isNative = Capacitor.isNativePlatform();
   const inputRef = useRef<HTMLInputElement>(null);
 

@@ -7,18 +7,41 @@ import { chevronForwardOutline, arrowBack } from "ionicons/icons";
 import PageContainer from "@/components/layout/PageContainer";
 import WeightUpdateModal from "@/components/common/bottomSheet/WeightUpdateModal";
 import HeightUpdateModal from "@/components/common/bottomSheet/HeightUpdateModal";
+import DietLifeStyleModal from "@/components/common/bottomSheet/DietLifeStyleModal";
+import AllergiesUpdateModal from "@/components/common/bottomSheet/AllergiesUpdateModal";
+import HealthConditionUpdateModal from "@/components/common/bottomSheet/HealthConditionUpdateModal";
+
+interface AllergyItem {
+    allergyId: number;
+    name: string;
+}
+
+interface HealthConditionItem {
+    healthConditionId: number;
+    name: string;
+}
 
 const AiProfileInformation: React.FC = () => {
     const history = useHistory();
     const { data: userInfo, refetch } = useAuthInfo();
     const [isWeightUpdateModalOpen, setIsWeightUpdateModalOpen] = useState(false);
     const [isHeightUpdateModalOpen, setIsHeightUpdateModalOpen] = useState(false);
+    const [isDietLifeStyleModalOpen, setIsDietLifeStyleModalOpen] = useState(false);
+    const [isAllergiesUpdateModalOpen, setIsAllergiesUpdateModalOpen] = useState(false);
+    const [isHealthConditionsUpdateModalOpen, setIsHealthConditionsUpdateModalOpen] = useState(false);
+    const [allergies, setAllergies] = useState<AllergyItem[]>([]);
+    const [healthConditions, setHealthConditions] = useState<HealthConditionItem[]>([]);
     const [weightUnit, setWeightUnit] = useState('kg');
     const [heightUnit, setHeightUnit] = useState('cm');
+    const [diet, setDiet] = useState({
+        id: 0,
+        name: '',
+    });
     const [translateY, setTranslateY] = useState(0);
     const handleTouchStart = () => { };
     const handleTouchMove = () => { };
     const handleTouchEnd = () => { setTranslateY(0); };
+
     useEffect(() => {
         refetch();
         const weightUnit =
@@ -30,9 +53,32 @@ const AiProfileInformation: React.FC = () => {
             userInfo?.currentMeasurement?.find((a: any) => a?.heightUnit)?.heightUnit?.symbol
             ?? userInfo?.currentMeasurement?.find((a: any) => a?.heightUnitId)?.heightUnit?.symbol
             ?? 'cm';
-        console.log("userInfo", userInfo);
+        const dietStyle: { id: number, name: string }[] = userInfo?.groupedLifestyles.find(
+            (g: any) => g.category?.name === "Diet"
+        )?.lifestyles.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+        }));
+
+        const allergies: AllergyItem[] = userInfo?.allergies?.map((item: any) => ({
+            allergyId: item.allergy.id || item.id,
+            name: item.allergy.name
+        })) || [];
+
+        const healthConditions: HealthConditionItem[] = userInfo?.healthConditions?.map((item: any) => ({
+            healthConditionId: item.healthCondition?.id || item.id,
+            name: item.healthCondition?.name || item.name
+        })) || [];
+
+        //set state
         if (weightUnit) setWeightUnit(weightUnit);
         if (heightUnit) setHeightUnit(heightUnit);
+        if (dietStyle) setDiet({
+            id: dietStyle[0].id,
+            name: dietStyle[0].name,
+        });
+        if (allergies) setAllergies(allergies);
+        if (healthConditions) setHealthConditions(healthConditions);
     }, [userInfo]);
 
     return (
@@ -67,9 +113,9 @@ const AiProfileInformation: React.FC = () => {
                                 className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
                                 onClick={() => setIsWeightUpdateModalOpen(true)}
                             >
-                                <span>{t('Weight')}</span>
-                                <div className="flex items-center gap-2 text-neutral-500">
-                                    <span className="text-sm">{userInfo?.weight ? `${userInfo.weight} ${weightUnit}` : ""}</span>
+                                <span className="font-semibold text-[15px] text-gray-900">{t('Weight')}</span>
+                                <div className="flex items-center gap-2 text-neutral-800 max-w-[60%]">
+                                    <span className="text-[15px] whitespace-nowrap overflow-hidden text-ellipsis" title={userInfo?.weight ? `${userInfo.weight} ${weightUnit}` : ''}>{userInfo?.weight ? `${userInfo.weight} ${weightUnit}` : ""}</span>
                                     <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
                                 </div>
                             </button>
@@ -79,9 +125,9 @@ const AiProfileInformation: React.FC = () => {
                                 className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
                                 onClick={() => setIsHeightUpdateModalOpen(true)}
                             >
-                                <span>{t('Height')}</span>
-                                <div className="flex items-center gap-2 text-neutral-500">
-                                    <span className="text-sm">{userInfo?.height ? `${userInfo.height} ${heightUnit}` : ""}</span>
+                                <span className="font-semibold text-[15px] text-gray-900">{t('Height')}</span>
+                                <div className="flex items-center gap-2 text-neutral-800 max-w-[60%]">
+                                    <span className="text-[15px] whitespace-nowrap overflow-hidden text-ellipsis" title={userInfo?.height ? `${userInfo.height} ${heightUnit}` : ''}>{userInfo?.height ? `${userInfo.height} ${heightUnit}` : ""}</span>
                                     <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
                                 </div>
                             </button>
@@ -89,11 +135,11 @@ const AiProfileInformation: React.FC = () => {
                             <button
                                 type="button"
                                 className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
-                                onClick={() => history.push('/health-information')}
+                                onClick={() => setIsDietLifeStyleModalOpen(true)}
                             >
-                                <span>{t('Current diet')}</span>
-                                <div className="flex items-center gap-2 text-neutral-500">
-                                    <span className="text-sm">{t('Balanced')}</span>
+                                <span className="font-semibold text-[15px] text-gray-900">{t('Current diet')}</span>
+                                <div className="flex items-center gap-2 text-neutral-800 max-w-[60%]">
+                                    <span className="text-[15px] whitespace-nowrap overflow-hidden text-ellipsis" title={t(diet.name)}>{t(diet.name)}</span>
                                     <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
                                 </div>
                             </button>
@@ -101,7 +147,7 @@ const AiProfileInformation: React.FC = () => {
                             <button
                                 type="button"
                                 className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
-                                onClick={() => history.push('/health-information')}
+                                onClick={() => setIsAllergiesUpdateModalOpen(true)}
                             >
                                 <span>{t('Food allergies')}</span>
                                 <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
@@ -110,7 +156,7 @@ const AiProfileInformation: React.FC = () => {
                             <button
                                 type="button"
                                 className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-gray-800 hover:bg-gray-50 transition"
-                                onClick={() => history.push('/health-information')}
+                                onClick={() => setIsHealthConditionsUpdateModalOpen(true)}
                             >
                                 <span>{t('Health Status')}</span>
                                 <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
@@ -136,6 +182,33 @@ const AiProfileInformation: React.FC = () => {
                 handleTouchStart={handleTouchStart}
                 handleTouchMove={handleTouchMove}
                 handleTouchEnd={handleTouchEnd}
+            />
+            <DietLifeStyleModal
+                isOpen={isDietLifeStyleModalOpen}
+                onClose={() => setIsDietLifeStyleModalOpen(false)}
+                translateY={translateY}
+                handleTouchStart={handleTouchStart}
+                handleTouchMove={handleTouchMove}
+                handleTouchEnd={handleTouchEnd}
+                currentDiet={diet.id}
+            />
+            <AllergiesUpdateModal
+                isOpen={isAllergiesUpdateModalOpen}
+                onClose={() => setIsAllergiesUpdateModalOpen(false)}
+                translateY={translateY}
+                handleTouchStart={handleTouchStart}
+                handleTouchMove={handleTouchMove}
+                handleTouchEnd={handleTouchEnd}
+                allergies={allergies}
+            />
+            <HealthConditionUpdateModal
+                isOpen={isHealthConditionsUpdateModalOpen}
+                onClose={() => setIsHealthConditionsUpdateModalOpen(false)}
+                translateY={translateY}
+                handleTouchStart={handleTouchStart}
+                handleTouchMove={handleTouchMove}
+                handleTouchEnd={handleTouchEnd}
+                healthConditions={healthConditions}
             />
         </PageContainer>
     );

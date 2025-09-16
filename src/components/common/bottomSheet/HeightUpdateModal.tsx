@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { IonButton, IonIcon } from "@ionic/react";
+import { IonButton, IonIcon, IonSpinner } from "@ionic/react";
 import { close, add, remove } from "ionicons/icons";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,15 +33,19 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
     const { data: userInfo, refetch } = useAuthInfo();
     const { data: masterData } = useHealthMasterData();
     const heightUnits = masterData?.measurementUnits?.find((a: any) => a?.category?.categoryName?.toLowerCase() === 'height');
+    const MAX_CM = 300;
+    const MAX_FT = Math.round(300 / 30.48);
     const [unit, setUnit] = useState<'cm' | 'ft'>('cm');
     const [isSaving, setIsSaving] = useState(false);
     const [valueKg, setValueKg] = useState<number>(() => {
         const num = Number(currentHeight);
-        return Number.isFinite(num) ? Math.max(0, Math.round(num)) : 60;
+        const safe = Number.isFinite(num) ? Math.round(num) : 160;
+        return Math.max(0, Math.min(MAX_CM, safe));
     });
     const [valueLbs, setValueLbs] = useState<number>(() => {
         const num = Number(currentHeight);
-        return Number.isFinite(num) ? Math.max(0, Math.round(num)) : 132;
+        const safe = Number.isFinite(num) ? Math.round(num / 30.48) : 5;
+        return Math.max(0, Math.min(MAX_FT, safe));
     });
 
     // Enhanced smooth drag system
@@ -88,13 +92,14 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
 
             const parsed = Number(currentHeight);
             if (Number.isFinite(parsed)) {
-                const init = Math.max(0, Math.round(parsed));
-                setValueKg(init);
-                setValueLbs(init);
+                const initCm = Math.max(0, Math.min(MAX_CM, Math.round(parsed)));
+                const initFt = Math.max(0, Math.min(MAX_FT, Math.round(parsed / 30.48)));
+                setValueKg(initCm);
+                setValueLbs(initFt);
             } else {
-                // fallback to previous state to avoid resetting to default 60 when reopening without prop change
-                setValueKg(prev => Math.max(0, prev || 60));
-                setValueLbs(prev => Math.max(0, prev || 132));
+                // fallback to previous state to avoid hard reset
+                setValueKg(prev => Math.max(0, Math.min(MAX_CM, prev || 160)));
+                setValueLbs(prev => Math.max(0, Math.min(MAX_FT, prev || 5)));
             }
         }
     }, [isOpen, currentHeight]);
@@ -123,16 +128,16 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
 
     const decrement = () => {
         if (canDecrease()) {
-        if (unit === 'cm') setValueKg(prev => Math.max(0, Math.round(prev - 1)));
-        else setValueLbs(prev => Math.max(0, Math.round(prev - 1)));
+            if (unit === 'cm') setValueKg(prev => Math.max(0, Math.min(MAX_CM, Math.round(prev - 1))));
+            else setValueLbs(prev => Math.max(0, Math.min(MAX_FT, Math.round(prev - 1))));
         }
     };
     const increment = () => {
         // Make sure this is a clean increment, not affected by hold logic
         if (unit === 'cm') {
-            setValueKg(prev => Math.round(prev + 1));
+            setValueKg(prev => Math.max(0, Math.min(MAX_CM, Math.round(prev + 1))));
         } else {
-            setValueLbs(prev => Math.round(prev + 1));
+            setValueLbs(prev => Math.max(0, Math.min(MAX_FT, Math.round(prev + 1))));
         }
     };
 
@@ -141,7 +146,7 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
         if (unit === 'cm') {
             setValueKg(prev => {
                 const newValue = Math.round(prev + delta);
-                const finalValue = Math.max(0, newValue);
+                const finalValue = Math.max(0, Math.min(MAX_CM, newValue));
                 // If we hit the boundary (0) from above, only stop hold timers
                 if (finalValue === 0 && prev > 0 && delta > 0) {
                     // Only stop hold timers, don't stop momentum (it might reverse direction)
@@ -158,7 +163,7 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
         } else {
             setValueLbs(prev => {
                 const newValue = Math.round(prev + delta);
-                const finalValue = Math.max(0, newValue);
+                const finalValue = Math.max(0, Math.min(MAX_FT, newValue));
 
                 // If we hit the boundary (0) from above, only stop hold timers
                 if (finalValue === 0 && prev > 0 && delta > 0) {
@@ -180,6 +185,11 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
     const canDecrease = () => {
         const currentValue = unit === 'cm' ? valueKg : valueLbs;
         return currentValue > 0;
+    };
+    // Check if we can increase (not at maximum)
+    const canIncrease = () => {
+        const currentValue = unit === 'cm' ? valueKg : valueLbs;
+        return unit === 'cm' ? currentValue < MAX_CM : currentValue < MAX_FT;
     };
 
     // Continuous increment with direction tracking
@@ -532,15 +542,17 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
             const direction = deltaX > 0 ? -1 : 1;
             const currentHeight = unit === 'cm' ? valueKg : valueLbs;
 
-            // Check boundary only for decreasing (negative direction in our logic)
+            // Check both boundaries
             if (direction < 0 && !canDecrease()) {
-                // At boundary (0) - just reset position, don't update height
+                setStartX(newX);
+                setTotalDistance(0);
+                setSmoothOffset(0);
+            } else if (direction > 0 && !canIncrease()) {
                 setStartX(newX);
                 setTotalDistance(0);
                 setSmoothOffset(0);
             } else {
-                // Safe to update - either increasing (positive direction) or decreasing from non-zero
-                updateHeight(direction); // Use direction directly now
+                updateHeight(direction);
                 setStartX(newX);
                 setTotalDistance(0);
                 setSmoothOffset(0);
@@ -658,14 +670,15 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
             const direction = -steps;
             const currentHeight = unit === 'cm' ? valueKg : valueLbs;
 
-            // Check boundary only for decreasing (negative direction in our logic)
+            // Check both boundaries
             if (direction < 0 && !canDecrease()) {
-                // At boundary (0) - just reset position, don't update height
+                setStartX(currentX);
+                requestAnimationFrame(() => setSmoothOffset(0));
+            } else if (direction > 0 && !canIncrease()) {
                 setStartX(currentX);
                 requestAnimationFrame(() => setSmoothOffset(0));
             } else {
-                // Safe to update - either increasing (positive direction) or decreasing from non-zero
-                updateHeight(direction); // Use direction directly now
+                updateHeight(direction);
                 setStartX(currentX);
                 requestAnimationFrame(() => setSmoothOffset(0));
             }
@@ -896,6 +909,7 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
                                                     const base = unit === 'cm' ? valueKg : valueLbs;
                                                     const rounded = Math.round(base);
                                                     const v = rounded - 10 + i;
+                                                    const max = unit === 'cm' ? MAX_CM : MAX_FT;
                                                     const isCenter = i === 10;
                                                     const isMajor = (v % 5 === 0); // Major tick every 5 units
                                                     const heightClass = isCenter ? 'h-12' : (isMajor ? 'h-10' : 'h-6');
@@ -903,7 +917,7 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
                                                     const widthClass = isCenter ? 'w-[2px]' : 'w-px';
 
                                                     // Hide tick if value is negative or zero when we want clean boundary
-                                                    if (v < 0) {
+                                                    if (v < 0 || v > max) {
                                                         return <div key={i} style={{ width: '1px', height: '24px', backgroundColor: 'transparent' }} />;
                                                     }
 
@@ -981,6 +995,7 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
                                                     const base = unit === 'cm' ? valueKg : valueLbs;
                                                     const rounded = Math.round(base);
                                                     const v = rounded - 10 + i;
+                                                    const max = unit === 'cm' ? MAX_CM : MAX_FT;
                                                     const isCenter = i === 10;
                                                     const show = v % 5 === 0;
                                                     return (
@@ -1016,7 +1031,7 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
                                                                     willChange: 'color, font-weight'
                                                                 }}
                                                             >
-                                                                {isCenter ? rounded : (show && v > 0 ? v : '')}
+                                                                {isCenter ? rounded : (show && v > 0 && v <= max ? v : '')}
                                                             </span>
                                                         </div>
                                                     );
@@ -1028,18 +1043,20 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
                             </div>
 
                             {/* Fixed Footer - Save Button */}
-                            <div className="px-6 py-4">
-                                <button
-                                    type="button"
+                            <div className="px-4 py-4 border-t border-gray-100">
+                                <IonButton
+                                    expand="block"
+                                    shape="round"
                                     onClick={handleSave}
-                                    disabled={isSaving}
-                                    className={`w-full h-12 rounded-2xl font-semibold shadow-md transition-colors ${isSaving
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-blue-600 text-white active:opacity-90'
-                                        }`}
+                                    className="h-14"
+                                    style={{
+                                        '--background': '#1152F4',
+                                        '--background-hover': '#2563eb',
+                                        'font-weight': '600'
+                                    }}
                                 >
-                                    {isSaving ? t('Saving...') : t('Save')}
-                                </button>
+                                    {isSaving ? <IonSpinner name="crescent" /> : t('Save')}
+                                </IonButton>
                             </div>
                         </div>
                     </div>

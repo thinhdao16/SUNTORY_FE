@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { IonContent, IonPage, IonIcon, IonButton, IonTitle, IonButtons, IonHeader, IonToolbar } from "@ionic/react";
 import { useAuthInfo } from "../Auth/hooks/useAuthInfo";
+import { useUploadAvatar } from "./hooks/useProfile";
 import PageContainer from "@/components/layout/PageContainer";
 import { useHistory } from "react-router-dom";
 
@@ -312,7 +313,18 @@ const RepostsList: React.FC<{ reposts: any[] }> = ({ reposts }) => {
 
 const MyProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState("posts");
-  const { data: userInfo } = useAuthInfo();
+  const { data: userInfo, refetch } = useAuthInfo();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadAvatarMutation = useUploadAvatar();
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadAvatarMutation.mutate(file, {
+      onSuccess: () => {
+        refetch?.();
+      },
+    });
+  };
   const history = useHistory();
   const renderTabContent = () => {
     switch (activeTab) {
@@ -366,17 +378,17 @@ const MyProfile: React.FC = () => {
                   {/* Left side - User info */}
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h1 className="text-2xl font-bold text-gray-900">{userInfo.name}</h1>
+                      <h1 className="text-[25px] font-bold text-gray-900">{userInfo.name}</h1>
                       {/* Vietnam flag icon */}
                       <span className={`fi fi-${userInfo.country.code.toLowerCase()} fis`} style={{ width: 18, height: 18, borderRadius: 9999 }} ></span>
                     </div>
                     <div className="flex items-center space-x-2 mb-1">
-                      <p 
-                        className="text-black overflow-hidden max-w-[110px] truncate" 
+                      <p
+                        className="text-black overflow-hidden max-w-[110px] truncate text-[15px]"
                         style={{
                           fontFamily: 'Inter',
                           fontWeight: 400,
-                          fontSize: '14px',
+                          fontSize: '15px',
                           lineHeight: '21px',
                           letterSpacing: '0%'
                         }}
@@ -386,32 +398,34 @@ const MyProfile: React.FC = () => {
                       {/* Copy icon */}
                       <IonIcon icon={copyOutline} className="w-4 h-4 text-black text-transform-uppercase hover:text-blue-500" onClick={() => { navigator.clipboard.writeText(userInfo.code || "") }} />
                     </div>
-                     <div className="flex items-center space-x-2 mb-4">
-                       <p 
-                         className="text-black mb-0" 
-                         style={{
-                           fontFamily: 'Inter',
-                           fontWeight: 500,
-                           fontSize: '14px',
-                           lineHeight: '21px',
-                           letterSpacing: '0%'
-                         }}
-                       >
-                         {userInfo.friendNumber}
-                       </p>
-                       <p 
-                         className="text-gray-500 mb-0" 
-                         style={{
-                           fontFamily: 'Inter',
-                           fontWeight: 400,
-                           fontSize: '14px',
-                           lineHeight: '21px',
-                           letterSpacing: '0%'
-                         }}
-                       >
-                         friends
-                       </p>
-                     </div>
+                    <div className="flex items-center space-x-2 mb-4" onClick={() => {
+                      history.push('/friend-list');
+                    }}>
+                      <p
+                        className="text-black mb-0 text-[15px]"
+                        style={{
+                          fontFamily: 'Inter',
+                          fontWeight: 500,
+                          fontSize: '15px',
+                          lineHeight: '21px',
+                          letterSpacing: '0%'
+                        }}
+                      >
+                        {userInfo.friendNumber}
+                      </p>
+                      <p
+                        className="text-gray-800 mb-0 text-[15px]"
+                        style={{
+                          fontFamily: 'Inter',
+                          fontWeight: 400,
+                          fontSize: '15px',
+                          lineHeight: '21px',
+                          letterSpacing: '0%'
+                        }}
+                      >
+                        friends
+                      </p>
+                    </div>
                   </div>
 
                   {/* Right side - Avatar */}
@@ -428,42 +442,53 @@ const MyProfile: React.FC = () => {
                       }}
                     />
                     {/* Camera icon overlay */}
-                    <div 
-                      className="absolute bg-white flex items-center justify-center shadow-sm" 
-                      style={{ 
-                        width: '32px',
-                        height: '32px',
-                        gap: '16px',
-                        borderRadius: '1600px',
-                        borderWidth: '1.6px',
-                        borderColor: '#E5E7EB',
-                        padding: '6.4px',
-                        top: '48px',
-                        left: '-8px',
-                        opacity: 1
+                    {!uploadAvatarMutation.isLoading && (
+                    <div
+                      className="absolute flex items-center justify-center rounded-full border-2 border-white shadow-md hover:shadow-xl bg-white/90 backdrop-blur cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        top: '46px',
+                        left: '-10px'
                       }}
+                      onClick={() => fileInputRef.current?.click()}
+                      title={t('Update avatar') as unknown as string}
                     >
-                      <IonIcon 
-                        icon={cameraOutline} 
-                        className="text-black text-transform-uppercase" 
+                      <IonIcon
+                        icon={cameraOutline}
+                        className="text-transform-uppercase text-black"
                         style={{
-                          width: '28px',
+                          width: '20px',
                           height: '20px',
-                          opacity: 1
-                        }}
+                          }}
+                      />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileChange}
+                        aria-label="Upload avatar"
                       />
                     </div>
+                    )}
+                    {uploadAvatarMutation.isLoading && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-[20px] z-10">
+                        <div className="loader border-4 border-white border-t-main rounded-full w-8 h-8 animate-spin"></div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Action buttons - Separate section */}
-                <div className="flex items-center justify-center space-x-3 mt-4">
+                <div className="flex items-center justify-center space-x-3 mt-4 px-2">
                   <IonButton
                     fill="clear"
                     onClick={() => history.push('/profile-setting')}
+                    className="transition-all duration-200 hover:bg-gray-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                     style={{
-                      width: '200px',
-                      height: '34px',
+                      flex: 1,
+                      height: '40px',
                       gap: '8px',
                       borderRadius: '12px', // Spacing/3 = 12px
                       borderWidth: '1px',
@@ -475,16 +500,18 @@ const MyProfile: React.FC = () => {
                       opacity: 1,
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      minWidth: 0
                     }}
                   >
                     {t('Edit profile')}
                   </IonButton>
                   <IonButton
                     fill="clear"
+                    className="bg-white hover:bg-blue-50 active:bg-blue-100 hover:shadow-md transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                     style={{
-                      width: '200px',
-                      height: '34px',
+                      flex: 1,
+                      height: '40px',
                       gap: '8px',
                       borderRadius: '12px', // Spacing/3 = 12px
                       borderWidth: '1px',
@@ -496,8 +523,10 @@ const MyProfile: React.FC = () => {
                       opacity: 1,
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      minWidth: 0
                     }}
+                    onClick={() => history.push('/social-partner/add')}
                   >
                     {t('Share profile')}
                   </IonButton>

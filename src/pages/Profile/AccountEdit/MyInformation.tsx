@@ -89,15 +89,15 @@ const MyInformation: React.FC = () => {
                                 setIsNameUpdateListModalOpen(true);
                             }}
                         >
-                            <span className="text-black font-medium">{t('Name')}</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-gray-500">{userInfo?.firstname} {userInfo?.lastname}</span>
+                            <span className="text-black font-semibold text-[15px]">{t('Name')}</span>
+                            <div className="flex items-center gap-2 max-w-[60%]">
+                                <span className="text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis" title={`${userInfo?.firstname ?? ''} ${userInfo?.lastname ?? ''}`}>{userInfo?.firstname} {userInfo?.lastname}</span>
                                 <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
                             </div>
                         </button>
                         <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
-                            <span className="text-gray-600 font-medium">{t('Email')}</span>
-                            <span className="text-gray-500">{userInfo?.email}</span>
+                            <span className="text-gray-800 font-semibold text-[15px]">{t('Email')}</span>
+                            <span className="text-gray-800 max-w-[60%] whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.email}>{userInfo?.email}</span>
                         </div>
                         <button
                             type="button"
@@ -106,9 +106,9 @@ const MyInformation: React.FC = () => {
                                 setIsGenderUpdateModalOpen(true);
                             }}
                         >
-                            <span className="text-black font-medium">{t('Gender')}</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-gray-500">
+                            <span className="text-black font-semibold text-[15px]">{t('Gender')}</span>
+                            <div className="flex items-center gap-2 max-w-[60%]">
+                                <span className="text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.gender === 1 ? t('Male') : userInfo?.gender === 2 ? t('Female') : t('Other')}>
                                     {userInfo?.gender === 1 ? t('Male') : userInfo?.gender === 2 ? t('Female') : t('Other')}
                                 </span>
                                 <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
@@ -121,9 +121,9 @@ const MyInformation: React.FC = () => {
                                 setIsYearOfBirthUpdateModalOpen(true);
                             }}
                         >
-                            <span className="text-black font-medium">{t('Year of birth')}</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-gray-500">
+                            <span className="text-black font-semibold text-[15px]">{t('Year of birth')}</span>
+                            <div className="flex items-center gap-2 max-w-[60%]">
+                                <span className="text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.dateOfBirth ? new Date(userInfo.dateOfBirth).getFullYear().toString() : ''}>
                                     {userInfo?.dateOfBirth ? new Date(userInfo.dateOfBirth).getFullYear() : ''}
                                 </span>
                                 <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
@@ -138,9 +138,9 @@ const MyInformation: React.FC = () => {
                             className="w-full flex items-center justify-between px-4 py-4 text-left border-b border-gray-100 hover:bg-gray-50"
                             onClick={() => setIsCountryListModalOpen(true)}
                         >
-                            <span className="text-black font-medium">{t('Country')}</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-gray-500">{userInfo?.country?.name}</span>
+                            <span className="text-black font-semibold text-[15px]">{t('Country')}</span>
+                            <div className="flex items-center gap-2 max-w-[60%]">
+                                <span className="text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.country?.name}>{userInfo?.country?.name}</span>
                                 <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
                             </div>
                         </button>
@@ -149,9 +149,9 @@ const MyInformation: React.FC = () => {
                             className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-gray-50"
                             onClick={() => setIsLanguageListModalOpen(true)}
                         >
-                            <span className="text-black font-medium">{t('Language')}</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-gray-500">{userInfo?.language?.name}</span>
+                            <span className="text-black font-semibold text-[15px]">{t('Language')}</span>
+                            <div className="flex items-center gap-2 max-w-[60%]">
+                                <span className="text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis text-[15px]" title={userInfo?.language?.name}>{userInfo?.language?.name}</span>
                                 <IonIcon icon={chevronForwardOutline} className="text-gray-400 text-xl" />
                             </div>
                         </button>

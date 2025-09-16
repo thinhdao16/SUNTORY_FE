@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { IonButton, IonIcon } from "@ionic/react";
+import { IonButton, IonIcon, IonSpinner } from "@ionic/react";
 import { close } from "ionicons/icons";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -176,19 +176,21 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
 
                             {/* Save Button - Fixed at bottom, moves up with keyboard */}
                             {hasNameChanged && (
-                                <div className="sticky bottom-0 bg-white p-4">
-                                    <button
-                                        type="button"
-                                        onClick={handleSave}
-                                        disabled={!isFormValid || isLoading}
-                                        className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-colors ${isFormValid && !isLoading
-                                                ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
-                                                : 'bg-gray-300 cursor-not-allowed'
-                                            }`}
-                                    >
-                                        {isLoading ? t('Saving...') : t('Save')}
-                                    </button>
-                                </div>
+                                <div className="px-4 py-4 border-t border-gray-100">
+                                <IonButton
+                                    expand="block"
+                                    shape="round"
+                                    onClick={handleSave}
+                                    className="h-14"
+                                    style={{
+                                        '--background': '#1152F4',
+                                        '--background-hover': '#2563eb',
+                                        'font-weight': '600'
+                                    }}
+                                >
+                                    {isLoading ? <IonSpinner name="crescent" /> : t('Save')}
+                                </IonButton>
+                            </div>
                             )}
                         </div>
                     </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { IonButton, IonIcon } from "@ionic/react";
+import { IonButton, IonIcon, IonSpinner } from "@ionic/react";
 import { checkmarkCircle, close } from "ionicons/icons";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -36,6 +36,7 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
     const PAGE_SIZE = 20;
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const { refetch } = useAuthInfo();
 
     useEffect(() => {
@@ -74,6 +75,7 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
     }, [filtered, selectedCode]);
 
     const handleSave = async (tempSelected: string) => {
+        setIsSaving(true);
         try {
             const country = countries.find((c) => c.code === tempSelected);
             if (country) {
@@ -89,9 +91,11 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
                 await refetch(); // Cập nhật thông tin user
                 onSelect(tempSelected); // Cập nhật state local
                 onClose();
-            }   
+            }
         } catch (error) {
             console.error('Error updating country:', error);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -211,16 +215,24 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
                             </div>
                             {/* Sticky Save inside scroll area, floating like design */}
                             {(tempSelected && tempSelected !== selectedCode) && (
-                                <div className="sticky bottom-3 px-4 flex items-center justify-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => { handleSave(tempSelected!) }}
-                                        className="w-full h-11 rounded-2xl bg-blue-600 text-white font-semibold shadow-md active:opacity-90"
+                                <div className="sticky bottom-3 flex justify-center px-4 py-4 border-t border-gray-100">
+                                    <IonButton
+                                        expand="block"
+                                        shape="round"
+                                        onClick={() => handleSave(tempSelected!)}
+                                        className="h-14"
+                                        style={{
+                                            '--background': '#1152F4',
+                                            '--background-hover': '#2563eb',
+                                            'font-weight': '600',
+                                            width: '100%',
+                                        }}
                                     >
-                                        {t('Save')}
-                                    </button>
+                                        {isSaving ? <IonSpinner name="crescent" /> : t('Save')}
+                                    </IonButton>
                                 </div>
                             )}
+                            {/* Fixed Footer */}
                         </div>
                     </div>
                 </motion.div>

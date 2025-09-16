@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { IonPage, IonContent, IonButton, IonIcon, IonRadio, IonRadioGroup, IonItem, IonHeader, IonToolbar, IonButtons, IonTitle, IonFooter } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { chevronBackOutline } from 'ionicons/icons';
 import { useHealthMasterDataStore } from '@/store/zustand/health-master-data-store';
 import { useHealthMasterData } from '@/hooks/common/useHealth';

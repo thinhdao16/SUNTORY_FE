@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { IonButton, IonIcon } from "@ionic/react";
+import { IonButton, IonIcon, IonSpinner } from "@ionic/react";
 import { close, add, remove } from "ionicons/icons";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,15 +33,19 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
     const { data: userInfo, refetch } = useAuthInfo();
     const { data: masterData } = useHealthMasterData();
     const units = masterData?.measurementUnits?.find((a: any) => a?.category?.categoryName?.toLowerCase() === 'weight');
+    const MAX_KG = 500;
+    const MAX_LBS = Math.round(500 * 2.20462);
     const [unit, setUnit] = useState<'kg' | 'lbs'>('kg');
     const [isSaving, setIsSaving] = useState(false);
     const [valueKg, setValueKg] = useState<number>(() => {
         const num = Number(currentWeight);
-        return Number.isFinite(num) ? Math.max(0, Math.round(num)) : 60;
+        const safe = Number.isFinite(num) ? Math.round(num) : 60;
+        return Math.max(0, Math.min(MAX_KG, safe));
     });
     const [valueLbs, setValueLbs] = useState<number>(() => {
         const num = Number(currentWeight);
-        return Number.isFinite(num) ? Math.max(0, Math.round(num)) : 132;
+        const safe = Number.isFinite(num) ? Math.round(num * 2.20462) : 132;
+        return Math.max(0, Math.min(MAX_LBS, safe));
     });
 
     // Enhanced smooth drag system
@@ -88,13 +92,14 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
 
             const parsed = Number(currentWeight);
             if (Number.isFinite(parsed)) {
-                const init = Math.max(0, Math.round(parsed));
-                setValueKg(init);
-                setValueLbs(init);
+                const initKg = Math.max(0, Math.min(MAX_KG, Math.round(parsed)));
+                const initLbs = Math.max(0, Math.min(MAX_LBS, Math.round(parsed * 2.20462)));
+                setValueKg(initKg);
+                setValueLbs(initLbs);
             } else {
                 // fallback to previous state to avoid resetting to default 60 when reopening without prop change
-                setValueKg(prev => Math.max(0, prev || 60));
-                setValueLbs(prev => Math.max(0, prev || 132));
+                setValueKg(prev => Math.max(0, Math.min(MAX_KG, prev || 60)));
+                setValueLbs(prev => Math.max(0, Math.min(MAX_LBS, prev || 132)));
             }
         }
     }, [isOpen, currentWeight]);
@@ -123,16 +128,16 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
 
     const decrement = () => {
         if (canDecrease()) {
-            if (unit === 'kg') setValueKg(prev => Math.max(0, Math.round(prev - 1)));
-            else setValueLbs(prev => Math.max(0, Math.round(prev - 1)));
+            if (unit === 'kg') setValueKg(prev => Math.max(0, Math.min(MAX_KG, Math.round(prev - 1))));
+            else setValueLbs(prev => Math.max(0, Math.min(MAX_LBS, Math.round(prev - 1))));
         }
     };
     const increment = () => {
         // Make sure this is a clean increment, not affected by hold logic
         if (unit === 'kg') {
-            setValueKg(prev => Math.round(prev + 1));
+            setValueKg(prev => Math.max(0, Math.min(MAX_KG, Math.round(prev + 1))));
         } else {
-            setValueLbs(prev => Math.round(prev + 1));
+            setValueLbs(prev => Math.max(0, Math.min(MAX_LBS, Math.round(prev + 1))));
         }
     };
 
@@ -141,7 +146,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
         if (unit === 'kg') {
             setValueKg(prev => {
                 const newValue = Math.round(prev + delta);
-                const finalValue = Math.max(0, newValue);
+                const finalValue = Math.max(0, Math.min(MAX_KG, newValue));
                 // If we hit the boundary (0) from above, only stop hold timers
                 if (finalValue === 0 && prev > 0 && delta > 0) {
                     // Only stop hold timers, don't stop momentum (it might reverse direction)
@@ -158,7 +163,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
         } else {
             setValueLbs(prev => {
                 const newValue = Math.round(prev + delta);
-                const finalValue = Math.max(0, newValue);
+                const finalValue = Math.max(0, Math.min(MAX_LBS, newValue));
 
                 // If we hit the boundary (0) from above, only stop hold timers
                 if (finalValue === 0 && prev > 0 && delta > 0) {
@@ -180,6 +185,11 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
     const canDecrease = () => {
         const currentValue = unit === 'kg' ? valueKg : valueLbs;
         return currentValue > 0;
+    };
+    // Check if we can increase (not at maximum)
+    const canIncrease = () => {
+        const currentValue = unit === 'kg' ? valueKg : valueLbs;
+        return unit === 'kg' ? currentValue < MAX_KG : currentValue < MAX_LBS;
     };
 
     // Continuous increment with direction tracking
@@ -532,9 +542,14 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
             const direction = deltaX > 0 ? -1 : 1;
             const currentWeight = unit === 'kg' ? valueKg : valueLbs;
 
-            // Check boundary only for decreasing (negative direction in our logic)
+            // Check both boundaries
             if (direction < 0 && !canDecrease()) {
                 // At boundary (0) - just reset position, don't update weight
+                setStartX(newX);
+                setTotalDistance(0);
+                setSmoothOffset(0);
+            } else if (direction > 0 && !canIncrease()) {
+                // At upper boundary (MAX) - reset position, don't update
                 setStartX(newX);
                 setTotalDistance(0);
                 setSmoothOffset(0);
@@ -658,9 +673,13 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
             const direction = -steps;
             const currentWeight = unit === 'kg' ? valueKg : valueLbs;
 
-            // Check boundary only for decreasing (negative direction in our logic)
+            // Check both boundaries
             if (direction < 0 && !canDecrease()) {
                 // At boundary (0) - just reset position, don't update weight
+                setStartX(currentX);
+                requestAnimationFrame(() => setSmoothOffset(0));
+            } else if (direction > 0 && !canIncrease()) {
+                // At boundary (MAX) - just reset position, don't update weight
                 setStartX(currentX);
                 requestAnimationFrame(() => setSmoothOffset(0));
             } else {
@@ -824,7 +843,10 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                                             className={`${unit === 'kg' ? 'bg-[#EEF0F3] font-semibold text-gray-900' : 'bg-white text-gray-700'} text-base`}
                                             onClick={() => {
                                                 setUnit('kg');
-                                                setValueKg(Math.max(0, Math.round(valueLbs / 2.20462)));
+                                                setValueKg(prev => {
+                                                    const converted = Math.round(valueLbs / 2.20462);
+                                                    return Math.max(0, Math.min(MAX_KG, converted));
+                                                });
                                                 try { localStorage.setItem('weightUnit', 'kg'); } catch { }
                                             }}
                                         >
@@ -836,7 +858,10 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                                             className={`${unit === 'lbs' ? 'bg-[#EEF0F3] font-semibold text-gray-900' : 'bg-white text-gray-700'} text-base`}
                                             onClick={() => {
                                                 setUnit('lbs');
-                                                setValueLbs(Math.max(0, Math.round(valueKg * 2.20462)));
+                                                setValueLbs(prev => {
+                                                    const converted = Math.round(valueKg * 2.20462);
+                                                    return Math.max(0, Math.min(MAX_LBS, converted));
+                                                });
                                                 try { localStorage.setItem('weightUnit', 'lbs'); } catch { }
                                             }}
                                         >
@@ -895,6 +920,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                                                     const base = unit === 'kg' ? valueKg : valueLbs;
                                                     const rounded = Math.round(base);
                                                     const v = rounded - 10 + i;
+                                                    const max = unit === 'kg' ? MAX_KG : MAX_LBS;
                                                     const isCenter = i === 10;
                                                     const isMajor = (v % 5 === 0); // Major tick every 5 units
                                                     const heightClass = isCenter ? 'h-12' : (isMajor ? 'h-10' : 'h-6');
@@ -902,7 +928,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                                                     const widthClass = isCenter ? 'w-[2px]' : 'w-px';
 
                                                     // Hide tick if value is negative or zero when we want clean boundary
-                                                    if (v < 0) {
+                                                    if (v < 0 || v > max) {
                                                         return <div key={i} style={{ width: '1px', height: '24px', backgroundColor: 'transparent' }} />;
                                                     }
 
@@ -980,6 +1006,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                                                     const base = unit === 'kg' ? valueKg : valueLbs;
                                                     const rounded = Math.round(base);
                                                     const v = rounded - 10 + i;
+                                                    const max = unit === 'kg' ? MAX_KG : MAX_LBS;
                                                     const isCenter = i === 10;
                                                     const show = v % 5 === 0;
                                                     return (
@@ -1015,7 +1042,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                                                                     willChange: 'color, font-weight'
                                                                 }}
                                                             >
-                                                                {isCenter ? rounded : (show && v > 0 ? v : '')}
+                                                                {isCenter ? rounded : (show && v > 0 && v <= max ? v : '')}
                                                             </span>
                                                         </div>
                                                     );
@@ -1027,18 +1054,20 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                             </div>
 
                             {/* Fixed Footer - Save Button */}
-                            <div className="px-6 py-4">
-                                <button
-                                    type="button"
+                            <div className="px-4 py-4 border-t border-gray-100">
+                                <IonButton
+                                    expand="block"
+                                    shape="round"
                                     onClick={handleSave}
-                                    disabled={isSaving}
-                                    className={`w-full h-12 rounded-2xl font-semibold shadow-md transition-colors ${isSaving
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-blue-600 text-white active:opacity-90'
-                                        }`}
+                                    className="h-14"
+                                    style={{
+                                        '--background': '#1152F4',
+                                        '--background-hover': '#2563eb',
+                                        'font-weight': '600'
+                                    }}
                                 >
-                                    {isSaving ? t('Saving...') : t('Save')}
-                                </button>
+                                    {isSaving ? <IonSpinner name="crescent" /> : t('Save')}
+                                </IonButton>
                             </div>
                         </div>
                     </div>
