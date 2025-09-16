@@ -406,7 +406,7 @@ const MyProfile: React.FC = () => {
 
   return (
     <PageContainer>
-      <IonPage style={{ '--background': 'white'} as any}>
+      <IonPage style={{ '--background': 'white', paddingBottom: '52px'}  as any}>
         <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', '--ion-background-color': '#ffffff' } as any}>
           <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
             <IonButtons slot="start">
@@ -424,7 +424,7 @@ const MyProfile: React.FC = () => {
             </IonButtons>
           </IonToolbar>
         </IonHeader>
-        <IonContent style={{ '--background': 'white'} as any}>
+        <IonContent style={{ '--background': 'white' , height: '100%'} as any}>
           <div className="bg-white">
             <hr className="border-gray-100" />
             {/* Profile Header */}
