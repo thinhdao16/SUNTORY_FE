@@ -9,13 +9,9 @@ import { groupChatsByDate } from "@/utils/group-chats-by-date";
 import dayjs from "dayjs";
 import { TopicType, TopicTypeLabel } from "@/constants/topicType";
 
-// Import SVG as React component
 import SearchIcon from "@/icons/logo/chat/search.svg?react";
-import BotIcon from "@/icons/logo/AI.svg?react";
-import NewChatIcon from "@/icons/logo/chat/new_chat.svg?react";
 import MedicalSupportIcon from "@/icons/logo/chat/medical_support.svg?react";
 import DocumentTranslationIcon from "@/icons/logo/chat/contract_translation.svg?react";
-import DrugInstructionsIcon from "@/icons/logo/chat/product_information.svg?react";
 import FoodDiscoveryIcon from "@/icons/logo/chat/food_discovery.svg?react";
 import BackDefaultIcon from "@/icons/logo/back-default.svg?react";
 import "./ChatSidebar.module.css"

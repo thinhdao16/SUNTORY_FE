@@ -27,6 +27,22 @@ const ChatSystemMessage: React.FC<ChatSystemMessageProps> = ({
     if (!roomData) return null;
     const { user } = useAuthStore();
 
+    const parsedData = React.useMemo(() => {
+        if (typeof data === 'string') {
+            try {
+                return JSON.parse(data);
+            } catch (error) {
+                console.error('Failed to parse system message data:', error);
+                return {};
+            }
+        }
+        return data || {};
+    }, [data]);
+
+    if (!parsedData || Object.keys(parsedData).length === 0) {
+        return null;
+    }
+
     const { title } = roomData;
     const targetUser = roomData?.participants?.find((p: any) => p.userId !== user?.id);
     const targetAvatar =
@@ -51,9 +67,9 @@ const ChatSystemMessage: React.FC<ChatSystemMessageProps> = ({
         );
     };
     const renderNotificationContent = () => {
-        const actor = data.actor || data.Actor;
-        const target = data.target || (data.targetUser || (data.targetUsers?.[0] ?? data.targetUsers)) || (data.Users?.[0] ?? data.Users);
-        const targetUsers = data.targetUsers || data.Users || [];
+        const actor = parsedData.actor || parsedData.Actor;
+        const target = parsedData.target || (parsedData.targetUser || (parsedData.targetUsers?.[0] ?? parsedData.targetUsers)) || (parsedData.Users?.[0] ?? parsedData.Users);
+        const targetUsers = parsedData.targetUsers || parsedData.Users || [];
 
         switch (type) {
             case SystemMessageType.NOTIFY_GROUP_CHAT_CREATED:

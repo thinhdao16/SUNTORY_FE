@@ -1,0 +1,68 @@
+.privacy-bottom-sheet {
+  --height: auto;
+  --backdrop-opacity: 0.4;
+  --border-radius: 20px 20px 0 0 ;
+  --box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.privacy-bottom-sheet ion-overlay-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: auto;
+  height: auto;
+  max-height: 90vh;
+  border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+  overflow: hidden;
+  box-shadow: var(--box-shadow);
+  background: transparent;
+}
+
+.privacy-bottom-sheet ion-content {
+  --background: transparent;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+.privacy-bottom-sheet ion-overlay-wrapper .ion-page {
+  background: transparent !important;
+}
+
+.privacy-bottom-sheet ion-overlay-wrapper ion-header,
+.privacy-bottom-sheet ion-overlay-wrapper ion-toolbar {
+  display: none !important;
+}
+
+@media (max-width: 450px) {
+  .privacy-bottom-sheet ion-overlay-wrapper {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+@media (min-width: 451px) and (max-width: 767px) {
+  .privacy-bottom-sheet ion-overlay-wrapper {
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .privacy-bottom-sheet ion-overlay-wrapper {
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1025px) {
+  .privacy-bottom-sheet ion-overlay-wrapper {
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
+  }
+}

@@ -36,6 +36,7 @@ const routes = {
   Register: lazy(() => import("@/pages/Auth/Register/Register")),
   SocialChatPrivate: lazy(() => import("@/pages/SocialChat/SocialChatThread/SocialChatThread")),
   SocialChatRecent: lazy(() => import("@/pages/SocialChat/SocialChat")),
+  SocialFeed: lazy(() => import("@/pages/Social/Feed/SocialFeed/SocialFeed")),
   SocialGroup: lazy(() => import("@/pages/SocialGroup/SocialGroup")),
   SocialQRNative: lazy(() => import("@/pages/SocialQR/SocialQRNative/SocialQRNative")),
   SocialQRWeb: lazy(() => import("@/pages/SocialQR/SocialQRWeb/SocialQRWeb")),
@@ -53,7 +54,7 @@ const routes = {
 };
 
 const authRoutes = ["/login", "/register"];
-const authRoutesDontShowTabBar = ["/camera", "/social-qr-web", "/social-qr-native", "/social-chat/camera", "/social-chat/camera-web", "/social-chat/t", "/menu-translation"];
+const authRoutesDontShowTabBar = ["/camera", "/social-qr-web", "/social-qr-native", "/social-chat/camera", "/social-chat/camera-web", "/social-chat/t", "/social-feed/camera", "/social-feed/camera-web", "/social-feed/t", "/menu-translation", "/social-feed/create"];
 const ignoreRoutes = ["/forgot-password", "/otp", "/new-password", "/change-password"];
 
 const AppRoutes: React.FC = () => {
@@ -92,6 +93,7 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/rate" component={routes.Rate} exact />
           <PrivateRoute path="/chat/:type?/:sessionId?" component={routes.Chat} />
           <PrivateRoute path="/social-chat/:type?/:roomId?/:infoRoom?" component={routes.SocialChatRecent} exact />
+          <PrivateRoute path="/social-feed/:type?/:feedId?/:infoFeed?" component={routes.SocialFeed} exact />
           {/* <PrivateRoute path="/social-chat" component={() => <Redirect to="/social-chat" />}/> */}
           <PrivateRoute path="/social-group/add" component={routes.SocialGroup} exact />
           <PrivateRoute path="/social-group" component={() => <Redirect to="/social-group/add" />} />

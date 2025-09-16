@@ -4,7 +4,6 @@ import { useSocialChatLayout } from './useSocialChatLayout';
 import { motion } from "framer-motion";
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { Capacitor } from '@capacitor/core';
-import { useKeyboardResize } from '@/hooks/useKeyboardResize';
 import { useTranslation } from 'react-i18next';
 
 function ChatSocial() {
