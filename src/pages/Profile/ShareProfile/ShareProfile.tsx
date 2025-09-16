@@ -145,7 +145,7 @@ const ShareProfile = () => {
                                             <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
                                         </IonButton>
                                     </IonButtons>
-                                    <IonTitle className="text-center font-semibold text-lg">
+                                    <IonTitle className="text-center font-semibold text-black text-lg">
                                         {t('Share Profile')}
                                     </IonTitle>
                                     <IonButtons slot="end">
