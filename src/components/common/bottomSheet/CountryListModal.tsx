@@ -28,7 +28,6 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
         if (e.target === e.currentTarget) onClose();
     };
 
-
     const SHEET_MAX_VH = 80;
     const HEADER_PX = 56;
     const [query, setQuery] = useState('');

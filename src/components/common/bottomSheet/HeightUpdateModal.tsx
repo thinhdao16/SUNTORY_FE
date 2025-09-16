@@ -778,10 +778,11 @@ const HeightUpdateModal: React.FC<HeightUpdateModalProps> = ({
             };
             await updateHealthConditionV2(payload);
             await refetch();
+            showToast(t("Height updated successfully"), 2000, "success");
             onClose();
         } catch (error) {
             console.error('Error updating height:', error);
-            showToast(t("Failed to update height. Please try again."), 1000, "error");
+            showToast(t("Failed to update height. Please try again."), 2000, "error");
         } finally {
             setIsSaving(false);
         }

@@ -634,5 +634,16 @@
   "{{count}} minutes ago_other": "{{count}}分钟前",
   "English": "英语",
   "Tiếng Việt": "越南语",
-  "Chinese": "中文"
+  "Chinese": "中文",
+  "Allergies updated successfully": "过敏信息更新成功",
+  "Failed to update allergies. Please try again.": "更新过敏信息失败，请重试",
+  "Gender updated successfully": "性别更新成功",
+  "Failed to update gender. Please try again.": "更新性别失败，请重试",
+  "Weight updated successfully": "体重更新成功",
+  "Name updated successfully": "名字更新成功",
+  "Failed to update name. Please try again.": "更新名字失败，请重试",
+  "Country updated successfully": "国家更新成功",
+  "Diet updated successfully": "饮食更新成功",
+  "Failed to update diet. Please try again.": "更新饮食失败，请重试",
+  "Height updated successfully": "身高更新成功"
 }

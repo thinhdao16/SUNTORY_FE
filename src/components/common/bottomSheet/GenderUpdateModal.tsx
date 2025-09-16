@@ -8,7 +8,7 @@ import { UpdateAccountInformationV3Payload } from "@/services/auth/auth-types";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import FemaleIcon from "@/icons/logo/profile/female.svg?react";
 import MaleIcon from "@/icons/logo/profile/male.svg?react";
-
+import { useToastStore } from "@/store/zustand/toast-store";
 
 interface GenderUpdateModalProps {
     isOpen: boolean;
@@ -35,6 +35,7 @@ const GenderUpdateModal: React.FC<GenderUpdateModalProps> = ({
     const { refetch } = useAuthInfo();
     const [tempSelected, setTempSelected] = useState<number | undefined>(currentGender || 1);
     const [isSaving, setIsSaving] = useState(false);
+    const showToast = useToastStore.getState().showToast;
 
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) onClose();
@@ -62,10 +63,12 @@ const GenderUpdateModal: React.FC<GenderUpdateModalProps> = ({
                 yearOfBirth: null,
             };
             await updateAccountInformationV3(payload);
+            showToast(t("Gender updated successfully"), 2000, "success");
             await refetch();
             onClose();
         } catch (error) {
             console.error('Error updating gender:', error);
+            showToast(t("Failed to update gender. Please try again."), 3000, "error");
         } finally {
             setIsSaving(false);
         }

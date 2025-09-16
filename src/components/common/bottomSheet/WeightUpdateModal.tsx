@@ -783,6 +783,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
             };
             await updateHealthConditionV2(payload);
             await refetch();
+            showToast(t("Weight updated successfully"), 2000, "success");
             onClose();
         } catch (error) {
             console.error('Error updating weight:', error);

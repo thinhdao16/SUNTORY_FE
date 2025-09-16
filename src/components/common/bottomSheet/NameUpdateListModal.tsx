@@ -80,6 +80,7 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
                 yearOfBirth: null,
             };
             await updateAccountInformationV3(payload);
+            showToast(t("Name updated successfully"), 2000, "success");
             await refetch();
             onClose();
         } catch (error) {

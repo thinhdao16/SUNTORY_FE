@@ -7,6 +7,7 @@ import { useHealthMasterDataStore } from "@/store/zustand/health-master-data-sto
 import { updateHealthConditionV2 } from "@/services/auth/auth-service";
 import { UpdateHealthConditionV2Payload } from "@/services/auth/auth-types";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
+import { useToastStore } from "@/store/zustand/toast-store";
 
 interface DietOption {
     id: string;
@@ -40,6 +41,7 @@ const DietLifeStyleModal: React.FC<DietLifeStyleModalProps> = ({
     const [selectedDiet, setSelectedDiet] = useState<string>(currentDiet ? String(currentDiet) : '');
     const [isSaving, setIsSaving] = useState(false);
     const { refetch } = useAuthInfo();
+    const showToast = useToastStore.getState().showToast;
     const healthMasterData = useHealthMasterDataStore((state) => state.masterData);
     const dietOptions: DietOption[] = useMemo(() => {
         const group = healthMasterData?.groupedLifestyles?.find(
@@ -88,10 +90,12 @@ const DietLifeStyleModal: React.FC<DietLifeStyleModalProps> = ({
                 heightUnitId: null,
             };
             await updateHealthConditionV2(payload);
+            showToast(t("Diet updated successfully"), 2000, "success");
             await refetch();
             onClose();
         } catch (error) {
             console.error('Error updating diet:', error);
+            showToast(t("Failed to update diet. Please try again."), 3000, "error");
         } finally {
             setIsSaving(false);
         }

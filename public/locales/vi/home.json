@@ -634,5 +634,16 @@
   "{{count}} minutes ago_other": "{{count}} phút trước",
   "English": "Tiếng Anh",
   "Tiếng Việt": "Tiếng Việt",
-  "Chinese": "Tiếng Trung"
+  "Chinese": "Tiếng Trung",
+  "Allergies updated successfully": "Cập nhật thành công",
+  "Failed to update allergies. Please try again.": "Không thể cập nhật dịch vụ. Vui lòng thử lại.",
+  "Gender updated successfully": "Cập nhật thành công", 
+  "Failed to update gender. Please try again.": "Không thể cập nhật giới tính. Vui lòng thử lại.",
+  "Weight updated successfully": "Cập nhật thành công",
+  "Name updated successfully": "Cập nhật thành công",
+  "Failed to update name. Please try again.": "Không thể cập nhật tên. Vui lòng thử lại.",
+  "Country updated successfully": "Cập nhật thành công",
+  "Diet updated successfully": "Cập nhật thành công",
+  "Failed to update diet. Please try again.": "Không thể cập nhật chế độ dinh dưỡng. Vui lòng thử lại.",
+  "Height updated successfully": "Cập nhật thành công"
 }

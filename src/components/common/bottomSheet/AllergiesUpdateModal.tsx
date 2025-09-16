@@ -7,6 +7,7 @@ import { useHealthMasterDataStore } from "@/store/zustand/health-master-data-sto
 import { updateHealthConditionV2 } from "@/services/auth/auth-service";
 import { UpdateHealthConditionV2Payload } from "@/services/auth/auth-types";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
+import { useToastStore } from "@/store/zustand/toast-store";
 
 interface AllergyItem {
     allergyId: number;
@@ -45,6 +46,7 @@ const AllergiesUpdateModal: React.FC<AllergiesUpdateModalProps> = ({
     const [isSaving, setIsSaving] = useState(false);
     const healthMasterData = useHealthMasterDataStore((state) => state.masterData);
     const { refetch } = useAuthInfo();
+    const showToast = useToastStore.getState().showToast;
     // Mock data - sẽ được thay thế bằng data thật sau
     const mockAllergies: AllergyItem[] = [
         { allergyId: 1, name: 'Peanuts' },
@@ -197,9 +199,11 @@ const AllergiesUpdateModal: React.FC<AllergiesUpdateModalProps> = ({
             await refetch();
             setSavedAllergies([]);
             setSelectedAllergies([]);
+            showToast(t("Allergies updated successfully"), 2000, "success");
             onClose();
         } catch (error) {
             console.error('Error updating allergies:', error);
+            showToast(t("Failed to update allergies. Please try again."), 3000, "error");
         } finally {
             setIsSaving(false);
         }
