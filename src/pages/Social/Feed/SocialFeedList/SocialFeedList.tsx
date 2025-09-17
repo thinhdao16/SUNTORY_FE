@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useSocialFeed } from '../hooks/useSocialFeed';
 import { PrivacyPostType } from '@/types/privacy';
 import { SocialFeedService, HashtagInterest } from '@/services/social/social-feed-service';
@@ -12,6 +13,8 @@ import { usePostRepost } from '../hooks/usePostRepost';
 import { TabNavigation, HashtagInput, PostsList, LoadingStates } from './components';
 import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
 import { useIonToast } from '@ionic/react';
+import { usePostSignalR } from '@/hooks/usePostSignalR';
+import useDeviceInfo from '@/hooks/useDeviceInfo';
 
 interface SocialFeedListProps {
   privacy?: PrivacyPostType;
@@ -28,12 +31,12 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
 }) => {
   const { t } = useTranslation();
   const history = useHistory();
+  const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState(initialActiveTab || 'everyone');
   const [currentPrivacy, setCurrentPrivacy] = useState<PrivacyPostType | undefined>(privacy);
   const [selectedHashtag, setSelectedHashtag] = useState<string>(specificHashtag || '');
   const [recentHashtags, setRecentHashtags] = useState<string[]>([]);
-  const [isLoadingHashtags, setIsLoadingHashtags] = useState(false);
   const [repostingPostCode, setRepostingPostCode] = useState<string | null>(null);
   const [showPrivacySheet, setShowPrivacySheet] = useState(false);
   const [selectedPrivacy, setSelectedPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
@@ -53,27 +56,35 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
 
     return [...staticTabs, ...hashtagTabs];
   };
-  useEffect(() => {
-    const fetchRecentHashtags = async () => {
-      setIsLoadingHashtags(true);
-      try {
-        const response = await SocialFeedService.getHashtagInterests();
-        if (response.success && response.data) {
-          const hashtagNames = response.data.map((hashtag: HashtagInterest) => hashtag.name);
-          setRecentHashtags(hashtagNames.slice(0, 5));
-        } else {
-          setRecentHashtags(['sức khỏe', 'thói quen', 'yêu thương', 'thói quen', 'sức khỏe']);
+  const { data: hashtagInterestsData, isLoading: isLoadingHashtags } = useQuery(
+    ['hashtagInterests'],
+    () => SocialFeedService.getHashtagInterests(),
+    {
+      select: (data: any) => {
+        if (data?.data?.data) {
+          return data.data.data.map((hashtag: HashtagInterest) => hashtag.hashtagNormalized).slice(0, 5);
         }
-      } catch (error) {
-        console.error('Failed to fetch recent hashtags:', error);
-        setRecentHashtags(['sức khỏe', 'thói quen', 'yêu thương', 'thói quen', 'sức khỏe']);
-      } finally {
-        setIsLoadingHashtags(false);
       }
-    };
+    }
+  );
 
-    fetchRecentHashtags();
-  }, []);
+  const deleteHashtagMutation = useMutation(
+    (hashtag: string) => SocialFeedService.deleteHashtagInterest(hashtag),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['hashtagInterests']);
+      },
+      onError: (error) => {
+        console.error('Failed to delete hashtag:', error);
+      }
+    }
+  );
+
+  useEffect(() => {
+    if (hashtagInterestsData) {
+      setRecentHashtags(hashtagInterestsData);
+    }
+  }, [hashtagInterestsData]);
 
   useEffect(() => {
     if (initialActiveTab) {
@@ -86,15 +97,39 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   const [present] = useIonToast();
   const postLikeMutation = usePostLike();
   const postRepostMutation = usePostRepost();
+  const deviceInfo = useDeviceInfo();
 
-  // Scroll restoration hook
+  const { joinPostUpdates, leavePostUpdates } = usePostSignalR(deviceInfo.deviceId ?? '', {
+    autoConnect: true,
+    enableDebugLogs: false,
+  });
+
+  const MAX_REALTIME_POSTS = 10;
+  const JOIN_DELAY_MS = 2000;
+  const LEAVE_DELAY_MS = 1200;
+  const [visiblePostCodes, setVisiblePostCodes] = useState<string[]>([]);
+  const joinTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const leaveTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const joinedPostsRef = useRef<Set<string>>(new Set());
+  const visiblePostCodesRef = useRef<string[]>([]);
+
+  const handleVisiblePostsChange = useCallback((codes: string[]) => {
+    const next = codes.slice(0, MAX_REALTIME_POSTS);
+    setVisiblePostCodes((prev) => {
+      if (prev.length === next.length && prev.every((code, index) => code === next[index])) {
+        return prev;
+      }
+      return next;
+    });
+  }, []);
+
   const { setScrollContainer } = useScrollRestoration({
     feedType: currentPrivacy ? Number(currentPrivacy) : undefined,
     hashtagNormalized: (activeTab === 'Hashtags' && selectedHashtag) ? selectedHashtag.replace('#', '') : 
                       (activeTab.startsWith('#')) ? activeTab.substring(1) : undefined,
     enabled: true
   });
-
+console.log(activeTab)
   const {
     posts,
     isLoading: loading,
@@ -117,6 +152,71 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     await refetch();
     setRefreshing(false);
   }, [refetch]);
+
+  useEffect(() => {
+    visiblePostCodesRef.current = visiblePostCodes;
+    const targetSet = new Set(visiblePostCodes);
+
+    const scheduleJoin = (code: string, delay = JOIN_DELAY_MS) => {
+      if (joinedPostsRef.current.has(code) || joinTimeoutsRef.current.has(code)) {
+        return;
+      }
+      const timer = setTimeout(async () => {
+        const joined = await joinPostUpdates(code);
+        joinTimeoutsRef.current.delete(code);
+        if (joined !== false) {
+          joinedPostsRef.current.add(code);
+        } else if (visiblePostCodesRef.current.includes(code)) {
+          scheduleJoin(code, Math.min(delay + 500, 5000));
+        }
+      }, delay);
+      joinTimeoutsRef.current.set(code, timer);
+    };
+
+    visiblePostCodes.forEach((code) => {
+      const leaveTimer = leaveTimeoutsRef.current.get(code);
+      if (leaveTimer) {
+        clearTimeout(leaveTimer);
+        leaveTimeoutsRef.current.delete(code);
+      }
+    });
+
+    visiblePostCodes.forEach((code) => {
+      scheduleJoin(code);
+    });
+
+    joinTimeoutsRef.current.forEach((timer, code) => {
+      if (!targetSet.has(code)) {
+        clearTimeout(timer);
+        joinTimeoutsRef.current.delete(code);
+      }
+    });
+
+    joinedPostsRef.current.forEach((code) => {
+      if (targetSet.has(code) || leaveTimeoutsRef.current.has(code)) {
+        return;
+      }
+      const timer = setTimeout(async () => {
+        await leavePostUpdates(code);
+        leaveTimeoutsRef.current.delete(code);
+        joinedPostsRef.current.delete(code);
+      }, LEAVE_DELAY_MS);
+      leaveTimeoutsRef.current.set(code, timer);
+    });
+  }, [visiblePostCodes, joinPostUpdates, leavePostUpdates]);
+
+  useEffect(() => {
+    return () => {
+      joinTimeoutsRef.current.forEach((timer) => clearTimeout(timer));
+      leaveTimeoutsRef.current.forEach((timer) => clearTimeout(timer));
+      joinTimeoutsRef.current.clear();
+      leaveTimeoutsRef.current.clear();
+      joinedPostsRef.current.forEach((code) => {
+        void leavePostUpdates(code);
+      });
+      joinedPostsRef.current.clear();
+    };
+  }, [leavePostUpdates]);
 
   const handleLike = useCallback((postCode: string) => {
     const post = posts.find((p: any) => p.code === postCode);
@@ -149,11 +249,9 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   }, []);
 
   const handleRepost = useCallback((postCode: string) => {
-      // Find the post to check ownership
     const post = posts.find((p: any) => p.code === postCode);
     if (!post || !user) return;
 
-    // Check if this is user's own post (either original post or repost)
     const isOwnPost = post.user.id === user.id;
     const isOwnOriginalPost = post.isRepost && post.originalPost && post.originalPost.user.id === user.id;
 
@@ -224,6 +322,10 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     }
   }, [history]);
 
+  const handleHashtagDelete = useCallback((hashtag: string) => {
+    deleteHashtagMutation.mutate(hashtag);
+  }, [deleteHashtagMutation]);
+
   if (error && posts.length === 0) {
     return (
       <div className={`flex flex-col items-center justify-center py-12 ${className}`}>
@@ -254,6 +356,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
         tabs={getTabsConfig()}
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        onHashtagDelete={handleHashtagDelete}
         isLoadingHashtags={isLoadingHashtags}
       />
 
@@ -269,17 +372,18 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
         posts={posts}
         hasNextPage={hasNextPage || false}
         isFetchingNextPage={isFetchingNextPage || false}
-        loading={loading}
+        loading={loading || refreshing}
         onFetchNextPage={fetchNextPage}
         onLike={handleLike}
         onComment={handleComment}
         onShare={handleShare}
         onRepost={handleRepost}
         onPostClick={handlePostClick}
+        onVisiblePostsChange={handleVisiblePostsChange}
       />
 
       <LoadingStates
-        loading={loading}
+        loading={loading || refreshing}
         isFetchingNextPage={isFetchingNextPage || false}
         isRefetching={isRefetching}
         refreshing={refreshing}

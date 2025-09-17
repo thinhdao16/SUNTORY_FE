@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { SocialPost } from '@/types/social-feed';
 import { SocialFeedCard } from '@/pages/Social/Feed/components/SocialFeedCard';
 
@@ -13,6 +13,7 @@ interface PostsListProps {
   onShare: (postCode: string) => void;
   onRepost: (postCode: string) => void;
   onPostClick: (postCode: string) => void;
+  onVisiblePostsChange?: (postCodes: string[]) => void;
 }
 
 export const PostsList: React.FC<PostsListProps> = ({
@@ -25,9 +26,35 @@ export const PostsList: React.FC<PostsListProps> = ({
   onComment,
   onShare,
   onRepost,
-  onPostClick
+  onPostClick,
+  onVisiblePostsChange
 }) => {
   const lastPostElementRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const visibilityMapRef = useRef<Map<string, boolean>>(new Map());
+
+  const handleVisibilityChange = useCallback((entries: IntersectionObserverEntry[]) => {
+    let hasChange = false;
+    entries.forEach((entry) => {
+      const target = entry.target as HTMLElement;
+      const postCode = target.dataset.postCode;
+      if (!postCode) return;
+      const isVisible = entry.isIntersecting && entry.intersectionRatio >= 0.55;
+      const prevVisible = visibilityMapRef.current.get(postCode) || false;
+      if (prevVisible !== isVisible) {
+        visibilityMapRef.current.set(postCode, isVisible);
+        hasChange = true;
+      }
+    });
+
+    if (hasChange && onVisiblePostsChange) {
+      const visibleCodes = posts
+        .filter((post) => visibilityMapRef.current.get(post.code))
+        .map((post) => post.code);
+      onVisiblePostsChange(visibleCodes);
+    }
+  }, [onVisiblePostsChange, posts]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -55,6 +82,42 @@ export const PostsList: React.FC<PostsListProps> = ({
     };
   }, [hasNextPage, isFetchingNextPage, loading, onFetchNextPage]);
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(handleVisibilityChange, {
+      threshold: [0.1, 0.25, 0.5, 0.75, 0.9],
+      rootMargin: '50px'
+    });
+    observerRef.current = observer;
+
+    itemRefs.current.forEach((node) => {
+      if (node) observer.observe(node);
+    });
+
+    return () => {
+      observer.disconnect();
+      observerRef.current = null;
+    };
+  }, [handleVisibilityChange]);
+
+  const setItemRef = useCallback((code: string, node: HTMLDivElement | null) => {
+    const observer = observerRef.current;
+    const prevNode = itemRefs.current.get(code);
+    if (prevNode && observer) {
+      observer.unobserve(prevNode);
+    }
+
+    if (node) {
+      node.dataset.postCode = code;
+      itemRefs.current.set(code, node);
+      if (observer) {
+        observer.observe(node);
+      }
+    } else {
+      itemRefs.current.delete(code);
+      visibilityMapRef.current.delete(code);
+    }
+  }, []);
+
   return (
     <div className="flex-1 overflow-x-hidden overflow-y-auto scrollbar-thin min-h-0 max-h-screen">
       {posts.map((post, index) => {
@@ -72,6 +135,7 @@ export const PostsList: React.FC<PostsListProps> = ({
               onShare={onShare}
               onRepost={onRepost}
               onPostClick={onPostClick}
+              containerRefCallback={(node) => setItemRef(post.code, node)}
             />
           </div>
         );

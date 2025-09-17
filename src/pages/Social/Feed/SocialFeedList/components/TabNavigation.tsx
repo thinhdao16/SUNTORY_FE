@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import ConfirmModal from '@/components/common/modals/ConfirmModal';
 
 interface TabConfig {
   key: string;
@@ -11,6 +12,7 @@ interface TabNavigationProps {
   tabs: TabConfig[];
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onHashtagDelete?: (hashtag: string) => void;
   isLoadingHashtags?: boolean;
 }
 
@@ -18,9 +20,26 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   tabs,
   activeTab,
   onTabChange,
+  onHashtagDelete,
   isLoadingHashtags = false
 }) => {
   const { t } = useTranslation();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [hashtagToDelete, setHashtagToDelete] = useState<string>('');
+
+  const handleDeleteClick = (hashtag: string) => {
+    setHashtagToDelete(hashtag);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (hashtagToDelete && onHashtagDelete) {
+      onHashtagDelete(hashtagToDelete.replace('#', ''));
+      onTabChange('everyone');
+    }
+    setShowDeleteConfirm(false);
+    setHashtagToDelete('');
+  };
 
   return (
     <div className=" py-3 w-full px-4">
@@ -50,9 +69,9 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
                 <span className="whitespace-nowrap">{t(tab.label)}</span>
                 {isHash && active && (
                   <span
-                    onClick={(e) => { e.stopPropagation(); onTabChange('everyone'); }}
-                    className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#D1D5DB] text-[#111827] text-[10px] leading-none"
-                    aria-label="Clear"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(tab.key); }}
+                    className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#D1D5DB] text-[#111827] text-[10px] leading-none hover:bg-red-100 hover:text-red-600 transition-colors cursor-pointer"
+                    aria-label="Delete hashtag"
                   >
                     ×
                   </span>
@@ -68,6 +87,16 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title={t("Delete hashtag")}
+        message={t("You can always add it back by tapping on it.")}
+        confirmText={t("Yes, delete")}
+        cancelText={t("Cancel")}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 };

@@ -1,27 +1,21 @@
 import React from 'react';
+import { SocialFeedService } from '@/services/social/social-feed-service';
 
 /**
- * Parses text and highlights hashtags with blue color
+ * Highlights hashtags in text with blue color
  * @param text - The text content to parse
  * @returns JSX elements with highlighted hashtags
  */
 export const parseHashtags = (text: string): React.ReactNode => {
   if (!text) return text;
 
-  // Regex to match hashtags: # followed by word characters (letters, numbers, underscore)
   const hashtagRegex = /(#\w+)/g;
-  
-  // Split text by hashtags while keeping the hashtags in the result
   const parts = text.split(hashtagRegex);
   
   return parts.map((part, index) => {
-    // Check if this part is a hashtag
     if (hashtagRegex.test(part)) {
       return (
-        <span 
-          key={index} 
-          className="text-blue-500 font-medium cursor-pointer hover:underline"
-        >
+        <span key={index} className="text-blue-500 font-medium">
           {part}
         </span>
       );
@@ -47,13 +41,27 @@ export const parseHashtagsWithClick = (
   const hashtagRegex = /(#\w+)/g;
   const parts = text.split(hashtagRegex);
   
+  const handleHashtagClick = async (hashtag: string) => {
+    console.log(hashtag);
+    try {
+      // Track hashtag interest in backend
+      await SocialFeedService.trackHashtagInterest(hashtag);
+      // Call the optional callback
+      onHashtagClick?.(hashtag);
+    } catch (error) {
+      console.error('Failed to track hashtag interest:', error);
+      // Still call the callback even if tracking fails
+      onHashtagClick?.(hashtag);
+    }
+  };
+  
   return parts.map((part, index) => {
     if (hashtagRegex.test(part)) {
       return (
         <span 
           key={index} 
           className="text-blue-500 font-medium cursor-pointer hover:underline hover:text-blue-600 transition-colors"
-          onClick={() => onHashtagClick?.(part)}
+          onClick={() => handleHashtagClick(part)}
         >
           {part}
         </span>

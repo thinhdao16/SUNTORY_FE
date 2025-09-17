@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SocialPost } from '@/types/social-feed';
 import { PrivacyPostType } from '@/types/privacy';
@@ -14,7 +14,15 @@ import ReactHeartIcon from "@/icons/logo/social-feed/react-heart.svg?react";
 import CommentsIcon from "@/icons/logo/social-feed/comments.svg?react";
 import RetryIcon from "@/icons/logo/social-feed/retry.svg?react";
 import SendIcon from "@/icons/logo/social-feed/send.svg?react";
-
+import { MdMoreHoriz } from 'react-icons/md';
+import { useCreateTranslationChat } from '@/pages/Translate/hooks/useTranslationLanguages';
+import useLanguageStore from '@/store/zustand/language-store';
+import ActionButton from '@/components/loading/ActionButton';
+import AnimatedActionButton from '@/components/common/AnimatedActionButton';
+import ReactHeartRedIcon from "@/icons/logo/social-feed/react-heart-red.svg?react";
+import PostOptionsBottomSheet from '@/components/social/PostOptionsBottomSheet';
+import { usePostOptions } from '@/hooks/usePostOptions';
+import LogoIcon from "@/icons/logo/logo-rounded-full.svg?react";
 interface SocialFeedCardProps {
   post: SocialPost;
   onLike?: (postCode: string) => void;
@@ -22,7 +30,13 @@ interface SocialFeedCardProps {
   onShare?: (postCode: string) => void;
   onRepost?: (postCode: string) => void;
   onPostClick?: (postCode: string) => void;
+  onSendFriendRequest?: (userId: number) => void;
+  onUnfriend?: (userId: number) => void;
+  onCancelFriendRequest?: (friendRequestId: number, friendName: string) => void;
+  onAcceptFriendRequest?: (friendRequestId: number) => void;
+  onRejectFriendRequest?: (friendRequestId: number, friendName: string) => void;
   className?: string;
+  containerRefCallback?: (node: HTMLDivElement | null) => void;
 }
 
 export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
@@ -32,9 +46,30 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   onShare,
   onRepost,
   onPostClick,
-  className = ''
+  onSendFriendRequest,
+  onUnfriend,
+  onCancelFriendRequest,
+  onAcceptFriendRequest,
+  onRejectFriendRequest,
+  className = '',
+  containerRefCallback
 }) => {
   const { t } = useTranslation();
+  const createTranslationMutation = useCreateTranslationChat();
+  const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
+  const toLanguageId = useMemo(() => selectedLanguageSocialChat?.id || selectedLanguageTo?.id || 2, [selectedLanguageSocialChat, selectedLanguageTo]);
+  const [translatedText, setTranslatedText] = useState<string | null>(null);
+  const [showOriginal, setShowOriginal] = useState<boolean>(true);
+  const [isPostOptionsOpen, setIsPostOptionsOpen] = useState(false);
+
+  const { actionItems } = usePostOptions({
+    post,
+    onSendFriendRequest: () => onSendFriendRequest?.(post.user.id),
+    onUnfriend: () => onUnfriend?.(post.user.id),
+    onCancelFriendRequest,
+    onAcceptFriendRequest,
+    onRejectFriendRequest
+  });
 
   const renderMedia = () => {
     if (!post.media || post.media.length === 0) return null;
@@ -43,15 +78,12 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
 
   const handlePostClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('a') || target.closest('svg')) {
+    if (target.closest('button') || target.closest('a') || target.closest('svg') || target.closest('img') || target.closest('[data-media-display]')) {
       return;
     }
     onPostClick?.(post.code);
   };
 
-  const handleHashtagClick = (hashtag: string) => {
-    console.log('Hashtag clicked:', hashtag);
-  };
 
   const getPrivacyIcon = (privacy: number) => {
     switch (privacy) {
@@ -74,6 +106,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
     <div
       className={`bg-white border-b border-netural-50 cursor-pointer hover:bg-gray-50 transition-colors ${className}`}
       onClick={handlePostClick}
+      ref={containerRefCallback ? containerRefCallback : undefined}
     >
       {isRepost && (
         <div className="flex items-center gap-2 px-4 pt-3 pb-1">
@@ -107,10 +140,11 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             </div>
           </div>
         </div>
-        <button className="text-gray-400 hover:text-gray-600">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-          </svg>
+        <button 
+          className="text-gray-400 hover:text-gray-600"
+          onClick={() => setIsPostOptionsOpen(true)}
+        >
+          <MdMoreHoriz className='text-xl' />
         </button>
       </div>
 
@@ -124,82 +158,185 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
 
       {/* Original post content (or regular post content if not a repost) */}
       {isRepost ? (
-        <div className=" mb-3 rounded-lg">
-          <div className="px-4 py-3">
+        <div className=" rounded-lg">
+          <div className="px-4">
             <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-              {parseHashtagsWithClick(displayPost?.content, handleHashtagClick)}
+              {parseHashtagsWithClick(displayPost?.content)}
+            </div>
+            <div className="mt-2">
+              {displayPost?.content && showOriginal ? (
+                <ActionButton
+                  variant="ghost"
+                  size="none"
+                  className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent "
+                  loading={createTranslationMutation.isLoading}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const res = await createTranslationMutation.mutateAsync({ toLanguageId: toLanguageId as number, originalText: displayPost?.content || '' });
+                      const text = (res as any)?.data?.translated_text || (res as any)?.data?.translatedText || '';
+                      setTranslatedText(text);
+                      setShowOriginal(false);
+                    } catch { }
+                  }}
+                  disabled={!displayPost?.content}
+                >
+                  <div className="flex items-center gap-1">
+                    <LogoIcon className="w-5 h-5" /> {t('Translate')}
+                  </div>
+                </ActionButton>
+              ) : displayPost?.content && !showOriginal ? (
+                <ActionButton
+                  variant="ghost"
+                  size="none"
+                  className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                  onClick={(e) => { e.stopPropagation(); setShowOriginal(true); }}
+                >
+                  <div className="flex items-center gap-1">
+                    <LogoIcon className="w-5 h-5" /> {t('See original')}
+
+                  </div>
+                </ActionButton>
+              ) : null}
+              {!showOriginal && translatedText && (
+                <div className="mt-2 border-l-4 border-gray-200 pl-3 text-sm text-gray-700 whitespace-pre-wrap">
+                  {translatedText}
+                </div>
+              )}
             </div>
             {displayPost?.hashtags && displayPost?.hashtags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {displayPost?.hashtags.map((hashtag) => (
-                  <span key={hashtag.id} className="text-blue-500 text-sm hover:underline cursor-pointer">
-                    {hashtag.tag}
+                  <span key={hashtag.id}>
+                    {parseHashtagsWithClick(hashtag.tag)}
                   </span>
                 ))}
               </div>
             )}
           </div>
           {displayPost?.media && displayPost?.media.length > 0 && (
-            <MediaDisplay mediaFiles={displayPost?.media} className="px-4 pb-3" />
+            <div data-media-display>
+              <MediaDisplay
+                mediaFiles={displayPost?.media}
+                className="mt-3"
+                lightboxUserName={displayPost.user.fullName}
+                lightboxUserAvatar={displayPost.user.avatarUrl}
+              />
+            </div>
           )}
         </div>
       ) : (
         <>
-          <div className="px-4 pb-3">
+          <div className="px-4 ">
             <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-              {parseHashtagsWithClick(displayPost?.content, handleHashtagClick)}
+              {parseHashtagsWithClick(displayPost?.content)}
+            </div>
+            <div className="mt-2">
+              {displayPost?.content && showOriginal ? (
+                <ActionButton
+                  spinnerPosition="right"
+                  variant="ghost"
+                  size="none"
+                  className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                  loading={createTranslationMutation.isLoading}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const res = await createTranslationMutation.mutateAsync({ toLanguageId: toLanguageId as number, originalText: displayPost?.content || '' });
+                      const text = (res as any)?.data?.translated_text || (res as any)?.data?.translatedText || '';
+                      setTranslatedText(text);
+                      setShowOriginal(false);
+                    } catch { }
+                  }}
+                  disabled={!displayPost?.content}
+                >
+                  <div className="flex items-center gap-1">
+                    <LogoIcon className="w-5 h-5" /> {t('Translate')}
+                  </div>
+                </ActionButton>
+              ) : displayPost?.content && !showOriginal ? (
+                <ActionButton
+                  variant="ghost"
+                  size="none"
+                  className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                  onClick={(e) => { e.stopPropagation(); setShowOriginal(true); }}
+                >
+                  <div className="flex items-center gap-1">
+                    <LogoIcon className="w-5 h-5" /> {t('See original')}
+                  </div>
+                </ActionButton>
+              ) : null}
+              {!showOriginal && translatedText && (
+                <div className="mt-2 border-l-4 border-gray-200 pl-3 text-sm text-gray-700 whitespace-pre-wrap">
+                  {translatedText}
+                </div>
+              )}
             </div>
             {displayPost?.hashtags && displayPost?.hashtags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {displayPost?.hashtags.map((hashtag) => (
-                  <span key={hashtag.id} className="text-blue-500 text-sm hover:underline cursor-pointer">
-                    {hashtag.tag}
+                  <span key={hashtag.id}>
+                    {parseHashtagsWithClick(hashtag.tag)}
                   </span>
                 ))}
               </div>
             )}
           </div>
           {displayPost.media && displayPost.media.length > 0 && (
-            <MediaDisplay mediaFiles={displayPost.media} className="mt-3" />
+            <div data-media-display>
+              <MediaDisplay
+                mediaFiles={displayPost.media}
+                className="mt-3"
+                lightboxUserName={displayPost.user.fullName}
+                lightboxUserAvatar={displayPost.user.avatarUrl}
+              />
+            </div>
           )}
         </>
       )}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-6">
-          <button
+          <AnimatedActionButton
+            icon={<ReactHeartIcon />}
+            activeIcon={<ReactHeartRedIcon />}
+            count={post.reactionCount}
+            isActive={post.isLike}
             onClick={() => onLike?.(post.code)}
-            className={`flex items-center gap-2 transition-colors ${post.isLike ? 'text-red-500' : 'text-netural-900'
-              }`}
-          >
-            <ReactHeartIcon/>
-            <span className="">{post.reactionCount.toLocaleString()}</span>
-          </button>
+            activeColor="text-red-500"
+            inactiveColor="text-netural-900"
+          />
 
-          <button
+          <AnimatedActionButton
+            icon={<CommentsIcon />}
+            count={post.commentCount}
+            isActive={false}
             onClick={() => onComment?.(post?.code)}
-            className="flex items-center gap-2 text-netural-900 hover:text-blue-500 transition-colors"
-          >
-            <CommentsIcon  />
-            <span className="">{post.commentCount.toLocaleString()}</span>
-          </button>
-          <button
+            inactiveColor="text-netural-900"
+          />
+
+          <AnimatedActionButton
+            icon={<RetryIcon />}
+            count={post.repostCount}
+            isActive={false}
             onClick={() => onRepost?.(post.code)}
-            className="flex items-center gap-2 text-netural-900 hover:text-purple-500 transition-colors"
-          >
-            <RetryIcon  />
+            inactiveColor="text-netural-900"
+          />
 
-            <span className="">{post.repostCount}</span>
-          </button>
-          <button
+          <AnimatedActionButton
+            icon={<SendIcon />}
+            count={post.shareCount}
+            isActive={false}
             onClick={() => onShare?.(post.code)}
-            className="flex items-center gap-2 text-netural-900 hover:text-green-500 transition-colors"
-          >
-            <SendIcon  />
-            <span className="">{post.shareCount}</span>
-          </button>
-
+            inactiveColor="text-netural-900"
+          />
         </div>
       </div>
+
+      <PostOptionsBottomSheet
+        isOpen={isPostOptionsOpen}
+        onClose={() => setIsPostOptionsOpen(false)}
+        actionItems={actionItems}
+      />
     </div>
   );
 };

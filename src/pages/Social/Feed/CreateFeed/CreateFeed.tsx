@@ -140,6 +140,7 @@ const CreateFeed: React.FC = () => {
                 hashtags: hashtags.length > 0 ? hashtags : undefined,
                 privacy: Number(selectedPrivacy)
             });
+            history.goBack();
             setPostText('');
             clearImages();
             clearAudio();

@@ -38,7 +38,7 @@ const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, 
             <div className="flex items-center flex-grow bg-chat-to rounded-lg px-4 py-2 gap-2">
                 {type !== "search" && leftIcon}
                 <input
-                    type="text"
+                    type="search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder={t("Search")}

@@ -53,6 +53,14 @@ export interface SocialPost {
   originalPost: SocialPost | null;
   lastScore?: number;
   score?: number;
+  isFriend: boolean;
+  friendRequest?: {
+    id?: any;
+    fromUserId?: number;
+    toUserId?: number;
+    status?: number;
+    createDate?: string;
+  } ;
 }
 
 export interface PaginationInfo {

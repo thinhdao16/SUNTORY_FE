@@ -73,4 +73,19 @@ export class SocialCommentService {
   static async unlikeComment(commentId: number): Promise<void> {
     await httpClient.delete(`/api/v1/social/comment/${commentId}/like`);
   }
+
+  static async deleteComment(commentCode: string): Promise<void> {
+    await httpClient.delete(`/api/v1/social/comment`, {
+      params: { commentCode }
+    });
+  }
+
+  static async updateComment(commentCode: string, content: string, mediaFilenames?: string[]): Promise<SocialComment> {
+    const response = await httpClient.put(`/api/v1/social/comment`, {
+      commentCode,
+      content,
+      mediaFilenames: mediaFilenames || []
+    });
+    return response.data;
+  }
 }

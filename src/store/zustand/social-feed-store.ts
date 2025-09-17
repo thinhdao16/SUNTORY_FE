@@ -51,6 +51,7 @@ interface SocialFeedStore {
   clearFeedPosts: (feedKey?: string) => void;
   updatePostReaction: (postCode: string, isLiked: boolean, reactionCount: number) => void;
   optimisticUpdatePostReaction: (postCode: string) => void;
+  applyRealtimePatch: (postCode: string, patch: Partial<SocialPost>) => void;
   
   // Scroll position actions
   saveScrollPosition: (position: number, feedKey?: string) => void;
@@ -177,7 +178,7 @@ export const useSocialFeedStore = create<SocialFeedStore>((set, get) => ({
   updatePostReaction: (postCode, isLiked, reactionCount) => {
     const state = get();
     const updatedFeeds = { ...state.cachedFeeds };
-    
+
     // Update in all cached feeds
     Object.keys(updatedFeeds).forEach(key => {
       updatedFeeds[key] = {
@@ -223,6 +224,43 @@ export const useSocialFeedStore = create<SocialFeedStore>((set, get) => ({
             reactionCount: state.currentPost.isLike ? state.currentPost.reactionCount - 1 : state.currentPost.reactionCount + 1
           }
         : state.currentPost
+    });
+  },
+
+  applyRealtimePatch: (postCode, patch) => {
+    if (!postCode) return;
+    const state = get();
+
+    const mergePost = (post: SocialPost) => ({
+      ...post,
+      ...patch,
+      originalPost: post.originalPost && post.originalPost.code === postCode
+        ? { ...post.originalPost, ...patch }
+        : post.originalPost,
+    });
+
+    const updatedFeeds = Object.keys(state.cachedFeeds).reduce((acc, key) => {
+      const feed = state.cachedFeeds[key];
+      if (!feed) {
+        acc[key] = feed;
+        return acc;
+      }
+      acc[key] = {
+        ...feed,
+        posts: feed.posts.map((post: SocialPost) =>
+          post.code === postCode
+            ? mergePost(post)
+            : post
+        ),
+      };
+      return acc;
+    }, {} as Record<string, CachedFeed | undefined>) as Record<string, CachedFeed>;
+
+    set({
+      cachedFeeds: updatedFeeds,
+      currentPost: state.currentPost?.code === postCode
+        ? mergePost(state.currentPost)
+        : state.currentPost,
     });
   },
 

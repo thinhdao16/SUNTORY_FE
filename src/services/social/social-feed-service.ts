@@ -30,14 +30,30 @@ export interface CreatePostResponse {
 
 export interface HashtagInterest {
     id: number;
-    name: string;
-    count?: number;
+    hashtagId: number;
+    hashtagCode: string;
+    hashtagTag: string;
+    hashtagNormalized: string;
+    createDate: string;
+    updateDate: string;
+    lastInterestDate: string;
 }
 
 export interface HashtagInterestsResponse {
-    data: HashtagInterest[];
-    success: boolean;
-    message?: string;
+    result: number;
+    errors: null;
+    message: string;
+    data: {
+        pageNumber: number;
+        pageSize: number;
+        firstPage: number;
+        lastPage: number;
+        totalPages: number;
+        totalRecords: number;
+        nextPage: boolean;
+        previousPage: boolean;
+        data: HashtagInterest[];
+    };
 }
 
 export const createSocialPost = async (postData: CreatePostRequest): Promise<CreatePostResponse> => {
@@ -191,19 +207,16 @@ export class SocialFeedService {
     }
 
     static async getHashtagInterests(): Promise<HashtagInterestsResponse> {
-        try {
-            const response = await httpClient.get<HashtagInterestsResponse>(
-                '/api/v1/social/hashtag/interests'
-            );
-            return response.data;
-        } catch (error: any) {
-            console.error('Get hashtag interests failed:', error);
-            return {
-                success: false,
-                data: [],
-                message: error.response?.data?.message || 'Failed to fetch hashtag interests'
-            };
-        }
+        const response = await httpClient.get<HashtagInterestsResponse>(
+            '/api/v1/social/hashtag/interests'
+        );
+        return response.data;
+    }
+
+    static async deleteHashtagInterest(hashtagText: string): Promise<void> {
+        await httpClient.delete('/api/v1/social/hashtag/interest', {
+            data: { hashtagText }
+        });
     }
 
     static async getFeedWithLastPostCode(
@@ -230,5 +243,11 @@ export class SocialFeedService {
         );
 
         return response.data;
+    }
+
+    static async trackHashtagInterest(hashtagText: string): Promise<void> {
+        await httpClient.post('/api/v1/social/hashtag/interest', {
+            hashtagText
+        });
     }
 }
