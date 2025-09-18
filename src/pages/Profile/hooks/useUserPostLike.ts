@@ -25,36 +25,39 @@ export const useUserPostLike = ({ tabType, targetUserId }: UseUserPostLikeParams
     },
     {
       onMutate: async ({ postCode, isLiked }) => {
-        // Cancel any outgoing refetches
         await queryClient.cancelQueries(['userPosts', tabType, targetUserId]);
 
-        // Snapshot the previous value
         const previousData = queryClient.getQueryData(['userPosts', tabType, targetUserId]);
-
-        // Optimistically update the cache
         queryClient.setQueryData(['userPosts', tabType, targetUserId], (old: any) => {
           if (!old?.pages) return old;
 
-          return {
-            ...old,
-            pages: old.pages.map((page: any) => ({
+          const updatedPages = old.pages.map((page: any) => {
+            if (!page.data?.data) return page;
+            
+            const postIndex = page.data.data.findIndex((post: any) => post.code === postCode);
+            if (postIndex === -1) return page;
+            
+            const updatedPosts = [...page.data.data];
+            updatedPosts[postIndex] = {
+              ...updatedPosts[postIndex],
+              isLike: !isLiked,
+              reactionCount: isLiked 
+                ? Math.max(0, (updatedPosts[postIndex].reactionCount || 0) - 1)
+                : (updatedPosts[postIndex].reactionCount || 0) + 1
+            };
+            
+            return {
               ...page,
               data: {
                 ...page.data,
-                data: page.data?.data?.map((post: any) => {
-                  if (post.code === postCode) {
-                    return {
-                      ...post,
-                      isLike: !isLiked,
-                      reactionCount: isLiked 
-                        ? Math.max(0, (post.reactionCount || 0) - 1)
-                        : (post.reactionCount || 0) + 1
-                    };
-                  }
-                  return post;
-                }) || []
+                data: updatedPosts
               }
-            }))
+            };
+          });
+
+          return {
+            ...old,
+            pages: updatedPages
           };
         });
 
@@ -67,19 +70,14 @@ export const useUserPostLike = ({ tabType, targetUserId }: UseUserPostLikeParams
         }
       },
       onSuccess: () => {
-        // Invalidate ALL userPosts queries to ensure consistency across all tabs
-        queryClient.invalidateQueries(['userPosts']);
+        // queryClient.invalidateQueries(['userPosts']);
+        // queryClient.invalidateQueries(['socialFeed']);
+        // queryClient.invalidateQueries(['social-posts']);
+        // queryClient.invalidateQueries(['social-feed']);
         
-        // Also invalidate social feed queries
-        queryClient.invalidateQueries(['socialFeed']);
-        queryClient.invalidateQueries(['social-posts']);
-        queryClient.invalidateQueries(['social-feed']);
-        
-        showToast(t('Post liked successfully!'), 2000, 'success');
       },
       onSettled: () => {
-        // Invalidate and refetch to ensure consistency
-        queryClient.invalidateQueries(['userPosts', tabType, targetUserId]);
+        // queryClient.invalidateQueries(['userPosts', tabType, targetUserId]);
       }
     }
   );

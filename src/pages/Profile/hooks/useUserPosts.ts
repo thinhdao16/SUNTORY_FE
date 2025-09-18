@@ -16,7 +16,7 @@ interface UserPostsParams {
 }
 
 interface UserPostsResponse {
-    data: any[];
+    data: any;
     totalCount?: number;
     totalRecords?: number;
     pageNumber: number;
@@ -36,13 +36,13 @@ const fetchUserPosts = async (params: UserPostsParams): Promise<UserPostsRespons
             PageSize: params.pageSize,
         },
     });
-    return response.data.data;
+    return response.data;
 };
 
 export const useUserPosts = (tabType: ProfileTabType, targetUserId?: number, pageSize = 10) => {
     return useInfiniteQuery(
       ['userPosts', tabType, targetUserId],
-      ({ pageParam = 1 }) => fetchUserPosts({
+      ({ pageParam = 0 }) => fetchUserPosts({
         tabType,
         targetUserId,
         pageNumber: pageParam,
@@ -50,10 +50,9 @@ export const useUserPosts = (tabType: ProfileTabType, targetUserId?: number, pag
       }),
       {
         getNextPageParam: (lastPage: UserPostsResponse) => {
-          // an toàn: so sánh trang hiện tại với tổng trang
           if (!lastPage) return undefined;
-          const current = lastPage.pageNumber ?? 1;
-          const total = lastPage.totalPages ?? (lastPage.lastPage ?? current);
+          const current = lastPage.data.pageNumber ?? 1;
+          const total = lastPage.data.totalPages ?? (lastPage.data.lastPage ?? current);
           return current < total ? current + 1 : undefined;
         },
         // keepPreviousData: true, // tùy chọn

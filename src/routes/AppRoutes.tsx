@@ -51,6 +51,7 @@ const routes = {
   ScanMenu: lazy(() => import("@/pages/Menu/components/ScanMenu")),
   MenuAnalyzing: lazy(() => import("@/pages/Menu/components/MenuAnalyzing")),
   MyProfile: lazy(() => import("@/pages/Profile/MyProfile")),
+  OtherUserProfile: lazy(() => import("@/pages/Profile/OtherUserProfile")),
   MyInformation: lazy(() => import("@/pages/Profile/AccountEdit/MyInformation")),
   AiProfileInformation: lazy(() => import("@/pages/Profile/AiHealthInformationEdit/AiProfileInformation")),
   FriendList: lazy(() => import("@/pages/Profile/Friend/FriendList")),
@@ -114,6 +115,7 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/menu-analyzing" component={routes.MenuAnalyzing} exact />
           <PrivateRoute path="/food-list" component={routes.FoodList} exact />
           <PrivateRoute path="/my-profile/:tabName?" component={routes.MyProfile} exact />
+          <PrivateRoute path="/profile/:userId/:tab?" component={routes.OtherUserProfile} exact />
           <PrivateRoute path="/profile-setting" component={routes.ProfileSetting} exact />
           <PrivateRoute path="/my-information" component={routes.MyInformation} exact />
           <PrivateRoute path="/ai-profile-setting" component={routes.AiProfileInformation} exact />

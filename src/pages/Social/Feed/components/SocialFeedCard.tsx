@@ -115,6 +115,16 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const isRepost = post.isRepost && post.originalPost;
   const isRepostWithDeletedOriginal = post.isRepost && !post.originalPost || post?.isRepost && post?.originalPost?.status === 190;
   const history = useHistory();
+  const { user: currentUser } = useAuthStore();
+
+  const handleUserProfileClick = (e: React.MouseEvent, userId: number) => {
+    e.stopPropagation();
+    if (currentUser?.id === userId) {
+      history.push('/my-profile');
+    } else {
+      history.push(`/profile/${userId}`);
+    }
+  };
   const openConfirmModal = (type: "send" | "cancel" | "unfriend" | "reject" | "accept", friendRequestId?: number, friendName?: string) => {
     setConfirmState({
       open: true,
@@ -236,14 +246,20 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
           <img
             src={post?.isRepost ? post?.user?.avatarUrl || avatarFallback : displayPost?.user?.avatarUrl || avatarFallback}
             alt={post?.isRepost ? post?.user?.fullName : displayPost?.user?.fullName}
-            className="w-9 h-9 rounded-2xl object-cover"
+            className="w-9 h-9 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
             onError={(e) => {
               (e.target as HTMLImageElement).src = avatarFallback;
             }}
+            onClick={(e) => handleUserProfileClick(e, post?.isRepost ? post?.user?.id : displayPost?.user?.id)}
           />
           <div className='grid gap-0'>
             <div className="flex items-center gap-2">
-              <span className="font-semibold truncate max-w-[180px]">{post?.isRepost ? post?.user?.fullName : displayPost?.user?.fullName}</span>
+              <span 
+                className="font-semibold truncate max-w-[180px] cursor-pointer hover:underline"
+                onClick={(e) => handleUserProfileClick(e, post?.isRepost ? post?.user?.id : displayPost?.user?.id)}
+              >
+                {post?.isRepost ? post?.user?.fullName : displayPost?.user?.fullName}
+              </span>
               {post?.isRepost && (
                 <div className="flex items-center gap-1">
                   <RetryIcon className='w-3 h-3 text-gray-400 opacity-25' />
@@ -301,14 +317,20 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                 <img
                   src={displayPost.user.avatarUrl || avatarFallback}
                   alt={displayPost.user.fullName}
-                  className="w-8 h-8 rounded-xl object-cover"
+                  className="w-8 h-8 rounded-xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = avatarFallback;
                   }}
+                  onClick={(e) => handleUserProfileClick(e, displayPost.user.id)}
                 />
                 <div className="grid">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold truncate max-w-[200px]">{displayPost.user.fullName}</span>
+                  <span 
+                    className="font-semibold truncate max-w-[200px] cursor-pointer hover:underline"
+                    onClick={(e) => handleUserProfileClick(e, displayPost.user.id)}
+                  >
+                    {displayPost.user.fullName}
+                  </span>
                 </div>
                 <div className="flex items-center text-netural-100 gap-1">
                   <span className="text-xs text-gray-500">{formatTimeFromNow(displayPost.createDate, t)}</span>

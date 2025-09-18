@@ -15,6 +15,7 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
   const { t } = useTranslation();
   const history = useHistory();
   const lastMediaElementRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const {
     data,
@@ -28,32 +29,6 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
 
   const postLikeMutation = useUserPostLike({ tabType: ProfileTabType.Media, targetUserId });
   const postUpdateMutation = useUserPostUpdate({ tabType: ProfileTabType.Media, targetUserId });
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const lastEntry = entries[0];
-        if (lastEntry.isIntersecting && hasNextPage && !isFetchingNextPage && !isLoading) {
-          fetchNextPage();
-        }
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '50px'
-      }
-    );
-
-    const currentRef = lastMediaElementRef.current;
-    if (currentRef && data?.pages && data.pages.length > 0) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [hasNextPage, isFetchingNextPage, isLoading, fetchNextPage, data?.pages]);
 
   const allPosts = data?.pages?.flatMap((page: any) => page?.data?.data || []) || [];
 
@@ -78,6 +53,27 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
         };
       })
     );
+
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage && !isLoading) {
+          fetchNextPage();
+        }
+      },
+      {
+        threshold: 0,
+        rootMargin: '200px'
+      }
+    );
+
+    observer.observe(sentinelRef.current);
+    
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, isLoading, fetchNextPage, mediaItems.length]);
 
   const handleMediaClick = (postCode: string) => {
     history.push(`/social-feed/f/${postCode}`);
@@ -138,7 +134,6 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
             key={`${item.postCode}-${item.id || index}`}
             className="relative group cursor-pointer"
             onClick={() => handleMediaClick(item.postCode)}
-            ref={index === mediaItems.length - 1 ? lastMediaElementRef : undefined}
           >
             {(item.mediaType === 'image' || item.fileType?.startsWith('image') || item.linkImage || (item.urlFile && !item.fileType?.startsWith('video'))) ? (
               <img
@@ -179,7 +174,6 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
               </div>
             )}
 
-            {/* Hover overlay with stats */}
             <div className="absolute inset-0  bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded-lg flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-4 text-white">
                 <button
@@ -211,7 +205,8 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
         </div>
       )}
 
-      {/* End of media indicator */}
+      <div ref={sentinelRef} className="h-1" />
+
       {!hasNextPage && mediaItems.length > 0 && (
         <div className="text-center py-4 text-gray-500 text-sm">
           {t('No more media to load')}

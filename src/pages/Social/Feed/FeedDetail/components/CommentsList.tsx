@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useHistory } from 'react-router-dom';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import ReactHeartIcon from "@/icons/logo/social-feed/react-heart.svg?react";
 import ReactHeartRedIcon from "@/icons/logo/social-feed/react-heart-red.svg?react";
@@ -9,6 +10,7 @@ import { GoDotFill } from 'react-icons/go';
 import { parseHashtagsWithClick } from '@/utils/hashtagHighlight';
 import { formatTimeFromNow } from '@/utils/formatTime';
 import AnimatedActionButton from '@/components/common/AnimatedActionButton';
+import { useAuthStore } from '@/store/zustand/auth-store';
 
 interface CommentsListProps {
     organizedComments: any[];
@@ -32,6 +34,17 @@ const CommentsList: React.FC<CommentsListProps> = ({
     isLoadingComments
 }) => {
     const { t } = useTranslation();
+    const history = useHistory();
+    const { user: currentUser } = useAuthStore();
+
+    const handleUserProfileClick = (e: React.MouseEvent, userId: number) => {
+        e.stopPropagation();
+        if (currentUser?.id === userId) {
+            history.push('/my-profile');
+        } else {
+            history.push(`/profile/${userId}`);
+        }
+    };
 
     const formatTimeAgo = (dateString: string) => {
         return formatTimeFromNow(dateString, t);
@@ -80,15 +93,21 @@ const CommentsList: React.FC<CommentsListProps> = ({
                         <img
                             src={comment.user.avatarUrl || avatarFallback}
                             alt={comment.user.fullName}
-                            className="w-9 h-9 rounded-2xl object-cover"
+                            className="w-9 h-9 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
                             onError={(e) => {
                                 (e.target as HTMLImageElement).src = avatarFallback;
                             }}
+                            onClick={(e) => handleUserProfileClick(e, comment.user.id)}
                         />
                         <div className="flex-1">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-1 mb-1">
-                                    <span className="font-semibold text-sm">{comment.user.fullName}</span>
+                                    <span 
+                                        className="font-semibold text-sm cursor-pointer hover:underline"
+                                        onClick={(e) => handleUserProfileClick(e, comment.user.id)}
+                                    >
+                                        {comment.user.fullName}
+                                    </span>
                                     <GoDotFill className="w-2 h-2 text-netural-100 " />
                                     <span className="text-netural-100 text-sm">{formatTimeAgo(comment.createDate)}</span>
                                 </div>
@@ -143,15 +162,21 @@ const CommentsList: React.FC<CommentsListProps> = ({
                                         <img
                                             src={reply.user.avatarUrl || avatarFallback}
                                             alt={reply.user.fullName}
-                                            className="w-7 h-7 rounded-2xl object-cover"
+                                            className="w-7 h-7 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
                                             onError={(e) => {
                                                 (e.target as HTMLImageElement).src = avatarFallback;
                                             }}
+                                            onClick={(e) => handleUserProfileClick(e, reply.user.id)}
                                         />
                                         <div className="flex-1">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-1 mb-1">
-                                                    <span className="font-semibold text-sm">{reply.user.fullName}</span>
+                                                    <span 
+                                                        className="font-semibold text-sm cursor-pointer hover:underline"
+                                                        onClick={(e) => handleUserProfileClick(e, reply.user.id)}
+                                                    >
+                                                        {reply.user.fullName}
+                                                    </span>
                                                     <GoDotFill className="w-2 h-2 text-netural-100 " />
                                                     <span className="text-netural-100 text-sm">{formatTimeAgo(reply.createDate)}</span>
                                                 </div>

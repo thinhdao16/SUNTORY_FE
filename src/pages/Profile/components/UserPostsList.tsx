@@ -64,14 +64,16 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 
-    const allPosts = data?.pages?.flatMap((page: any) => page?.data || []) || [];
+    const allPosts = data?.pages?.flatMap((page: any) => page?.data?.data || []) || [];
     const handleLike = (postCode: string) => {
         const post = allPosts.find((p: any) => p.code === postCode);
         if (!post) return;
 
+        const currentIsLiked = post.isLike || false;
+        
         postLikeMutation.mutate({
             postCode,
-            isLiked: post.isLike || false
+            isLiked: currentIsLiked
         });
     };
 
