@@ -15,6 +15,14 @@ export interface CreatePostRequest {
     privacy: number;
 }
 
+export interface UpdatePostRequest {
+    postCode: string;
+    content: string;
+    mediaFilenames?: string[];
+    hashtags?: string[];
+    privacy: number;
+}
+
 export interface CreatePostResponse {
     success: boolean;
     data?: {
@@ -71,6 +79,38 @@ export const createSocialPost = async (postData: CreatePostRequest): Promise<Cre
         };
     }
 };
+
+export const updateSocialPost = async (postData: UpdatePostRequest): Promise<CreatePostResponse> => {
+    try {
+        const response = await httpClient.put(`/api/v1/social/post`, postData);
+        return {
+            success: true,
+            data: response.data
+        };
+    } catch (error: any) {
+        console.error('Update post failed:', error);
+        return {
+            success: false,
+            message: error.response?.data?.message || 'Failed to update post'
+        };
+    }
+};
+
+export const deleteSocialPost = async (postCode: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+        await httpClient.delete(`/api/v1/social/post/${postCode}`);
+        return {
+            success: true
+        };
+    } catch (error: any) {
+        console.error('Delete post failed:', error);
+        return {
+            success: false,
+            message: error.response?.data?.message || 'Failed to delete post'
+        };
+    }
+};
+
 export class SocialFeedService {
     private static readonly BASE_URL = '/api/v1/social/posts';
     private static readonly FEED_URL = '/api/v1/social/feed';

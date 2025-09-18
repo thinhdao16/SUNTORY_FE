@@ -4,7 +4,7 @@ import NewAction from "@/icons/logo/new_action.svg?react"
 import { useAuthStore } from '@/store/zustand/auth-store';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 
-interface SocialChatHeaderProps {
+interface FeedHeaderProps {
     leftIcon: React.ReactNode;
     rightIcon: React.ReactNode;
     inputOnFocus: () => void;
@@ -15,7 +15,7 @@ interface SocialChatHeaderProps {
     type: string
 }
 
-const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, search, handleQR, type }: SocialChatHeaderProps) => {
+const FeedHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, search, handleQR, type }: FeedHeaderProps) => {
     const { t } = useTranslation();
     const { user } = useAuthStore();
     return (
@@ -60,4 +60,4 @@ const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, 
     );
 };
 
-export default SocialChatHeader;
+export default FeedHeader;

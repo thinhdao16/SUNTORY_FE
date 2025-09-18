@@ -79,6 +79,7 @@ export const useImageUploadState = () => {
 
     return {
         images,
+        setImages,
         isUploading,
         setIsUploading,
         addImages,

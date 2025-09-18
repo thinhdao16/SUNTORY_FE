@@ -46,7 +46,10 @@ const PostOptionsBottomSheet: React.FC<PostOptionsBottomSheetProps> = ({
                             {group.items.map((item, index) => (
                                 <button
                                     key={item.key}
-                                    onClick={item.onClick}
+                                    onClick={() => {
+                                        onClose();
+                                        item.onClick();
+                                    }}
                                     className={`w-full flex items-center justify-between px-5 py-4 text-sm font-medium transition-colors ${
                                         index !== group.items.length - 1 ? 'border-b border-gray-100' : ''
                                     } hover:bg-gray-50`}

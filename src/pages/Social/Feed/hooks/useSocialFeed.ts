@@ -75,7 +75,6 @@ export const useSocialFeed = (options: UseSocialFeedOptions = {}) => {
     setFeedPosts,
     appendFeedPosts,
     setFeedParams,
-    setPaginationInfo,
     setFeedLoading,
     setActiveFeedKey
   } = useSocialFeedStore();
@@ -115,7 +114,7 @@ export const useSocialFeed = (options: UseSocialFeedOptions = {}) => {
       refetchOnMount: true,
       onSuccess: (data) => {
         const allPosts = data?.pages?.flatMap(page => page.data || []) || [];
-        
+        console.log(data)
         if (data?.pages?.length === 1) {
           setFeedPosts(allPosts, feedKey);
         } else if (data?.pages && data.pages.length > 1) {

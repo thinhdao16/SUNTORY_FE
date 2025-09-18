@@ -49,6 +49,7 @@ interface SocialFeedStore {
   appendFeedPosts: (posts: SocialPost[], feedKey?: string) => void;
   getFeedPosts: (feedKey?: string) => SocialPost[];
   clearFeedPosts: (feedKey?: string) => void;
+  removePostFromFeeds: (postCode: string) => void;
   updatePostReaction: (postCode: string, isLiked: boolean, reactionCount: number) => void;
   optimisticUpdatePostReaction: (postCode: string) => void;
   applyRealtimePatch: (postCode: string, patch: Partial<SocialPost>) => void;
@@ -172,6 +173,31 @@ export const useSocialFeedStore = create<SocialFeedStore>((set, get) => ({
           totalRecords: 0
         }
       }
+    });
+  },
+
+  removePostFromFeeds: (postCode: string) => {
+    const state = get();
+    const updatedFeeds = { ...state.cachedFeeds };
+    
+    // Efficiently remove post from all feeds
+    Object.keys(updatedFeeds).forEach(key => {
+      const feed = updatedFeeds[key];
+      if (feed && feed.posts) {
+        const filteredPosts = feed.posts.filter(post => post.code !== postCode);
+        if (filteredPosts.length !== feed.posts.length) {
+          updatedFeeds[key] = {
+            ...feed,
+            posts: filteredPosts,
+            totalRecords: Math.max(0, feed.totalRecords - 1)
+          };
+        }
+      }
+    });
+    
+    set({
+      cachedFeeds: updatedFeeds,
+      currentPost: state.currentPost?.code === postCode ? null : state.currentPost
     });
   },
   

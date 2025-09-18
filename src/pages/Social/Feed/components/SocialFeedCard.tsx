@@ -21,8 +21,10 @@ import ActionButton from '@/components/loading/ActionButton';
 import AnimatedActionButton from '@/components/common/AnimatedActionButton';
 import ReactHeartRedIcon from "@/icons/logo/social-feed/react-heart-red.svg?react";
 import PostOptionsBottomSheet from '@/components/social/PostOptionsBottomSheet';
-import { usePostOptions } from '@/hooks/usePostOptions';
 import LogoIcon from "@/icons/logo/logo-rounded-full.svg?react";
+import { useAuthStore } from '@/store/zustand/auth-store';
+import PostActionsProvider from '@/components/social/PostActionsProvider';
+
 interface SocialFeedCardProps {
   post: SocialPost;
   onLike?: (postCode: string) => void;
@@ -56,25 +58,12 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const createTranslationMutation = useCreateTranslationChat();
+  const {user} = useAuthStore.getState();
   const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
   const toLanguageId = useMemo(() => selectedLanguageSocialChat?.id || selectedLanguageTo?.id || 2, [selectedLanguageSocialChat, selectedLanguageTo]);
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState<boolean>(true);
   const [isPostOptionsOpen, setIsPostOptionsOpen] = useState(false);
-
-  const { actionItems } = usePostOptions({
-    post,
-    onSendFriendRequest: () => onSendFriendRequest?.(post.user.id),
-    onUnfriend: () => onUnfriend?.(post.user.id),
-    onCancelFriendRequest,
-    onAcceptFriendRequest,
-    onRejectFriendRequest
-  });
-
-  const renderMedia = () => {
-    if (!post.media || post.media.length === 0) return null;
-    return <MediaDisplay mediaFiles={post.media} className="mt-3" />;
-  };
 
   const handlePostClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -83,7 +72,6 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
     }
     onPostClick?.(post.code);
   };
-
 
   const getPrivacyIcon = (privacy: number) => {
     switch (privacy) {
@@ -102,38 +90,37 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
 
   const displayPost = post.isRepost && post.originalPost ? post.originalPost : post;
   const isRepost = post.isRepost && post.originalPost;
+  
   return (
     <div
       className={`bg-white border-b border-netural-50 cursor-pointer hover:bg-gray-50 transition-colors ${className}`}
       onClick={handlePostClick}
       ref={containerRefCallback ? containerRefCallback : undefined}
     >
-      {isRepost && (
-        <div className="flex items-center gap-2 px-4 pt-3 pb-1">
-          <RetryIcon className='opacity-45 w-5 h-5' />
-          <span className="text-[13px] text-netural-300 font-semibold">
-            <span className="">{post.user.fullName}</span> {t('reposted')}
-          </span>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3 justify-center">
+      {/* Reposter header */}
+      <div className="flex items-center justify-between p-4 pb-2">
+        <div className="flex items-center gap-3">
           <img
-            src={displayPost.user.avatarUrl || avatarFallback}
-            alt={displayPost.user.fullName}
-            className="w-9 h-9  rounded-2xl object-cover"
+            src={isRepost ? post.user.avatarUrl || avatarFallback : displayPost.user.avatarUrl || avatarFallback}
+            alt={isRepost ? post.user.fullName : displayPost.user.fullName}
+            className="w-9 h-9 rounded-2xl object-cover"
             onError={(e) => {
               (e.target as HTMLImageElement).src = avatarFallback;
             }}
           />
           <div className='grid gap-0'>
-            <div className="flex items-center ">
-              <span className="font-semibold ">{displayPost.user.fullName}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">{isRepost ? post.user.fullName : displayPost.user.fullName}</span>
+              {isRepost && (
+                <div className="flex items-center gap-1">
+                  <RetryIcon className='w-4 h-4 text-gray-400' />
+                  <span className="text-sm text-gray-500">{t('reposted')}</span>
+                </div>
+              )}
             </div>
             <div className="flex items-center text-netural-100 gap-1">
-              <span className=" text-sm">{formatTimeFromNow(displayPost.createDate, t)}</span>
-              <GoDotFill className="w-2 h-2 " />
+              <span className="text-sm">{formatTimeFromNow(isRepost ? post.createDate : displayPost.createDate, t)}</span>
+              <GoDotFill className="w-2 h-2" />
               <span className='opacity-20'>
                 {getPrivacyIcon(displayPost.privacy)}
               </span>
@@ -158,8 +145,24 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
 
       {/* Original post content (or regular post content if not a repost) */}
       {isRepost ? (
-        <div className=" rounded-lg">
-          <div className="px-4">
+        <div className="mx-4 mb-4 border border-gray-200 rounded-lg overflow-hidden">
+          {/* Original author info */}
+          <div className="flex items-center gap-3 px-4 pt-3 pb-2 border-b border-gray-100">
+            <img
+              src={displayPost.user.avatarUrl || avatarFallback}
+              alt={displayPost.user.fullName}
+              className="w-8 h-8 rounded-xl object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = avatarFallback;
+              }}
+            />
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm">{displayPost.user.fullName}</span>
+              <GoDotFill className="w-1 h-1 text-gray-400" />
+              <span className="text-xs text-gray-500">{formatTimeFromNow(displayPost.createDate, t)}</span>
+            </div>
+          </div>
+          <div className="px-4 py-3">
             <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
               {parseHashtagsWithClick(displayPost?.content)}
             </div>
@@ -194,7 +197,6 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                 >
                   <div className="flex items-center gap-1">
                     <LogoIcon className="w-5 h-5" /> {t('See original')}
-
                   </div>
                 </ActionButton>
               ) : null}
@@ -226,62 +228,60 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
           )}
         </div>
       ) : (
-        <>
-          <div className="px-4 ">
-            <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-              {parseHashtagsWithClick(displayPost?.content)}
-            </div>
-            <div className="mt-2">
-              {displayPost?.content && showOriginal ? (
-                <ActionButton
-                  spinnerPosition="right"
-                  variant="ghost"
-                  size="none"
-                  className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
-                  loading={createTranslationMutation.isLoading}
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    try {
-                      const res = await createTranslationMutation.mutateAsync({ toLanguageId: toLanguageId as number, originalText: displayPost?.content || '' });
-                      const text = (res as any)?.data?.translated_text || (res as any)?.data?.translatedText || '';
-                      setTranslatedText(text);
-                      setShowOriginal(false);
-                    } catch { }
-                  }}
-                  disabled={!displayPost?.content}
-                >
-                  <div className="flex items-center gap-1">
-                    <LogoIcon className="w-5 h-5" /> {t('Translate')}
-                  </div>
-                </ActionButton>
-              ) : displayPost?.content && !showOriginal ? (
-                <ActionButton
-                  variant="ghost"
-                  size="none"
-                  className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
-                  onClick={(e) => { e.stopPropagation(); setShowOriginal(true); }}
-                >
-                  <div className="flex items-center gap-1">
-                    <LogoIcon className="w-5 h-5" /> {t('See original')}
-                  </div>
-                </ActionButton>
-              ) : null}
-              {!showOriginal && translatedText && (
-                <div className="mt-2 border-l-4 border-gray-200 pl-3 text-sm text-gray-700 whitespace-pre-wrap">
-                  {translatedText}
+        <div className="px-4">
+          <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+            {parseHashtagsWithClick(displayPost?.content)}
+          </div>
+          <div className="mt-2">
+            {displayPost?.content && showOriginal ? (
+              <ActionButton
+                spinnerPosition="right"
+                variant="ghost"
+                size="none"
+                className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                loading={createTranslationMutation.isLoading}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    const res = await createTranslationMutation.mutateAsync({ toLanguageId: toLanguageId as number, originalText: displayPost?.content || '' });
+                    const text = (res as any)?.data?.translated_text || (res as any)?.data?.translatedText || '';
+                    setTranslatedText(text);
+                    setShowOriginal(false);
+                  } catch { }
+                }}
+                disabled={!displayPost?.content}
+              >
+                <div className="flex items-center gap-1">
+                  <LogoIcon className="w-5 h-5" /> {t('Translate')}
                 </div>
-              )}
-            </div>
-            {displayPost?.hashtags && displayPost?.hashtags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {displayPost?.hashtags.map((hashtag) => (
-                  <span key={hashtag.id}>
-                    {parseHashtagsWithClick(hashtag.tag)}
-                  </span>
-                ))}
+              </ActionButton>
+            ) : displayPost?.content && !showOriginal ? (
+              <ActionButton
+                variant="ghost"
+                size="none"
+                className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                onClick={(e) => { e.stopPropagation(); setShowOriginal(true); }}
+              >
+                <div className="flex items-center gap-1">
+                  <LogoIcon className="w-5 h-5" /> {t('See original')}
+                </div>
+              </ActionButton>
+            ) : null}
+            {!showOriginal && translatedText && (
+              <div className="mt-2 border-l-4 border-gray-200 pl-3 text-sm text-gray-700 whitespace-pre-wrap">
+                {translatedText}
               </div>
             )}
           </div>
+          {displayPost?.hashtags && displayPost?.hashtags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {displayPost?.hashtags.map((hashtag: any) => (
+                <span key={hashtag.id}>
+                  {parseHashtagsWithClick(hashtag.tag)}
+                </span>
+              ))}
+            </div>
+          )}
           {displayPost.media && displayPost.media.length > 0 && (
             <div data-media-display>
               <MediaDisplay
@@ -292,8 +292,9 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
               />
             </div>
           )}
-        </>
+        </div>
       )}
+      
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-6">
           <AnimatedActionButton
@@ -332,11 +333,25 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
         </div>
       </div>
 
-      <PostOptionsBottomSheet
-        isOpen={isPostOptionsOpen}
-        onClose={() => setIsPostOptionsOpen(false)}
-        actionItems={actionItems}
-      />
+      <PostActionsProvider
+        post={post}
+        onSendFriendRequest={onSendFriendRequest}
+        onUnfriend={onUnfriend}
+        onCancelFriendRequest={onCancelFriendRequest ? (requestId: number) => onCancelFriendRequest(requestId, '') : undefined}
+        onAcceptFriendRequest={onAcceptFriendRequest}
+        onRejectFriendRequest={onRejectFriendRequest ? (requestId: number) => onRejectFriendRequest(requestId, '') : undefined}
+      >
+        {({ actionItems, EditModalComponent }) => (
+          <>
+            <PostOptionsBottomSheet
+              isOpen={isPostOptionsOpen}
+              onClose={() => setIsPostOptionsOpen(false)}
+              actionItems={actionItems}
+            />
+            {EditModalComponent}
+          </>
+        )}
+      </PostActionsProvider>
     </div>
   );
 };

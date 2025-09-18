@@ -23,6 +23,8 @@ import { usePostRepost } from '@/pages/Social/Feed/hooks/usePostRepost';
 import { useSendFriendRequest, useUnfriend, useCancelFriendRequest, useAcceptFriendRequest, useRejectFriendRequest } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { useDeleteComment } from '../hooks/useDeleteComment';
 import { useUpdateComment } from '../hooks/useUpdateComment';
+import { useDeletePost } from '../hooks/useDeletePost';
+import PostActionsProvider from '@/components/social/PostActionsProvider';
 import ConfirmModal from '@/components/common/modals/ConfirmModal';
 import CommentInput from './components/CommentInput';
 import PostHeader from './components/PostHeader';
@@ -145,6 +147,7 @@ const FeedDetail: React.FC = () => {
     const rejectFriendRequestMutation = useRejectFriendRequest(showToast);
     const deleteCommentMutation = useDeleteComment();
     const updateCommentMutation = useUpdateComment();
+    const deletePostMutation = useDeletePost();
 
     const organizeComments = (comments: any[]) => {
         const topLevelComments = comments.filter(comment => !comment.replyCommentId);
@@ -465,14 +468,25 @@ const FeedDetail: React.FC = () => {
         handleSendFriendRequestClick,
     ]);
 
-    const { actionItems: postActionItems } = usePostOptions({
-        post: displayPost,
-        onSendFriendRequest: handleSendFriendRequestClick,
-        onUnfriend: handleUnfriendClick,
-        onCancelFriendRequest: handleCancelFriendRequest,
-        onAcceptFriendRequest: handleAcceptFriendRequest,
-        onRejectFriendRequest: handleRejectFriendRequest
-    });
+    const handleSendFriendRequest = (userId: number) => {
+        sendFriendRequestMutation.mutate(userId);
+    };
+
+    const handleUnfriend = (userId: number) => {
+        unfriendMutation.mutate({ friendUserId: userId });
+    };
+
+    const handleCancelFriendRequestAction = (requestId: number) => {
+        cancelFriendRequestMutation.mutate(requestId);
+    };
+
+    const handleAcceptFriendRequestAction = (requestId: number) => {
+        acceptFriendRequestMutation.mutate(requestId);
+    };
+
+    const handleRejectFriendRequestAction = (requestId: number) => {
+        rejectFriendRequestMutation.mutate(requestId);
+    };
 
     if (isLoading) {
         return (
@@ -615,12 +629,30 @@ const FeedDetail: React.FC = () => {
                 </div>
             </div>
 
-            <PostOptionsBottomSheet
-                isOpen={isPostOptionsOpen}
-                onClose={closePostOptions}
-                actionItems={postActionItems}
-                variant="detailed"
-            />
+            <PostActionsProvider
+                post={displayPost}
+                onSendFriendRequest={handleSendFriendRequest}
+                onUnfriend={handleUnfriend}
+                onCancelFriendRequest={handleCancelFriendRequestAction}
+                onAcceptFriendRequest={handleAcceptFriendRequestAction}
+                onRejectFriendRequest={handleRejectFriendRequestAction}
+                onSuccess={() => {
+                    void refetchPost();
+                }}
+                navigateBackOnDelete={true}
+            >
+                {({ actionItems, EditModalComponent }) => (
+                    <>
+                        <PostOptionsBottomSheet
+                            isOpen={isPostOptionsOpen}
+                            onClose={closePostOptions}
+                            actionItems={actionItems}
+                            variant="detailed"
+                        />
+                        {EditModalComponent}
+                    </>
+                )}
+            </PostActionsProvider>
 
             <PrivacyBottomSheet
                 isOpen={isRepostSheetOpen}

@@ -12,6 +12,7 @@ export interface ImageItem {
     filename?:string;
     url?: string;
     mediaType: MediaType;
+    isExisting?: boolean;
 }
 
 export interface ImageUploadOptions {

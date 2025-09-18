@@ -91,7 +91,12 @@ export function usePostSignalR(
 
     const leavePostUpdates = useCallback(async (postCode: string) => {
         const conn = connectionRef.current;
-        if (!conn || conn.state !== signalR.HubConnectionState.Connected) return false;
+        if (!conn || conn.state !== signalR.HubConnectionState.Connected) {
+            // If connection is not available, just remove from local tracking
+            joinedPostsRef.current.delete(postCode);
+            log(`Connection not available, removed ${postCode} from local tracking`);
+            return false;
+        }
         if (!joinedPostsRef.current.has(postCode)) return true;
 
         try {
@@ -101,6 +106,8 @@ export function usePostSignalR(
             return true;
         } catch (e) {
             log("LeavePostUpdates failed", e);
+            // Still remove from local tracking even if server call failed
+            joinedPostsRef.current.delete(postCode);
             return false;
         }
     }, [log]);
@@ -405,10 +412,27 @@ export function usePostSignalR(
         const conn = connectionRef.current;
         if (!conn) return;
         try {
-            for (const code of Array.from(joinedPostsRef.current)) {
-                await leavePostUpdates(code);
+            // Only try to leave post updates if connection is still connected
+            if (conn.state === signalR.HubConnectionState.Connected) {
+                const joinedPosts = Array.from(joinedPostsRef.current);
+                log(`Stopping khi xóa  thì LeavePostUpdates cho signal`, joinedPosts);
+                
+                // Use Promise.allSettled to avoid stopping on first failure
+                const leavePromises = joinedPosts.map(code => 
+                    leavePostUpdates(code).catch(error => {
+                        log(`Failed to leave post updates for ${code}:`, error);
+                        return false;
+                    })
+                );
+                await Promise.allSettled(leavePromises);
+            } else {
+                log("Connection not connected, skipping LeavePostUpdates calls");
+                joinedPostsRef.current.clear();
             }
+            
             await conn.stop();
+        } catch (error) {
+            log("Error during stop:", error);
         } finally {
             connectionRef.current = null;
             isConnectedRef.current = false;

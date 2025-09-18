@@ -19,15 +19,13 @@ export const useSocialFeedWithStore = (options: UseSocialFeedWithStoreOptions = 
   } = options;
 
   const {
-    feedPosts,
+    cachedFeeds,
+    activeFeedKey,
     feedParams,
-    currentPage,
-    hasNextPage,
-    totalPages,
-    totalRecords,
     isLoadingFeed,
     isLoadingMore,
     feedError,
+    getFeedPosts,
     setFeedPosts,
     appendFeedPosts,
     clearFeedPosts,
@@ -36,10 +34,19 @@ export const useSocialFeedWithStore = (options: UseSocialFeedWithStoreOptions = 
     setLoadingMore,
     setFeedError,
     setPaginationInfo,
+    setActiveFeedKey,
     resetFeedState,
     updatePostReaction,
     optimisticUpdatePostReaction
   } = useSocialFeedStore();
+
+  // Get current feed data
+  const currentFeed = cachedFeeds[activeFeedKey] || { posts: [], currentPage: 0, hasNextPage: true, totalPages: 0, totalRecords: 0 };
+  const feedPosts = currentFeed.posts;
+  const currentPage = currentFeed.currentPage;
+  const hasNextPage = currentFeed.hasNextPage;
+  const totalPages = currentFeed.totalPages;
+  const totalRecords = currentFeed.totalRecords;
 
   // Load initial feed data
   const loadFeed = useCallback(async (reset = false) => {
@@ -151,20 +158,20 @@ export const useSocialFeedWithStore = (options: UseSocialFeedWithStoreOptions = 
   }, [loadFeed]);
 
   // Handle post like/unlike
-  const handleLike = useCallback(async (postId: number) => {
-    const post = feedPosts.find(p => p.id === postId);
+  const handleLike = useCallback(async (postCode: string) => {
+    const post = feedPosts.find((p: any) => p.code === postCode);
     if (!post) return;
 
     // Optimistic update
-    optimisticUpdatePostReaction(postId);
+    optimisticUpdatePostReaction(postCode);
 
     try {
-      await SocialFeedService.likePost(postId, post.isLike);
+      await SocialFeedService.likePost(postCode, post.isLike);
       // The optimistic update will remain if successful
     } catch (error) {
       console.error('Failed to like/unlike post:', error);
       // Revert optimistic update on error
-      optimisticUpdatePostReaction(postId);
+      optimisticUpdatePostReaction(postCode);
     }
   }, [feedPosts, optimisticUpdatePostReaction]);
 

@@ -11,6 +11,7 @@ import GlobalIcon from "@/icons/logo/social-feed/global-default.svg?react";
 import ActionButton from '@/components/loading/ActionButton';
 import LogoIcon from "@/icons/logo/logo-rounded-full.svg?react";
 import AddFriendIcon from "@/icons/logo/social-feed/add-friend.svg?react";
+import { GoDotFill } from 'react-icons/go';
 
 interface PostContentProps {
     displayPost: any;
@@ -33,7 +34,7 @@ const PostContent: React.FC<PostContentProps> = ({
     onSendFriendRequest,
     sendFriendRequestMutation
 }) => {
-
+console.log(displayPost)
     const { t } = useTranslation();
     const createTranslationMutation = useCreateTranslationChat();
     const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
@@ -50,102 +51,123 @@ const PostContent: React.FC<PostContentProps> = ({
         <div className="bg-white">
             {isRepost && (
                 <div className="rounded-xl overflow-hidden">
-                    {/* <div className="flex items-center gap-2 px-4 pt-4 pb-1">
-                        <RetryIcon className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">
-                            <span className="font-semibold">{displayPost.user.fullName}</span>
-                        </span>
-                    </div> */}
+                    {/* Reposter header */}
                     <div className="flex items-center justify-between px-4 pt-4 pb-2">
                         <div className="flex items-center gap-3">
                             <img
-                                src={postToDisplay?.user?.avatarUrl || avatarFallback}
-                                alt={postToDisplay?.user?.fullName}
+                                src={displayPost?.user?.avatarUrl || avatarFallback}
+                                alt={displayPost?.user?.fullName}
                                 className="w-9 h-9 rounded-2xl object-cover"
                                 onError={(e) => {
                                     (e.target as HTMLImageElement).src = avatarFallback;
                                 }}
                             />
                             <div>
-                                <div className="flex items-center gap-1">
-                                    <span className="font-semibold text-sm">{postToDisplay?.user?.fullName}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-sm">{displayPost?.user?.fullName}</span>
+                                    <div className="flex items-center gap-1">
+                                        <RetryIcon className='w-4 h-4 text-gray-400' />
+                                        <span className="text-sm text-gray-500">{t('reposted')}</span>
+                                    </div>
                                 </div>
-                                <span className="text-gray-500 text-sm">{formatTimeAgo(postToDisplay?.createDate || '')}</span>
+                                <span className="text-gray-500 text-sm">{formatTimeAgo(displayPost?.createDate || '')}</span>
                             </div>
                         </div>
-                        {!isOwnPost && postToDisplay?.isFriend === null && postToDisplay?.friendRequest === null && (
-                        <button
-                            className="flex items-center gap-1 text-sm font-semibold text-netural-500"
-                            onClick={onSendFriendRequest}
-                            disabled={sendFriendRequestMutation.isLoading}
-                        >
-                            <AddFriendIcon />
-                            {t('Add Friend')}
-                        </button>
-                    )}
+                        {!isOwnPost && displayPost?.isFriend === false && displayPost?.friendRequest === null && (
+                            <button
+                                className="flex items-center gap-1 text-sm font-semibold text-netural-500"
+                                onClick={onSendFriendRequest}
+                                disabled={sendFriendRequestMutation.isLoading}
+                            >
+                                <AddFriendIcon />
+                                {t('Add Friend')}
+                            </button>
+                        )}
                     </div>
 
-                    <div className="px-4 ">
-                        <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
-                            {parseHashtagsWithClick(postToDisplay?.content || '')}
+                    {/* Original post content in bordered container */}
+                    <div className="mx-4 mb-4 border border-gray-200 rounded-lg overflow-hidden">
+                        {/* Original author info */}
+                        <div className="flex items-center gap-3 px-4 pt-3 pb-2 border-b border-gray-100">
+                            <img
+                                src={postToDisplay?.user?.avatarUrl || avatarFallback}
+                                alt={postToDisplay?.user?.fullName}
+                                className="w-8 h-8 rounded-xl object-cover"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).src = avatarFallback;
+                                }}
+                            />
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold text-sm">{postToDisplay?.user?.fullName}</span>
+                                <GoDotFill className="w-1 h-1 text-gray-400" />
+                                <span className="text-xs text-gray-500">{formatTimeAgo(postToDisplay?.createDate || '')}</span>
+                            </div>
                         </div>
-                        <div className="mt-2">
-                            {showOriginal ? (
-                                <ActionButton
-                                    spinnerPosition="right"
-                                    variant="ghost"
-                                    size="none"
-                                    className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
-                                    loading={createTranslationMutation.isLoading}
-                                    onClick={async () => {
-                                        try {
-                                            const res = await createTranslationMutation.mutateAsync({ toLanguageId: toLanguageId as number, originalText: postToDisplay?.content || '' });
-                                            const text = res?.data?.translated_text || res?.data?.translatedText || '';
-                                            setTranslatedText(text);
-                                            setShowOriginal(false);
-                                        } catch (e) { }
-                                    }}
-                                    disabled={!postToDisplay?.content}
-                                >
-                                    <div className="flex items-center gap-1">
-                                        <LogoIcon className="w-5 h-5" /> {t('Translate')}
+                        <div className="px-4 py-3">
+                            <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
+                                {parseHashtagsWithClick(postToDisplay?.content || '')}
+                            </div>
+                            <div className="mt-2">
+                                {postToDisplay?.content && showOriginal ? (
+                                    <ActionButton
+                                        spinnerPosition="right"
+                                        variant="ghost"
+                                        size="none"
+                                        className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                                        loading={createTranslationMutation.isLoading}
+                                        onClick={async () => {
+                                            try {
+                                                const res = await createTranslationMutation.mutateAsync({ toLanguageId: toLanguageId as number, originalText: postToDisplay?.content || '' });
+                                                const text = res?.data?.translated_text || res?.data?.translatedText || '';
+                                                setTranslatedText(text);
+                                                setShowOriginal(false);
+                                            } catch (e) { }
+                                        }}
+                                        disabled={!postToDisplay?.content}
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            <LogoIcon className="w-5 h-5" /> {t('Translate')}
+                                        </div>
+                                    </ActionButton>
+                                ) : postToDisplay?.content && !showOriginal ? (
+                                    <ActionButton
+                                        variant="ghost"
+                                        size="none"
+                                        className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                                        onClick={() => setShowOriginal(true)}
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            <LogoIcon className="w-5 h-5" /> {t('See original')}
+                                        </div>
+                                    </ActionButton>
+                                ) : null}
+                                {!showOriginal && translatedText && (
+                                    <div className="mt-2 border-l-4 border-gray-200 pl-3 text-sm text-gray-700 whitespace-pre-wrap">
+                                        {translatedText}
                                     </div>
-                                </ActionButton>
-                            ) : (
-                                <ActionButton
-                                    variant="ghost"
-                                    size="none"
-                                    className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
-                                    onClick={() => setShowOriginal(true)}
-                                >
-                                    <LogoIcon className="w-4 h-4" /> {t('See original')}
-                                </ActionButton>
-                            )}
-                            {!showOriginal && translatedText && (
-                                <div className="mt-2 border-l-4 border-gray-200 pl-3 text-sm text-gray-700 whitespace-pre-wrap">
-                                    {translatedText}
+                                )}
+                            </div>
+                            {postToDisplay?.hashtags && postToDisplay.hashtags.length > 0 && (
+                                <div className="flex gap-1 mt-2">
+                                    {postToDisplay.hashtags.map((hashtag: any) => (
+                                        <span key={hashtag.id}>
+                                            {parseHashtagsWithClick(hashtag.tag)}
+                                        </span>
+                                    ))}
                                 </div>
                             )}
                         </div>
-                        {postToDisplay?.hashtags && postToDisplay.hashtags.length > 0 && (
-                            <div className="flex gap-1 mt-2">
-                                {postToDisplay.hashtags.map((hashtag: any) => (
-                                    <span key={hashtag.id}>
-                                        {parseHashtagsWithClick(hashtag.tag)}
-                                    </span>
-                                ))}
+                        {postToDisplay?.media && postToDisplay.media.length > 0 && (
+                            <div data-media-display>
+                                <MediaDisplay
+                                    mediaFiles={postToDisplay.media}
+                                    className="mt-3"
+                                    lightboxUserName={postToDisplay.user.fullName}
+                                    lightboxUserAvatar={postToDisplay.user.avatarUrl}
+                                />
                             </div>
                         )}
                     </div>
-                    {postToDisplay?.media && postToDisplay.media.length > 0 && (
-                        <div className="pt-2">
-                            <MediaDisplay
-                                mediaFiles={postToDisplay.media}
-                                lightboxUserName={postToDisplay.user.fullName}
-                                lightboxUserAvatar={postToDisplay.user.avatarUrl}
-                            />
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -168,7 +190,7 @@ const PostContent: React.FC<PostContentProps> = ({
                             <span className="text-gray-500 text-sm">{formatTimeAgo(displayPost.createDate)}</span>
                         </div>
                     </div>
-                    {!isOwnPost && postToDisplay?.isFriend === null && postToDisplay?.friendRequest === null && (
+                    {!isOwnPost && postToDisplay?.isFriend === false && postToDisplay?.friendRequest === null && (
                         <button
                             className="flex items-center gap-1 text-sm font-semibold text-netural-500"
                             onClick={onSendFriendRequest}

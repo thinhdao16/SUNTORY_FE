@@ -66,7 +66,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
                 className={cls}
                 type="button"
               >
-                <span className="whitespace-nowrap">{t(tab.label)}</span>
+                <span className="whitespace-nowrap">{tab.label}</span>
                 {isHash && active && (
                   <span
                     onClick={(e) => { e.stopPropagation(); handleDeleteClick(tab.key); }}

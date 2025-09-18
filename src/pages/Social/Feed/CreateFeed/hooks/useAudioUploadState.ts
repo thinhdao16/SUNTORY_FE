@@ -38,9 +38,13 @@ export const useAudioUploadState = () => {
 
     return {
         audioBlob,
+        setAudioBlob,
         audioDuration,
+        setAudioDuration,
         audioServerUrl,
+        setAudioServerUrl,
         audioFilename,
+        setAudioFilename,
         isAudioUploading,
         isRecording,
         setIsRecording,

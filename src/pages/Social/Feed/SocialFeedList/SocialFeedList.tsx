@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useSocialFeed } from '../hooks/useSocialFeed';
 import { PrivacyPostType } from '@/types/privacy';
 import { SocialFeedService, HashtagInterest } from '@/services/social/social-feed-service';
-import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
+import { useSocialFeedStore, generateFeedKey } from '@/store/zustand/social-feed-store';
 import { useScrollRestoration } from '../hooks/useScrollRestoration';
 import { useAuthStore } from '@/store/zustand/auth-store';
 import { usePostLike } from '@/pages/Social/Feed/hooks/usePostLike';
@@ -92,13 +92,13 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     }
   }, [initialActiveTab]);
 
-  const { setCurrentPost, getFeedPosts } = useSocialFeedStore();
+  const { setCurrentPost, getFeedPosts, cachedFeeds, setActiveFeedKey } = useSocialFeedStore();
   const { user } = useAuthStore();
   const [present] = useIonToast();
   const postLikeMutation = usePostLike();
   const postRepostMutation = usePostRepost();
   const deviceInfo = useDeviceInfo();
-
+  
   const { joinPostUpdates, leavePostUpdates } = usePostSignalR(deviceInfo.deviceId ?? '', {
     autoConnect: true,
     enableDebugLogs: false,
@@ -129,9 +129,18 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
                       (activeTab.startsWith('#')) ? activeTab.substring(1) : undefined,
     enabled: true
   });
-console.log(activeTab)
+  const currentFeedKey = generateFeedKey(
+    currentPrivacy ? Number(currentPrivacy) : undefined,
+    (activeTab === 'Hashtags' && selectedHashtag) ? selectedHashtag.replace('#', '') : 
+    (activeTab.startsWith('#')) ? activeTab.substring(1) : undefined
+  );
+
+  useEffect(() => {
+    setActiveFeedKey(currentFeedKey);
+  }, [currentFeedKey, setActiveFeedKey]);
+  const posts = getFeedPosts(currentFeedKey);
+
   const {
-    posts,
     isLoading: loading,
     error,
     hasNextPage,
@@ -197,9 +206,14 @@ console.log(activeTab)
         return;
       }
       const timer = setTimeout(async () => {
-        await leavePostUpdates(code);
-        leaveTimeoutsRef.current.delete(code);
-        joinedPostsRef.current.delete(code);
+        try {
+          await leavePostUpdates(code);
+        } catch (error) {
+          console.warn(`Failed to leave post updates for ${code}:`, error);
+        } finally {
+          leaveTimeoutsRef.current.delete(code);
+          joinedPostsRef.current.delete(code);
+        }
       }, LEAVE_DELAY_MS);
       leaveTimeoutsRef.current.set(code, timer);
     });
@@ -212,7 +226,9 @@ console.log(activeTab)
       joinTimeoutsRef.current.clear();
       leaveTimeoutsRef.current.clear();
       joinedPostsRef.current.forEach((code) => {
-        void leavePostUpdates(code);
+        leavePostUpdates(code).catch(error => {
+          console.warn(`Cleanup: Failed to leave post updates for ${code}:`, error);
+        });
       });
       joinedPostsRef.current.clear();
     };
@@ -318,6 +334,7 @@ console.log(activeTab)
       const encodedTab = `Hashtags=${hashtag}`;
       history.push(`/social-feed/recent/${encodedTab}`);
     } else {
+      
       history.push(`/social-feed/recent/${tab}`);
     }
   }, [history]);

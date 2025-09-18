@@ -13,7 +13,7 @@ export const useCreateComment = () => {
     {
       onSuccess: (newComment, variables) => {
         // Update the post's comment count in cache
-        queryClient.setQueryData(['feedDetail', variables.postId], (oldData: any) => {
+        queryClient.setQueryData(['feedDetail', variables.postCode], (oldData: any) => {
           if (oldData) {
             return {
               ...oldData,
@@ -24,7 +24,7 @@ export const useCreateComment = () => {
         });
 
         // Invalidate comments query to refetch
-        queryClient.invalidateQueries(['comments', variables.postId]);
+        queryClient.invalidateQueries(['comments', variables.postCode]);
         
         // Show success toast
         showToast(t('Comment posted successfully'), 3000, 'success');

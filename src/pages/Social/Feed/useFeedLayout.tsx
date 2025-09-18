@@ -1,5 +1,5 @@
 import FeedSearch from './FeedSearch';
-import FeedListRequest from './FeedListRequest';
+import SearchResult from './SearchResult';
 import CreatePost from './CreateFeed/CreateFeed';
 import SearchIcon from '@/icons/logo/social-chat/search.svg?react';
 import ClearInputIcon from '@/icons/logo/social-chat/clear-input.svg?react';
@@ -9,6 +9,7 @@ import FeedCameraWeb from './Camera/FeedCameraWeb';
 import { Capacitor } from '@capacitor/core';
 import { SocialFeedList } from './SocialFeedList/SocialFeedList';
 import FeedDetail from './FeedDetail/FeedDetail';
+import EditFeed from './EditFeed/EditFeed';
 
 
 export function useFeedLayout(
@@ -28,6 +29,11 @@ export function useFeedLayout(
       leftIcon = <button type="button" onClick={() => goTo('/social-feed')}> <BackInputIcon /></button>;
       rightIcon = <button type="button" onClick={clearSearch}> <ClearInputIcon /></button>;
       break;
+    case 'search-result':
+      contentComponent = <SearchResult />;
+      leftIcon = <button type="button" onClick={() => goTo('/social-feed/search')}> <BackInputIcon /></button>;
+      rightIcon = <button type="button" onClick={clearSearch}> <ClearInputIcon /></button>;
+      break;
     case 'f':
       if (infoRoom === 'info') {
       } else {
@@ -44,18 +50,15 @@ export function useFeedLayout(
     case 'create':
       contentComponent = <CreatePost />;
       break;
-    case 'list-request':
-      contentComponent = <FeedListRequest />;
-      leftIcon = (
-        <SearchIcon onClick={() => goTo('/social-feed/search')} />
-      );
-      inputOnFocus = () => goTo('/social-feed/search');
+    case 'edit':
+      contentComponent = <EditFeed />;
       break;
     case 'recent':
       let activeTab = 'everyone';
       let specificHashtag = '';
       if (tabName) {
         const decodedTab = decodeURIComponent(tabName);
+        console.log(tabName)
         if (decodedTab.startsWith('Hashtags=')) {
           const hashtag = decodedTab.split('=')[1];
           activeTab = `#${hashtag}`; 

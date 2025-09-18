@@ -20,3 +20,11 @@
   --background: #2563eb;
   --color: #fff;
 }
+
+@media (min-width: 768px) {
+  .ion-delegate-host.ion-page {
+    max-width: 450px !important;
+    margin: 0 auto !important;
+  }
+}
+

@@ -7,89 +7,33 @@ import { Capacitor } from '@capacitor/core';
 import { useTranslation } from 'react-i18next';
 
 const Feed: React.FC = () => {
-  const { t } = useTranslation();
   const history = useHistory();
-  const { type, storyId, infoRoom } = useParams<{ type?: string; storyId?: string; infoRoom?: string }>();
+  const { type, feedId, infoFeed, tabName } = useParams<{ type?: string; feedId?: string; infoFeed?: string; tabName?: string }>();
+  
+  const actualTabName = type === 'recent' ? feedId : tabName;
   const [search, setSearch] = useState('');
-
-  const goTo = (path: string) => history.push(path);
-  const { contentComponent, leftIcon, rightIcon, inputOnFocus } = useFeedLayout(type, goTo, () => {}, infoRoom);
-  
+  const { contentComponent, leftIcon, rightIcon, inputOnFocus } = useFeedLayout(type, (p) => history.push(p), () => { }, infoFeed, actualTabName);
   const isNative = Capacitor.isNativePlatform();
-  
-  const handleQR = () => {
-    if (isNative) {
-      goTo('/social-qr-native');
-    } else {
-      goTo('/social-qr-web');
-    }
-  };
+  const handleQR = () => history.push(isNative ? '/social-qr-native' : '/social-qr-web');
   
   return (
     <>
-      <div className={`${type === "camera" ? "h-screen" : "bg-white min-h-screen"} `}>
-        {(type === 'search' || type === 'search-result' || type === undefined) && (
-          <FeedHeader
-            leftIcon={leftIcon}
-            rightIcon={rightIcon}
-            inputOnFocus={inputOnFocus}
-            goTo={goTo}
-            setSearch={setSearch}
-            search={search}
-            handleQR={handleQR}
-            type={type || "recent"}
-          />
-        )}
-        
-        {/* Tab navigation for main story view */}
-        {type === undefined && (
-          <div className="px-4 pt-2 pb-4">
-            <div className="flex bg-gray-100 rounded-full p-1">
-              <motion.button
-                layout
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                onClick={() => history.push('/social-feed')}
-                className="flex-1 py-2 px-4 text-center font-medium text-sm bg-white rounded-full shadow-sm"
-              >
-                {t("Everyone")}
-              </motion.button>
-              
-              <motion.button
-                layout
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                onClick={() => {}}
-                className="flex-1 py-2 px-4 text-center font-medium text-sm text-gray-600"
-              >
-                {t("Your friends")}
-              </motion.button>
-              
-              <motion.button
-                layout
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                onClick={() => {}}
-                className="flex-1 py-2 px-4 text-center font-medium text-sm text-gray-600"
-              >
-                {t("For you")}
-              </motion.button>
-              
-              <motion.button
-                layout
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                onClick={() => {}}
-                className="flex-1 py-2 px-4 text-center font-medium text-sm text-gray-600"
-              >
-                {t("#healthy")}
-              </motion.button>
-            </div>
-          </div>
-        )}
-        
+    <div className={`${type === "camera" ? "h-screen" : "bg-white h-screen flex flex-col"} `}>
+      {( type === 'search-result' || type === undefined || type === "recent") && (
+        <FeedHeader
+          leftIcon={leftIcon}
+          rightIcon={rightIcon}
+          inputOnFocus={inputOnFocus}
+          goTo={(p) => history.push(p)}
+          setSearch={setSearch}
+          search={search}
+          handleQR={handleQR}
+          type={type || "recent"}
+        />
+      )}
+
         {contentComponent}
-      </div>
+    </div>
     </>
   );
 }
