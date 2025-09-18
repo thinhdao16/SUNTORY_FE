@@ -5,10 +5,10 @@ import { useLocation, useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { menuAnalyzing } from '@/services/menu/menu-service';
 import { useMenuTranslationStore } from '@/store/zustand/menuTranslationStore';
-import { useMenuSignalR } from '@/hooks/useMenuSignalR';
 
 interface LocationState {
     base64Img: string;
+    menuId?: number;
 }
 
 const MenuAnalyzing: React.FC = () => {
@@ -17,9 +17,6 @@ const MenuAnalyzing: React.FC = () => {
     const { t } = useTranslation();
     const base64Img = location.state?.base64Img || "";
     const [totalFood, setTotalFood] = useState(0);
-    const [menuId, setMenuId] = useState(0);
-    const foodSuccess = useMenuTranslationStore(state => state.foodSuccess);
-    const foodFailed = useMenuTranslationStore(state => state.foodFailed);
     const setFoodSuccess = useMenuTranslationStore(state => state.setFoodSuccess);
     // State cho Step 1: Analyzing Menu Content
     const [analyzingMenuContentProgress, setAnalyzingMenuContentProgress] = useState(0);
@@ -38,8 +35,10 @@ const MenuAnalyzing: React.FC = () => {
 
     // Ref để quản lý interval trong analyzeMenu
     const analyzeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    // Refs để quản lý timeout hoàn tất step 2 và 3 sau 2s
+    const step2TimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const step3TimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useMenuSignalR(menuId.toString());
     const base64ToFile = (base64: string, filename: string): File => {
         const arr = base64.split(",");
         const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
@@ -56,11 +55,27 @@ const MenuAnalyzing: React.FC = () => {
             formData.append("file", file);
             const result = await menuAnalyzing(formData);
             if (result?.data != null) {
-                setMenuId(result.data.id);
                 setTotalFood(result.data.totalFood);
                 setAnalyzingMenuContentProgress(100);
                 setIsActiveAnalyzingMenuContent(false);
                 setIsCompletedAnalyzingMenuContent(true);
+                // Khi analyzeMenu xong, sau 2s đẩy Step 2 và 3 lên 100%
+                setIsActiveInterpretingNutritionalData(true);
+                setIsActiveGeneratingDishImages(true);
+                if (step2TimeoutRef.current) clearTimeout(step2TimeoutRef.current);
+                if (step3TimeoutRef.current) clearTimeout(step3TimeoutRef.current);
+                step2TimeoutRef.current = setTimeout(() => {
+                    setInterpretingNutritionalDataProgress(100);
+                    setIsActiveInterpretingNutritionalData(false);
+                    setIsCompletedInterpretingNutritionalData(true);
+                }, 2000);
+                step3TimeoutRef.current = setTimeout(() => {
+                    setGeneratingDishImagesProgress(100);
+                    setIsActiveGeneratingDishImages(false);
+                    setIsCompletedGeneratingDishImages(true);
+                    // Điều hướng sang danh sách món ăn sau khi hoàn tất Step 3 và truyền menuId
+                    history.push('/food-list', { menuId: result.data.id });
+                }, 2000);
             }
             else {
                 setIsCompletedInterpretingNutritionalData(true);
@@ -105,75 +120,16 @@ const MenuAnalyzing: React.FC = () => {
                 clearInterval(analyzeIntervalRef.current);
                 analyzeIntervalRef.current = null;
             }
+            if (step2TimeoutRef.current) {
+                clearTimeout(step2TimeoutRef.current);
+                step2TimeoutRef.current = null;
+            }
+            if (step3TimeoutRef.current) {
+                clearTimeout(step3TimeoutRef.current);
+                step3TimeoutRef.current = null;
+            }
         };
     }, [setFoodSuccess]);
-
-    // Effect cho Step 2: Interpreting Nutritional Data
-    useEffect(() => {
-        if (isCompletedAnalyzingMenuContent) {
-            const startTimeout = setTimeout(() => {
-                setIsActiveInterpretingNutritionalData(true);
-
-                const interval = setInterval(() => {
-                    setInterpretingNutritionalDataProgress(prev => {
-                        const newProgress = Math.min(prev + 4, 100);
-                        if (newProgress >= 100) {
-                            clearInterval(interval);
-                            setIsActiveInterpretingNutritionalData(false);
-                            setIsCompletedInterpretingNutritionalData(true);
-                        }
-                        return newProgress;
-                    });
-                }, 120);
-                return () => clearInterval(interval);
-            }, 1000);
-
-            return () => {
-                clearTimeout(startTimeout);
-            };
-        }
-    }, [isCompletedAnalyzingMenuContent]);
-
-    // Effect cho Step 3: Generating Dish Images
-    const navigatedRef = useRef(false);
-
-    useEffect(() => {
-        if (totalFood === 0) return;
-        // set generating dish images progress
-        setIsActiveGeneratingDishImages(true);
-        //calculate progress
-        const currentProgress = (foodSuccess / totalFood) * 100;
-        setGeneratingDishImagesProgress(
-            foodSuccess >= totalFood ? 100 : Math.min(Number(currentProgress.toFixed(2)), 99.9)
-        );
-
-        if (
-            foodSuccess + foodFailed >= totalFood &&
-            isCompletedAnalyzingMenuContent &&
-            isCompletedInterpretingNutritionalData &&
-            menuId > 0 &&
-            !navigatedRef.current
-        ) {
-            // make sure progress is 100%
-            setGeneratingDishImagesProgress(100);
-            setIsActiveGeneratingDishImages(false);
-            setIsCompletedGeneratingDishImages(true);
-            setTimeout(() => {
-                navigatedRef.current = true;
-                history.push('/food-list', { menuId });
-                useMenuTranslationStore.getState().setIsConnected(false);
-            }, 1500);
-        }
-
-    }, [
-        foodSuccess,
-        totalFood,
-        isCompletedAnalyzingMenuContent,
-        isCompletedInterpretingNutritionalData,
-        history,
-        menuId,
-        foodFailed
-    ]);
 
     return (
         <IonPage>

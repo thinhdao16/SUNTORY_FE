@@ -674,5 +674,29 @@
   "Last Week": "Last Week",
   "Just now": "Just now",
   "{{count}} minutes ago_one": "{{count}} minute ago",
+<<<<<<< HEAD
   "{{count}} minutes ago_other": "{{count}} minutes ago"
+=======
+  "{{count}} minutes ago_other": "{{count}} minutes ago",
+  "English": "English",
+  "Tiếng Việt": "Vietnamese",
+  "Chinese": "Chinese",
+  "Allergies updated successfully": "Allergies updated successfully",
+  "Failed to update allergies. Please try again.": "Failed to update allergies. Please try again.",
+  "Gender updated successfully": "Gender updated successfully",
+  "Failed to update gender. Please try again.": "Failed to update gender. Please try again.",
+  "Weight updated successfully": "Weight updated successfully",
+  "Name updated successfully": "Name updated successfully",
+  "Failed to update name. Please try again.": "Failed to update name. Please try again.",
+  "Country updated successfully": "Country updated successfully",
+  "Diet updated successfully": "Diet updated successfully",
+  "Failed to update diet. Please try again.": "Failed to update diet. Please try again.",
+  "Height updated successfully": "Height updated successfully",
+  "Failed to update health conditions. Please try again.": "Failed to update health conditions. Please try again.",
+  "Share Profile": "Share Profile",
+  "Recommendations": "Recommendations",
+  "Advice": "Advice",
+  "Dish Name": "Dish Name",
+  "What's Inside": "What's Inside"
+>>>>>>> 36ac9c0c28bcce682fc66688ba71106bf0753a02
 }

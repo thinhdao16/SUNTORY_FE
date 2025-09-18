@@ -670,5 +670,29 @@
   "{{n}} days ago": "{{n}} ngày trước",
   "Last Week": "Tuần trước",
   "Just now": "Vừa xong",
+<<<<<<< HEAD
   "{{count}} minutes ago_other": "{{count}} phút trước"
+=======
+  "{{count}} minutes ago_other": "{{count}} phút trước",
+  "English": "Tiếng Anh",
+  "Tiếng Việt": "Tiếng Việt",
+  "Chinese": "Tiếng Trung",
+  "Allergies updated successfully": "Cập nhật thành công",
+  "Failed to update allergies. Please try again.": "Không thể cập nhật dịch vụ. Vui lòng thử lại.",
+  "Gender updated successfully": "Cập nhật thành công", 
+  "Failed to update gender. Please try again.": "Không thể cập nhật giới tính. Vui lòng thử lại.",
+  "Weight updated successfully": "Cập nhật thành công",
+  "Name updated successfully": "Cập nhật thành công",
+  "Failed to update name. Please try again.": "Không thể cập nhật tên. Vui lòng thử lại.",
+  "Country updated successfully": "Cập nhật thành công",
+  "Diet updated successfully": "Cập nhật thành công",
+  "Failed to update diet. Please try again.": "Không thể cập nhật chế độ dinh dưỡng. Vui lòng thử lại.",
+  "Height updated successfully": "Cập nhật thành công",
+  "Failed to update health conditions. Please try again.": "Không thể cập nhật tình trạng sức khỏe. Vui lòng thử lại.",
+  "Share Profile": "Chia sẻ hồ sơ",
+  "Recommendations": "Khuyến nghị",
+  "Advice": "Gợi ý",
+  "Dish Name": "Tên món ăn",
+  "What's Inside": "Những gì có trong món ăn"
+>>>>>>> 36ac9c0c28bcce682fc66688ba71106bf0753a02
 }
