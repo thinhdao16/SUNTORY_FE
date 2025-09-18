@@ -651,5 +651,9 @@
   "Failed to update diet. Please try again.": "Failed to update diet. Please try again.",
   "Height updated successfully": "Height updated successfully",
   "Failed to update health conditions. Please try again.": "Failed to update health conditions. Please try again.",
-  "Share Profile": "Share Profile"
+  "Share Profile": "Share Profile",
+  "Recommendations": "Recommendations",
+  "Advice": "Advice",
+  "Dish Name": "Dish Name",
+  "What's Inside": "What's Inside"
 }

@@ -15,6 +15,7 @@ interface FoodDetailModalProps {
     food: {
         id: string;
         name: string;
+        originalName: string;
         image: string;
         description: string;
         calories: number;
@@ -23,6 +24,8 @@ interface FoodDetailModalProps {
         carbohydrates: number;
         fiber: number;
         sugar: number;
+        advice: string;
+        ingredients: string[];
     } | null;
 }
 
@@ -32,6 +35,7 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) onClose();
     };
+    console.log("ingredients: ", food.ingredients);
 
     const SHEET_MAX_VH = 85; 
     const HEADER_PX = 56; 
@@ -110,11 +114,11 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
 
                             {/* Details */}
                             <div className="px-5 py-5 pb-24">
-                                <h2 className="text-base font-semibold text-gray-900 mb-2 text-left">{food.name}</h2>
+                                <h2 className="text-base font-semibold text-gray-900 mb-2 text-left">1. {t('Dish Name')}: {food.name} ({food.originalName})</h2>
                                 <p className="text-gray-600 text-sm leading-6 mb-6">{food.description}</p>
-
-                                <div className="mb-2">
-                                    <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('Nutrition at a Glance')}</h3>
+                                <div className='border-b border-gray-200 mb-6'></div>
+                                <div className="mb-6">
+                                    <h2 className="text-base font-semibold text-gray-900 mb-3">{'2. ' + t('Nutrition at a Glance')}</h2>
                                     <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                                         <div className="flex gap-1"><span className="font-semibold text-gray-900">{t('Calories')}:</span><span className="text-gray-500">{food.calories}</span><span className="text-gray-500">kcal</span></div>
                                         <div className="flex gap-1"><span className="font-semibold text-gray-900">{t('Fat')}:</span><span className="text-gray-500">{food.fat}</span><span className="text-gray-500">g</span></div>
@@ -123,6 +127,44 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
                                         <div className="flex gap-1"><span className="font-semibold text-gray-900">{t('Fiber')}:</span><span className="text-gray-500">{food.fiber}</span><span className="text-gray-500">g</span></div>
                                         <div className="flex gap-1"><span className="font-semibold text-gray-900">{t('Sugar')}:</span><span className="text-gray-500">{food.sugar}</span><span className="text-gray-500">g</span></div>
                                     </div>
+                                </div>
+                                <div className='border-b border-gray-200 mb-6'></div>
+                                <div className="mb-2">  
+                                    <h3 className="text-base font-semibold text-gray-900 mb-3">{'3. ' + t('What\'s Inside')}</h3>
+                                    {
+                                        food.ingredients.map((ingredient, index) => (
+                                            <div key={index} className="font-semibold text-black">•{ingredient}</div>
+                                        ))
+                                    }
+                                </div>
+                                <div className='border-b border-gray-200 mb-6'></div>
+                                <div className="mb-2">  
+                                    <h3 className="text-base font-semibold text-gray-900 mb-3">{'3. ' + t('Advice')}</h3>
+                                    {/* Render advice với hỗ trợ **bold** và xuống dòng */}
+                                    {(() => {
+                                        const formatAdviceToHtml = (text: string) => {
+                                            if (!text) return '';
+                                            // Escape HTML trước khi chèn
+                                            const escaped = text
+                                                .replace(/&/g, '&amp;')
+                                                .replace(/</g, '&lt;')
+                                                .replace(/>/g, '&gt;');
+                                            // **bold** -> <strong>
+                                            const bolded = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                                            // \n -> <br/>
+                                            const withBreaks = bolded.replace(/\n/g, '<br/>');
+                                            return withBreaks;
+                                        };
+                                        return (
+                                            <div className="rounded-xl border p-4 mb-6" style={{ borderColor: '#1FB356' , backgroundColor: '#E9FFD9'}}>
+                                                <div className="font-semibold text-gray-900 mb-2">{t('Recommendations')}:</div>
+                                                <div
+                                                    className="text-gray-700 text-sm leading-6"
+                                                    dangerouslySetInnerHTML={{ __html: formatAdviceToHtml(food.advice) }}
+                                                />
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>

@@ -9,7 +9,7 @@ import { useHistory } from "react-router-dom";
 import HeartIcon from "@/icons/logo/social-chat/heart.svg?react";
 import MoreIcon from "@/icons/logo/social-chat/more-action.svg?react";
 import ShareIcon from "@/icons/logo/social-chat/share-qr-code.svg?react";
-import { arrowBack, cameraOutline, copyOutline, createOutline } from "ionicons/icons";
+import { arrowBack, cameraOutline, copyOutline, createOutline, text } from "ionicons/icons";
 
 // Mock data cho posts
 const mockPosts = [
@@ -558,7 +558,8 @@ const MyProfile: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      minWidth: 0
+                      minWidth: 0,
+                      fontWeight: '600',
                     }}
                   >
                     {t('Edit profile')}
@@ -586,7 +587,8 @@ const MyProfile: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      minWidth: 0
+                      minWidth: 0,
+                      fontWeight: '600',
                     }}
                     onClick={() => history.push('/share-profile')}
                   >

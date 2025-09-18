@@ -647,5 +647,9 @@
   "Failed to update diet. Please try again.": "Không thể cập nhật chế độ dinh dưỡng. Vui lòng thử lại.",
   "Height updated successfully": "Cập nhật thành công",
   "Failed to update health conditions. Please try again.": "Không thể cập nhật tình trạng sức khỏe. Vui lòng thử lại.",
-  "Share Profile": "Chia sẻ hồ sơ"
+  "Share Profile": "Chia sẻ hồ sơ",
+  "Recommendations": "Khuyến nghị",
+  "Advice": "Gợi ý",
+  "Dish Name": "Tên món ăn",
+  "What's Inside": "Những gì có trong món ăn"
 }

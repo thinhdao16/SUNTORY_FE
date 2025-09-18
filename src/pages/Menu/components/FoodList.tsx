@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { IonPage, IonContent, IonHeader, IonToolbar, IonButton, IonIcon, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/react';
+import { IonPage, IonContent, IonHeader, IonToolbar, IonButton, IonIcon, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent, IonButtons, IonTitle, IonFooter } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { arrowBack } from 'ionicons/icons';
@@ -38,8 +38,7 @@ const FoodList: React.FC = () => {
     const startTimeRef = useRef<number | null>(null);
     const screenHeightRef = useRef(window.innerHeight);
     const velocityThreshold = 0.4;
-    const [bottomBarHeight, setBottomBarHeight] = useState(60);
-
+    const [bottomBarHeight, setBottomBarHeight] = useState(80);
     const loadFoods = async (
         historyId: number,
         currentPage: number,
@@ -205,7 +204,7 @@ const FoodList: React.FC = () => {
     const renderFoodItem = (food: FoodModel, index: number) => (
         <div
             key={`food-${food.id}-${index}`}
-            className="bg-white rounded-xl overflow-hidden cursor-pointer"
+            className="bg-white rounded-2xl overflow-hidden cursor-pointer border border-gray-200 shadow-sm"
             onClick={() => {
                 setSelectedFood(food);
                 setTranslateY(0);
@@ -226,49 +225,59 @@ const FoodList: React.FC = () => {
             </div>
 
             {/* Content Container */}
-            <div className="p-1">
-                <h3 className="text-gray-900 mb-1 line-clamp-1" style={{
-                    fontFamily: 'Inter',
-                    fontWeight: 400,
-                    fontSize: '14px',
-                    lineHeight: '21px',
+            <div className="p-3">
+                <h3 className="text-black mb-1 line-clamp-1" style={{
+                    fontWeight: 600,
+                    fontSize: '16px',
+                    lineHeight: '22px',
                     letterSpacing: '0%'
                 }}>
                     {food.name}
+                </h3>
+                <h3 className="text-gray-600 mb-1 line-clamp-1" style={{
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    letterSpacing: '0%'
+                }}>
+                    ({food.originalName})
+                </h3>
+                <h3 className="text-black line-clamp-1" style={{
+                    fontWeight: 600,
+                    fontSize: '16px',
+                    lineHeight: '22px',
+                    letterSpacing: '0%'
+                }}>
+                    {`${food.currency || ''} ${food.price}`}
                 </h3>
             </div>
         </div>
     );
 
     return (
-        <IonPage>
-            <IonContent className="ion-padding" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
-                <div className="sticky top-0 z-50 bg-white" style={{ borderBottom: '1px solid #eef2f7' }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        minHeight: '56px',
-                        paddingTop: 'env(safe-area-inset-top, 0)'
-                    }}>
+        <IonPage className="ion-page" style={{ '--background': 'white' } as any}>
+            <IonHeader className="ion-no-border" style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
+                <IonToolbar style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
+                    <IonButtons slot="start">
                         <IonButton
                             fill="clear"
-                            onClick={handleBack}
-                            style={{ margin: 0, padding: '8px', minWidth: 'auto' }}
+                            onClick={() => history.push('/menu-translation')}
+                            className="ml-2"
                         >
-                            <IonIcon icon={arrowBack} className="text-gray-700" />
+                            <IonIcon icon={arrowBack} className="text-black font-bold text-xl" />
                         </IonButton>
-                        <div style={{
-                            flex: 1,
-                            textAlign: 'center',
-                            fontSize: '18px',
-                            fontWeight: '600',
-                            marginLeft: '-48px'
-                        }}>
-                            {t('Your Dish Images')}
-                        </div>
-                    </div>
-                </div>
-
+                    </IonButtons>
+                    <IonTitle className="text-center font-semibold" style={{ fontSize: '14px' }}>
+                        {t('Your Dish Images')}
+                    </IonTitle>
+                    <IonButtons slot="end">
+                        <IonButton className="opacity-0 pointer-events-none" fill="clear">
+                            <IonIcon icon={arrowBack} />
+                        </IonButton>
+                    </IonButtons>
+                </IonToolbar>
+            </IonHeader>
+            <IonContent className="ion-padding" style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
                 {/* Content */}
                 {error && (
                     <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded mb-4">
@@ -276,7 +285,7 @@ const FoodList: React.FC = () => {
                     </div>
                 )}
 
-                <div className="pb-24">
+                <div className="pb-24 top-1 bg-white">
                     {loading ? (
                         renderSkeleton()
                     ) : (
@@ -295,9 +304,8 @@ const FoodList: React.FC = () => {
                                 <br />
                                 {t('Please upload a clear, food-related image.')}
                             </p>
-
-                            {/* Bottom fixed retake button */}
-                            <div className="fixed left-0 right-0 px-4" style={{ bottom: `calc(${bottomBarHeight}px + env(safe-area-inset-bottom, 0px))`, zIndex: 100 }}>
+                            {/* Footer chỉ hiện khi danh sách rỗng */}
+                            <div className="px-4 bg-white center" style={{ paddingTop: '8px' }}>
                                 <IonButton
                                     expand="block"
                                     shape="round"
@@ -305,9 +313,12 @@ const FoodList: React.FC = () => {
                                     style={{
                                         '--background': '#1152F4',
                                         '--background-hover': '#2563eb',
+                                        '--ion-background-color': 'white',
                                         '--color': 'white',
                                         'fontWeight': 600,
                                         'borderRadius': '24px',
+                                        width: '130%',
+                                        transform: 'translateX(-15%)'
                                     }}
                                     onClick={() => history.push('/menu-translation/scan-menu')}
                                 >
@@ -356,6 +367,8 @@ const FoodList: React.FC = () => {
                 food={selectedFood ? {
                     id: selectedFood.id.toString(),
                     name: selectedFood.name,
+                    originalName: selectedFood.originalName || '',
+                    ingredients: selectedFood.foodComponents?.map((foodComponents) => foodComponents.name) || [],
                     image: selectedFood.imageUrl,
                     description: selectedFood.description || 'A delicious dish with fresh ingredients.',
                     calories: selectedFood.calories || 0,
@@ -363,7 +376,8 @@ const FoodList: React.FC = () => {
                     fat: selectedFood.fat || 0,
                     sugar: selectedFood.sugar || 0,
                     fiber: selectedFood.fiber || 0,
-                    protein: 0
+                    protein: selectedFood.protein || 0,
+                    advice: selectedFood.advice || ''
                 } : null}
             />
         </IonPage>
