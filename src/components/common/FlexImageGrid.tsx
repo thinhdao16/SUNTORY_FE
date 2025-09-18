@@ -8,6 +8,7 @@ export interface ImageItem {
     height?: number;
     isUploading?: boolean;
     uploadError?: boolean | string;
+    mediaType?: 'image' | 'video' | 'audio';
 }
 
 interface FlexImageGridProps {
@@ -112,17 +113,30 @@ const StripItem: React.FC<{
                 <div className="absolute inset-0 animate-pulse bg-gray-200" />
             )}
 
-            <img
-                src={src}
-                alt=""
-                loading="lazy"
-                draggable={false}
-                onLoad={() => setLoaded(true)}
-                onError={() => setLoaded(true)}
-                className={`absolute inset-0 h-full w-full ${fit === "cover" ? "object-cover" : "object-contain"
-                    } ${loaded ? "opacity-100" : "opacity-0"} transition-opacity duration-200`}
-                style={{ objectPosition: "center" }}
-            />
+            {src.includes('video') || src.includes('.mp4') || src.includes('.mov') || src.includes('.avi') ? (
+                <video
+                    src={src}
+                    controls
+                    muted
+                    onLoadedData={() => setLoaded(true)}
+                    onError={() => setLoaded(true)}
+                    className={`absolute inset-0 h-full w-full ${fit === "cover" ? "object-cover" : "object-contain"
+                        } ${loaded ? "opacity-100" : "opacity-0"} transition-opacity duration-200`}
+                    style={{ objectPosition: "center" }}
+                />
+            ) : (
+                <img
+                    src={src}
+                    alt=""
+                    loading="lazy"
+                    draggable={false}
+                    onLoad={() => setLoaded(true)}
+                    onError={() => setLoaded(true)}
+                    className={`absolute inset-0 h-full w-full ${fit === "cover" ? "object-cover" : "object-contain"
+                        } ${loaded ? "opacity-100" : "opacity-0"} transition-opacity duration-200`}
+                    style={{ objectPosition: "center" }}
+                />
+            )}
 
             {isUploading && (
                 <div className="absolute inset-0 bg-black/35 flex items-center justify-center pointer-events-none">

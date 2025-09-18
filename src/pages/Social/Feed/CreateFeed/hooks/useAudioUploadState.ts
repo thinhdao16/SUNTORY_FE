@@ -12,6 +12,13 @@ export const useAudioUploadState = () => {
     const audioUploadMutation = useAudioUpload();
 
     const handleAudioRecorded = useCallback((blob: Blob, duration: number, serverUrl?: string, filename?: string) => {
+        // Clear any existing audio first
+        setAudioBlob(null);
+        setAudioDuration(0);
+        setAudioServerUrl("");
+        setAudioFilename("");
+        
+        // Set new audio
         setAudioBlob(blob);
         setAudioDuration(duration);
         setAudioServerUrl(serverUrl || "");

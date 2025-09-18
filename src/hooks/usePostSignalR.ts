@@ -69,9 +69,20 @@ export function usePostSignalR(
                 ? { transport: signalR.HttpTransportType.WebSockets, skipNegotiation: true }
                 : {}),
         });
-        b.withAutomaticReconnect([0, 2000, 10000, 30000]);
+        
+        b.withAutomaticReconnect({
+            nextRetryDelayInMilliseconds: (retryContext) => {
+                const delay = Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 30000);
+                log(`Reconnect attempt ${retryContext.previousRetryCount + 1}, delay: ${delay}ms`);
+                return delay;
+            }
+        });
+        
+        b.withServerTimeout(60000);
+        b.withKeepAliveInterval(15000);
+        
         return b.build();
-    }, [deviceId, preferWebSockets]);
+    }, [deviceId, preferWebSockets, log]);
 
     const joinPostUpdates = useCallback(async (postCode: string) => {
         const conn = connectionRef.current;
@@ -81,7 +92,7 @@ export function usePostSignalR(
         try {
             await conn.invoke("JoinPostUpdates", postCode);
             joinedPostsRef.current.add(postCode);
-            log(`Joined post updates for: ${postCode}`);
+            console.log(`Joined post updates for: ${postCode}`);
             return true;
         } catch (e) {
             log("JoinPostUpdates failed", e);
@@ -226,6 +237,46 @@ export function usePostSignalR(
         connection.off("PostUpdated");
         connection.on("PostUpdated", (data: any) => {
             console.log("PostUpdated received:", data);
+            if (data.type === 25) {
+                console.log("Post deleted:", data.postCode);
+                const postCode = data.postCode;
+                joinedPostsRef.current.delete(postCode);
+                const timeout = refreshTimeoutsRef.current.get(postCode);
+                if (timeout) {
+                    clearTimeout(timeout);
+                    refreshTimeoutsRef.current.delete(postCode);
+                }
+                useSocialFeedStore.getState().removePostFromFeeds(postCode);
+                queryClient.invalidateQueries(['feedDetail', postCode]);
+                onPostUpdated?.(data);
+                return;
+            }
+            if (data.type === 45) {
+                console.log("New post created:", data);
+                const newPost = data.post || data.repostData;
+                if (newPost) {
+                    const store = useSocialFeedStore.getState();
+                    Object.keys(store.cachedFeeds).forEach(feedKey => {
+                        const currentFeed = store.cachedFeeds[feedKey];
+                        if (currentFeed && currentFeed.posts) {
+                            const updatedPosts = [newPost, ...currentFeed.posts];
+                            store.setFeedPosts(updatedPosts, feedKey);
+                        }
+                    });
+                    if (Object.keys(store.cachedFeeds).length === 0) {
+                        store.appendFeedPosts([newPost], 'home');
+                    }
+                    if (data.originalPostCode && data.interactionType === 50) {
+                        const originalPostCode = data.originalPostCode;
+                        store.applyRealtimePatch(originalPostCode, {
+                            repostCount: data.repostCount || 0
+                        });
+                        queryClient.invalidateQueries(['feedDetail', originalPostCode]);
+                    }
+                }
+                onPostUpdated?.(data);
+                return;
+            }
             const { primary, codes } = resolveCodesFromPayload(data);
             if (!primary || !joinedPostsRef.current.has(primary)) return;
             const patch = applyPatchSafe(codes, data);
@@ -261,7 +312,7 @@ export function usePostSignalR(
 
         connection.off("CommentDeleted");
         connection.on("CommentDeleted", (data: any) => {
-            log("CommentDeleted received:", data);
+            console.log("CommentDeleted received:", data);
             const { primary, codes } = resolveCodesFromPayload(data);
             if (!primary || !joinedPostsRef.current.has(primary)) return;
             const patch = applyPatchSafe(codes, data);
@@ -341,10 +392,18 @@ export function usePostSignalR(
         connection.onreconnected(async (id) => {
             isConnectedRef.current = true;
             log("Reconnected:", id);
+            
+            // Rejoin all previously joined posts after reconnection
             const postsToRejoin = Array.from(joinedPostsRef.current);
             joinedPostsRef.current.clear();
-            for (const code of postsToRejoin) {
-                await joinPostUpdates(code);
+            
+            for (const postCode of postsToRejoin) {
+                try {
+                    await joinPostUpdates(postCode);
+                    log(`Rejoined post updates for: ${postCode}`);
+                } catch (error) {
+                    log(`Failed to rejoin post updates for ${postCode}:`, error);
+                }
             }
         });
 

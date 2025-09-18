@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useHistory } from 'react-router-dom';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import RetryIcon from "@/icons/logo/social-feed/retry.svg?react";
 import MediaDisplay from '@/components/social/MediaDisplay';
@@ -8,6 +9,7 @@ import { formatTimeFromNow } from '@/utils/formatTime';
 import { useCreateTranslationChat } from '@/pages/Translate/hooks/useTranslationLanguages';
 import useLanguageStore from '@/store/zustand/language-store';
 import GlobalIcon from "@/icons/logo/social-feed/global-default.svg?react";
+import LockIcon from "@/icons/logo/social-feed/lock-default.svg?react";
 import ActionButton from '@/components/loading/ActionButton';
 import LogoIcon from "@/icons/logo/logo-rounded-full.svg?react";
 import AddFriendIcon from "@/icons/logo/social-feed/add-friend.svg?react";
@@ -34,17 +36,27 @@ const PostContent: React.FC<PostContentProps> = ({
     onSendFriendRequest,
     sendFriendRequestMutation
 }) => {
-console.log(displayPost)
+    console.log(displayPost)
     const { t } = useTranslation();
+    const history = useHistory();
     const createTranslationMutation = useCreateTranslationChat();
     const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
     const toLanguageId = useMemo(() => selectedLanguageSocialChat?.id || selectedLanguageTo?.id || 2, [selectedLanguageSocialChat, selectedLanguageTo]);
 
-    const [translatedText, setTranslatedText] = useState<string | null>(null);
-    const [showOriginal, setShowOriginal] = useState<boolean>(true);
+    // Check if repost has deleted original content
+    const isRepostWithDeletedOriginal = isRepost && (!originalPost || originalPost?.status === 190);
+    const [translatedText, setTranslatedText] = React.useState<string | null>(null);
+    const [showOriginal, setShowOriginal] = React.useState<boolean>(true);
 
     const formatTimeAgo = (dateString: string) => {
         return formatTimeFromNow(dateString, t);
+    };
+
+    const handleOriginalPostClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (originalPost?.code) {
+            history.push(`/social-feed/f/${originalPost.code}`);
+        }
     };
 
     return (
@@ -85,28 +97,47 @@ console.log(displayPost)
                         )}
                     </div>
 
-                    {/* Original post content in bordered container */}
-                    <div className="mx-4 mb-4 border border-gray-200 rounded-lg overflow-hidden">
-                        {/* Original author info */}
-                        <div className="flex items-center gap-3 px-4 pt-3 pb-2 border-b border-gray-100">
-                            <img
-                                src={postToDisplay?.user?.avatarUrl || avatarFallback}
-                                alt={postToDisplay?.user?.fullName}
-                                className="w-8 h-8 rounded-xl object-cover"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).src = avatarFallback;
-                                }}
-                            />
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold text-sm">{postToDisplay?.user?.fullName}</span>
-                                <GoDotFill className="w-1 h-1 text-gray-400" />
-                                <span className="text-xs text-gray-500">{formatTimeAgo(postToDisplay?.createDate || '')}</span>
+                    <div 
+                        className="mx-4 mb-4 border border-gray-200 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={handleOriginalPostClick}
+                    >
+                        {isRepostWithDeletedOriginal ? (
+                            <div className="flex items-center gap-3 px-4 py-6">
+                                <div className="h-8 aspect-square rounded-full bg-gray-200 flex items-center justify-center">
+                                    <LockIcon className="w-4 h-4 text-gray-500" />
+                                </div>
+                                <div>
+                                    <div className="font-semibold text-gray-600 mb-1">{t('Content not available')}</div>
+                                    <div className="text-sm text-gray-500">
+                                        {t('This content may have been removed by the owner or is no longer available.')}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div className="px-4 py-3">
-                            <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
-                                {parseHashtagsWithClick(postToDisplay?.content || '')}
-                            </div>
+                        ) : (
+                            <>
+                                {/* Original author info */}
+                                <div className="flex items-center gap-3 px-4 pt-3 pb-2 border-b border-gray-100">
+                                    <img
+                                        src={postToDisplay?.user?.avatarUrl || avatarFallback}
+                                        alt={postToDisplay?.user?.fullName}
+                                        className="w-8 h-8 rounded-xl object-cover"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = avatarFallback;
+                                        }}
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-sm">{postToDisplay?.user?.fullName}</span>
+                                        <GoDotFill className="w-1 h-1 text-gray-400" />
+                                        <span className="text-xs text-gray-500">{formatTimeAgo(postToDisplay?.createDate || '')}</span>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        {!isRepostWithDeletedOriginal && (
+                            <div className="px-4 py-3">
+                                <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
+                                    {parseHashtagsWithClick(postToDisplay?.content || '')}
+                                </div>
                             <div className="mt-2">
                                 {postToDisplay?.content && showOriginal ? (
                                     <ActionButton
@@ -146,18 +177,19 @@ console.log(displayPost)
                                         {translatedText}
                                     </div>
                                 )}
-                            </div>
-                            {postToDisplay?.hashtags && postToDisplay.hashtags.length > 0 && (
-                                <div className="flex gap-1 mt-2">
-                                    {postToDisplay.hashtags.map((hashtag: any) => (
-                                        <span key={hashtag.id}>
-                                            {parseHashtagsWithClick(hashtag.tag)}
-                                        </span>
-                                    ))}
                                 </div>
-                            )}
-                        </div>
-                        {postToDisplay?.media && postToDisplay.media.length > 0 && (
+                                {postToDisplay?.hashtags && postToDisplay.hashtags.length > 0 && (
+                                    <div className="flex gap-1 mt-2">
+                                        {postToDisplay.hashtags.map((hashtag: any) => (
+                                            <span key={hashtag.id}>
+                                                {parseHashtagsWithClick(hashtag.tag)}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {!isRepostWithDeletedOriginal && postToDisplay?.media && postToDisplay.media.length > 0 && (
                             <div data-media-display>
                                 <MediaDisplay
                                     mediaFiles={postToDisplay.media}

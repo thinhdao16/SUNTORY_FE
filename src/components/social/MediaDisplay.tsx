@@ -10,6 +10,8 @@ interface MediaDisplayProps {
   className?: string;
   lightboxUserName?: string;
   lightboxUserAvatar?: string | null;
+  classNameAudio?: string;
+  customLengthAudio?:number
 }
 
 interface ImageGridProps {
@@ -21,6 +23,8 @@ interface ImageGridProps {
 interface AudioPlayerProps {
   audioFile: SocialMediaFile;
   className?: string;
+  classNameAudio?: string;
+  customLengthAudio?:number
 }
 
 interface VideoPlayerProps {
@@ -38,7 +42,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, className = '', onImageCl
         <div
           className="relative overflow-hidden rounded-2xl px-4 cursor-pointer w-full"
           onClick={() => onImageClick(0)}
-          style={{ maxHeight: '60%' }}
+          // style={{ maxHeight: '60%' }}
         >
           <img
             src={image.urlFile}
@@ -71,11 +75,11 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, className = '', onImageCl
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
               loading="lazy"
             />
-            {images.length > 5 && index === 4 && (
+            {/* {images.length > 5 && index === 4 && (
               <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                 <span className="text-white text-xl font-semibold">+{images.length - 5}</span>
               </div>
-            )}
+            )} */}
           </div>
         ))}
       </div>
@@ -83,7 +87,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, className = '', onImageCl
   );
 };
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioFile, className = '' }) => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioFile, className = '', classNameAudio= '', customLengthAudio=6 }) => {
   const { t } = useTranslation();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -148,9 +152,21 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioFile, className = '' }) 
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
+  const [barWidth, setBarWidth] = useState(2);
 
+  useEffect(() => {
+    const updateBarWidth = () => {
+      const screenWidth = window.innerWidth;
+      const maxWidth = Math.min(screenWidth, 450);
+      setBarWidth(maxWidth / customLengthAudio);
+    };
+
+    updateBarWidth();
+    window.addEventListener("resize", updateBarWidth);
+    return () => window.removeEventListener("resize", updateBarWidth);
+  }, []);
   return (
-    <div className={`flex items-center gap-3 mx-4 p-3 border border-netural-50 rounded-2xl ${className}`}>
+    <div className={`flex items-center gap-3 mx-auto p-3 border border-netural-50 rounded-2xl ${classNameAudio}`}>
       <button
         onClick={togglePlayPause}
         className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-800 transition-colors"
@@ -166,7 +182,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioFile, className = '' }) 
 
       <div className="flex flex-col flex-1">
         <div className="flex items-center gap-1 h-4 mt-1">
-          {Array.from({ length: 65 }).map((_, i) => {
+          {Array.from({ length: barWidth }).map((_, i) => {
             const isActive = i < audioProgress;
             return (
               <div
@@ -197,19 +213,56 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioFile, className = '' }) 
   );
 };
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoFile, className = '' }) => (
-  <div className={`relative rounded-lg overflow-hidden ${className}`}>
-    <video
-      controls
-      className="w-full aspect-video"
-      preload="metadata"
-      poster={videoFile.urlFile + '#t=0.1'}
-    >
-      <source src={videoFile.urlFile} type={videoFile.fileType} />
-      Your browser does not support the video element.
-    </video>
-  </div>
-);
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoFile, className = '' }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting);
+        
+        if (entry.isIntersecting) {
+          video.muted = true; 
+          video.play().catch(console.error);
+        } else {
+          video.pause();
+        }
+      },
+      {
+        threshold: 0.5, 
+        rootMargin: '0px'
+      }
+    );
+
+    observer.observe(video);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  return (
+    <div className={`relative rounded-lg overflow-hidden ${className}`}>
+      <video
+        ref={videoRef}
+        controls
+        muted
+        loop
+        playsInline
+        className="w-full aspect-video"
+        preload="metadata"
+        poster={videoFile.urlFile + '#t=0.1'}
+      >
+        <source src={videoFile.urlFile} type={videoFile.fileType} />
+        Your browser does not support the video element.
+      </video>
+    </div>
+  );
+};
 
 const DocumentDisplay: React.FC<{ file: SocialMediaFile; className?: string }> = ({ file, className = '' }) => {
   return (
@@ -251,6 +304,9 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
   className = '',
   lightboxUserName,
   lightboxUserAvatar,
+  classNameAudio = '',
+  customLengthAudio = 6,
+
 }) => {
   const categorized = useMemo(() => categorizeMediaFiles(mediaFiles || []), [mediaFiles]);
   const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
@@ -291,13 +347,12 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
           />
         </>
       )}
-
       {categorized.videos.map((video) => (
         <VideoPlayer key={video.id} videoFile={video} />
       ))}
 
       {categorized.audios.map((audio) => (
-        <AudioPlayer key={audio.id} audioFile={audio} />
+        <AudioPlayer key={audio.id} audioFile={audio} classNameAudio={classNameAudio} customLengthAudio={customLengthAudio}  />
       ))}
 
       {categorized.documents.map((doc) => (

@@ -113,7 +113,7 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/menu-translation/:section?" component={routes.MenuTranslation} exact />
           <PrivateRoute path="/menu-analyzing" component={routes.MenuAnalyzing} exact />
           <PrivateRoute path="/food-list" component={routes.FoodList} exact />
-          <PrivateRoute path="/my-profile" component={routes.MyProfile} exact />
+          <PrivateRoute path="/my-profile/:tabName?" component={routes.MyProfile} exact />
           <PrivateRoute path="/profile-setting" component={routes.ProfileSetting} exact />
           <PrivateRoute path="/my-information" component={routes.MyInformation} exact />
           <PrivateRoute path="/ai-profile-setting" component={routes.AiProfileInformation} exact />

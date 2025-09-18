@@ -247,7 +247,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ userInfo }) => {
         }
     };
     return (
-        <div className="relative rounded-b-3xl overflow-hidden px-6 pt-4 h-[318px]">
+        <div className="relative rounded-b-3xl overflow-hidden px-4 pt-4 h-[318px]">
             <div
                 className="absolute inset-0 w-full h-full object-cover"
                 style={{

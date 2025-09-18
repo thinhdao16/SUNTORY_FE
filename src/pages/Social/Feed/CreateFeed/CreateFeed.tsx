@@ -104,7 +104,6 @@ const CreateFeed: React.FC = () => {
         history.goBack();
     };
 
-    console.log(images)
     const handlePost = async () => {
         if (!postText.trim() && images.length === 0 && !audioBlob) {
             return;
@@ -217,7 +216,7 @@ const CreateFeed: React.FC = () => {
                 </div>
 
                 <FlexImageGrid
-                    images={images.filter(item => item.mediaType === 'image')}
+                    images={images.filter(item => item.mediaType === 'image' || (item.mediaType as any) === 'video')}
                     onRemoveImage={removeImage}
                 />
 

@@ -15,6 +15,10 @@ export const useUpdatePost = () => {
                 queryClient.invalidateQueries({ queryKey: ['social-posts'] });
                 queryClient.invalidateQueries({ queryKey: ['social-feed'] });
                 queryClient.invalidateQueries({ queryKey: ['post-detail'] });
+                queryClient.invalidateQueries(['userPosts']);
+                queryClient.invalidateQueries(['socialFeed']);
+                queryClient.invalidateQueries(['social-posts']);
+                queryClient.invalidateQueries(['social-feed']);
             }
         },
         onError: (error: any) => {

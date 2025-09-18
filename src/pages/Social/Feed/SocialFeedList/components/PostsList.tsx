@@ -117,9 +117,8 @@ export const PostsList: React.FC<PostsListProps> = ({
       visibilityMapRef.current.delete(code);
     }
   }, []);
-
   return (
-    <div className="flex-1 overflow-x-hidden overflow-y-auto scrollbar-thin min-h-0 max-h-screen">
+    <div className="flex-1 overflow-x-hidden overflow-y-auto scrollbar-thin min-h-0 max-h-[calc(100vh-150px)] pb-32">
       {posts.map((post, index) => {
         const isLastPost = index === posts.length - 1;
         

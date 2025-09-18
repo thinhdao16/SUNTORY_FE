@@ -58,7 +58,6 @@ export function useFeedLayout(
       let specificHashtag = '';
       if (tabName) {
         const decodedTab = decodeURIComponent(tabName);
-        console.log(tabName)
         if (decodedTab.startsWith('Hashtags=')) {
           const hashtag = decodedTab.split('=')[1];
           activeTab = `#${hashtag}`; 

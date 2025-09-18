@@ -57,18 +57,25 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
         handleRemoveAudio,
         clearAudio
     } = useAudioUploadState();
-    console.log(images)
     const { handleImageUpload, handleCameraCapture, handleGallerySelect } = useImageUploadHandlers({
         addImages,
         clearAudio
     });
 
     const handleAudioRecordedWithImageItem = useCallback((blob: Blob, duration: number, serverUrl?: string, filename?: string) => {
+        const audioItemsToRemove = images.filter(item => item.mediaType === 'audio');
+        audioItemsToRemove.forEach((item) => {
+            const audioIndex = images.findIndex(img => img === item);
+            if (audioIndex !== -1) {
+                removeImage(audioIndex);
+            }
+        });
+        
         handleAudioRecorded(blob, duration, serverUrl, filename);
         if (serverUrl && filename) {
             addAudioItem(blob, filename, serverUrl, filename);
         }
-    }, [handleAudioRecorded, addAudioItem]);
+    }, [handleAudioRecorded, addAudioItem, images, removeImage]);
 
     const handleRemoveAudioWithImageItem = useCallback(() => {
         const audioItemsToRemove = images.filter(item => item.mediaType === 'audio');
@@ -87,7 +94,6 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const updatePostMutation = useUpdatePost();
     const { user } = useAuthStore();
-
     useAutoResizeTextarea(textareaRef, postText);
     useEffect(() => {
         const loadPost = async () => {
@@ -95,28 +101,31 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
             try {
                 setIsLoading(true);
                 const post = await SocialFeedService.getPostByCode(postCode);
-                console.log(post)
                 setOriginalPost(post);
                 setPostText(post.content || '');
                 setSelectedPrivacy(post.privacy as PrivacyPostType);
                 if (post.media && post.media.length > 0) {
                     const mediaItems = post.media.map((media, index) => {
                         const dummyFile = new File([''], media.fileName || `media-${index}`, {
-                            type: media.fileType
+                            type: media.fileType || 'image/jpeg'
                         });
                         
                         return {
                             file: dummyFile,
-                            localUrl: media.urlFile,
+                            localUrl: media.urlFile, 
                             serverUrl: media.urlFile,
-                            serverName: media.s3Key || '',
-                            filename: media.s3Key || '',
-                            mediaType: media.fileType.startsWith('audio') ? 'audio' as const : 'image' as const,
+                            serverName: media.s3Key || media.fileName || '',
+                            filename: media.s3Key || media.fileName || '',
+                            mediaType: media.fileType?.startsWith('audio') ? 'audio' as const : 'image' as const,
                             isUploading: false,
-                            isExisting: true 
+                            isExisting: true, 
+                            isUploaded: true,
+                            width: media.width|| 300,
+                            height: media.height|| 300,
                         };
                     });
-                    setImages(mediaItems);
+                    clearImages();
+                    setTimeout(() => setImages(mediaItems), 0);
                     const audioMedia = post.media.find(m => m.fileType.startsWith('audio'));
                     if (audioMedia) {
                         setAudioServerUrl(audioMedia.urlFile);
@@ -164,6 +173,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
         }
     ];
     const selectedPrivacyOption = privacyOptions.find(option => option.id === selectedPrivacy);
+
     const handleUpdate = async () => {
         if (!postText.trim() && images.length === 0 && !audioBlob && !audioServerUrl) {
             return;
@@ -175,35 +185,37 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
 
         try {
             const existingMedia = images.filter(item => item.isExisting);
-            const newUploads = images.filter(item => !item.isExisting && item.file.size > 0);
+            const newUploads = images.filter(item => !item.isExisting && item.serverUrl && item.serverName);
             const existingMediaFilenames = existingMedia
                 .map(item => {
-                    if (item.serverName) {
-                        return item.serverName;
-                    } else if (item.filename) {
-                        return item.filename;
+                    if (item.serverName && item.serverName.trim()) {
+                        return item.serverName.trim();
+                    } else if (item.filename && item.filename.trim()) {
+                        return item.filename.trim();
                     } else if (item.serverUrl) {
                         const urlParts = item.serverUrl.split('/');
-                        return urlParts[urlParts.length - 1];
+                        const filename = urlParts[urlParts.length - 1];
+                        return filename.split('?')[0];
                     }
                     return '';
                 })
-                .filter(filename => filename);
+                .filter(filename => filename && filename !== '');
             
             const newMediaFilenames = newUploads
-                .filter(item => item.serverName || item.serverUrl || item.filename)
+                .filter(item => (item.serverName || item.serverUrl || item.filename))
                 .map(item => {
-                    if (item.serverName) {
-                        return item.serverName;
-                    } else if (item.filename) {
-                        return item.filename;
+                    if (item.serverName && item.serverName.trim()) {
+                        return item.serverName.trim();
+                    } else if (item.filename && item.filename.trim()) {
+                        return item.filename.trim();
                     } else if (item.serverUrl) {
                         const urlParts = item.serverUrl.split('/');
-                        return urlParts[urlParts.length - 1];
+                        const filename = urlParts[urlParts.length - 1];
+                        return filename.split('?')[0];
                     }
                     return '';
                 })
-                .filter(filename => filename);
+                .filter(filename => filename && filename !== '');
             
             const allMediaFilenames = [...existingMediaFilenames, ...newMediaFilenames];
             
@@ -212,7 +224,6 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
             }
 
             const hashtags = postText.match(/#\w+/g)?.map(tag => tag.substring(1)) || [];
-
             await updatePostMutation.mutateAsync({
                 postCode,
                 content: postText.trim(),

@@ -15,7 +15,7 @@ const Feed: React.FC = () => {
   const { contentComponent, leftIcon, rightIcon, inputOnFocus } = useFeedLayout(type, (p) => history.push(p), () => { }, infoFeed, actualTabName);
   const isNative = Capacitor.isNativePlatform();
   const handleQR = () => history.push(isNative ? '/social-qr-native' : '/social-qr-web');
-  
+
   return (
     <>
     <div className={`${type === "camera" ? "h-screen" : "bg-white h-screen flex flex-col"} `}>

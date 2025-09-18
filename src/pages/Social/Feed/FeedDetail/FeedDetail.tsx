@@ -33,6 +33,7 @@ import PostActions from './components/PostActions';
 import CommentsList from './components/CommentsList';
 import PostOptionsBottomSheet from '@/components/social/PostOptionsBottomSheet';
 import { usePostOptions } from '@/hooks/usePostOptions';
+import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 
 const FeedDetail: React.FC = () => {
     const { t } = useTranslation();
@@ -50,8 +51,8 @@ const FeedDetail: React.FC = () => {
     const postCode = feedId;
     const isNative = Capacitor.isNativePlatform();
 
-    const [confirmState, setConfirmState] = useState<{ 
-        open: boolean; 
+    const [confirmState, setConfirmState] = useState<{
+        open: boolean;
         type: "send" | "cancel" | "unfriend" | "reject" | null;
         friendRequestId?: number;
         friendName?: string;
@@ -239,46 +240,9 @@ const FeedDetail: React.FC = () => {
         closePostOptions();
         if (!authorId) return;
         if (sendFriendRequestMutation.isLoading) return;
-        
+
         openConfirmModal("send");
     };
-
-    const handleUnfriendClick = async () => {
-        closePostOptions();
-        if (!authorId) return;
-        if (unfriendMutation.isLoading) return;
-        
-        openConfirmModal("unfriend");
-    };
-
-    const handleCancelFriendRequest = async (friendRequestId: number, friendName: string) => {
-        closePostOptions();
-        if (!friendRequestId) return;
-        if (cancelFriendRequestMutation.isLoading) return;
-        
-        openConfirmModal("cancel", friendRequestId, friendName);
-    };
-
-    const handleAcceptFriendRequest = async (friendRequestId: number) => {
-        closePostOptions();
-        if (!friendRequestId) return;
-        if (acceptFriendRequestMutation.isLoading) return;
-        try {
-            await acceptFriendRequestMutation.mutateAsync(friendRequestId);
-            void refetchPost();
-        } catch (error) {
-            console.error('Failed to accept friend request:', error);
-        }
-    };
-
-    const handleRejectFriendRequest = async (friendRequestId: number, friendName: string) => {
-        closePostOptions();
-        if (!friendRequestId) return;
-        if (rejectFriendRequestMutation.isLoading) return;
-        
-        openConfirmModal("reject", friendRequestId, friendName);
-    };
-
     const handleReplyClick = (commentId: number, userName: string) => {
         setEditingComment(null);
         setReplyingTo(commentId);
@@ -468,26 +432,56 @@ const FeedDetail: React.FC = () => {
         handleSendFriendRequestClick,
     ]);
 
-    const handleSendFriendRequest = (userId: number) => {
-        sendFriendRequestMutation.mutate(userId);
+    const handleSendFriendRequest = async (userId: number) => {
+        try {
+            await sendFriendRequestMutation.mutateAsync(userId);
+            void refetchPost();
+        } catch (error) {
+            console.error('Failed to send friend request:', error);
+        }
     };
 
-    const handleUnfriend = (userId: number) => {
-        unfriendMutation.mutate({ friendUserId: userId });
+    const handleUnfriend = async (userId: number) => {
+        try {
+            await unfriendMutation.mutateAsync({ friendUserId: userId });
+            void refetchPost();
+        } catch (error) {
+            console.error('Failed to unfriend:', error);
+        }
     };
 
-    const handleCancelFriendRequestAction = (requestId: number) => {
-        cancelFriendRequestMutation.mutate(requestId);
+    const handleCancelFriendRequestAction = async (requestId: number) => {
+        try {
+            await cancelFriendRequestMutation.mutateAsync(requestId);
+            void refetchPost();
+        } catch (error) {
+            console.error('Failed to cancel friend request:', error);
+        }
     };
 
-    const handleAcceptFriendRequestAction = (requestId: number) => {
-        acceptFriendRequestMutation.mutate(requestId);
+    const handleAcceptFriendRequestAction = async (requestId: number) => {
+        try {
+            await acceptFriendRequestMutation.mutateAsync(requestId);
+            void refetchPost();
+        } catch (error) {
+            console.error('Failed to accept friend request:', error);
+        }
     };
 
-    const handleRejectFriendRequestAction = (requestId: number) => {
-        rejectFriendRequestMutation.mutate(requestId);
+    const handleRejectFriendRequestAction = async (requestId: number) => {
+        try {
+            await rejectFriendRequestMutation.mutateAsync(requestId);
+            void refetchPost();
+        } catch (error) {
+            console.error('Failed to reject friend request:', error);
+        }
     };
-
+    useSocialSignalR(deviceInfo.deviceId ?? "", {
+        roomId: "",
+        refetchRoomData: () => { void refetchPost() },
+        autoConnect: true,
+        enableDebugLogs: false,
+    });
     if (isLoading) {
         return (
             <div className="relative flex flex-col bg-white"
@@ -672,17 +666,17 @@ const FeedDetail: React.FC = () => {
                 title={t("Are you sure?")}
                 message={
                     confirmState.type === "send" ? t('Send friend request to {{name}}?', { name: displayPost?.user?.fullName }) :
-                    confirmState.type === "cancel" ? t("You can always send another request later!") :
-                    confirmState.type === "unfriend" ? t("You will no longer see their updates or share yours with them") :
-                    confirmState.type === "reject" ? t('Reject friend request from {{name}}?', { name: confirmState.friendName }) :
-                    ""
+                        confirmState.type === "cancel" ? t("You can always send another request later!") :
+                            confirmState.type === "unfriend" ? t("You will no longer see their updates or share yours with them") :
+                                confirmState.type === "reject" ? t('Reject friend request from {{name}}?', { name: confirmState.friendName }) :
+                                    ""
                 }
                 confirmText={
                     confirmState.type === "send" ? t("Yes, send") :
-                    confirmState.type === "cancel" ? t("Yes, cancel") :
-                    confirmState.type === "unfriend" ? t("Yes, unfriend") :
-                    confirmState.type === "reject" ? t("Yes, reject") :
-                    t("Yes")
+                        confirmState.type === "cancel" ? t("Yes, cancel") :
+                            confirmState.type === "unfriend" ? t("Yes, unfriend") :
+                                confirmState.type === "reject" ? t("Yes, reject") :
+                                    t("Yes")
                 }
                 cancelText={t("Cancel")}
                 onConfirm={async () => {
@@ -697,6 +691,7 @@ const FeedDetail: React.FC = () => {
                     if (confirmState.type === "cancel" && confirmState.friendRequestId) {
                         try {
                             await cancelFriendRequestMutation.mutateAsync(confirmState.friendRequestId);
+                            console.log("first")
                             void refetchPost();
                         } catch (error) {
                             console.error('Failed to cancel friend request:', error);

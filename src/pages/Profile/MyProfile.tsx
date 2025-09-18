@@ -1,167 +1,49 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { IonContent, IonPage, IonIcon, IonButton, IonTitle, IonButtons, IonHeader, IonToolbar } from "@ionic/react";
 import { useAuthInfo } from "../Auth/hooks/useAuthInfo";
 import { useUploadAvatar } from "./hooks/useProfile";
 import PageContainer from "@/components/layout/PageContainer";
-import { useHistory } from "react-router-dom";
+import { useHistory, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import UserPostsList from "./components/UserPostsList";
+import UserMediaGrid from "./components/UserMediaGrid";
+import { ProfileTabType } from "./hooks/useUserPosts";
 
-// Import icons
-import HeartIcon from "@/icons/logo/social-chat/heart.svg?react";
-import MoreIcon from "@/icons/logo/social-chat/more-action.svg?react";
-import ShareIcon from "@/icons/logo/social-chat/share-qr-code.svg?react";
-import { arrowBack, cameraOutline, copyOutline, createOutline } from "ionicons/icons";
+import { cameraOutline, copyOutline, createOutline } from "ionicons/icons";
+import EditProfileIcon from "@/icons/logo/edit-profile.svg?react";
+import BackIcon from "@/icons/logo/back-default.svg?react";
+import CoppyIcon from "@/icons/logo/coppy-default.svg?react";
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
 
-// Mock data cho posts
-const mockPosts = [
-  {
-    id: 1,
-    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
-    hashtags: ["#yoga", "#healthy"],
-    likes: 3800,
-    comments: 1300,
-    reposts: 704,
-    shares: 12,
-    timeAgo: "1m",
-    isPublic: true,
-    images: []
-  },
-  {
-    id: 2,
-    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
-    hashtags: ["#yoga", "#healthy"],
-    likes: 2500,
-    comments: 800,
-    reposts: 450,
-    shares: 8,
-    timeAgo: "1m",
-    isPublic: false,
-    images: [
-      "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=400&fit=crop"
-    ]
-  },
-  {
-    id: 3,
-    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
-    hashtags: ["#yoga", "#healthy"],
-    likes: 2500,
-    comments: 800,
-    reposts: 450,
-    shares: 8,
-    timeAgo: "1m",
-    isPublic: false,
-  },
-  {
-    id: 4,
-    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
-    hashtags: ["#yoga", "#healthy"],
-    likes: 2500,
-    comments: 800,
-    reposts: 450,
-    shares: 8,
-    timeAgo: "1m",
-    isPublic: false,
-  },
-  {
-    id: 5,
-    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
-    hashtags: ["#yoga", "#healthy"],
-    likes: 2500,
-    comments: 800,
-    reposts: 450,
-    shares: 8,
-    timeAgo: "1m",
-    isPublic: false,
-  },
-  {
-    id: 6,
-    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
-    hashtags: ["#yoga", "#healthy"],
-    likes: 2500,
-    comments: 800,  
-    reposts: 450,
-    shares: 8,
-    timeAgo: "1m",
-    isPublic: false,
-  },
-  {
-    id: 7,
-    content: "This cat is both beautiful and a little foolish. Maybe \"beautifool\" describes him perfectly.",
-    hashtags: ["#yoga", "#healthy"],
-    likes: 2500,
-    comments: 800,
-    reposts: 450,
-    shares: 8,
-    timeAgo: "1m",
-    isPublic: false,
+const getTabType = (tabName: string): ProfileTabType => {
+  switch (tabName) {
+    case 'posts':
+      return ProfileTabType.Posts;
+    case 'media':
+      return ProfileTabType.Media;
+    case 'likes':
+      return ProfileTabType.Likes;
+    case 'reposts':
+      return ProfileTabType.Reposts;
+    default:
+      return ProfileTabType.Posts;
   }
-];
+};
 
-const mockMedia = [
-  {
-    id: 1,
-    type: "image",
-    url: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=400&fit=crop",
-    likes: 1200,
-    comments: 300
-  },
-  {
-    id: 2,
-    type: "image",
-    url: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=400&fit=crop",
-    likes: 800,
-    comments: 150
-  }
-];
-
-const mockLikes = [
-  {
-    id: 1,
-    content: "Amazing yoga pose! 🧘‍♀️",
-    author: "Sarah",
-    timeAgo: "2h",
-    likes: 500
-  },
-  {
-    id: 2,
-    content: "Healthy lifestyle goals! 💪",
-    author: "Mike",
-    timeAgo: "4h",
-    likes: 300
-  }
-];
-
-const mockReposts = [
-  {
-    id: 1,
-    originalContent: "Great tips for healthy living!",
-    originalAuthor: "HealthGuru",
-    timeAgo: "1d",
-    reposts: 200
-  },
-  {
-    id: 2,
-    originalContent: "Yoga benefits everyone",
-    originalAuthor: "YogaMaster",
-    timeAgo: "2d",
-    reposts: 150
-  }
-];
-
-// Tab Navigation Component
 const TabNavigation: React.FC<{
   activeTab: string;
   onTabChange: (tab: string) => void;
 }> = ({ activeTab, onTabChange }) => {
+  const { t } = useTranslation();
   const tabs = [
-    { key: "posts", label: "Post" },
-    { key: "media", label: "Media" },
-    { key: "likes", label: "Likes" },
-    { key: "reposts", label: "Reposts" }
+    { key: "posts", label: t("Posts") },
+    { key: "media", label: t("Media") },
+    { key: "likes", label: t("Likes") },
+    { key: "reposts", label: t("Reposts") }
   ];
 
   return (
-    <div className="flex border-b border-gray-200">
+    <div className="flex border-b border-gray-200 z-99 sticky top-0 bg-white">
       {tabs.map((tab) => (
         <button
           key={tab.key}
@@ -181,198 +63,14 @@ const TabNavigation: React.FC<{
   );
 };
 
-// Post Item Component
-const PostItem: React.FC<{ post: any }> = ({ post }) => {
-  const hashtags = Array.isArray(post?.hashtags) ? post.hashtags : [];
-  const images = Array.isArray(post?.images) ? post.images : [];
-  return (
-    <div className="border-b border-gray-100 p-4">
-      {/* Post Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-3">
-          <img
-            src="/favicon.png"
-            alt="Profile"
-            className="w-10 h-10 rounded-full"
-          />
-          <div className="flex items-center space-x-2">
-            <span className="font-semibold text-gray-900">John</span>
-            <span className="text-gray-500 text-sm">{post.timeAgo}</span>
-            {post.isPublic ? (
-              <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-              </svg>
-            )}
-          </div>
-        </div>
-        <button className="text-gray-400 hover:text-gray-600">
-          <MoreIcon className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Post Content */}
-      <div className="mb-3">
-        <p className="text-gray-900 mb-2">{post.content}</p>
-        {hashtags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {hashtags.map((tag: string, index: number) => (
-              <span key={index} className="text-blue-500 text-sm">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Post Images */}
-      {images.length > 0 && (
-        <div className={`grid gap-2 mb-3 ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          {images.map((image: string, index: number) => (
-            <img
-              key={index}
-              src={image}
-              alt={`Post image ${index + 1}`}
-              className="w-full h-48 object-cover rounded-lg"
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Engagement Stats */}
-      <div className="flex items-center space-x-6 text-gray-500 text-sm">
-        <div className="flex items-center space-x-1">
-          <HeartIcon className="w-4 h-4 text-red-500" />
-          <span>{(post.likes || 0).toLocaleString()}</span>
-        </div>
-        <div className="flex items-center space-x-1">
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-          </svg>
-          <span>{(post.comments || 0).toLocaleString()}</span>
-        </div>
-        <div className="flex items-center space-x-1">
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-          </svg>
-          <span>{(post.reposts || 0).toLocaleString()}</span>
-        </div>
-        <div className="flex items-center space-x-1">
-          <ShareIcon className="w-4 h-4" />
-          <span>{(post.shares || 0).toLocaleString()}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Media Grid Component
-const MediaGrid: React.FC<{ media: any[] }> = ({ media }) => {
-  return (
-    <div className="grid grid-cols-2 gap-2 p-4">
-      {media.map((item) => (
-        <div key={item.id} className="relative group">
-          <img
-            src={item.url}
-            alt="Media"
-            className="w-full h-48 object-cover rounded-lg"
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded-lg flex items-center justify-center">
-            <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-4 text-white">
-              <div className="flex items-center space-x-1">
-                <HeartIcon className="w-4 h-4" />
-                <span className="text-sm">{item.likes}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                </svg>
-                <span className="text-sm">{item.comments}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// Likes List Component
-const LikesList: React.FC<{ likes: any[] }> = ({ likes }) => {
-  return (
-    <div className="p-4 space-y-4">
-      {likes.map((like) => (
-        <div key={like.id} className="border-b border-gray-100 pb-4">
-          <div className="flex items-start space-x-3">
-            <img
-              src="/favicon.png"
-              alt="Profile"
-              className="w-10 h-10 rounded-full"
-            />
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="font-semibold text-gray-900">{like.author}</span>
-                <span className="text-gray-500 text-sm">{like.timeAgo}</span>
-              </div>
-              <p className="text-gray-900 mb-2">{like.content}</p>
-              <div className="flex items-center space-x-1 text-gray-500 text-sm">
-                <HeartIcon className="w-4 h-4 text-red-500" />
-                <span>{like.likes}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// Reposts List Component
-const RepostsList: React.FC<{ reposts: any[] }> = ({ reposts }) => {
-  return (
-    <div className="p-4 space-y-4">
-      {reposts.map((repost) => (
-        <div key={repost.id} className="border-b border-gray-100 pb-4">
-          <div className="flex items-start space-x-3">
-            <img
-              src="/favicon.png"
-              alt="Profile"
-              className="w-10 h-10 rounded-full"
-            />
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="font-semibold text-gray-900">John</span>
-                <span className="text-gray-500 text-sm">reposted</span>
-                <span className="text-gray-500 text-sm">{repost.timeAgo}</span>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="font-semibold text-gray-900">{repost.originalAuthor}</span>
-                </div>
-                <p className="text-gray-900">{repost.originalContent}</p>
-              </div>
-              <div className="flex items-center space-x-1 text-gray-500 text-sm mt-2">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                </svg>
-                <span>{repost.reposts}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
 
 const MyProfile: React.FC = () => {
+  const { tabName } = useParams<{ tabName?: string }>();
   const [activeTab, setActiveTab] = useState("posts");
   const { data: userInfo, refetch } = useAuthInfo();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadAvatarMutation = useUploadAvatar();
+  const { t } = useTranslation();
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -383,22 +81,56 @@ const MyProfile: React.FC = () => {
     });
   };
   const history = useHistory();
+
+  useEffect(() => {
+    const validTabs = ["posts", "media", "likes", "reposts"];
+    if (tabName && validTabs.includes(tabName)) {
+      setActiveTab(tabName);
+    } else if (tabName && !validTabs.includes(tabName)) {
+      history.replace("/my-profile/posts");
+    } else if (!tabName) {
+      history.replace("/my-profile/posts");
+    }
+  }, [tabName, history]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    history.push(`/my-profile/${tab}`);
+  };
+
   const renderTabContent = () => {
+    const tabType = getTabType(activeTab);
+    const targetUserId = userInfo?.id;
+
     switch (activeTab) {
       case "posts":
         return (
-          <div>
-            {mockPosts.map((post) => (
-              <PostItem key={post.id} post={post} />
-            ))}
-          </div>
+          <UserPostsList
+            tabType={ProfileTabType.Posts}
+            targetUserId={targetUserId}
+          />
         );
       case "media":
-        return <MediaGrid media={mockMedia} />;
+        return (
+          <UserMediaGrid
+            tabType={ProfileTabType.Media}
+            targetUserId={targetUserId}
+          />
+        );
       case "likes":
-        return <LikesList likes={mockLikes} />;
+        return (
+          <UserPostsList
+            tabType={ProfileTabType.Likes}
+            targetUserId={targetUserId}
+          />
+        );
       case "reposts":
-        return <RepostsList reposts={mockReposts} />;
+        return (
+          <UserPostsList
+            tabType={ProfileTabType.Reposts}
+            targetUserId={targetUserId}
+          />
+        );
       default:
         return null;
     }
@@ -406,123 +138,95 @@ const MyProfile: React.FC = () => {
 
   return (
     <PageContainer>
-      <IonPage style={{ '--background': 'white', paddingBottom: '52px'}  as any}>
+      <IonPage style={{ '--background': 'white', paddingBottom: '52px' } as any}>
         <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', '--ion-background-color': '#ffffff' } as any}>
           <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
-            <IonButtons slot="start">
-              <IonButton className="opacity-0 pointer-events-none" fill="clear">
-                <IonIcon icon={createOutline} />
-              </IonButton>
+            <IonButtons slot="start" className="pl-4">
+              <BackIcon onClick={() => history.goBack()} />
+              <span className="text-lg font-semibold  ml-4">
+                {t('My profile')}
+              </span  >
             </IonButtons>
-            <IonTitle className="text-2xl font-bold text-gray-900 text-center">
-              {t('My profile')}
-            </IonTitle>
-            <IonButtons slot="end">
+            <IonButtons slot="end" onClick={() => history.push('/social-feed/create')}>
               <IonButton fill="clear">
-                <IonIcon icon={createOutline} className="text-black size-7 text-transform-uppercase" />
+                <EditProfileIcon />
               </IonButton>
             </IonButtons>
           </IonToolbar>
         </IonHeader>
-        <IonContent style={{ '--background': 'white' , height: '100%'} as any}>
+        <IonContent style={{ '--background': 'white', height: '100%' } as any}>
           <div className="bg-white">
             <hr className="border-gray-100" />
-            {/* Profile Header */}
             {userInfo && (
-              <div className="px-6 pt-4 pb-6">
+              <div className="px-4 pt-4 pb-6">
                 <div className="flex items-start justify-between">
-                  {/* Left side - User info */}
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
+                    <div className="flex items-center space-x-2 ">
                       <h1 className="text-[25px] font-bold text-gray-900 overflow-hidden max-w-[150px] truncate">{userInfo?.name}</h1>
-                      {/* Vietnam flag icon */}
                       <span className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`} style={{ width: 20, height: 20, borderRadius: 9999 }} ></span>
                     </div>
-                    <div className="flex items-center space-x-2 mb-1">
+                    <div className="flex items-center space-x-1 mb-2">
                       <p
-                        className="text-black overflow-hidden max-w-[110px] truncate text-[15px]"
-                        style={{
-                          fontWeight: 400,
-                          fontSize: '15px',
-                          lineHeight: '21px',
-                          letterSpacing: '0%'
-                        }}
-                      >
+                        className="text-black overflow-hidden max-w-[110px] truncate text-[15px]">
                         @{userInfo?.code}
                       </p>
-                      {/* Copy icon */}
-                      <IonIcon icon={copyOutline} className="w-4 h-4 text-black text-transform-uppercase hover:text-blue-500" onClick={() => { navigator.clipboard.writeText(userInfo.code || "") }} />
+                      <CoppyIcon className="" onClick={() => { navigator.clipboard.writeText(userInfo.code || "") }} />
                     </div>
                     <div className="flex items-center space-x-1 mb-4" onClick={() => {
                       history.push('/friend-list');
                     }}>
                       <p
-                        className="text-black mb-0 text-[15px] font-bold"
-                        style={{
-                          fontSize: '15px',
-                          lineHeight: '21px',
-                          letterSpacing: '0%'
-                        }}
+                        className="font-medium"
                       >
                         {userInfo?.friendNumber}
                       </p>
                       <p
-                        className="text-gray-800 mb-0 text-[15px]"
-                        style={{
-                          fontWeight: 400,
-                          fontSize: '15px',
-                          lineHeight: '21px',
-                          letterSpacing: '0%'
-                        }}
+                        className="mb-0 font-sans"
                       >
                         friends
                       </p>
                     </div>
                   </div>
 
-                  {/* Right side - Avatar */}
                   <div className="relative ml-4">
+
                     <img
-                      src={userInfo.avatarLink || "/favicon.png"}
-                      alt="Profile"
-                      style={{
-                        width: '80px',
-                        height: '80px',
-                        borderRadius: '20px', // Spacing/5 = 20px
-                        opacity: 1,
-                        objectFit: 'cover'
+                      src={userInfo.avatarLink || avatarFallback}
+                      alt={userInfo?.name || 'User Avatar'}
+                      className="w-24 h-24 rounded-4xl object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = avatarFallback;
                       }}
                     />
-                    {/* Camera icon overlay */}
                     {!uploadAvatarMutation.isLoading && (
-                    <div
-                      className="absolute flex items-center justify-center rounded-full border-2 border-white shadow-md hover:shadow-xl bg-white/90 backdrop-blur cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        top: '46px',
-                        left: '-10px'
-                      }}
-                      onClick={() => fileInputRef.current?.click()}
-                      title={t('Update avatar') as unknown as string}
-                    >
-                      <IonIcon
-                        icon={cameraOutline}
-                        className="text-transform-uppercase text-black"
+                      <div
+                        className="absolute flex items-center justify-center rounded-full border-2 border-white shadow-md hover:shadow-xl bg-white/90 backdrop-blur cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                         style={{
-                          width: '20px',
-                          height: '20px',
+                          width: '36px',
+                          height: '36px',
+                          top: '46px',
+                          left: '-10px'
+                        }}
+                        onClick={() => fileInputRef.current?.click()}
+                        title={t('Update avatar') as unknown as string}
+                      >
+                        <IonIcon
+                          icon={cameraOutline}
+                          className="text-transform-uppercase text-black"
+                          style={{
+                            width: '20px',
+                            height: '20px',
                           }}
-                      />
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleFileChange}
-                        aria-label="Upload avatar"
-                      />
-                    </div>
+                        />
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleFileChange}
+                          aria-label="Upload avatar"
+                        />
+                      </div>
                     )}
                     {uploadAvatarMutation.isLoading && (
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-[20px] z-10">
@@ -532,72 +236,17 @@ const MyProfile: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Action buttons - Separate section */}
                 <div className="flex items-center justify-center space-x-3 mt-4 px-2">
-                  <IonButton
-                    fill="clear"
-                    onClick={() => history.push('/profile-setting')}
-                    className="transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                    style={{
-                      flex: 1,
-                      height: '40px',
-                      gap: '8px',
-                      borderRadius: '12px', // Spacing/3 = 12px
-                      borderWidth: '1px',
-                      borderColor: '#A3A8AF',
-                      padding: '8px',
-                      backgroundColor: 'white',
-                      ['--background' as any]: 'white',
-                      ['--background-hover' as any]: 'white',
-                      ['--background-focused' as any]: 'white',
-                      ['--background-activated' as any]: 'white',
-                      ['--ripple-color' as any]: 'transparent',
-                      color: 'black',
-                      textTransform: 'none',
-                      opacity: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      minWidth: 0
-                    }}
-                  >
+                  <button className="w-full rounded-xl border border-netural-50 py-2 text-netural-500" onClick={() => history.push('/profile-setting')}>
                     {t('Edit profile')}
-                  </IonButton>
-                  <IonButton
-                    fill="clear"
-                    className="transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                    style={{
-                      flex: 1,
-                      height: '40px',
-                      gap: '8px',
-                      borderRadius: '12px', // Spacing/3 = 12px
-                      borderWidth: '1px',
-                      borderColor: '#A3A8AF',
-                      padding: '8px',
-                      backgroundColor: 'white',
-                      ['--background' as any]: 'white',
-                      ['--background-hover' as any]: 'white',
-                      ['--background-focused' as any]: 'white',
-                      ['--background-activated' as any]: 'white',
-                      ['--ripple-color' as any]: 'transparent',
-                      color: 'black',
-                      textTransform: 'none',
-                      opacity: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      minWidth: 0
-                    }}
-                    onClick={() => history.push('/share-profile')}
-                  >
+                  </button>
+                  <button className="w-full rounded-xl border border-netural-50 py-2 text-netural-500" onClick={() => history.push('/share-profile')}>
                     {t('Share profile')}
-                  </IonButton>
+                  </button>
                 </div>
               </div>
             )}
-            {/* Tab Navigation */}
-            <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-            {/* Tab Content */}
+            <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} />
             <div className="flex-1">
               {renderTabContent()}
             </div>

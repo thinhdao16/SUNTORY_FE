@@ -367,7 +367,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     <div 
       className={`${className}`}
       ref={setScrollContainer}
-      style={{ height: '100vh'}}
+      style={{ height: 'calc(100vh - 110px)'}}
     >
       <TabNavigation
         tabs={getTabsConfig()}

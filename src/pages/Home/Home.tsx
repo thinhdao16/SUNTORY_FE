@@ -108,7 +108,7 @@ function Home() {
   return (
     <PageContainer className='!bg-screen-page !h-screen '>
       <HomeHeader userInfo={userInfo} />
-      <div className='-mt-34 px-6 pb-30'>
+      <div className='-mt-34 px-4 pb-30'>
         <FeatureGrid features={features} />
         {/* <HowItWorksSection items={howItWorks} /> */}
         {/* <GetStartedButton chatTopicId={TopicType.Chat} /> */}

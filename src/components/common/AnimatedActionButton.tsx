@@ -121,7 +121,7 @@ const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
                         }}
                         className={`block font-medium transition-colors duration-200 ${numberColor}`}
                     >
-                        {displayCount.toLocaleString()}
+                        {displayCount?.toLocaleString()}
                     </motion.span>
                 </AnimatePresence>
             </div>

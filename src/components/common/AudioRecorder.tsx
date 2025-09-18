@@ -50,7 +50,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
         }
     }, [duration]);
 
-  
+
     const generateWaveformBars = () => {
         const bars = [];
         const barCount = 40;
@@ -183,16 +183,34 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
             }
         };
     }, []);
+    const [barWidth, setBarWidth] = useState(2);
 
+    useEffect(() => {
+        const updateBarWidth = () => {
+            const screenWidth = window.innerWidth;
+            const maxWidth = Math.min(screenWidth, 450);
+            setBarWidth(maxWidth / 6.5);
+        };
+
+        updateBarWidth();
+        window.addEventListener("resize", updateBarWidth);
+        return () => window.removeEventListener("resize", updateBarWidth);
+    }, []);
     const playAudio = async () => {
-        if (audioBlob && !isPlaying) {
+        if ((audioBlob || serverUrl) && !isPlaying) {
             try {
                 if (audioRef.current) {
                     audioRef.current.pause();
                     audioRef.current = null;
                 }
 
-                const audioUrl = URL.createObjectURL(audioBlob);
+                let audioUrl;
+                if (audioBlob) {
+                    audioUrl = URL.createObjectURL(audioBlob);
+                } else {
+                    audioUrl = serverUrl;
+                }
+
                 const audio = new Audio();
                 audio.src = audioUrl;
                 audioRef.current = audio;
@@ -204,7 +222,9 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
                 audio.onended = () => {
                     setIsPlaying(false);
                     setAudioProgress(0);
-                    URL.revokeObjectURL(audioUrl);
+                    if (audioBlob) {
+                        URL.revokeObjectURL(audioUrl);
+                    }
                     audioRef.current = null;
                     if (progressIntervalRef.current) {
                         clearInterval(progressIntervalRef.current);
@@ -213,9 +233,11 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
                 };
 
                 audio.onerror = (e) => {
-                    console.error('Audio playback error:', e, audioBlob.type, audioBlob.size);
+                    console.error('Audio playback error:', e);
                     setIsPlaying(false);
-                    URL.revokeObjectURL(audioUrl);
+                    if (audioBlob) {
+                        URL.revokeObjectURL(audioUrl);
+                    }
                     audioRef.current = null;
                 };
 
@@ -227,7 +249,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
                         setAudioProgress((currentTime / totalDuration) * 60);
                     }
                 }, 100);
-                
+
                 await audio.play();
             } catch (error) {
                 console.error('Failed to play audio:', error);
@@ -284,7 +306,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
         );
     }
 
-    if (audioBlob && !localIsRecording && !showAsButton) {
+    if ((audioBlob || serverUrl) && !localIsRecording && !showAsButton) {
         return (
             <div className={`flex items-center justify-between gap-3 p-4 border border-netural-50 rounded-2xl relative ${className}`}>
                 {(isUploading || audioUploadMutation?.isLoading) && (
@@ -311,7 +333,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
                 <div className="flex flex-col flex-1">
                     <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1 h-4">
-                            {Array.from({ length: 60 }).map((_, i) => {
+                            {Array.from({ length: barWidth }).map((_, i) => {
                                 const isActive = i < audioProgress;
                                 return (
                                     <div
@@ -347,8 +369,8 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
 
                 <div className="flex flex-col flex-1">
                     <div className="flex items-center gap-1 h-4 mt-1">
-                        {Array.from({ length: 60 }).map((_, i) => {
-                            const progressPercentage = (localDuration / 100) * 60; 
+                        {Array.from({ length: barWidth }).map((_, i) => {
+                            const progressPercentage = (localDuration / 100) * 60;
                             const isActive = i < progressPercentage;
                             return (
                                 <div

@@ -2,11 +2,13 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import ReactHeartIcon from "@/icons/logo/social-feed/react-heart.svg?react";
+import ReactHeartRedIcon from "@/icons/logo/social-feed/react-heart-red.svg?react";
 import CommentsIcon from "@/icons/logo/social-feed/comments.svg?react";
 import { MdMoreHoriz } from 'react-icons/md';
 import { GoDotFill } from 'react-icons/go';
 import { parseHashtagsWithClick } from '@/utils/hashtagHighlight';
 import { formatTimeFromNow } from '@/utils/formatTime';
+import AnimatedActionButton from '@/components/common/AnimatedActionButton';
 
 interface CommentsListProps {
     organizedComments: any[];
@@ -67,6 +69,7 @@ const CommentsList: React.FC<CommentsListProps> = ({
             </div>
         );
     }
+    console.log(organizedComments)
     return (
         <div className="bg-white">
             {organizedComments.map((comment: any) => (
@@ -103,20 +106,24 @@ const CommentsList: React.FC<CommentsListProps> = ({
                             </div>
                             <div className="flex items-center justify-between mt-2">
                                 <div className="flex items-center gap-4">
-                                    <button
-                                        className={`flex items-center gap-1 `}
+                                    <AnimatedActionButton
+                                        icon={<ReactHeartIcon />}
+                                        activeIcon={<ReactHeartRedIcon />}
+                                        count={comment.reactionCount || 0}
+                                        isActive={comment.isLike || false}
                                         onClick={() => onLikeComment(comment.code, comment.isLike || false)}
                                         disabled={commentLikeMutation.isLoading}
-                                    >
-                                        <ReactHeartIcon className="w-6 h-6" />
-                                        <span className="text-sm">{comment.reactionCount}</span>
-                                    </button>
+                                        activeColor="text-red-500"
+                                        inactiveColor="text-gray-600"
+                                        activeNumberColor="text-black"
+                                        inactiveNumberColor="text-black"
+                                        size="none"
+                                    />
                                     <button
-                                        className="flex items-center gap-1"
+                                        className=""
                                         onClick={() => onReplyClick(comment.id, comment.user.fullName)}
                                     >
                                         <CommentsIcon className="w-6 h-6" />
-                                        <span className="text-sm">{comment.replies.length}</span>
                                     </button>
                                 </div>
 
@@ -125,68 +132,79 @@ const CommentsList: React.FC<CommentsListProps> = ({
                     </div>
 
                     {/* Replies */}
-                    {comment.replies && comment.replies.map((reply: any) => (
-                        <div key={reply.id} className={`flex gap-3 p-4 pl-12 border-b border-gray-50 bg-gray-25 transition-colors ${replyingTo === reply.id ? 'bg-blue-50 border-l-4 border-l-blue-500' :
-                            editingComment?.id === reply.id ? 'bg-green-50 border-l-4 border-l-green-500' : ''
-                            }`}>
-                            <img
-                                src={reply.user.avatarUrl || avatarFallback}
-                                alt={reply.user.fullName}
-                                className="w-7 h-7 rounded-2xl object-cover"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).src = avatarFallback;
-                                }}
-                            />
-                            <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-1 mb-1">
-                                        <span className="font-semibold text-sm">{reply.user.fullName}</span>
-                                        <GoDotFill className="w-2 h-2 text-netural-100 " />
-                                        <span className="text-netural-100 text-sm">{formatTimeAgo(reply.createDate)}</span>
+                    {comment.replies && comment.replies.length > 0 && (
+                        <div className=" ">
+                            {comment.replies
+                                .sort((a: any, b: any) => new Date(a.createDate).getTime() - new Date(b.createDate).getTime())
+                                .map((reply: any) => (
+                                    <div key={reply.id} className={`flex gap-3 p-4 pl-12 border-b border-gray-50 bg-gray-25 transition-colors ${replyingTo === reply.id ? 'bg-blue-50 border-l-4 border-l-blue-500' :
+                                        editingComment?.id === reply.id ? 'bg-green-50 border-l-4 border-l-green-500' : ''
+                                        }`}>
+                                        <img
+                                            src={reply.user.avatarUrl || avatarFallback}
+                                            alt={reply.user.fullName}
+                                            className="w-7 h-7 rounded-2xl object-cover"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = avatarFallback;
+                                            }}
+                                        />
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1 mb-1">
+                                                    <span className="font-semibold text-sm">{reply.user.fullName}</span>
+                                                    <GoDotFill className="w-2 h-2 text-netural-100 " />
+                                                    <span className="text-netural-100 text-sm">{formatTimeAgo(reply.createDate)}</span>
+                                                </div>
+                                                <button
+                                                    className="text-gray-400 hover:text-gray-600 "
+                                                    onClick={() => onCommentOptions(reply)}
+                                                    aria-label="Reply options"
+                                                >
+                                                    <MdMoreHoriz className='text-xl' />
+                                                </button>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className='font-semibold text-main text-sm'>
+                                                    {reply.replyCommentId ? findOriginalCommentAuthor(reply.replyCommentId) || reply.user.fullName : reply.user.fullName}
+                                                </span>
+                                                <div className="text-gray-800 text-sm leading-relaxed">
+                                                    {parseHashtagsWithClick(reply.content)}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between mt-2">
+                                                <div className="flex items-center gap-4">
+                                                    <AnimatedActionButton
+                                                        icon={<ReactHeartIcon />}
+                                                        activeIcon={<ReactHeartRedIcon />}
+                                                        count={reply.reactionCount || 0}
+                                                        isActive={reply.isLike || false}
+                                                        onClick={() => onLikeComment(reply.code, reply.isLike || false)}
+                                                        disabled={commentLikeMutation.isLoading}
+                                                        activeColor="text-red-500"
+                                                        inactiveColor="text-gray-600"
+                                                        activeNumberColor="text-black"
+                                                        inactiveNumberColor="text-black"
+                                                        size="none"
+                                                    />
+                                                    <button
+                                                        className=""
+                                                        onClick={() => onReplyClick(reply.id, reply.user.fullName)}
+                                                    >
+                                                        <CommentsIcon className="w-6 h-6" />
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    className="text-gray-400 hover:text-gray-600 "
+                                                    onClick={() => onCommentOptions(reply)}
+                                                    aria-label="Reply options"
+                                                >
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <button
-                                        className="text-gray-400 hover:text-gray-600 "
-                                        onClick={() => onCommentOptions(reply)}
-                                        aria-label="Reply options"
-                                    >
-                                        <MdMoreHoriz className='text-xl' />
-                                    </button>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className='font-semibold text-main text-sm'>
-                                        {reply.replyCommentId ? findOriginalCommentAuthor(reply.replyCommentId) || reply.user.fullName : reply.user.fullName}
-                                    </span>
-                                    <div className="text-gray-800 text-sm leading-relaxed">
-                                        {parseHashtagsWithClick(reply.content)}
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between mt-2">
-                                    <div className="flex items-center gap-4">
-                                        <button
-                                            className={`flex items-center gap-1 `}
-                                            onClick={() => onLikeComment(reply.code, reply.isLike || false)}
-                                            disabled={commentLikeMutation.isLoading}
-                                        >
-                                            <ReactHeartIcon className="w-6 h-6" />
-                                            <span className="text-sm">{reply.reactionCount}</span>
-                                        </button>
-                                        <button
-                                            className=""
-                                            onClick={() => onReplyClick(reply.id, reply.user.fullName)}
-                                        >
-                                            <CommentsIcon className="w-6 h-6" />
-                                        </button>
-                                    </div>
-                                    <button
-                                        className="text-gray-400 hover:text-gray-600 "
-                                        onClick={() => onCommentOptions(reply)}
-                                        aria-label="Reply options"
-                                    >
-                                    </button>
-                                </div>
-                            </div>
+                                ))}
                         </div>
-                    ))}
+                    )}
                 </div>
             ))}
         </div>

@@ -13,6 +13,7 @@ export interface ImageItem {
     url?: string;
     mediaType: MediaType;
     isExisting?: boolean;
+    isUploaded?: boolean;
 }
 
 export interface ImageUploadOptions {
@@ -278,13 +279,13 @@ export const captureFromCamera = (): Promise<File | null> => {
 };
 
 /**
- * Utility function to select images from gallery
+ * Utility function to select images and videos from gallery
  */
 export const selectFromGallery = (multiple: boolean = true): Promise<File[]> => {
     return new Promise((resolve) => {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/*';
+        input.accept = 'image/*,video/*';
         input.multiple = multiple;
         
         input.onchange = (e) => {

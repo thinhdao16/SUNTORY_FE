@@ -155,7 +155,7 @@ const ShareProfile = () => {
                                     </IonButtons>
                                 </IonToolbar>
                             </IonHeader>
-                            <div className="bg-white px-6 pt-6">
+                            <div className="bg-white px-4 pt-6">
                                 <div className="bg-blue-50 rounded-2xl p-6 flex flex-col items-center text-center mb-6">
                                     <div className="max-w-[200px] space-x-0 space-y-4">
                                         <div className="flex items-center gap-3">

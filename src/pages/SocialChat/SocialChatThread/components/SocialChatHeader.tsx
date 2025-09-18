@@ -146,9 +146,9 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
     return (
         <>
             <div className="w-full sticky top-0 z-20">
-                <div className="relative flex items-center justify-between px-4 sm:px-6 h-[50px]">
+                <div className="relative flex items-center justify-between px-4 sm:px-4 h-[50px]">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <button onClick={onBackClick} aria-label="Back" className="p-1 rounded hover:bg-gray-100 flex-none">
+                        <button onClick={onBackClick} aria-label="Back" className=" rounded hover:bg-gray-100 flex-none">
                             <BackIcon />
                         </button>
 

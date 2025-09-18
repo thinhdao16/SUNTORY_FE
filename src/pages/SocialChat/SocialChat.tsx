@@ -45,7 +45,7 @@ function ChatSocial() {
           />
         )}
         {(type === undefined || type === 'list-request') && (
-          <div className="px-6">
+          <div className="px-4">
             <div className="flex justify-center bg-netural-50 rounded-full border-[1px] border-neutral-50">
               <motion.button
                 layout

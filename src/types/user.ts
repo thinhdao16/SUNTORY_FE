@@ -90,6 +90,7 @@ export interface User {
     language: {
         code: string;
         name: string;
+        id?:number
     };
     currentMeasurement: CurrentMeasurementItem[];
 }

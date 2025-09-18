@@ -74,23 +74,36 @@ export const useImageUploadHandlers = ({ addImages, clearAudio }: UseImageUpload
         clearAudio();
         const newImages: ImageItem[] = [];
         for (const file of files) {
-            try {
-                const dimensions = await getImageDimensions(file);
+            const isVideo = file.type.startsWith('video/');
+            
+            if (isVideo) {
                 newImages.push({
                     file,
                     localUrl: URL.createObjectURL(file),
                     isUploading: true,
-                    width: dimensions.width,
-                    height: dimensions.height,
-                    mediaType: 'image'
+                    mediaType: 'video' as any,
+                    width: 0,
+                    height: 0
                 });
-            } catch (error) {
-                newImages.push({
-                    file,
-                    localUrl: URL.createObjectURL(file),
-                    isUploading: true,
-                    mediaType: 'image'
-                });
+            } else {
+                try {
+                    const dimensions = await getImageDimensions(file);
+                    newImages.push({
+                        file,
+                        localUrl: URL.createObjectURL(file),
+                        isUploading: true,
+                        width: dimensions.width,
+                        height: dimensions.height,
+                        mediaType: 'image'
+                    });
+                } catch (error) {
+                    newImages.push({
+                        file,
+                        localUrl: URL.createObjectURL(file),
+                        isUploading: true,
+                        mediaType: 'image'
+                    });
+                }
             }
         }
 
