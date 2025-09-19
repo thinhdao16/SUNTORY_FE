@@ -63,7 +63,7 @@ const DietSetup: React.FC = () => {
 
     const handleContinue = () => {
         const payload = {
-            lifestyleId: selectedDiet,
+            lifestyleId: selectedDiet == "0" ? null : selectedDiet,
             allergies: allergies.map((item: AllergyItem) => ({
                 allergyId: item.allergyId,
                 name: item.name,

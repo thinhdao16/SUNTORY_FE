@@ -104,3 +104,18 @@ export interface UpdateHealthConditionV2Payload {
     height: number | null;
     heightUnitId: number | null;
 }
+
+export interface OtherUserProfileResponse {
+    id: number;
+    firstname: string;
+    lastname: string;
+    code: string;
+    avatarLink: string;
+    friendNumber: number;
+    country: {
+        code: string;
+    };
+    isFriend: boolean;
+    isRequestSender :boolean;
+    isRequestReceiver :boolean;
+}
