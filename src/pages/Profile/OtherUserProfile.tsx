@@ -9,12 +9,18 @@ import UserMediaGrid from "./components/UserMediaGrid";
 import { ProfileTabType } from "./hooks/useUserPosts";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import { otherUserProfile } from "@/services/auth/auth-service";
-import { useAcceptFriendRequest, useRejectFriendRequest, useSendFriendRequest } from "../SocialPartner/hooks/useSocialPartner";
+import { useAcceptFriendRequest, useRejectFriendRequest, useSendFriendRequest, useUnfriend, useCancelFriendRequest } from "../SocialPartner/hooks/useSocialPartner";
+import { useSocialSignalR } from "@/hooks/useSocialSignalR";
+import useDeviceInfo from '@/hooks/useDeviceInfo';
+import { useQuery, useQueryClient } from 'react-query';
+import { useCreateAnonymousChat } from "@/pages/SocialChat/hooks/useSocialChat";
+import { useSocialChatStore } from "@/store/zustand/social-chat-store";
 
 import BackIcon from "@/icons/logo/back-default.svg?react";
 import CoppyIcon from "@/icons/logo/coppy-default.svg?react";
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
 import { useToastStore } from "@/store/zustand/toast-store";
+import BottomSheet from "@/components/common/BottomSheet";
 interface OtherUserProfileParams {
     userId: string;
     tab?: string;
@@ -71,50 +77,67 @@ const OtherUserProfile: React.FC = () => {
     const { userId, tab } = useParams<OtherUserProfileParams>();
     const { user } = useAuthStore();
     const [activeTab, setActiveTab] = useState(tab || "posts");
-    const [userInfo, setUserInfo] = useState<any>(null);
-    const [friendshipStatus, setFriendshipStatus] = useState<'none' | 'pending' | 'friend'>('none');
-    const [isLoading, setIsLoading] = useState(true);
-    // const { showToast } = useToast();
-    const showToast = (message: string) => alert(message);
+    const [isFriendOptionsOpen, setIsFriendOptionsOpen] = useState(false);
+    const [isCancelRequestOpen, setIsCancelRequestOpen] = useState(false);
+    const [isRespondOptionsOpen, setIsRespondOptionsOpen] = useState(false);
+    const { showToast } = useToastStore();
+    const deviceInfo = useDeviceInfo();
+    const queryClient = useQueryClient();
+    const { setRoomChatInfo } = useSocialChatStore();
+    const createAnonymousChatMutation = useCreateAnonymousChat();
 
     const targetUserId = parseInt(userId);
+    
+    const { data: userInfo, isLoading, refetch } = useQuery(
+        ['otherUserProfile', targetUserId],
+        () => otherUserProfile({ userId: targetUserId }),
+        {
+            enabled: !!targetUserId && user?.id !== targetUserId,
+            select: (data) => ({
+                id: targetUserId,
+                name: data?.firstname + " " + data?.lastname,
+                code: data?.code,
+                avatarLink: data?.avatarLink,
+                friendNumber: data?.friendNumber,
+                country: { code: data?.country?.code },
+                isFriend: data?.isFriend,
+                isRequestSender: data?.isRequestSender,
+                isRequestReceiver: data?.isRequestReceiver,
+                roomChat: data?.roomChat,
+                friendRequest: data?.friendRequest
+            }),
+            onError: (error) => {
+                console.error('Failed to fetch user info:', error);
+            }
+        }
+    );
+    
+    const sendFriendRequestMutation = useSendFriendRequest(showToast);
+    const acceptFriendRequestMutation = useAcceptFriendRequest(showToast);
+    const rejectFriendRequestMutation = useRejectFriendRequest(showToast);
+    const cancelFriendRequestMutation = useCancelFriendRequest(showToast);
+    const unfriendMutation = useUnfriend(showToast);
+    
+    const refetchUserData = async () => {
+        if (targetUserId && user?.id !== targetUserId) {
+            await refetch();
+        }
+    };
+
+    useSocialSignalR(deviceInfo.deviceId ?? "", {
+        roomId: "",
+        refetchRoomData: refetchUserData,
+        autoConnect: true,
+        enableDebugLogs: false,
+    });
+    
     useEffect(() => {
         if (user?.id === targetUserId) {
             history.replace('/my-profile');
             return;
         }
     }, [user?.id, targetUserId, history]);
-
-    useEffect(() => {
-        
-        const fetchUserInfo = async () => {
-            try {
-                setIsLoading(true);
-                const res = await otherUserProfile({ userId: targetUserId });
-                setUserInfo({
-                    id: targetUserId,
-                    name: res?.firstname + " " + res?.lastname,
-                    code: res?.code,
-                    avatarLink: res?.avatarLink,
-                    friendNumber: res?.friendNumber,
-                    country: { code: res?.country?.code },
-                    isFriend: res?.isFriend,
-                    isRequestSender: res?.isRequestSender,
-                    isRequestReceiver: res?.isRequestReceiver
-                });
-                setFriendshipStatus('none'); 
-            } catch (error) {
-                console.error('Failed to fetch user info:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        if (targetUserId && user?.id !== targetUserId) {
-            fetchUserInfo();
-        }
-    }, [targetUserId, user?.id]);
-
+    
     const handleTabChange = (tab: string) => {
         setActiveTab(tab);
         history.replace(`/profile/${userId}/${tab}`);
@@ -122,39 +145,85 @@ const OtherUserProfile: React.FC = () => {
 
     const handleSendFriendRequest = async () => {
         try {
-            await useSendFriendRequest(targetUserId);
-            useToastStore.getState().showToast(t("Friend request sent."), 1000, "success");
-            setFriendshipStatus('pending');
+            await sendFriendRequestMutation.mutateAsync(targetUserId);
+            showToast(t("Friend request sent."), 1000, "success");
         } catch (error) {
             console.error('Failed to send friend request:', error);
+            showToast(t("Failed to send friend request"), 1000, "error");
         }
     };
 
     const handleAcceptFriendRequest = async () => {
         try {
-            await useAcceptFriendRequest(targetUserId);
-            useToastStore.getState().showToast(t("Friend request accepted."), 1000, "success");
-            setFriendshipStatus('friend');
+            await acceptFriendRequestMutation.mutateAsync(userInfo?.friendRequest?.id || targetUserId);
+            showToast(t("Friend request accepted."), 1000, "success");
+            setIsRespondOptionsOpen(false);
         } catch (error) {
             console.error('Failed to accept friend request:', error);
+            showToast(t("Failed to accept friend request"), 1000, "error");
         }
     };
 
     const handleDeclineFriendRequest = async () => {
         try {
-            await useRejectFriendRequest(targetUserId);
-            useToastStore.getState().showToast(t("Friend request declined."), 1000, "success");
-            setFriendshipStatus('none');
+            await rejectFriendRequestMutation.mutateAsync(userInfo?.friendRequest?.id || targetUserId);
+            showToast(t("Friend request declined."), 1000, "success");
+            setIsRespondOptionsOpen(false);
         } catch (error) {
             console.error('Failed to decline friend request:', error);
+            showToast(t("Failed to decline friend request"), 1000, "error");
         }
     };
 
-    const handleSendMessage = () => {
-        // TODO: Navigate to chat with this user
-        history.push(`/social-chat/${userId}`);
+    const handleCancelFriendRequest = async () => {
+        try {
+            await cancelFriendRequestMutation.mutateAsync(userInfo?.friendRequest?.id || targetUserId);
+            setIsCancelRequestOpen(false);
+        } catch (error) {
+            console.error('Failed to cancel friend request:', error);
+        }
     };
 
+    const handleUnfriend = async () => {
+        try {
+            await unfriendMutation.mutateAsync({ friendUserId: targetUserId });
+            setIsFriendOptionsOpen(false);
+        } catch (error) {
+            console.error('Failed to unfriend:', error);
+        }
+    };
+
+    const handleSendMessage = async () => {
+        try {
+            if (userInfo?.roomChat?.code) {
+                setRoomChatInfo(userInfo?.roomChat);
+                history.push(`/social-chat/t/${userInfo?.roomChat?.code}`);
+            } else {
+                setRoomChatInfo({
+                    id: 0,
+                    code: "",
+                    title: userInfo?.name || "Anonymous",
+                    avatarRoomChat: userInfo?.avatarLink || "/favicon.png",
+                    type: 0,
+                    status: 0,
+                    createDate: new Date().toISOString(),
+                    updateDate: new Date().toISOString(),
+                    unreadCount: 0,
+                    lastMessageInfo: null,
+                    participants: [],
+                    topic: null,
+                    chatInfo: null,
+                });
+                history.push(`/social-chat/t`);
+                const chatData = await createAnonymousChatMutation.mutateAsync(targetUserId);
+                if (chatData?.chatCode) {
+                    history.replace(`/social-chat/t/${chatData.chatCode}`);
+                }
+            }
+        } catch (error) {
+            console.error("Tạo phòng chat thất bại:", error);
+        }
+    };
     const renderTabContent = () => {
         const tabType = getTabType(activeTab);
 
@@ -193,62 +262,75 @@ const OtherUserProfile: React.FC = () => {
     };
 
     const renderActionButtons = () => {
-        switch (friendshipStatus) {
-            case 'none':
-                return (
-                    <div className="flex items-center justify-center space-x-3 mt-4 px-2">
-                        <button
-                            className="flex-1 rounded-xl bg-blue-500 py-2 text-white font-medium"
-                            onClick={handleSendFriendRequest}
-                        >
-                            {t('Add Friend')}
-                        </button>
-                        <button
-                            className="flex-1 rounded-xl border border-gray-300 py-2 text-gray-700"
-                            onClick={handleSendMessage}
-                        >
-                            {t('Message')}
-                        </button>
-                    </div>
-                );
-
-            case 'pending':
-                return (
-                    <div className="flex items-center justify-center space-x-3 mt-4 px-2">
-                        <button
-                            className="flex-1 rounded-xl bg-blue-500 py-2 text-white font-medium"
-                            onClick={handleAcceptFriendRequest}
-                        >
-                            {t('Accept')}
-                        </button>
-                        <button
-                            className="flex-1 rounded-xl border border-gray-300 py-2 text-gray-700"
-                            onClick={handleDeclineFriendRequest}
-                        >
-                            {t('Decline')}
-                        </button>
-                    </div>
-                );
-
-            case 'friend':
-                return (
-                    <div className="flex items-center justify-center space-x-3 mt-4 px-2">
-                        <button
-                            className="flex-1 rounded-xl bg-blue-500 py-2 text-white font-medium"
-                            onClick={handleSendMessage}
-                        >
-                            {t('Message')}
-                        </button>
-                        <button
-                            className="flex-1 rounded-xl border border-gray-300 py-2 text-gray-700"
-                        >
-                            {t('Friend')}
-                        </button>
-                    </div>
-                );
-
-            default:
-                return null;
+        if (userInfo?.isFriend) {
+            return (
+                <div className="flex items-center justify-center space-x-3 mt-4 px-2">
+                    <button
+                        className="flex-1 rounded-xl  py-2 text-main bg-primary-50"
+                        onClick={() => setIsFriendOptionsOpen(true)}
+                    >
+                        {t('Friend')}
+                    </button>
+                    <button
+                        className="flex-1 rounded-xl border border-gray-300 py-2 text-gray-700"
+                        onClick={handleSendMessage}
+                    >
+                        {t('Message')}
+                    </button>
+                </div>
+            );
+        } else if (userInfo?.isRequestReceiver) {
+            return (
+                <div className="flex items-center justify-center space-x-3 mt-4 px-2">
+                    <button
+                        className="flex-1 rounded-xl bg-main py-2 text-white font-medium"
+                        onClick={() => setIsRespondOptionsOpen(true)}
+                    >
+                        {t('Respond')}
+                    </button>
+                    <button
+                        className="flex-1 rounded-xl border border-gray-300 py-2 text-gray-700"
+                        onClick={handleSendMessage}
+                    >
+                        {t('Message')}
+                    </button>
+                </div>
+            );
+        } else if (userInfo?.isRequestSender) {
+            return (
+                <div className="flex items-center justify-center space-x-3 mt-4 px-2">
+                    <button
+                        className="flex-1 rounded-xl border border-red-300 py-2 text-red-600 font-medium"
+                        onClick={() => setIsCancelRequestOpen(true)}
+                    >
+                        {t('Cancel request')}
+                    </button>
+                    <button
+                        className="flex-1 rounded-xl border border-gray-300 py-2 text-gray-700"
+                        onClick={handleSendMessage}
+                    >
+                        {t('Message')}
+                    </button>
+                </div>
+            );
+        } else {
+            return (
+                <div className="flex items-center justify-center space-x-3 mt-4 px-2">
+                    <button
+                        className="flex-1 rounded-xl bg-main py-2 text-white font-medium"
+                        onClick={handleSendFriendRequest}
+                        disabled={sendFriendRequestMutation.isLoading}
+                    >
+                        {t('Add Friend')}
+                    </button>
+                    <button
+                        className="flex-1 rounded-xl border border-gray-300 py-2 text-gray-700"
+                        onClick={handleSendMessage}
+                    >
+                        {t('Message')}
+                    </button>
+                </div>
+            );
         }
     };
 
@@ -344,6 +426,85 @@ const OtherUserProfile: React.FC = () => {
                     </div>
                     <div style={{ height: 'calc(112px + env(safe-area-inset-bottom, 0px))' }} />
                 </IonContent>
+
+                <BottomSheet
+                    isOpen={isFriendOptionsOpen}
+                    onClose={() => setIsFriendOptionsOpen(false)}
+                    title={userInfo?.name}
+                >
+                    <div className="p-4 space-y-3">
+                        <button
+                            className="w-full flex items-center justify-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            onClick={handleUnfriend}
+                            disabled={unfriendMutation.isLoading}
+                        >
+                            <span className="font-medium">{t('Unfriend')}</span>
+                        </button>
+                        
+                        <button
+                            className="w-full flex items-center justify-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            onClick={() => setIsFriendOptionsOpen(false)}
+                        >
+                            <span className="font-medium">{t('Cancel')}</span>
+                        </button>
+                    </div>
+                </BottomSheet>
+
+                <BottomSheet
+                    isOpen={isCancelRequestOpen}
+                    onClose={() => setIsCancelRequestOpen(false)}
+                    title={t("Cancel Friend Request")}
+                >
+                    <div className="p-4 space-y-3 ">
+                        <p className="text-gray-600 text-center mb-4">
+                            {t("Are you sure you want to cancel your friend request to")} {userInfo?.name}?
+                        </p>
+                        
+                        <button
+                            className="w-full flex items-center justify-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            onClick={handleCancelFriendRequest}
+                            disabled={cancelFriendRequestMutation.isLoading}
+                        >
+                            <span className="font-medium">{t('Cancel request')}</span>
+                        </button>
+                        
+                        <button
+                            className="w-full flex items-center justify-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            onClick={() => setIsCancelRequestOpen(false)}
+                        >
+                            <span className="font-medium">{t('Keep request')}</span>
+                        </button>
+                    </div>
+                </BottomSheet>
+
+                {/* Respond Options Bottom Sheet */}
+                <BottomSheet
+                    isOpen={isRespondOptionsOpen}
+                    onClose={() => setIsRespondOptionsOpen(false)}
+                    title={t("Friend Request")}
+                >
+                    <div className="p-4 space-y-3">
+                        <p className="text-gray-600 text-center mb-4">
+                            {userInfo?.name} {t("sent you a friend request")}
+                        </p>
+                        
+                        <button
+                            className="w-full flex items-center justify-center gap-3 p-3 text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                            onClick={handleAcceptFriendRequest}
+                            disabled={acceptFriendRequestMutation.isLoading}
+                        >
+                            <span className="font-medium">{t('Accept')}</span>
+                        </button>
+                        
+                        <button
+                            className="w-full flex items-center justify-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            onClick={handleDeclineFriendRequest}
+                            disabled={rejectFriendRequestMutation.isLoading}
+                        >
+                            <span className="font-medium">{t('Decline')}</span>
+                        </button>
+                    </div>
+                </BottomSheet>
             </IonPage>
         </PageContainer>
     );

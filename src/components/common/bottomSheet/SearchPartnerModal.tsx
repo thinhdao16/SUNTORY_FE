@@ -183,7 +183,9 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
       console.error("Tạo phòng chat thất bại:", error);
     }
   };
-
+  const handleViewProfile = (userId: number) => {
+    history.push(`/profile/${userId}`);
+};
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (query) {
@@ -271,7 +273,7 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
                     key={user?.id}
                     className="flex items-center justify-between border border-netural-50 px-3 py-2 rounded-xl"
                   >
-                    <div className="flex items-center">
+                    <div className="flex items-center" onClick={() => handleViewProfile(user?.id)}>
                       <img
                         src={user?.avatar || "/favicon.png"}
                         alt={user?.fullName}

@@ -56,6 +56,7 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
     currentUserId,
     roomId
 }) => {
+    console.log(roomChatInfo)
     const history = useHistory()
     const src = roomChatInfo?.avatarRoomChat?.trim() ? roomChatInfo.avatarRoomChat : avatarFallback;
     const isFriend = !!roomData?.isFriend;
@@ -92,7 +93,14 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
             setConfirmState({ open: true, type });
         });
     };
-
+    const handleToInfo = () => {
+        if (roomChatInfo?.type === ChatInfoType.Group) {
+            history.push(`/social-chat/t/${roomId}/info`)
+        }
+        if (roomChatInfo?.type === ChatInfoType.UserVsUser) {
+            history.push(`/profile/${targetParticipant?.userId}`)
+        }
+    }
     let RightActions: React.ReactNode = null;
 
     if (isFriend) {
@@ -152,7 +160,7 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
                             <BackIcon />
                         </button>
 
-                        <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+                        <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden" onClick={handleToInfo}>
                             <img
                                 src={src}
                                 alt={roomChatInfo?.title || "Avatar"}

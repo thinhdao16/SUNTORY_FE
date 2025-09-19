@@ -241,7 +241,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
       ref={containerRefCallback ? containerRefCallback : undefined}
     >
       {/* Reposter header */}
-      <div className="flex items-center justify-between p-4 pb-2">
+      <div className="flex justify-between p-4 pb-2">
         <div className="flex items-center gap-3">
           <img
             src={post?.isRepost ? post?.user?.avatarUrl || avatarFallback : displayPost?.user?.avatarUrl || avatarFallback}
@@ -254,7 +254,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
           />
           <div className='grid gap-0'>
             <div className="flex items-center gap-2">
-              <span 
+              <span
                 className="font-semibold truncate max-w-[180px] cursor-pointer hover:underline"
                 onClick={(e) => handleUserProfileClick(e, post?.isRepost ? post?.user?.id : displayPost?.user?.id)}
               >
@@ -276,12 +276,14 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             </div>
           </div>
         </div>
-        <button
-          className="text-gray-400 hover:text-gray-600 py-4 pl-6"
-          onClick={() => setIsPostOptionsOpen(true)}
-        >
-          <MdMoreHoriz className='text-xl' />
-        </button>
+        <div className="flex items-start h-full">
+          <button
+            className="text-gray-400 hover:text-gray-600 pb-6 pl-4"
+            onClick={() => setIsPostOptionsOpen(true)}
+          >
+            <MdMoreHoriz className='text-xl' />
+          </button>
+        </div>
       </div>
 
       {/* {isRepost && post.captionRepost && (
@@ -324,23 +326,23 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                   onClick={(e) => handleUserProfileClick(e, displayPost.user.id)}
                 />
                 <div className="grid">
-                <div className="flex items-center gap-2">
-                  <span 
-                    className="font-semibold truncate max-w-[200px] cursor-pointer hover:underline"
-                    onClick={(e) => handleUserProfileClick(e, displayPost.user.id)}
-                  >
-                    {displayPost.user.fullName}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="font-semibold truncate max-w-[200px] cursor-pointer hover:underline"
+                      onClick={(e) => handleUserProfileClick(e, displayPost.user.id)}
+                    >
+                      {displayPost.user.fullName}
+                    </span>
+                  </div>
+                  <div className="flex items-center text-netural-100 gap-1">
+                    <span className="text-xs text-gray-500">{formatTimeFromNow(displayPost.createDate, t)}</span>
+                    <GoDotFill className="w-2 h-2" />
+                    <span className='opacity-20'>
+                      {getPrivacyIcon(displayPost?.privacy)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center text-netural-100 gap-1">
-                  <span className="text-xs text-gray-500">{formatTimeFromNow(displayPost.createDate, t)}</span>
-                  <GoDotFill className="w-2 h-2" />
-                  <span className='opacity-20'>
-                    {getPrivacyIcon(displayPost?.privacy)}
-                  </span>
-                </div>  
-                </div>
-            
+
               </div>
             </>
           )}
