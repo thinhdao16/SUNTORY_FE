@@ -56,14 +56,21 @@ export interface FoodModel {
     name: string;
     imageUrl: string;
     price: number;
+    currency: string;
     calories?: number;
     carbohydrates?: number;
     fat?: number;
     sugar?: number;
     fiber?: number;
+    protein?: number;
+    originalName?: string;
+    advice?: string;
     description?: string;
     status?: number;
     createDate?: string;
+    foodComponents?: {
+        name: string;
+    }[];
 }
 
 export interface ListFoodQuery {
