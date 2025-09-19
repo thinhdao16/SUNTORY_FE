@@ -8,7 +8,7 @@ import {
     RegisterResponse,
     UpdatePasswordOtpPayload,
     LogoutPayload,
-    UpdateHealthConditionV2Payload
+    UpdateHealthConditionV2Payload,
 } from "./auth-types";
 
 export const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
@@ -81,4 +81,9 @@ export const updateAccountInformationV3 = async (payload: any) => {
 export const updateHealthConditionV2 = async (payload: UpdateHealthConditionV2Payload) => {
     const res = await httpClient.post("/api/v1/account/update-health-condition-v2", payload);
     return res.data.data;
-  };
+};
+
+export const otherUserProfile = async (payload: any) => {
+    const res = await httpClient.get("/api/v1/account/other-user-profile", { params: payload });
+    return res.data.data;
+};

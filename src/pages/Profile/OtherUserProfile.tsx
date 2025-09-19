@@ -8,11 +8,13 @@ import UserPostsList from "./components/UserPostsList";
 import UserMediaGrid from "./components/UserMediaGrid";
 import { ProfileTabType } from "./hooks/useUserPosts";
 import { useAuthStore } from "@/store/zustand/auth-store";
+import { otherUserProfile } from "@/services/auth/auth-service";
+import { useAcceptFriendRequest, useRejectFriendRequest, useSendFriendRequest } from "../SocialPartner/hooks/useSocialPartner";
 
 import BackIcon from "@/icons/logo/back-default.svg?react";
 import CoppyIcon from "@/icons/logo/coppy-default.svg?react";
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
-
+import { useToastStore } from "@/store/zustand/toast-store";
 interface OtherUserProfileParams {
     userId: string;
     tab?: string;
@@ -72,9 +74,10 @@ const OtherUserProfile: React.FC = () => {
     const [userInfo, setUserInfo] = useState<any>(null);
     const [friendshipStatus, setFriendshipStatus] = useState<'none' | 'pending' | 'friend'>('none');
     const [isLoading, setIsLoading] = useState(true);
+    // const { showToast } = useToast();
+    const showToast = (message: string) => alert(message);
 
     const targetUserId = parseInt(userId);
-
     useEffect(() => {
         if (user?.id === targetUserId) {
             history.replace('/my-profile');
@@ -83,17 +86,22 @@ const OtherUserProfile: React.FC = () => {
     }, [user?.id, targetUserId, history]);
 
     useEffect(() => {
+        
         const fetchUserInfo = async () => {
             try {
                 setIsLoading(true);
-            
+                const res = await otherUserProfile({ userId: targetUserId });
+                console.log("res: ", res);
                 setUserInfo({
                     id: targetUserId,
-                    name: "Dug",
-                    code: "dugdog159",
-                    avatarLink: null,
-                    friendNumber: 56,
-                    country: { code: "VN" }
+                    name: res?.firstname + " " + res?.lastname,
+                    code: res?.code,
+                    avatarLink: res?.avatarLink,
+                    friendNumber: res?.friendNumber,
+                    country: { code: res?.country?.code },
+                    isFriend: res?.isFriend,
+                    isRequestSender: res?.isRequestSender,
+                    isRequestReceiver: res?.isRequestReceiver
                 });
                 setFriendshipStatus('none'); 
             } catch (error) {
@@ -115,7 +123,8 @@ const OtherUserProfile: React.FC = () => {
 
     const handleSendFriendRequest = async () => {
         try {
-         
+            await useSendFriendRequest(targetUserId);
+            useToastStore.getState().showToast(t("Friend request sent."), 1000, "success");
             setFriendshipStatus('pending');
         } catch (error) {
             console.error('Failed to send friend request:', error);
@@ -124,7 +133,8 @@ const OtherUserProfile: React.FC = () => {
 
     const handleAcceptFriendRequest = async () => {
         try {
-        
+            await useAcceptFriendRequest(targetUserId);
+            useToastStore.getState().showToast(t("Friend request accepted."), 1000, "success");
             setFriendshipStatus('friend');
         } catch (error) {
             console.error('Failed to accept friend request:', error);
@@ -133,7 +143,8 @@ const OtherUserProfile: React.FC = () => {
 
     const handleDeclineFriendRequest = async () => {
         try {
-         
+            await useRejectFriendRequest(targetUserId);
+            useToastStore.getState().showToast(t("Friend request declined."), 1000, "success");
             setFriendshipStatus('none');
         } catch (error) {
             console.error('Failed to decline friend request:', error);
