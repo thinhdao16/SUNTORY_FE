@@ -91,7 +91,6 @@ const OtherUserProfile: React.FC = () => {
             try {
                 setIsLoading(true);
                 const res = await otherUserProfile({ userId: targetUserId });
-                console.log("res: ", res);
                 setUserInfo({
                     id: targetUserId,
                     name: res?.firstname + " " + res?.lastname,
@@ -301,7 +300,7 @@ const OtherUserProfile: React.FC = () => {
                                             {userInfo?.name}
                                         </h1>
                                         <span
-                                            className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`}
+                                            className={`fi fi-${userInfo?.country?.code?.toLowerCase() || 'us'} fis`}
                                             style={{ width: 20, height: 20, borderRadius: 9999 }}
                                         />
                                     </div>
