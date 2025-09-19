@@ -61,7 +61,6 @@ const MenuAnalyzing: React.FC = () => {
             const file = base64ToFile(base64Img, "gallery.png");
             formData.append("file", file);
             const result = await menuAnalyzing(formData);
-            console.log("result: ", result);
             setMenuId(result.data.id);
             if (result?.data != null) {
                 setTotalFood(result.data.totalFood);
@@ -123,17 +122,56 @@ const MenuAnalyzing: React.FC = () => {
         };
     }, [setFoodSuccess]);
 
+
+    // Effect cho Step 2: Interpreting Nutritional Data
     useEffect(() => {
-        if (foodSuccess > totalFood) {
-            setIsActiveInterpretingNutritionalData(true);
-            setIsActiveGeneratingDishImages(true);
-            setInterpretingNutritionalDataProgress(100);
-            setGeneratingDishImagesProgress(100);
-            setIsCompletedInterpretingNutritionalData(true);
-            setIsCompletedGeneratingDishImages(true);
-            history.push('/food-list', { menuId: menuId });
-            setFoodSuccess(0);
+        if (isCompletedAnalyzingMenuContent) {
+            {
+                setIsActiveInterpretingNutritionalData(true);
+
+                const interval = setInterval(() => {
+                    setInterpretingNutritionalDataProgress(prev => {
+                        const newProgress = Math.min(prev + 4, 100);
+                        if (newProgress >= 100) {
+                            clearInterval(interval);
+                            setIsActiveInterpretingNutritionalData(false);
+                            setIsCompletedInterpretingNutritionalData(true);
+                        }
+                        return newProgress;
+                    });
+                }, 120);
+                return () => clearInterval(interval);
+            }
         }
+    }, [isCompletedAnalyzingMenuContent]);
+
+    // Effect cho Step 3: Generating Dish Images
+    const navigatedRef = useRef(false);
+    useEffect(() => {
+        if (isCompletedAnalyzingMenuContent) {
+            // set generating dish images progress
+            setIsActiveGeneratingDishImages(true);
+            //calculate progress
+            const currentProgress = (foodSuccess / totalFood) * 100;
+            setGeneratingDishImagesProgress(
+                Math.min(Number(currentProgress.toFixed(4)), 99.9)
+            );
+
+            if (
+                foodSuccess > totalFood
+            ) {
+                // make sure progress is 100%
+                setGeneratingDishImagesProgress(100);
+                setIsActiveGeneratingDishImages(false);
+                setIsCompletedGeneratingDishImages(true);
+                setTimeout(() => {
+                    navigatedRef.current = true;
+                    history.push('/food-list', { menuId: menuId });
+                    useMenuTranslationStore.getState().setIsConnected(false);
+                }, 1500);
+            }
+        }
+
     }, [foodSuccess]);
 
     return (
