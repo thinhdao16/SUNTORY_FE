@@ -110,7 +110,7 @@ const DietSetup: React.FC = () => {
                 <div className="flex flex-col min-h-full pb-28 bg-white">
                     {/* Main Content Area */}
                     <div className="flex-1 space-y-4">
-                        <div className="px-2 pt-2 sticky top-0 z-50 bg-white" style={{ boxShadow: '0 4px 10px rgba(0,0,0,0.06)' }}>
+                        <div className="px-2 pt-2 sticky top-0 z-50 bg-white" style={{ boxShadow: '0 4px 10px rgba(0,0,0,0.06)' , '--ion-background-color': 'white' } as any}>
                             <div className="flex items-center gap-3 relative">
                                 <div className="flex-1 h-2 rounded-full bg-blue-200" />
                                 <div className="flex-1 h-2 rounded-full bg-blue-600" />
