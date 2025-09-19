@@ -14,6 +14,7 @@ import ActionButton from '@/components/loading/ActionButton';
 import LogoIcon from "@/icons/logo/logo-rounded-full.svg?react";
 import AddFriendIcon from "@/icons/logo/social-feed/add-friend.svg?react";
 import { GoDotFill } from 'react-icons/go';
+import { useAuthStore } from '@/store/zustand/auth-store';
 
 interface PostContentProps {
     displayPost: any;
@@ -36,14 +37,13 @@ const PostContent: React.FC<PostContentProps> = ({
     onSendFriendRequest,
     sendFriendRequestMutation
 }) => {
-    console.log(displayPost)
+    const {user} = useAuthStore()
     const { t } = useTranslation();
     const history = useHistory();
     const createTranslationMutation = useCreateTranslationChat();
     const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
     const toLanguageId = useMemo(() => selectedLanguageSocialChat?.id || selectedLanguageTo?.id || 2, [selectedLanguageSocialChat, selectedLanguageTo]);
 
-    // Check if repost has deleted original content
     const isRepostWithDeletedOriginal = isRepost && (!originalPost || originalPost?.status === 190);
     const [translatedText, setTranslatedText] = React.useState<string | null>(null);
     const [showOriginal, setShowOriginal] = React.useState<boolean>(true);
@@ -63,7 +63,6 @@ const PostContent: React.FC<PostContentProps> = ({
         <div className="bg-white">
             {isRepost && (
                 <div className="rounded-xl overflow-hidden">
-                    {/* Reposter header */}
                     <div className="flex items-center justify-between px-4 pt-4 pb-2">
                         <div className="flex items-center gap-3">
                             <img
@@ -115,7 +114,6 @@ const PostContent: React.FC<PostContentProps> = ({
                             </div>
                         ) : (
                             <>
-                                {/* Original author info */}
                                 <div className="flex items-center gap-3 px-4 pt-3 pb-2 border-b border-gray-100">
                                     <img
                                         src={postToDisplay?.user?.avatarUrl || avatarFallback}
@@ -148,7 +146,7 @@ const PostContent: React.FC<PostContentProps> = ({
                                         loading={createTranslationMutation.isLoading}
                                         onClick={async () => {
                                             try {
-                                                const res = await createTranslationMutation.mutateAsync({ toLanguageId: toLanguageId as number, originalText: postToDisplay?.content || '' });
+                                                const res = await createTranslationMutation.mutateAsync({ toLanguageId: user?.language?.id || 2, originalText: postToDisplay?.content || '' });
                                                 const text = res?.data?.translated_text || res?.data?.translatedText || '';
                                                 setTranslatedText(text);
                                                 setShowOriginal(false);
@@ -178,7 +176,7 @@ const PostContent: React.FC<PostContentProps> = ({
                                     </div>
                                 )}
                                 </div>
-                                {postToDisplay?.hashtags && postToDisplay.hashtags.length > 0 && (
+                                {/* {postToDisplay?.hashtags && postToDisplay.hashtags.length > 0 && (
                                     <div className="flex gap-1 mt-2">
                                         {postToDisplay.hashtags.map((hashtag: any) => (
                                             <span key={hashtag.id}>
@@ -186,7 +184,7 @@ const PostContent: React.FC<PostContentProps> = ({
                                             </span>
                                         ))}
                                     </div>
-                                )}
+                                )} */}
                             </div>
                         )}
                         {!isRepostWithDeletedOriginal && postToDisplay?.media && postToDisplay.media.length > 0 && (
@@ -196,6 +194,7 @@ const PostContent: React.FC<PostContentProps> = ({
                                     className="mt-3"
                                     lightboxUserName={postToDisplay.user.fullName}
                                     lightboxUserAvatar={postToDisplay.user.avatarUrl}
+                                    classNameAudio='px-4'
                                 />
                             </div>
                         )}
@@ -282,7 +281,7 @@ const PostContent: React.FC<PostContentProps> = ({
                                 </div>
                             )}
                         </div>
-                        {displayPost.hashtags && displayPost.hashtags.length > 0 && (
+                        {/* {displayPost.hashtags && displayPost.hashtags.length > 0 && (
                             <div className="flex gap-1 mt-2">
                                 {displayPost.hashtags.map((hashtag: any) => (
                                     <span key={hashtag.id}>
@@ -290,7 +289,7 @@ const PostContent: React.FC<PostContentProps> = ({
                                     </span>
                                 ))}
                             </div>
-                        )}
+                        )} */}
                     </div>
 
                     {/* Regular post media */}
@@ -300,6 +299,7 @@ const PostContent: React.FC<PostContentProps> = ({
                                 mediaFiles={displayPost.media}
                                 lightboxUserName={displayPost.user.fullName}
                                 lightboxUserAvatar={displayPost.user.avatarUrl}
+                                className='px-4'
                             />
                         </div>
                     )}

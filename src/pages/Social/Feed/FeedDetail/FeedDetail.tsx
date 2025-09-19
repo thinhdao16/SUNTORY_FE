@@ -502,7 +502,6 @@ const FeedDetail: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Loading Content */}
                 <div className="flex-1 flex items-center justify-center">
                     <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
@@ -519,7 +518,6 @@ const FeedDetail: React.FC = () => {
                     paddingBottom: keyboardHeight > 0 ? (keyboardResizeScreen ? 60 : keyboardHeight) : 60,
                     height: "100dvh",
                 }}>
-                {/* Header */}
                 <div className="relative flex items-center justify-between px-6 h-[50px] border-b border-gray-100">
                     <div className="flex items-center gap-4 z-10">
                         <button onClick={() => history.goBack()}>
@@ -563,7 +561,6 @@ const FeedDetail: React.FC = () => {
                 onPostOptions={openPostOptions}
             />
 
-            {/* Scrollable Content */}
             <div className={`flex-1 overflow-x-hidden overflow-y-auto ${!isNative && !keyboardResizeScreen ? `pb-2 overflow-hidden` : ""}`}>
                 <PostContent
                     displayPost={displayPost}
@@ -596,11 +593,9 @@ const FeedDetail: React.FC = () => {
                     isLoadingComments={isLoadingComments}
                 />
 
-                {/* Spacer for bottom input */}
                 <div ref={messagesEndRef} className="h-px mt-auto shrink-0" />
             </div>
 
-            {/* Fixed Bottom Input */}
             <div className={`bg-white w-full shadow-[0px_-3px_10px_0px_#0000000D] ${keyboardResizeScreen ? "fixed" : !isNative && "sticky"
                 } ${isNative ? "bottom-0" : "bottom-[60px]"
                 } ${keyboardResizeScreen && !isNative ? "!bottom-0" : ""
