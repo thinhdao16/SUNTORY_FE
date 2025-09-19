@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
 import RetryIcon from "@/icons/logo/social-feed/retry.svg?react";
-
+import CloseIcon from "@/icons/logo/close.svg?react";
 interface CommentInputProps {
     user: any;
     commentText: string;
@@ -48,14 +48,14 @@ const CommentInput: React.FC<CommentInputProps> = ({
                 {(replyingTo || editingComment) && (
                     <div className="absolute -top-8 left-0 right-0 bg-blue-50 px-3 py-1 rounded-t-xl border border-blue-200 border-b-0">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-blue-600">
+                            <span className="text-sm text-blue-600 flex items-center gap-1">
                                 {editingComment ? (
                                     <>
-                                        {t('Edit comment')} <span className="font-bold">{editingComment.user.fullName}</span>
+                                        {t('Edit comment')} <span className="font-bold inline-block max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">{editingComment.user.fullName}</span>
                                     </>
                                 ) : (
                                     <>
-                                        {t('Reply to')} <span className="font-bold">{replyingToUser}</span>
+                                        {t('Reply to')} <span className="font-bold inline-block max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">{replyingToUser}</span>
                                     </>
                                 )}
                             </span>
@@ -63,7 +63,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
                                 onClick={handleCancelReply}
                                 className="text-blue-400 hover:text-blue-600"
                             >
-                                <RetryIcon className="w-4 h-4 rotate-45" />
+                                <CloseIcon className="w-3 h-3 " />
                             </button>
                         </div>
                     </div>

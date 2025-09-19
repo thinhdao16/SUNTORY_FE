@@ -8,13 +8,15 @@ interface PostHeaderProps {
     isOwnPost: boolean;
     onBack: () => void;
     onPostOptions: () => void;
+    onUserProfileClick?: (userId: number) => void;
 }
 
 const PostHeader: React.FC<PostHeaderProps> = ({
     displayPost,
     isOwnPost,
     onBack,
-    onPostOptions
+    onPostOptions,
+    onUserProfileClick
 }) => {
     const { t } = useTranslation();
 
@@ -25,8 +27,19 @@ const PostHeader: React.FC<PostHeaderProps> = ({
                     <BackIcon />
                 </button>
                 <span className="font-semibold">
-                    {isOwnPost ? t('Your Post') : `${displayPost.user.fullName}'s Post`}
+                    {isOwnPost ? t('Your Post') : (
+                        <span className="flex items-center">
+                            <span 
+                                className="max-w-[250px] truncate inline-block cursor-pointer hover:text-blue-600 transition-colors"
+                                onClick={() => onUserProfileClick?.(displayPost.user.id)}
+                            >
+                                {displayPost.user.fullName}
+                            </span>
+                            <span>'s Post</span>
+                        </span>
+                    )}
                 </span>
+
             </div>
             <div className="flex items-center justify-end z-10">
                 <button onClick={onPostOptions} aria-label="Post actions">

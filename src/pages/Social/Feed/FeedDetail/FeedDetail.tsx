@@ -243,6 +243,14 @@ const FeedDetail: React.FC = () => {
 
         openConfirmModal("send");
     };
+
+    const handleUserProfileClick = (userId: number) => {
+        if (user?.id === userId) {
+            history.push('/my-profile');
+        } else {
+            history.push(`/profile/${userId}`);
+        }
+    };
     const handleReplyClick = (commentId: number, userName: string) => {
         setEditingComment(null);
         setReplyingTo(commentId);
@@ -559,6 +567,7 @@ const FeedDetail: React.FC = () => {
                 isOwnPost={isOwnPost}
                 onBack={() => history.goBack()}
                 onPostOptions={openPostOptions}
+                onUserProfileClick={handleUserProfileClick}
             />
 
             <div className={`flex-1 overflow-x-hidden overflow-y-auto ${!isNative && !keyboardResizeScreen ? `pb-2 overflow-hidden` : ""}`}>
@@ -571,6 +580,7 @@ const FeedDetail: React.FC = () => {
                     isOwnPost={isOwnPost}
                     onSendFriendRequest={handleSendFriendRequestClick}
                     sendFriendRequestMutation={sendFriendRequestMutation}
+                    onUserProfileClick={handleUserProfileClick}
                 />
 
                 <PostActions
@@ -591,6 +601,7 @@ const FeedDetail: React.FC = () => {
                     onCommentOptions={openCommentOptions}
                     commentLikeMutation={commentLikeMutation}
                     isLoadingComments={isLoadingComments}
+                    onUserProfileClick={handleUserProfileClick}
                 />
 
                 <div ref={messagesEndRef} className="h-px mt-auto shrink-0" />

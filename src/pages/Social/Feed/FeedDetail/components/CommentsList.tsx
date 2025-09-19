@@ -21,6 +21,7 @@ interface CommentsListProps {
     onCommentOptions: (comment: any) => void;
     commentLikeMutation: any;
     isLoadingComments: boolean;
+    onUserProfileClick?: (userId: number) => void;
 }
 
 const CommentsList: React.FC<CommentsListProps> = ({
@@ -31,7 +32,8 @@ const CommentsList: React.FC<CommentsListProps> = ({
     onReplyClick,
     onCommentOptions,
     commentLikeMutation,
-    isLoadingComments
+    isLoadingComments,
+    onUserProfileClick
 }) => {
     const { t } = useTranslation();
     const history = useHistory();
@@ -39,10 +41,15 @@ const CommentsList: React.FC<CommentsListProps> = ({
 
     const handleUserProfileClick = (e: React.MouseEvent, userId: number) => {
         e.stopPropagation();
-        if (currentUser?.id === userId) {
-            history.push('/my-profile');
+        if (onUserProfileClick) {
+            onUserProfileClick(userId);
         } else {
-            history.push(`/profile/${userId}`);
+            // Fallback to local navigation if prop not provided
+            if (currentUser?.id === userId) {
+                history.push('/my-profile');
+            } else {
+                history.push(`/profile/${userId}`);
+            }
         }
     };
 
@@ -189,7 +196,15 @@ const CommentsList: React.FC<CommentsListProps> = ({
                                                 </button>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className='font-semibold text-main text-sm max-w-[150px] truncate'>
+                                                <span 
+                                                    className='font-semibold text-main text-sm max-w-[150px] truncate cursor-pointer hover:underline'
+                                                    onClick={(e) => {
+                                                        const targetUserId = reply.replyCommentId ? 
+                                                            organizedComments.find(c => c.id === reply.replyCommentId)?.user?.id || reply.user.id 
+                                                            : reply.user.id;
+                                                        handleUserProfileClick(e, targetUserId);
+                                                    }}
+                                                >
                                                     {reply.replyCommentId ? findOriginalCommentAuthor(reply.replyCommentId) || reply.user.fullName : reply.user.fullName}
                                                 </span>
                                                 <div className="text-gray-800 text-sm leading-relaxed">

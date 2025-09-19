@@ -141,7 +141,7 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
     }
 
     return (
-        <div className="bg-white" ref={scrollRef} style={{ height: '100%', overflowY: 'auto' }}>
+        <div className="bg-white" ref={scrollRef} style={{ height: '100%' }}>
             {allPosts.map((post: any, index: number) => (
                 <div key={post.id || post.code}>
                     <SocialFeedCard

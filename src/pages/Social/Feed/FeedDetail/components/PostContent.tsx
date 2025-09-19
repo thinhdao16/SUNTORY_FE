@@ -25,6 +25,7 @@ interface PostContentProps {
     isOwnPost: boolean;
     onSendFriendRequest: () => void;
     sendFriendRequestMutation: any;
+    onUserProfileClick?: (userId: number) => void;
 }
 
 const PostContent: React.FC<PostContentProps> = ({
@@ -35,9 +36,10 @@ const PostContent: React.FC<PostContentProps> = ({
     postToDisplay,
     isOwnPost,
     onSendFriendRequest,
-    sendFriendRequestMutation
+    sendFriendRequestMutation,
+    onUserProfileClick
 }) => {
-    const {user} = useAuthStore()
+    const { user } = useAuthStore()
     const { t } = useTranslation();
     const history = useHistory();
     const createTranslationMutation = useCreateTranslationChat();
@@ -68,19 +70,26 @@ const PostContent: React.FC<PostContentProps> = ({
                             <img
                                 src={displayPost?.user?.avatarUrl || avatarFallback}
                                 alt={displayPost?.user?.fullName}
-                                className="w-9 h-9 rounded-2xl object-cover"
+                                className="w-9 h-9 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => onUserProfileClick?.(displayPost?.user?.id)}
                                 onError={(e) => {
                                     (e.target as HTMLImageElement).src = avatarFallback;
                                 }}
                             />
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-sm">{displayPost?.user?.fullName}</span>
+                                    <div 
+                                        className="font-semibold text-sm max-w-[150px] truncate cursor-pointer hover:text-blue-600 transition-colors"
+                                        onClick={() => onUserProfileClick?.(displayPost?.user?.id)}
+                                    >
+                                        {displayPost?.user?.fullName}
+                                    </div>
                                     <div className="flex items-center gap-1">
                                         <RetryIcon className='w-4 h-4 text-gray-400' />
                                         <span className="text-sm text-gray-500">{t('reposted')}</span>
                                     </div>
                                 </div>
+
                                 <span className="text-gray-500 text-sm">{formatTimeAgo(displayPost?.createDate || '')}</span>
                             </div>
                         </div>
@@ -96,7 +105,7 @@ const PostContent: React.FC<PostContentProps> = ({
                         )}
                     </div>
 
-                    <div 
+                    <div
                         className="mx-4 mb-4 border border-gray-200 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors"
                         onClick={handleOriginalPostClick}
                     >
@@ -118,13 +127,25 @@ const PostContent: React.FC<PostContentProps> = ({
                                     <img
                                         src={postToDisplay?.user?.avatarUrl || avatarFallback}
                                         alt={postToDisplay?.user?.fullName}
-                                        className="w-8 h-8 rounded-xl object-cover"
+                                        className="w-8 h-8 rounded-xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onUserProfileClick?.(postToDisplay?.user?.id);
+                                        }}
                                         onError={(e) => {
                                             (e.target as HTMLImageElement).src = avatarFallback;
                                         }}
                                     />
                                     <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-sm">{postToDisplay?.user?.fullName}</span>
+                                        <span 
+                                            className="font-semibold text-sm cursor-pointer hover:text-blue-600 transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onUserProfileClick?.(postToDisplay?.user?.id);
+                                            }}
+                                        >
+                                            {postToDisplay?.user?.fullName}
+                                        </span>
                                         <GoDotFill className="w-1 h-1 text-gray-400" />
                                         <span className="text-xs text-gray-500">{formatTimeAgo(postToDisplay?.createDate || '')}</span>
                                     </div>
@@ -136,45 +157,45 @@ const PostContent: React.FC<PostContentProps> = ({
                                 <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
                                     {parseHashtagsWithClick(postToDisplay?.content || '')}
                                 </div>
-                            <div className="mt-2">
-                                {postToDisplay?.content && showOriginal ? (
-                                    <ActionButton
-                                        spinnerPosition="right"
-                                        variant="ghost"
-                                        size="none"
-                                        className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
-                                        loading={createTranslationMutation.isLoading}
-                                        onClick={async () => {
-                                            try {
-                                                const res = await createTranslationMutation.mutateAsync({ toLanguageId: user?.language?.id || 2, originalText: postToDisplay?.content || '' });
-                                                const text = res?.data?.translated_text || res?.data?.translatedText || '';
-                                                setTranslatedText(text);
-                                                setShowOriginal(false);
-                                            } catch (e) { }
-                                        }}
-                                        disabled={!postToDisplay?.content}
-                                    >
-                                        <div className="flex items-center gap-1">
-                                            <LogoIcon className="w-5 h-5" /> {t('Translate')}
+                                <div className="mt-2">
+                                    {postToDisplay?.content && showOriginal ? (
+                                        <ActionButton
+                                            spinnerPosition="right"
+                                            variant="ghost"
+                                            size="none"
+                                            className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                                            loading={createTranslationMutation.isLoading}
+                                            onClick={async () => {
+                                                try {
+                                                    const res = await createTranslationMutation.mutateAsync({ toLanguageId: user?.language?.id || 2, originalText: postToDisplay?.content || '' });
+                                                    const text = res?.data?.translated_text || res?.data?.translatedText || '';
+                                                    setTranslatedText(text);
+                                                    setShowOriginal(false);
+                                                } catch (e) { }
+                                            }}
+                                            disabled={!postToDisplay?.content}
+                                        >
+                                            <div className="flex items-center gap-1">
+                                                <LogoIcon className="w-5 h-5" /> {t('Translate')}
+                                            </div>
+                                        </ActionButton>
+                                    ) : postToDisplay?.content && !showOriginal ? (
+                                        <ActionButton
+                                            variant="ghost"
+                                            size="none"
+                                            className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                                            onClick={() => setShowOriginal(true)}
+                                        >
+                                            <div className="flex items-center gap-1">
+                                                <LogoIcon className="w-5 h-5" /> {t('See original')}
+                                            </div>
+                                        </ActionButton>
+                                    ) : null}
+                                    {!showOriginal && translatedText && (
+                                        <div className="mt-2 border-l-4 border-gray-200 pl-3 text-sm text-gray-700 whitespace-pre-wrap">
+                                            {translatedText}
                                         </div>
-                                    </ActionButton>
-                                ) : postToDisplay?.content && !showOriginal ? (
-                                    <ActionButton
-                                        variant="ghost"
-                                        size="none"
-                                        className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
-                                        onClick={() => setShowOriginal(true)}
-                                    >
-                                        <div className="flex items-center gap-1">
-                                            <LogoIcon className="w-5 h-5" /> {t('See original')}
-                                        </div>
-                                    </ActionButton>
-                                ) : null}
-                                {!showOriginal && translatedText && (
-                                    <div className="mt-2 border-l-4 border-gray-200 pl-3 text-sm text-gray-700 whitespace-pre-wrap">
-                                        {translatedText}
-                                    </div>
-                                )}
+                                    )}
                                 </div>
                                 {/* {postToDisplay?.hashtags && postToDisplay.hashtags.length > 0 && (
                                     <div className="flex gap-1 mt-2">
@@ -209,14 +230,20 @@ const PostContent: React.FC<PostContentProps> = ({
                         <img
                             src={displayPost.user.avatarUrl || avatarFallback}
                             alt={displayPost.user.fullName}
-                            className="w-9 h-9 rounded-2xl object-cover"
+                            className="w-9 h-9 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => onUserProfileClick?.(displayPost.user.id)}
                             onError={(e) => {
                                 (e.target as HTMLImageElement).src = avatarFallback;
                             }}
                         />
                         <div>
                             <div className="flex items-center gap-1">
-                                <span className="font-semibold text-sm">{displayPost.user.fullName}</span>
+                                <span 
+                                    className="font-semibold text-sm cursor-pointer hover:text-blue-600 transition-colors"
+                                    onClick={() => onUserProfileClick?.(displayPost.user.id)}
+                                >
+                                    {displayPost.user.fullName}
+                                </span>
                             </div>
                             <span className="text-gray-500 text-sm">{formatTimeAgo(displayPost.createDate)}</span>
                         </div>
