@@ -261,13 +261,13 @@ const EditFeed: React.FC = () => {
                         value={postText}
                         onChange={(e) => setPostText(e.target.value)}
                         placeholder={t("What's new?")}
-                        className="w-full min-h-[2.5rem] p-3 border-none outline-none resize-none text-transparent bg-transparent caret-gray-700 leading-relaxed relative z-10"
+                        className="w-full min-h-[2.5rem] py-3 border-none outline-none resize-none text-transparent bg-transparent caret-gray-700 leading-relaxed relative z-10"
                         rows={1}
                         autoFocus
                         style={{ color: 'transparent' }}
                     />
                     <div 
-                        className="absolute top-0 left-0 w-full min-h-[2.5rem] p-3 pointer-events-none text-gray-700 leading-relaxed whitespace-pre-wrap z-0"
+                        className="absolute top-0 left-0 w-full min-h-[2.5rem] py-3 pointer-events-none text-gray-700 leading-relaxed whitespace-pre-wrap z-0"
                         style={{ 
                             minHeight: textareaRef.current?.scrollHeight || 'auto',
                             wordBreak: 'break-word'

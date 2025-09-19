@@ -35,23 +35,30 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
   const mediaItems = allPosts
     .filter((post: any) => post.media && post.media.length > 0)
     .flatMap((post: any) =>
-      post.media.map((mediaItem: any) => {
-        let mediaType = mediaItem.mediaType;
-        if (!mediaType && mediaItem.fileType) {
-          mediaType = mediaItem.fileType.startsWith('image') ? 'image' :
-            mediaItem.fileType.startsWith('video') ? 'video' : 'image';
-        }
+      post.media
+        .filter((mediaItem: any) => {
+          if (mediaItem.fileType) {
+            return !mediaItem.fileType.startsWith('audio');
+          }
+          return true;
+        })
+        .map((mediaItem: any) => {
+          let mediaType = mediaItem.mediaType;
+          if (!mediaType && mediaItem.fileType) {
+            mediaType = mediaItem.fileType.startsWith('image') ? 'image' :
+              mediaItem.fileType.startsWith('video') ? 'video' : 'image';
+          }
 
-        return {
-          ...mediaItem,
-          mediaType,
-          postCode: post.code,
-          postLikes: post.reactionCount,
-          postComments: post.commentCount,
-          isLike: post.isLike,
-          post: post
-        };
-      })
+          return {
+            ...mediaItem,
+            mediaType,
+            postCode: post.code,
+            postLikes: post.reactionCount,
+            postComments: post.commentCount,
+            isLike: post.isLike,
+            post: post
+          };
+        })
     );
 
   useEffect(() => {

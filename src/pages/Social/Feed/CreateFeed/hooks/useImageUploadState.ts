@@ -18,7 +18,6 @@ export const useImageUploadState = () => {
                         const mgr = imageUploadManager.current!.getImages();
                         const mgrItem = mgr[imageIndex];
                         if (!mgrItem) return;
-
                         setImages(prev => {
                             const next = [...prev];
                             const idx = next.findIndex(it =>
@@ -26,7 +25,6 @@ export const useImageUploadState = () => {
                                 (it.localUrl && mgrItem.localUrl && it.localUrl === mgrItem.localUrl) ||
                                 (!!it.filename && !!mgrItem.filename && it.filename === mgrItem.filename)
                             );
-
                             if (idx >= 0) {
                                 next[idx] = mgrItem;
                             } else {
