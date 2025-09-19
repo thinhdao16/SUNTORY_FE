@@ -5,6 +5,8 @@ import { useLocation, useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { menuAnalyzing } from '@/services/menu/menu-service';
 import { useMenuTranslationStore } from '@/store/zustand/menuTranslationStore';
+import { useMenuSignalR } from '@/hooks/useMenuSignalR';
+import { useAuthStore } from '@/store/zustand/auth-store';
 
 interface LocationState {
     base64Img: string;
@@ -18,6 +20,9 @@ const MenuAnalyzing: React.FC = () => {
     const base64Img = location.state?.base64Img || "";
     const [totalFood, setTotalFood] = useState(0);
     const setFoodSuccess = useMenuTranslationStore(state => state.setFoodSuccess);
+    const foodSuccess = useMenuTranslationStore(state => state.foodSuccess);
+    const { user } = useAuthStore();
+    const [menuId, setMenuId] = useState(0);
     // State cho Step 1: Analyzing Menu Content
     const [analyzingMenuContentProgress, setAnalyzingMenuContentProgress] = useState(0);
     const [isActiveAnalyzingMenuContent, setIsActiveAnalyzingMenuContent] = useState(true);
@@ -48,34 +53,20 @@ const MenuAnalyzing: React.FC = () => {
         return new File([u8arr], filename, { type: mime });
     };
 
+    useMenuSignalR(user?.id?.toString() || "");
+
     const analyzeMenu = async () => {
         try {
             const formData = new FormData();
             const file = base64ToFile(base64Img, "gallery.png");
             formData.append("file", file);
             const result = await menuAnalyzing(formData);
+            setMenuId(result.data.id);
             if (result?.data != null) {
                 setTotalFood(result.data.totalFood);
                 setAnalyzingMenuContentProgress(100);
                 setIsActiveAnalyzingMenuContent(false);
                 setIsCompletedAnalyzingMenuContent(true);
-                // Khi analyzeMenu xong, sau 2s đẩy Step 2 và 3 lên 100%
-                setIsActiveInterpretingNutritionalData(true);
-                setIsActiveGeneratingDishImages(true);
-                if (step2TimeoutRef.current) clearTimeout(step2TimeoutRef.current);
-                if (step3TimeoutRef.current) clearTimeout(step3TimeoutRef.current);
-                step2TimeoutRef.current = setTimeout(() => {
-                    setInterpretingNutritionalDataProgress(100);
-                    setIsActiveInterpretingNutritionalData(false);
-                    setIsCompletedInterpretingNutritionalData(true);
-                }, 2000);
-                step3TimeoutRef.current = setTimeout(() => {
-                    setGeneratingDishImagesProgress(100);
-                    setIsActiveGeneratingDishImages(false);
-                    setIsCompletedGeneratingDishImages(true);
-                    // Điều hướng sang danh sách món ăn sau khi hoàn tất Step 3 và truyền menuId
-                    history.push('/food-list', { menuId: result.data.id });
-                }, 2000);
             }
             else {
                 setIsCompletedInterpretingNutritionalData(true);
@@ -130,6 +121,58 @@ const MenuAnalyzing: React.FC = () => {
             }
         };
     }, [setFoodSuccess]);
+
+
+    // Effect cho Step 2: Interpreting Nutritional Data
+    useEffect(() => {
+        if (isCompletedAnalyzingMenuContent) {
+            {
+                setIsActiveInterpretingNutritionalData(true);
+
+                const interval = setInterval(() => {
+                    setInterpretingNutritionalDataProgress(prev => {
+                        const newProgress = Math.min(prev + 4, 100);
+                        if (newProgress >= 100) {
+                            clearInterval(interval);
+                            setIsActiveInterpretingNutritionalData(false);
+                            setIsCompletedInterpretingNutritionalData(true);
+                        }
+                        return newProgress;
+                    });
+                }, 120);
+                return () => clearInterval(interval);
+            }
+        }
+    }, [isCompletedAnalyzingMenuContent]);
+
+    // Effect cho Step 3: Generating Dish Images
+    const navigatedRef = useRef(false);
+    useEffect(() => {
+        if (isCompletedAnalyzingMenuContent) {
+            // set generating dish images progress
+            setIsActiveGeneratingDishImages(true);
+            //calculate progress
+            const currentProgress = (foodSuccess / totalFood) * 100;
+            setGeneratingDishImagesProgress(
+                Math.min(Number(currentProgress.toFixed(4)), 99.9)
+            );
+
+            if (
+                foodSuccess > totalFood
+            ) {
+                // make sure progress is 100%
+                setGeneratingDishImagesProgress(100);
+                setIsActiveGeneratingDishImages(false);
+                setIsCompletedGeneratingDishImages(true);
+                setTimeout(() => {
+                    navigatedRef.current = true;
+                    history.push('/food-list', { menuId: menuId });
+                    useMenuTranslationStore.getState().setIsConnected(false);
+                }, 1500);
+            }
+        }
+
+    }, [foodSuccess]);
 
     return (
         <IonPage>
