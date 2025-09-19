@@ -103,7 +103,7 @@ const CommentsList: React.FC<CommentsListProps> = ({
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-1 mb-1">
                                     <span 
-                                        className="font-semibold text-sm cursor-pointer hover:underline"
+                                        className="font-semibold text-sm cursor-pointer hover:underline max-w-[200px] truncate"
                                         onClick={(e) => handleUserProfileClick(e, comment.user.id)}
                                     >
                                         {comment.user.fullName}
@@ -172,7 +172,7 @@ const CommentsList: React.FC<CommentsListProps> = ({
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-1 mb-1">
                                                     <span 
-                                                        className="font-semibold text-sm cursor-pointer hover:underline"
+                                                        className="font-semibold text-sm cursor-pointer hover:underline max-w-[200px] truncate"
                                                         onClick={(e) => handleUserProfileClick(e, reply.user.id)}
                                                     >
                                                         {reply.user.fullName}
@@ -189,7 +189,7 @@ const CommentsList: React.FC<CommentsListProps> = ({
                                                 </button>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className='font-semibold text-main text-sm'>
+                                                <span className='font-semibold text-main text-sm max-w-[150px] truncate'>
                                                     {reply.replyCommentId ? findOriginalCommentAuthor(reply.replyCommentId) || reply.user.fullName : reply.user.fullName}
                                                 </span>
                                                 <div className="text-gray-800 text-sm leading-relaxed">

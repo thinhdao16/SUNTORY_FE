@@ -459,7 +459,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
               </div>
             )}
           </div>
-          {displayPost?.hashtags && displayPost?.hashtags.length > 0 && (
+          {/* {displayPost?.hashtags && displayPost?.hashtags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2 px-4">
               {displayPost?.hashtags.map((hashtag: any) => (
                 <span key={hashtag.id}>
@@ -467,7 +467,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                 </span>
               ))}
             </div>
-          )}
+          )} */}
           {displayPost.media && displayPost.media.length > 0 && (
             <div data-media-display>
               <MediaDisplay

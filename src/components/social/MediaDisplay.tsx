@@ -246,14 +246,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoFile, className = '' }) 
   }, []);
 
   return (
-    <div className={`relative rounded-lg overflow-hidden ${className}`}>
+    <div className={`relative rounded-lg px-4 overflow-hidden ${className}`}>
       <video
         ref={videoRef}
         controls
         muted
         loop
         playsInline
-        className="w-full aspect-video"
+        className="w-full aspect-video rounded-2xl"
         preload="metadata"
         poster={videoFile.urlFile + '#t=0.1'}
       >
