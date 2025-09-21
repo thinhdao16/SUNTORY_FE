@@ -25,15 +25,16 @@ import { useUpdateNewDevice } from "@/hooks/device/useDevice";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { Preferences } from "@capacitor/preferences";
 import { FCM_KEY } from "@/constants/global";
-
+import { useLanguageSwitcher } from "@/pages/Home";
 const showToast = useToastStore.getState().showToast;
 
-export const useLogin = () => {
+export const useLogin = (langCode: string) => {
     const setAuthData = useAuthStore((state) => state.setAuthData);
+    const languageSwitcher = useLanguageSwitcher();
     const history = useHistory();
 
     return useMutation(
-        async (credentials: { email: string; password: string; deviceId: string | null }) => {
+        async (credentials: { email: string; password: string; deviceId: string | null; }) => {
             const storedToken = (await Preferences.get({ key: FCM_KEY })).value;
             console.log(storedToken)
             return login({
@@ -42,7 +43,7 @@ export const useLogin = () => {
             });
         },
         {
-            onSuccess: (data: any) => {
+            onSuccess: async (data: any) => {
                 const auth = data?.data?.authentication;
                 showToast(t("Login successful!"), 1000, "success");
                 if (auth?.token && auth?.refreshToken) {
@@ -55,6 +56,7 @@ export const useLogin = () => {
                 } else {
                     setAuthData(data.data);
                 }
+                await languageSwitcher.handleLanguageChange(langCode, true);
                 history.push("/social-chat");
             },
             onError: async (error: any, variables) => {

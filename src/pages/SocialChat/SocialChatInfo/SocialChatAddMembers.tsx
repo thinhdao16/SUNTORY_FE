@@ -101,7 +101,7 @@ function SocialChatAddMembers() {
 
   return (
     <div className="bg-white min-h-screen py-3">
-      <div className="px-6 space-y-4">
+      <div className="px-4 space-y-4">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-4">
             <button onClick={() => history.goBack()} className="text-gray-500">
@@ -168,7 +168,7 @@ function SocialChatAddMembers() {
           </div>
         )}
       </div>
-      <div className={`px-6 mt-4 overflow-y-auto pb-28 ${isNative
+      <div className={`px-4 mt-4 overflow-y-auto pb-28 ${isNative
         ? "max-h-[85vh]"
         : "max-h-[90vh]"
         }`}>

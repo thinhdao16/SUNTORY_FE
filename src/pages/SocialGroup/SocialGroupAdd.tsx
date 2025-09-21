@@ -16,7 +16,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import ActionButton from "@/components/loading/ActionButton";
 import BackIcon from "@/icons/logo/back-default.svg?react";
 
-function SocialGroupAdd() {
+function SocialGroupAdd( { isProfile }: { isProfile?: boolean } ) {
   const isNative = Capacitor.isNativePlatform();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -114,7 +114,7 @@ function SocialGroupAdd() {
 
   return (
     <div className="bg-white min-h-screen  py-3">
-      <div className="px-6 space-y-4">
+      <div className="px-4 space-y-4">
         <div className="flex justify-between items-center mb-4">
           <button onClick={() => history.goBack()} className="text-gray-500">
             <BackIcon  />
@@ -191,7 +191,7 @@ function SocialGroupAdd() {
           </div>
         )}
       </div>
-      <div className={`px-6 mt-4 overflow-y-auto pb-28 ${isNative
+      <div className={`px-4 mt-4 overflow-y-auto pb-28 ${isNative
         ? "max-h-[75vh]"
         : "max-h-[65vh] lg:max-h-[65vh] xl:max-h-[75vh]"
         }`}>

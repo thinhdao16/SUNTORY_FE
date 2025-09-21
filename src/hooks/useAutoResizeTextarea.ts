@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 
-export function useAutoResizeTextarea(ref: React.RefObject<HTMLTextAreaElement>, value: string) {
+export function useAutoResizeTextarea(ref: React.RefObject<HTMLTextAreaElement | null>, value: string) {
     useEffect(() => {
         const textarea = ref.current;
         if (textarea) {

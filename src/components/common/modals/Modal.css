@@ -1,12 +1,26 @@
 ion-modal.auto-height {
+    --height: auto;
+    --max-height: 90vh;
+
     &.bottom {
         align-items: flex-end;
+        
+        .ion-page {
+            position: relative;
+            display: block;
+            contain: content;
+            height: auto;
+
+            .inner-content {
+                height: auto;
+                min-height: auto;
+                max-height: 90vh;
+                overflow: visible;
+            }
+        }
     }
 
-    --height: auto;
-
     .ion-page {
-
         position: relative;
         display: block;
         contain: content;
@@ -22,4 +36,14 @@ ion-modal.auto-height {
 .auto-height::part(content) {
     --border-radius: 16px;
     width: 400px;
+}
+
+/* Bottom sheet specific styling */
+ion-modal.auto-height.bottom::part(content) {
+    --border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
+    height: auto;
+    min-height: auto;
 }

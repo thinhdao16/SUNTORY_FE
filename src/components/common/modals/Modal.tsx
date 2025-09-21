@@ -17,6 +17,7 @@ const MyModal: React.FC<MyModalProps> = ({ isOpen, closeModal, loading = false, 
             isOpen={isOpen}
             onDidDismiss={closeModal}
             backdropDismiss
+            canDismiss
             className={`auto-height ${className}`}
         >
             <div className="--padding-0 inner-content !h-auto px-10 py-12 relative">

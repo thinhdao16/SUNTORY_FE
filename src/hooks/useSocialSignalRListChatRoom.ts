@@ -170,7 +170,6 @@ export function useSocialSignalRListChatRoom(
     connection.on("UserKickedFromGroupChat", (msg: any) => {
       const removedCode =
         msg?.chatCode || msg?.chatInfo?.code || msg?.roomId || msg?.code || (typeof msg === "string" ? msg : null);
-
       if (!removedCode) return;
       deleteRoom(removedCode);
     });

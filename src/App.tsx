@@ -8,6 +8,7 @@ import "@ionic/react/css/text-alignment.css";
 import "@ionic/react/css/text-transformation.css";
 import "@ionic/react/css/flex-utils.css";
 import "@ionic/react/css/display.css";
+import "flag-icons/css/flag-icons.min.css";
 import "./styles/variables.css";
 import "./styles/tailwind.css";
 import Global from "./global";

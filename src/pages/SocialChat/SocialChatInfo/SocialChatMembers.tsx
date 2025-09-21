@@ -130,7 +130,7 @@ const SocialChatMembers: React.FC = () => {
         }
     };
     const handleViewProfile = (userId: number) => {
-        history.push(`/social-partner/profile/${userId}`);
+        history.push(`/profile/${userId}`);
         sheetExpand.close();
     };
 

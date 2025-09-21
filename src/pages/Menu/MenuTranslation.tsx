@@ -7,7 +7,6 @@ import AllergiesSetup from './components/AllergiesSetup';
 import DietSetup from './components/DietSetup';
 import AnalyzingSetup from './components/AnalyzingSetup';
 import ScanMenu from './components/ScanMenu';
-import MenuAnalyzing from './components/MenuAnalyzing';
 import { arrowBack, chevronBack } from 'ionicons/icons';
 
 const MenuTranslation: React.FC = () => {
@@ -75,7 +74,7 @@ const MenuTranslation: React.FC = () => {
                 </div>
             </IonContent>
             <IonFooter className="ion-no-border" style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
-                <div className="pt-4 pb-6 px-6 space-y-4 bg-white">
+                <div className="pt-4 pb-6 px-4 space-y-4 bg-white">
                     <IonButton
                         expand="block"
                         shape="round"

@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { IonPage, IonContent, IonButton, IonIcon, IonRadio, IonRadioGroup, IonItem, IonHeader, IonToolbar, IonButtons, IonTitle, IonFooter } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { chevronBackOutline } from 'ionicons/icons';
 import { useHealthMasterDataStore } from '@/store/zustand/health-master-data-store';
 import { useHealthMasterData } from '@/hooks/common/useHealth';
@@ -64,12 +63,13 @@ const DietSetup: React.FC = () => {
 
     const handleContinue = () => {
         const payload = {
-            lifestyleId: selectedDiet,
+            lifestyleId: selectedDiet == "0" ? null : selectedDiet,
             allergies: allergies.map((item: AllergyItem) => ({
                 allergyId: item.allergyId,
                 name: item.name,
             }))
         };
+        sessionStorage.setItem('mt_allergies_initialized', '0');
         history.push('/menu-translation/confirm-setup', { payload: payload });
     };
     
@@ -110,7 +110,7 @@ const DietSetup: React.FC = () => {
                 <div className="flex flex-col min-h-full pb-28 bg-white">
                     {/* Main Content Area */}
                     <div className="flex-1 space-y-4">
-                        <div className="px-2 pt-2 sticky top-0 z-50 bg-white" style={{ boxShadow: '0 4px 10px rgba(0,0,0,0.06)' }}>
+                        <div className="px-2 pt-2 sticky top-0 z-50 bg-white" style={{ boxShadow: '0 4px 10px rgba(0,0,0,0.06)' , '--ion-background-color': 'white' } as any}>
                             <div className="flex items-center gap-3 relative">
                                 <div className="flex-1 h-2 rounded-full bg-blue-200" />
                                 <div className="flex-1 h-2 rounded-full bg-blue-600" />

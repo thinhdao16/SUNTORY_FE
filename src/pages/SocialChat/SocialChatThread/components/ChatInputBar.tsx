@@ -213,7 +213,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = (props) => {
       )}
 
       {translateActionStatus && (
-        <div className="flex items-end gap-4 px-6 py-2 border-t-1 border-netural-50">
+        <div className="flex items-end gap-4 px-4 py-2 border-t-1 border-netural-50">
           <div className="relative flex-1">
             {isTranslating && !messageTranslate && (
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-netural-200 pointer-events-none flex">
@@ -274,7 +274,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = (props) => {
         </div>
       )}
 
-      <div className="flex items-end gap-4 transition-all py-2 px-6" onMouseDown={preventBlur}>
+      <div className="flex items-end gap-4 transition-all py-2 px-4" onMouseDown={preventBlur}>
         <textarea
           placeholder={t("Type a message...")}
           ref={messageRef}
@@ -336,7 +336,7 @@ const ChatInputBar: React.FC<ChatInputBarProps> = (props) => {
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-6 pt-2">
+      <div className="flex items-center justify-between px-4 pt-2">
         <div className="flex space-x-4">
           {isDesktop ? (
             <button type="button" onMouseDown={preventBlur} onClick={onTakePhoto}><CameraIcon className="w-6 h-6" /></button>

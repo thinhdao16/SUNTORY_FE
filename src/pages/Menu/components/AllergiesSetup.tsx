@@ -46,7 +46,7 @@ const AllergiesSetup: React.FC = () => {
                 const initialized = sessionStorage.getItem('mt_allergies_initialized') === '1';
                 if (!initialized && storeAllergies.length === 0 && storeSelectedAllergies.length === 0) {
                     const res: any = await getInfoService();
-
+                    console.log("res: ", res);
                     if (res.data.allergies != null) {
                         const fromProfile: AllergyItem[] = res.data.allergies.map((item: any) => ({
                             allergyId: item.allergy.id || item.id,
@@ -56,7 +56,7 @@ const AllergiesSetup: React.FC = () => {
                         setSavedAllergiesStore(fromProfile);
                     }
 
-                    if (res.data.groupedLifestyles != null) {
+                    if (res.data.groupedLifestyles !=  null) {
                         const dietStyle: number = res.data.groupedLifestyles.find(
                             (g: any) => g.category?.name === "Diet"
                         )?.lifestyles.map((item: any) => item.id);
@@ -85,6 +85,12 @@ const AllergiesSetup: React.FC = () => {
             return () => document.removeEventListener('click', handleClickOutside);
         }
     }, [showDropdown]);
+
+    const handleBack = () => {
+        sessionStorage.setItem('mt_allergies_initialized', '0');
+        setSavedAllergies([]);
+        history.push('/menu-translation');
+    };
 
     // Function để search allergies
     const handleInputChange = (value: string) => {
@@ -178,7 +184,7 @@ const AllergiesSetup: React.FC = () => {
                     {/* Main Content Area */}
                     <div className="flex-1 space-y-6">
                         {/* Progress (sticky, có mask mờ bên dưới để tránh đè nội dung) */}
-                        <div className="px-2 pt-2 sticky top-0 z-20 bg-white" style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
+                        <div className="px-2 pt-2 sticky top-0 z-20 bg-white" style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.04)' , '--ion-background-color': 'white' } as any}>
                             <div className="flex items-center gap-3 relative">
                                 <div className="flex-1 h-2 rounded-full bg-blue-600" />
                                 <div className="flex-1 h-2 rounded-full bg-blue-200" />
@@ -359,7 +365,7 @@ const AllergiesSetup: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <IonButton
                             fill="clear"
-                            onClick={() => history.push('/menu-translation')}
+                            onClick={() => handleBack()}
                             style={{
                                 width: '44px',
                                 height: '44px',
@@ -406,17 +412,3 @@ const AllergiesSetup: React.FC = () => {
 };
 
 export default AllergiesSetup;
-
-{/* <IonButton
-expand="block"
-shape="round"
-onClick={() => history.push("/camera")}
-className="h-14"
-style={{
-    '--background': '#1152F4',
-    '--background-hover': '#2563eb',
-    '--color': 'white'
-}}
->
-{t('Take Photo')}
-</IonButton> */}

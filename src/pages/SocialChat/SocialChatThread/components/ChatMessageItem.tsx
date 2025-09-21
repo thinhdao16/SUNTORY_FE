@@ -527,7 +527,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
                         </div>
                     </motion.div>
-                    <div
+                    {/* <div
                         className="fixed z-[60] pointer-events-none"
                         style={{ bottom: layout.pillBottom, left: layout.menuLeft, }}
                     >
@@ -537,7 +537,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                                 <button aria-label="More" className=" w-6 h-6 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-sm font-bold leading-none active:scale-95" onClick={() => setMenuOpen(false)}>+</button>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
                     <div
                         className="fixed z-[60] pointer-events-none"
                         style={{ top: layout.menuTop, left: layout.menuLeft }}
@@ -553,7 +553,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                                     <MdOutlineReply className="text-lg" /> {t("Reply")}
                                 </button>
                             )}
-                            {!isRevoked && isUser && (
+                            {!isRevoked && isUser && hasText && (
                                 <button className="px-3 py-2 hover:bg-gray-100 w-full flex items-center gap-2"
                                     onClick={() => { setMenuOpen(false); setIsEditing(true); }}>
                                     <MdModeEditOutline className="text-lg" /> {t("Edit")}
@@ -565,12 +565,12 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                                     <MdTranslate className="text-lg" /> {t("Translate")}
                                 </button>
                             )}
-                            {hasText && (
+                            {/* {hasText && (
                                 <button className="px-3 py-2 hover:bg-gray-100 w-full flex items-center gap-2"
                                     onClick={() => { copyText(); setMenuOpen(false); }}>
                                     <MdContentCopy className="text-lg" /> {t("Copy")}
                                 </button>
-                            )}
+                            )} */}
                             <div className="h-px bg-gray-200 my-1" />
                             {isUser && (
                                 <button className="px-3 py-2 text-red-600 hover:bg-red-50 w-full flex items-center gap-2"

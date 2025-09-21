@@ -46,7 +46,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
                             ? <img src={imgSrc} alt={imgAlt} className={imgClassName} />
                             : null}
                 </button>
-                <LanguageSwitcher {...languageSwitcher} classNameButton="border border-main" />
+                <LanguageSwitcher {...languageSwitcher} isFeeching={false} classNameButton="border border-main" />
                 {children}
             </div>
         </div>

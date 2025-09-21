@@ -258,7 +258,7 @@ export default function SocialChatRecent() {
     <div className="h-screen">
       <div
         ref={scrollRef}
-        className={`overflow-y-auto px-6 pt-4 pb-24 ${isNative
+        className={`overflow-y-auto px-4 pt-4 pb-24 ${isNative
           ? 'max-h-[85vh]'
           : 'max-h-[75vh] lg:max-h-[75vh] xl:max-h-[85vh]'
           }`}

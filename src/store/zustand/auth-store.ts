@@ -22,7 +22,6 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
     persist(
         (set, get) => ({
-            // Khởi tạo từ localStorage hoặc sessionStorage cho các thông tin không persist
             user: null,
             token: localStorage.getItem("token"),
             refreshToken: localStorage.getItem("refreshToken"),
