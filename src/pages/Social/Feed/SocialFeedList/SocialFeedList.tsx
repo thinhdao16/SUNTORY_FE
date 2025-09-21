@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
@@ -14,6 +14,7 @@ import { TabNavigation, HashtagInput, PostsList, LoadingStates } from './compone
 import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
 import PullToRefresh from '@/components/common/PullToRefresh';
 import { useIonToast, IonContent } from '@ionic/react';
+import { useRefreshCallback } from '@/contexts/RefreshContext';
 import { usePostSignalR } from '@/hooks/usePostSignalR';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 
@@ -34,6 +35,8 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   const history = useHistory();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const contentRef = useRef<HTMLIonContentElement>(null);
+  const postsListRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState(initialActiveTab || 'everyone');
   const [currentPrivacy, setCurrentPrivacy] = useState<PrivacyPostType | undefined>(privacy);
   const [selectedHashtag, setSelectedHashtag] = useState<string>(specificHashtag || '');
@@ -159,9 +162,22 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
+    
+    // Scroll to top like Facebook using IonContent ref
+    if (contentRef.current) {
+      contentRef.current.scrollToTop(300); // 300ms smooth scroll
+    }
+    
+    try {
+      await refetch();
+    } catch (error) {
+      console.error('Refresh failed:', error);
+    } finally {
+      setRefreshing(false);
+    }
   }, [refetch]);
+
+  useRefreshCallback('/social-feed', handleRefresh);
 
   useEffect(() => {
     visiblePostCodesRef.current = visiblePostCodes;
@@ -370,9 +386,23 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
       style={{ 
         height: 'calc(100vh - 110px)'
       }}
-      scrollY={false}
+      // scrollY={false}
+      scrollY={true}
+      ref={contentRef}
     >
-      <div className="pb-4">
+      <div className="pb-4 relative">
+        {/* Facebook-style refresh loading indicator */}
+        {refreshing && (
+          <div className="absolute top-20 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
+            <div className="flex items-center justify-center py-3">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                <span className="text-sm text-gray-600">{t('Refreshing...')}</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <TabNavigation
           tabs={getTabsConfig()}
           activeTab={activeTab}
@@ -391,6 +421,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
 
         <PullToRefresh onRefresh={handleRefresh}>
           <PostsList
+            ref={postsListRef}
             posts={posts}
             hasNextPage={hasNextPage || false}
             isFetchingNextPage={isFetchingNextPage || false}

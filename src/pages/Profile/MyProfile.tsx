@@ -1,10 +1,12 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { IonContent, IonPage, IonIcon, IonButton, IonTitle, IonButtons, IonHeader, IonToolbar } from "@ionic/react";
 import { useAuthInfo } from "../Auth/hooks/useAuthInfo";
 import { useUploadAvatar } from "./hooks/useProfile";
 import PageContainer from "@/components/layout/PageContainer";
 import { useHistory, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import PullToRefresh from "@/components/common/PullToRefresh";
+import { useRefreshCallback } from "@/contexts/RefreshContext";
 import UserPostsList from "./components/UserPostsList";
 import UserMediaGrid from "./components/UserMediaGrid";
 import { ProfileTabType } from "./hooks/useUserPosts";
@@ -71,6 +73,8 @@ const MyProfile: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadAvatarMutation = useUploadAvatar();
   const { t } = useTranslation();
+  const [refreshing, setRefreshing] = useState(false);
+  const contentRef = useRef<HTMLIonContentElement>(null);
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -81,6 +85,27 @@ const MyProfile: React.FC = () => {
     });
   };
   const history = useHistory();
+
+  // Handle refresh
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    
+    // Scroll to top like Facebook
+    if (contentRef.current) {
+      contentRef.current.scrollToTop(300);
+    }
+    
+    try {
+      await refetch?.();
+    } catch (error) {
+      console.error('Refresh failed:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
+
+  // Register refresh callback for bottom tab bar
+  useRefreshCallback('/my-profile', handleRefresh);
 
   useEffect(() => {
     const validTabs = ["posts", "media", "likes", "reposts"];
@@ -154,8 +179,24 @@ const MyProfile: React.FC = () => {
             </IonButtons>
           </IonToolbar>
         </IonHeader>
-        <IonContent style={{ '--background': 'white', height: '100%' } as any}>
-          <div className="bg-white">
+        <IonContent 
+          ref={contentRef}
+          style={{ '--background': 'white', height: '100%' } as any}
+        >
+          {/* Facebook-style refresh loading indicator */}
+          {refreshing && (
+            <div className="absolute top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
+              <div className="flex items-center justify-center py-3">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                  <span className="text-sm text-gray-600">{t('Refreshing...')}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <PullToRefresh onRefresh={handleRefresh}>
+            <div className="bg-white">
             <hr className="border-gray-100" />
             {userInfo && (
               <div className="px-4 pt-4 pb-6">
@@ -252,6 +293,7 @@ const MyProfile: React.FC = () => {
             </div>
           </div>
           <div style={{ height: 'calc(112px + env(safe-area-inset-bottom, 0px))' }} />
+          </PullToRefresh>
         </IonContent>
       </IonPage>
     </PageContainer>

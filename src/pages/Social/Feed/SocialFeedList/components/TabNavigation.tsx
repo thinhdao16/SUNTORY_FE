@@ -42,7 +42,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   };
 
   return (
-    <div className=" py-3 w-full px-4">
+    <div className=" py-3 w-full px-4 sticky top-0 z-50 bg-white">
       <div className="overflow-x-auto scrollbar-thin" style={{ WebkitOverflowScrolling: 'touch' }}>
         <div className="flex items-center gap-6 whitespace-nowrap">
           {tabs.map((tab) => {

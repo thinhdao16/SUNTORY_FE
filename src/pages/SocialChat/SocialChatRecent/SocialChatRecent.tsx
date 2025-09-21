@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { RoomChatInfo, useListChatRooms, useNotificationCounts, useUserChatRooms } from '../hooks/useSocialChat';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
@@ -20,6 +20,7 @@ import UnMuteIcon from "@/icons/logo/social-chat/unmute.svg?react"
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import PullToRefresh from '@/components/common/PullToRefresh';
 import { IonContent } from '@ionic/react';
+import { useRefreshCallback } from '@/contexts/RefreshContext';
 dayjs.extend(utc);
 
 export default function SocialChatRecent() {
@@ -27,6 +28,7 @@ export default function SocialChatRecent() {
   const history = useHistory();
   const isNative = Capacitor.isNativePlatform();
   const deviceInfo: { deviceId: string | null } = useDeviceInfo();
+  const [refreshing, setRefreshing] = useState(false);
 
   const { chatRooms, setChatRooms, setRoomChatInfo, getLastMessageForRoom, getRoomUnread, clearRoomUnread } = useSocialChatStore();
 
@@ -67,9 +69,14 @@ export default function SocialChatRecent() {
   });
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  
-  // Handle pull to refresh
+  const contentRef = useRef<HTMLIonContentElement>(null);
   const handleRefresh = async () => {
+    setRefreshing(true);
+    
+    if (contentRef.current) {
+      contentRef.current.scrollToTop(300); 
+    }
+    
     try {
       await Promise.all([
         refetchUserChatRooms(),
@@ -77,8 +84,12 @@ export default function SocialChatRecent() {
       ]);
     } catch (error) {
       console.error('Refresh failed:', error);
+    } finally {
+      setRefreshing(false);
     }
   };
+
+  useRefreshCallback('/social-chat', handleRefresh);
 
   // useEffect(() => {
   //   if (data?.pages) {
@@ -271,23 +282,33 @@ export default function SocialChatRecent() {
 
   return (
     <IonContent 
-    className={`no-scrollbar`}
+    ref={contentRef}
+    className={`no-scrollbar pb-24`}
     style={{ 
-      height: 'calc(100vh - 110px)'
+      height: 'calc(100vh - 150px)'
     }}
-    scrollY={false}
+    scrollY={true}
     >
-        <div className="h-screen">
+        <div className="h-screen relative">
+          {/* Facebook-style refresh loading indicator */}
+          {refreshing && (
+            <div className="absolute top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
+              <div className="flex items-center justify-center py-3">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                  <span className="text-sm text-gray-600">{t('Refreshing...')}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div
             ref={scrollRef}
-            className={`overflow-y-auto px-4 pt-4 pb-24 ${isNative
-              ? 'max-h-[85vh]'
-              : 'max-h-[75vh] lg:max-h-[75vh] xl:max-h-[85vh]'
-              }`}
+            className={`   px-4 pt-4 `}
           >
       <PullToRefresh onRefresh={handleRefresh}>
 
-        <div className="">
+        <div className="pb-24">
           {sortedChatRooms.map((room) => {
             const unread = room.unreadCount ?? getRoomUnread(room.code) ?? 0;
             const isUnread = unread > 0;
