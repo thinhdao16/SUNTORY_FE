@@ -7,6 +7,4 @@ function PartnerSocial() {
   </>
   )
 }
-
-
 export default PartnerSocial

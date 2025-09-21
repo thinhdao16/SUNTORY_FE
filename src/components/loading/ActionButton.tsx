@@ -6,6 +6,7 @@ interface ActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement
     variant?: "primary" | "danger" | "ghost";
     size?: "sm" | "md" | "lg"| "none";
     ariaLabel?: string;
+    spinnerPosition?: "left" | "right";
 }
 
 const classByVariant = {
@@ -28,6 +29,7 @@ export default function ActionButton({
     size = "md",
     disabled,
     ariaLabel,
+    spinnerPosition = "left",
     ...rest
 }: ActionButtonProps) {
     return (
@@ -38,13 +40,19 @@ export default function ActionButton({
             className={`inline-flex items-center justify-center gap-2 rounded-xl transition disabled:opacity-50 ${classByVariant[variant]} ${classBySize[size]}`}
             {...rest}
         >
-            {loading && (
+            {loading && spinnerPosition === "left" && (
                 <svg className="animate-spin w-4 h-4 text-current" viewBox="0 0 24 24" fill="none" aria-hidden>
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                 </svg>
             )}
             <span>{children}</span>
+            {loading && spinnerPosition === "right" && (
+                <svg className="animate-spin w-4 h-4 text-current" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+            )}
         </button>
     );
 }

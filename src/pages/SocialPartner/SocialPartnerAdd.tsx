@@ -130,7 +130,7 @@ const SocialPartnerAdd = () => {
                         borderRadius={borderRadius}
                     >
                         <div className="min-h-screen">
-                            <div className="bg-white px-6 pt-6">
+                            <div className="bg-white px-4 pt-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <button className="text-blue-500 text-lg" onClick={() => history.goBack()}>
                                         <FiArrowLeft />

@@ -23,8 +23,9 @@ interface LoginFormValues {
 
 const Login: React.FC = () => {
     const deviceInfo: { deviceId: string | null } = useDeviceInfo();
-    const { t } = useTranslation()
-    const { mutate: loginMutate, isLoading, error } = useLogin();
+    const { i18n } = useTranslation();
+    const { t } = useTranslation();
+    const { mutate: loginMutate, isLoading, error } = useLogin(i18n.language);
 
     const {
         register,

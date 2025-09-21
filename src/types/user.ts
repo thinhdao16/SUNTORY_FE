@@ -28,6 +28,22 @@ export interface Organization {
     deleteUserName: string;
 }
 
+export interface MeasurementUnit {
+    id: number;
+    categoryId: number;
+    unitName: string;
+    symbol: string;
+    category: any | null;
+}
+
+export interface CurrentMeasurementItem {
+    id: number;
+    weightUnitId: number | null;
+    heightUnitId: number | null;
+    weightUnit: MeasurementUnit | null;
+    heightUnit: MeasurementUnit | null;
+}
+
 export interface User {
     id: number;
     code: string;
@@ -64,5 +80,17 @@ export interface User {
     devices: {
         deviceId: string | null;
         firebaseToken: string | null;
-    }[]
+    }[],
+    friendNumber: number;
+    country: {
+        id: number;
+        code: string;
+        name: string;
+    };
+    language: {
+        code: string;
+        name: string;
+        id?:number
+    };
+    currentMeasurement: CurrentMeasurementItem[];
 }

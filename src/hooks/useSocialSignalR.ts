@@ -323,6 +323,7 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
 
         connection.off("FriendRequestEvent");
         connection.on("FriendRequestEvent", () => {
+            console.log("first")
             refetchRef.current?.();
         });
 

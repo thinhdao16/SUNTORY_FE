@@ -17,7 +17,7 @@ interface SocialChatHeaderProps {
 }
 
 const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, search, handleQR, type }: SocialChatHeaderProps) => (
-    <div className="flex items-center justify-between p-6">
+    <div className="flex items-center justify-between py-6 px-4">
         {type === "search" && (
                 <>
                 {leftIcon}

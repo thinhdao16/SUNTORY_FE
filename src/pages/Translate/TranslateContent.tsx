@@ -211,7 +211,7 @@ useEffect(() => {
             flexDirection: "column",
           }}
         >
-          <div className="relative flex items-center justify-between px-6 h-[50px]">
+          <div className="relative flex items-center justify-between px-4 h-[50px]">
             <button onClick={() => history.goBack()} aria-label="Back">
               <BackIcon className="text-blue-600" />
             </button>
@@ -222,7 +222,7 @@ useEffect(() => {
               <HistoryIcon aria-label={t("history")} />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[85dvh] px-6 pt-10">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[85dvh] px-4 pt-10">
             <div className={`relative ${isTranslating ? "pointer-events-none " : ""}`}>
             <div className="flex flex-col gap-6 pb-6">
               {emotionData ? (

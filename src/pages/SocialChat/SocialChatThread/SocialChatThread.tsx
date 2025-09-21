@@ -351,7 +351,7 @@ const SocialChatThread: React.FC = () => {
                                 roomId={roomId}
                             />
                             <div
-                                className={`flex-1 overflow-x-hidden overflow-y-auto px-6 min-h-0`}
+                                className={`flex-1 overflow-x-hidden overflow-y-auto px-4 min-h-0`}
                                 // style={
                                 //     !isNative
                                 //         ? {

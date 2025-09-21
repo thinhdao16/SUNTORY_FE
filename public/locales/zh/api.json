@@ -1,8 +1,8 @@
 {
-    "This OTP is not valid": "Mã OTP này không hợp lệ.",
-    "Please wait before resending OTP.": "Vui lòng đợi trước khi gửi lại mã OTP.",
-    "OTP has been resent.": "Mã OTP đã được gửi lại.",
-    "OTP has been sent to your email.": "Mã OTP đã được gửi đến email của bạn.",
+    "This OTP is not valid": "此OTP无效。",
+    "Please wait before resending OTP.": "请等待后再重新发送OTP。",
+    "OTP has been resent.": "OTP已重新发送。",
+    "OTP has been sent to your email.": "OTP已发送到您的邮箱。",
     "Home": "家",
     "Please check input fields": "请检查输入字段",
     "Please check your email": "请检查您的电子邮件",

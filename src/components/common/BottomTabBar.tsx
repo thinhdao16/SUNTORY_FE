@@ -10,6 +10,8 @@ import HomeIcon from "@/icons/logo/footer/home.svg?react";
 import HomeActiveIcon from "@/icons/logo/footer/home_active.svg?react";
 import ChatIcon from "@/icons/logo/footer/chat.svg?react";
 import ChatActiveIcon from "@/icons/logo/footer/chat_active.svg?react";
+import StoryIcon from "@/icons/logo/footer/story.svg?react";
+import StoryActiveIcon from "@/icons/logo/footer/story_active.svg?react";
 import ProfileIcon from "@/icons/logo/footer/profile.svg?react";
 import ProfileActiveIcon from "@/icons/logo/footer/profile_active.svg?react";
 import TranslationIcon from "@/icons/logo/footer/translation.svg?react";
@@ -41,7 +43,7 @@ const BottomTabBar: React.FC = () => {
             icon: ChatIcon,
             iconActive: ChatActiveIcon,
             path: `/social-chat`,
-            activePath: (pathname: string) => pathname.startsWith("/social-"),
+            activePath: (pathname: string) => pathname.startsWith("/social-chat") || pathname.startsWith("/social-group") || pathname.startsWith("/social-partner"),
             classNameIcon: "",
         },
         {
@@ -50,6 +52,14 @@ const BottomTabBar: React.FC = () => {
             iconActive: HomeActiveIcon,
             path: "/home",
             activePath: (pathname: string) => pathname.startsWith("/home") || pathname.startsWith("/chat"),
+            classNameIcon: "",
+        },
+        {
+            label: t("Story"),
+            icon: StoryIcon,
+            iconActive: StoryActiveIcon,
+            path: `/social-feed`,
+            activePath: (pathname: string) => pathname.startsWith("/social-feed") ,
             classNameIcon: "",
         },
         // {
@@ -73,8 +83,15 @@ const BottomTabBar: React.FC = () => {
             label: t("Profile"),
             icon: ProfileIcon,
             iconActive: ProfileActiveIcon,
-            path: "/profile",
-            activePath: (pathname: string) => pathname.startsWith("/profile"),
+            path: "/my-profile",
+            activePath: (pathname: string) => pathname.startsWith("/my-profile") 
+            || pathname.startsWith("/profile-setting")
+            || pathname.startsWith("/my-information")
+            || pathname.startsWith("/ai-profile-setting")
+            || pathname.startsWith("/profile/help")
+            || pathname.startsWith("/friend-list")
+            || pathname.startsWith("/friend-request-sent")
+            || pathname.startsWith("/share-profile"),
             classNameIcon: "",
         },
     ];

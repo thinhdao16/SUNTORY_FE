@@ -123,6 +123,11 @@ export const useUserChatRooms = (pageSize = 15,setChatRooms:any ) => {
             },
             // keepPreviousData: true,
             // staleTime: 1000 * 60 * 5,
+            staleTime: 0,
+            cacheTime: 1000 * 60 * 2,
+            refetchOnWindowFocus: true,
+            refetchOnReconnect: true,
+            refetchOnMount: true,
         }
     );
 };
@@ -341,8 +346,8 @@ export const useGetChatRoomAttachments = (
     chatCode: string,
     pageSize = 20,
     options?: {
-        enabled?: boolean,
-        onSuccess?: (data: any) => void,
+        enabled?: boolean;
+        onSuccess?: (data: any) => void;
         onError?: (error: any) => void
     }
 ) => {
@@ -587,9 +592,10 @@ export const useRemoveChatRoom = (options?: {
                 const previousRooms = queryClient.getQueryData<any[]>(["chatRooms"]);
                 const previousRoom = queryClient.getQueryData<any>(["chatRoom", variables.chatCode]);
 
-                // queryClient.setQueryData(["chatRooms"], (old: any[] | undefined) =>
-                //     (old || [])?.filter((r) => r?.code !== variables.chatCode)
-                // );
+                queryClient.setQueryData(["chatRooms"], (old: any) => {
+                    if (!old || !Array.isArray(old)) return [];
+                    return old.filter((r: any) => r?.code !== variables.chatCode);
+                });
 
                 try {
                     const current = useSocialChatStore.getState().roomChatInfo;
