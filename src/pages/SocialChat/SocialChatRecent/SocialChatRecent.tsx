@@ -18,6 +18,8 @@ import { SystemMessageType } from "@/constants/socialChat";
 import MuteIcon from "@/icons/logo/social-chat/mute.svg?react"
 import UnMuteIcon from "@/icons/logo/social-chat/unmute.svg?react"
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
+import PullToRefresh from '@/components/common/PullToRefresh';
+import { IonContent } from '@ionic/react';
 dayjs.extend(utc);
 
 export default function SocialChatRecent() {
@@ -65,6 +67,19 @@ export default function SocialChatRecent() {
   });
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  
+  // Handle pull to refresh
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([
+        refetchUserChatRooms(),
+        refetchFriendshipRequests()
+      ]);
+    } catch (error) {
+      console.error('Refresh failed:', error);
+    }
+  };
+
   // useEffect(() => {
   //   if (data?.pages) {
   //     const allRooms = data.pages.flat();
@@ -255,14 +270,23 @@ export default function SocialChatRecent() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
-    <div className="h-screen">
-      <div
-        ref={scrollRef}
-        className={`overflow-y-auto px-4 pt-4 pb-24 ${isNative
-          ? 'max-h-[85vh]'
-          : 'max-h-[75vh] lg:max-h-[75vh] xl:max-h-[85vh]'
-          }`}
-      >
+    <IonContent 
+    className={`no-scrollbar`}
+    style={{ 
+      height: 'calc(100vh - 110px)'
+    }}
+    scrollY={false}
+    >
+        <div className="h-screen">
+          <div
+            ref={scrollRef}
+            className={`overflow-y-auto px-4 pt-4 pb-24 ${isNative
+              ? 'max-h-[85vh]'
+              : 'max-h-[75vh] lg:max-h-[75vh] xl:max-h-[85vh]'
+              }`}
+          >
+      <PullToRefresh onRefresh={handleRefresh}>
+
         <div className="">
           {sortedChatRooms.map((room) => {
             const unread = room.unreadCount ?? getRoomUnread(room.code) ?? 0;
@@ -324,7 +348,10 @@ export default function SocialChatRecent() {
             <div className="text-center py-2  text-gray-400">{t('No more chats.')}</div>
           )}
         </div>
+      </PullToRefresh>
+
       </div>
     </div>
+    </IonContent>
   );
 }

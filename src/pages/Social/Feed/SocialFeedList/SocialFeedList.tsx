@@ -12,7 +12,8 @@ import { usePostLike } from '@/pages/Social/Feed/hooks/usePostLike';
 import { usePostRepost } from '../hooks/usePostRepost';
 import { TabNavigation, HashtagInput, PostsList, LoadingStates } from './components';
 import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
-import { useIonToast } from '@ionic/react';
+import PullToRefresh from '@/components/common/PullToRefresh';
+import { useIonToast, IonContent } from '@ionic/react';
 import { usePostSignalR } from '@/hooks/usePostSignalR';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 
@@ -364,52 +365,58 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   }
 
   return (
-    <div 
-      className={`${className}`}
-      ref={setScrollContainer}
-      style={{ height: 'calc(100vh - 110px)'}}
+    <IonContent 
+      className={`${className} no-scrollbar`}
+      style={{ 
+        height: 'calc(100vh - 110px)'
+      }}
+      scrollY={false}
     >
-      <TabNavigation
-        tabs={getTabsConfig()}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        onHashtagDelete={handleHashtagDelete}
-        isLoadingHashtags={isLoadingHashtags}
-      />
-
-      {activeTab === 'Hashtags' && (
-        <HashtagInput
-          selectedHashtag={selectedHashtag}
-          onHashtagChange={setSelectedHashtag}
-          onSearch={refetch}
+      <div className="pb-4">
+        <TabNavigation
+          tabs={getTabsConfig()}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          onHashtagDelete={handleHashtagDelete}
+          isLoadingHashtags={isLoadingHashtags}
         />
-      )}
 
-      <PostsList
-        posts={posts}
-        hasNextPage={hasNextPage || false}
-        isFetchingNextPage={isFetchingNextPage || false}
-        loading={loading || refreshing}
-        onFetchNextPage={fetchNextPage}
-        onLike={handleLike}
-        onComment={handleComment}
-        onShare={handleShare}
-        onRepost={handleRepost}
-        onPostClick={handlePostClick}
-        onVisiblePostsChange={handleVisiblePostsChange}
-      />
+        {activeTab === 'Hashtags' && (
+          <HashtagInput
+            selectedHashtag={selectedHashtag}
+            onHashtagChange={setSelectedHashtag}
+            onSearch={refetch}
+          />
+        )}
 
-      <LoadingStates
-        loading={loading || refreshing}
-        isFetchingNextPage={isFetchingNextPage || false}
-        isRefetching={isRefetching}
-        refreshing={refreshing}
-        hasNextPage={hasNextPage || false}
-        posts={posts}
-        error={error}
-        onRefresh={handleRefresh}
-        onFetchNextPage={fetchNextPage}
-      />
+        <PullToRefresh onRefresh={handleRefresh}>
+          <PostsList
+            posts={posts}
+            hasNextPage={hasNextPage || false}
+            isFetchingNextPage={isFetchingNextPage || false}
+            loading={loading || refreshing}
+            onFetchNextPage={fetchNextPage}
+            onLike={handleLike}
+            onComment={handleComment}
+            onShare={handleShare}
+            onRepost={handleRepost}
+            onPostClick={handlePostClick}
+            onVisiblePostsChange={handleVisiblePostsChange}
+          />
+        </PullToRefresh>
+
+        <LoadingStates
+          loading={loading || refreshing}
+          isFetchingNextPage={isFetchingNextPage || false}
+          isRefetching={isRefetching}
+          refreshing={refreshing}
+          hasNextPage={hasNextPage || false}
+          posts={posts}
+          error={error}
+          onRefresh={handleRefresh}
+          onFetchNextPage={fetchNextPage}
+        />
+      </div>
 
       <PrivacyBottomSheet
         isOpen={showPrivacySheet}
@@ -417,6 +424,6 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
         selectedPrivacy={selectedPrivacy}
         onSelectPrivacy={handleSelectPrivacy}
       />
-    </div>
+    </IonContent>
   );
 };

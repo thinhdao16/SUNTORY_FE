@@ -297,7 +297,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
       {/* Original post content (or regular post content if not a repost) */}
       {post?.isRepost ? (
         <div
-          className="mx-4 mb-4 border border-gray-200 rounded-lg overflow-hidden pb-2 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="mx-4 mb-4 border border-gray-200 rounded-lg overflow-hidden pb-4 cursor-pointer hover:bg-gray-50 transition-colors"
           onClick={handleOriginalPostClick}
         >
           {isRepostWithDeletedOriginal ? (
