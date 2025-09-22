@@ -52,21 +52,21 @@ function Home() {
       desc: t("Scan documents to find key terms and hidden risks"),
       topic: TopicType.DocumentTranslation,
     },
-    {
-      image: (
-        <AppImage
-          src={menuTranslation}
-          alt="Menu Translation"
-          className="w-full h-full object-contain"
-          wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
-          effect="blur"
-          hardHeight={80}
-        />
-      ),
-      title: t("Menu Translation"),
-      desc: t("Decode any menu with a simple scan"),
-      topic: TopicType.MenuTranslation,
-    },
+    // {
+    //   image: (
+    //     <AppImage
+    //       src={menuTranslation}
+    //       alt="Menu Translation"
+    //       className="w-full h-full object-contain"
+    //       wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
+    //       effect="blur"
+    //       hardHeight={80}
+    //     />
+    //   ),
+    //   title: t("Menu Translation"),
+    //   desc: t("Decode any menu with a simple scan"),
+    //   topic: TopicType.MenuTranslation,
+    // },
     {
       image: (
         <AppImage
