@@ -51,7 +51,6 @@ export const useRefresh = () => {
   return context;
 };
 
-// Hook để register refresh callback cho từng page
 export const useRefreshCallback = (path: string, callback: () => void) => {
   const { registerRefreshCallback, unregisterRefreshCallback } = useRefresh();
 

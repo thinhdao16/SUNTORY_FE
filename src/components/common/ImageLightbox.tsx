@@ -43,7 +43,6 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
     onDownload,
     onSlideChange
 }) => {
-    // Set default options
     const {
         showDownload = true,
         showPageIndicator = true,
@@ -91,10 +90,8 @@ const handleSlideChange = (swiper: any) => {
   if (enableZoom) {
     setIsZoomed(false);
     const inst = zoomInstances[swiper.activeIndex];
-    // reset sau 1 frame để Swiper ổn định layout
     if (inst) requestAnimationFrame(() => inst.resetTransform());
   }
-  // Call parent callback to update user info
   if (onSlideChange) {
     onSlideChange(swiper.activeIndex);
   }

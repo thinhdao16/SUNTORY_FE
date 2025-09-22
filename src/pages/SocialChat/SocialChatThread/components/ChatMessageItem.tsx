@@ -477,8 +477,17 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             {!isRevoked && menuOpen && anchorRect && layout && (
                 <Portal>
                     <motion.div
-                        className="fixed inset-0 z-[50] bg-black/10 backdrop-blur-sm pointer-events-auto"
+                        className="fixed inset-0 z-[50] bg-black/10 backdrop-blur-sm pointer-events-auto select-none"
+                        style={{
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            MozUserSelect: 'none',
+                            msUserSelect: 'none',
+                            WebkitTouchCallout: 'none',
+                            WebkitTapHighlightColor: 'transparent'
+                        }}
                         onPointerDown={() => setMenuOpen(false)}
+                        onContextMenu={(e) => e.preventDefault()}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                     />
@@ -492,8 +501,22 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                                 maxHeight: Math.max(48, layout.bubbleH),
                                 overflowY: anchorRect.height > layout.bubbleH ? "auto" : "visible",
                                 WebkitOverflowScrolling: "touch",
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                MozUserSelect: 'none',
+                                msUserSelect: 'none',
+                                WebkitTouchCallout: 'none',
+                                WebkitTapHighlightColor: 'transparent'
                             }}
-                            className="pointer-events-auto"
+                            className="pointer-events-auto select-none"
+                            onContextMenu={(e) => e.preventDefault()}
+                            onDragStart={(e) => e.preventDefault()}
+                            onMouseDown={(e) => {
+                                if (e.detail > 1) e.preventDefault(); // Prevent double-click selection
+                            }}
+                            onTouchStart={(e) => {
+                                e.preventDefault(); // Prevent touch selection on mobile
+                            }}
                         >
                             {overlayKind === "message" ? (
                                 <MessageBubble

@@ -108,23 +108,19 @@ const BottomTabBar: React.FC = () => {
         useSignalRStreamStore.getState().clearAllStreams();
     };
 
-    // Function to check if current path matches tab path
     const isCurrentTab = (tab: TabItem) => {
         return typeof tab.activePath === "function"
             ? tab.activePath(location.pathname)
             : location.pathname === tab.activePath;
     };
 
-    // Handle tab click with refresh on tap logic
     const handleTabClick = (tab: TabItem) => {
         const isActive = isCurrentTab(tab);
         const isExactPath = location.pathname === tab.path;
         
         if (isActive && isExactPath) {
-            // If already on this exact tab path, trigger refresh
             triggerRefresh(tab.path);
         } else {
-            // If switching to different tab OR on sub-path, navigate to main path
             clearAll();
             history.push(tab.path);
             useChatStore.getState().setIsSending(false);

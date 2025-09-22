@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SocialFeedCard } from '@/pages/Social/Feed/components/SocialFeedCard';
 import { useUserPosts, ProfileTabType } from '../hooks/useUserPosts';
@@ -9,6 +9,8 @@ import { useUserPostUpdate } from '../hooks/useUserPostUpdate';
 import { handleCopyToClipboard } from '@/components/common/HandleCoppy';
 import { useToastStore } from '@/store/zustand/toast-store';
 import { useHistory } from 'react-router-dom';
+import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
+import { PrivacyPostType } from '@/types/privacy';
 
 interface UserPostsListProps {
     tabType: ProfileTabType;
@@ -21,6 +23,10 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
     const { user } = useAuthStore();
     const showToast = useToastStore((state) => state.showToast);
     const scrollRef = useRef<HTMLDivElement>(null);
+    
+    const [showPrivacySheet, setShowPrivacySheet] = useState(false);
+    const [repostPrivacy, setRepostPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
+    const [pendingRepostCode, setPendingRepostCode] = useState<string | null>(null);
 
     const {
         data,
@@ -88,11 +94,21 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
     };
 
     const handleRepost = (postCode: string) => {
-        postRepostMutation.mutate({
-            postCode,
-            caption: '',
-            privacy: 1
-        });
+        setPendingRepostCode(postCode);
+        setShowPrivacySheet(true);
+    };
+
+    const handlePrivacySelect = (privacy: PrivacyPostType) => {
+        if (pendingRepostCode) {
+            postRepostMutation.mutate({
+                postCode: pendingRepostCode,
+                caption: 'Repost',
+                privacy: Number(privacy)
+            });
+        }
+        setShowPrivacySheet(false);
+        setPendingRepostCode(null);
+        setRepostPrivacy(PrivacyPostType.Public);
     };
 
 
@@ -171,6 +187,18 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
                     {t('No more posts to load')}
                 </div>
             )}
+
+            {/* Privacy Bottom Sheet for Repost */}
+            <PrivacyBottomSheet
+                isOpen={showPrivacySheet}
+                closeModal={() => {
+                    setShowPrivacySheet(false);
+                    setPendingRepostCode(null);
+                    setRepostPrivacy(PrivacyPostType.Public);
+                }}
+                selectedPrivacy={repostPrivacy}
+                onSelectPrivacy={handlePrivacySelect}
+            />
         </div>
     );
 };

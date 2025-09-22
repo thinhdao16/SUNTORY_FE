@@ -37,6 +37,8 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const contentRef = useRef<HTMLIonContentElement>(null);
   const postsListRef = useRef<HTMLDivElement>(null);
+  const lastRefreshTime = useRef<number>(Date.now());
+  const scrollPosition = useRef<number>(0);
   const [activeTab, setActiveTab] = useState(initialActiveTab || 'everyone');
   const [currentPrivacy, setCurrentPrivacy] = useState<PrivacyPostType | undefined>(privacy);
   const [selectedHashtag, setSelectedHashtag] = useState<string>(specificHashtag || '');
@@ -98,7 +100,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
 
   const { setCurrentPost, getFeedPosts, cachedFeeds, setActiveFeedKey } = useSocialFeedStore();
   const { user } = useAuthStore();
-  const [present] = useIonToast();
+  const [presentToast] = useIonToast();
   const postLikeMutation = usePostLike();
   const postRepostMutation = usePostRepost();
   const deviceInfo = useDeviceInfo();
@@ -106,6 +108,27 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   const { joinPostUpdates, leavePostUpdates } = usePostSignalR(deviceInfo.deviceId ?? '', {
     autoConnect: true,
     enableDebugLogs: false,
+    onPostCreated: (data) => {
+      console.log('New post created via SignalR:', data);
+      presentToast({
+        message: t('New post added to feed'),
+        duration: 2000,
+        position: 'top',
+        color: 'success'
+      });
+    },
+    onPostUpdated: (data) => {
+      console.log('Post updated via SignalR:', data);
+    },
+    onCommentAdded: (data) => {
+      console.log('Comment added via SignalR:', data);
+    },
+    onPostLiked: (data) => {
+      console.log('Post liked via SignalR:', data);
+    },
+    onPostUnliked: (data) => {
+      console.log('Post unliked via SignalR:', data);
+    }
   });
 
   const MAX_REALTIME_POSTS = 10;
@@ -157,16 +180,19 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     feedType: currentPrivacy ? Number(currentPrivacy) : undefined,
     hashtagNormalized: (activeTab === 'Hashtags' && selectedHashtag) ? selectedHashtag.replace('#', '') : 
                       (activeTab.startsWith('#')) ? activeTab.substring(1) : undefined,
-    enabled: true
+    enabled: true,
+    staleTime: 5 * 60 * 1000, 
+    cacheTime: 30 * 60 * 1000, 
   });
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     
-    // Scroll to top like Facebook using IonContent ref
     if (contentRef.current) {
-      contentRef.current.scrollToTop(300); // 300ms smooth scroll
+      contentRef.current.scrollToTop(300);
     }
+    
+    lastRefreshTime.current = Date.now();
     
     try {
       await refetch();
@@ -178,6 +204,71 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   }, [refetch]);
 
   useRefreshCallback('/social-feed', handleRefresh);
+
+  useEffect(() => {
+    const saveScrollPosition = () => {
+      if (contentRef.current) {
+        contentRef.current.getScrollElement().then((scrollElement) => {
+          if (scrollElement) {
+            scrollPosition.current = scrollElement.scrollTop;
+          }
+        });
+      }
+    };
+
+    const handleBeforeUnload = () => saveScrollPosition();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        saveScrollPosition();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      saveScrollPosition();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (posts.length > 0 && scrollPosition.current > 0) {
+      setTimeout(() => {
+        if (contentRef.current) {
+          contentRef.current.scrollToPoint(0, scrollPosition.current, 0);
+        }
+      }, 100);
+    }
+  }, [posts.length]);
+
+  useEffect(() => {
+    const checkAndRefresh = () => {
+      const now = Date.now();
+      const timeSinceLastRefresh = now - lastRefreshTime.current;
+      const fiveMinutes = 5 * 60 * 1000;
+      
+      if (timeSinceLastRefresh > fiveMinutes && !document.hidden) {
+        refetch();
+        lastRefreshTime.current = now;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkAndRefresh();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    checkAndRefresh();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refetch]);
 
   useEffect(() => {
     visiblePostCodesRef.current = visiblePostCodes;
@@ -288,19 +379,19 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     const isOwnPost = post.user.id === user.id;
     const isOwnOriginalPost = post.isRepost && post.originalPost && post.originalPost.user.id === user.id;
 
-    if (isOwnPost || isOwnOriginalPost) {
-      present({
-        message: t('You cannot repost your own post'),
-        duration: 3000,
-        position: 'bottom',
-        color: 'warning'
-      });
-      return;
-    }
+    // if (isOwnPost || isOwnOriginalPost) {
+    //   presentToast({
+    //     message: t('You cannot repost your own post'),
+    //     duration: 3000,
+    //     position: 'bottom',
+    //     color: 'warning'
+    //   });
+    //   return;
+    // }
 
     setRepostingPostCode(postCode);
     setShowPrivacySheet(true);
-  }, [posts, user, present, t]);
+  }, [posts, user, presentToast, t]);
 
   const handleSelectPrivacy = useCallback((privacy: PrivacyPostType) => {
     if (repostingPostCode) {
@@ -386,12 +477,10 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
       style={{ 
         height: 'calc(100vh - 110px)'
       }}
-      // scrollY={false}
       scrollY={true}
       ref={contentRef}
     >
       <div className="pb-4 relative">
-        {/* Facebook-style refresh loading indicator */}
         {refreshing && (
           <div className="absolute top-20 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
             <div className="flex items-center justify-center py-3">

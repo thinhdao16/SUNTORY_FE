@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
-import { FlexImageGrid } from '@/components/common/FlexImageGrid';
+import { DraggableImageGrid } from '@/components/common/DraggableImageGrid';
 import { AudioRecorder } from '@/components/common/AudioRecorder';
 import ActionButton from '@/components/loading/ActionButton';
 import { useCreatePost } from '@/pages/Social/Feed/hooks/useCreatePost';
@@ -24,7 +24,7 @@ const CreateFeed: React.FC = () => {
     const location = useLocation();
     const [postText, setPostText] = useState("");
     const [selectedPrivacy, setSelectedPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
-    const { images, isUploading, setIsUploading, addImages, addAudioItem, removeImage, clearImages } = useImageUploadState();
+    const { images, isUploading, setIsUploading, addImages, addAudioItem, removeImage, reorderImages, clearImages } = useImageUploadState();
     const {
         audioBlob,
         audioDuration,
@@ -150,7 +150,6 @@ const CreateFeed: React.FC = () => {
             setIsUploading(false);
         }
     };
-
     return (
         <div className="h-screen bg-white flex flex-col">
             <div className="flex items-center justify-start p-4 border-b border-netural-50 gap-6 flex-shrink-0">
@@ -215,9 +214,13 @@ const CreateFeed: React.FC = () => {
                     </div>
                 </div>
 
-                <FlexImageGrid
+                <DraggableImageGrid
                     images={images.filter(item => item.mediaType === 'image' || (item.mediaType as any) === 'video')}
                     onRemoveImage={removeImage}
+                    onReorderImages={reorderImages}
+                    enableDragDrop={true}
+                    showDragHandle={true}
+                    dragFromTopArea={true}
                 />
 
                 {audioBlob && (

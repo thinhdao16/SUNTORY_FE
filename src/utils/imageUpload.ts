@@ -1,6 +1,7 @@
-export type MediaType = 'image' | 'audio';
+export type MediaType = 'image' | 'audio' | 'video';
 
 export interface ImageItem {
+    id?: string;
     file: File;
     localUrl: string;
     serverUrl?: string;
@@ -19,7 +20,7 @@ export interface ImageItem {
 export interface ImageUploadOptions {
     onProgress?: (imageIndex: number, progress: 'uploading' | 'success' | 'error') => void;
     onComplete?: (images: ImageItem[]) => void;
-    uploadFunction: (params: { files: File[] }) => Promise<any>;
+    uploadFunction: (params: { files: File[], width?: number, height?: number }) => Promise<any>;
 }
 
 /**
@@ -50,22 +51,39 @@ export class ImageUploadManager {
         
         for (const file of files) {
             try {
-                const dimensions = await getImageDimensions(file);
+                let dimensions;
+                let mediaType: MediaType;
+                
+                if (file.type.startsWith('video/')) {
+                    dimensions = await getVideoDimensions(file);
+                    mediaType = 'video';
+                } else if (file.type.startsWith('image/')) {
+                    dimensions = await getImageDimensions(file);
+                    mediaType = 'image';
+                } else {
+                    // Default to image for unknown types
+                    dimensions = await getImageDimensions(file);
+                    mediaType = 'image';
+                }
+                
                 newImages.push({
+                    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     file,
                     localUrl: URL.createObjectURL(file),
                     isUploading: true,
                     width: dimensions.width,
                     height: dimensions.height,
-                    mediaType: 'image'
+                    mediaType
                 });
             } catch (error) {
                 // Fallback without dimensions
+                const mediaType: MediaType = file.type.startsWith('video/') ? 'video' : 'image';
                 newImages.push({
+                    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     file,
                     localUrl: URL.createObjectURL(file),
                     isUploading: true,
-                    mediaType: 'image'
+                    mediaType
                 });
             }
         }
@@ -90,21 +108,41 @@ export class ImageUploadManager {
      */
     async createImageItem(file: File): Promise<ImageItem> {
         try {
-            const dimensions = await getImageDimensions(file);
-            return {
+            let dimensions;
+            let mediaType: MediaType;
+            
+            if (file.type.startsWith('video/')) {
+                dimensions = await getVideoDimensions(file);
+                mediaType = 'video';
+            } else if (file.type.startsWith('image/')) {
+                dimensions = await getImageDimensions(file);
+                mediaType = 'image';
+            } else {
+                dimensions = await getImageDimensions(file);
+                mediaType = 'image';
+            }
+            
+            const newItem: ImageItem = {
+                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 file,
                 localUrl: URL.createObjectURL(file),
-                isUploading: true,
-                width: dimensions.width,
-                height: dimensions.height,
-                mediaType: 'image'
+                isUploading: false,
+                width: dimensions?.width,
+                height: dimensions?.height,
+                mediaType,
+                filename: file.name
             };
+            
+            return newItem;
         } catch (error) {
+            const mediaType: MediaType = file.type.startsWith('video/') ? 'video' : 'image';
             return {
+                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 file,
                 localUrl: URL.createObjectURL(file),
-                isUploading: true,
-                mediaType: 'image'
+                isUploading: false,
+                mediaType,
+                filename: file.name
             };
         }
     }
@@ -117,13 +155,14 @@ export class ImageUploadManager {
         const file = audioBlob instanceof File ? audioBlob : new File([audioBlob], filename || 'audio.wav', { type: audioBlob.type });
         
         return {
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             file,
-            localUrl: URL.createObjectURL(audioBlob),
+            localUrl: URL.createObjectURL(file),
             serverUrl,
             serverName,
-            filename,
             isUploading: false,
-            mediaType: 'audio'
+            mediaType: 'audio',
+            filename: filename || file.name
         };
     }
 
@@ -155,6 +194,13 @@ export class ImageUploadManager {
     }
 
     /**
+     * Reorder images array
+     */
+    reorderImages(newImages: ImageItem[]): void {
+        this.images = [...newImages];
+    }
+
+    /**
      * Clear all images and cleanup URLs
      */
     clear(): void {
@@ -169,6 +215,7 @@ export class ImageUploadManager {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const imageIndex = startIndex + i;
+            const imageItem = this.images[imageIndex];
             
             this.options.onProgress?.(imageIndex, 'uploading');
             
@@ -178,7 +225,14 @@ export class ImageUploadManager {
                 // Use React Query mutation if available
                 if (this.uploadMutation) {
                     uploadResponse = await new Promise((resolve, reject) => {
-                        this.uploadMutation.mutate([file], {
+                        // Create upload request with dimensions
+                        const uploadRequest = {
+                            files: [file],
+                            width: imageItem?.width,
+                            height: imageItem?.height
+                        };
+                        
+                        this.uploadMutation.mutate(uploadRequest, {
                             onSuccess: (data: any) => {
                                 resolve(data);
                             },
@@ -186,8 +240,12 @@ export class ImageUploadManager {
                         });
                     });
                 } else {
-                    // Fallback to direct upload function
-                    uploadResponse = await this.options.uploadFunction({ files: [file] });
+                    // Fallback to direct upload function with dimensions
+                    uploadResponse = await this.options.uploadFunction({ 
+                        files: [file],
+                        width: imageItem?.width,
+                        height: imageItem?.height
+                    });
                 }
                 
                 // Handle different response structures
@@ -254,6 +312,28 @@ export const getImageDimensions = (file: File): Promise<{width: number, height: 
         };
         
         img.src = url;
+    });
+};
+
+/**
+ * Extract video dimensions from file
+ */
+export const getVideoDimensions = (file: File): Promise<{width: number, height: number}> => {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        const url = URL.createObjectURL(file);
+        
+        video.onloadedmetadata = () => {
+            URL.revokeObjectURL(url);
+            resolve({ width: video.videoWidth, height: video.videoHeight });
+        };
+        
+        video.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('Failed to load video'));
+        };
+        
+        video.src = url;
     });
 };
 

@@ -297,7 +297,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
       {/* Original post content (or regular post content if not a repost) */}
       {post?.isRepost ? (
         <div
-          className="mx-4 mb-4 border border-gray-200 rounded-lg overflow-hidden pb-4 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="mx-4 mb-4 border border-gray-200 rounded-2xl overflow-hidden pb-4 cursor-pointer hover:bg-gray-50 transition-colors"
           onClick={handleOriginalPostClick}
         >
           {isRepostWithDeletedOriginal ? (
@@ -406,7 +406,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             <div data-media-display>
               <MediaDisplay
                 mediaFiles={displayPost?.media}
-                className="mt-3 flex "
+                className="mt-3 "
                 lightboxUserName={displayPost.user.fullName}
                 lightboxUserAvatar={displayPost.user.avatarUrl}
                 classNameAudio='!px-4'
@@ -474,7 +474,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             <div data-media-display>
               <MediaDisplay
                 mediaFiles={displayPost.media}
-                className="mt-3 flex"
+                className="mt-3 "
                 lightboxUserName={displayPost.user.fullName}
                 lightboxUserAvatar={displayPost.user.avatarUrl}
               />

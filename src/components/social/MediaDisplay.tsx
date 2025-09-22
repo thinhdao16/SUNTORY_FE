@@ -1,7 +1,9 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import ImageLightbox from '@/components/common/ImageLightbox';
 import { SocialMediaFile } from '@/types/social-feed';
+import ImageLightbox from '@/components/common/ImageLightbox';
+import { ImageWithPlaceholder } from '@/components/common/ImageWithPlaceholder';
+import { VideoWithPlaceholder } from '@/components/common/VideoWithPlaceholder';
 import { categorizeMediaFiles, formatFileSize } from '@/utils/mediaUtils';
 import PlayAudioIcon from '@/icons/logo/play-audio.svg?react';
 
@@ -18,6 +20,11 @@ interface ImageGridProps {
   images: SocialMediaFile[];
   className?: string;
   onImageClick: (index: number) => void;
+}
+
+interface VideoGridProps {
+  videos: SocialMediaFile[];
+  className?: string;
 }
 
 interface AudioPlayerProps {
@@ -39,17 +46,16 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, className = '', onImageCl
     const image = images[0];
     return (
       <div className={`w-full ${className}`}>
-        <div
-          className="relative overflow-hidden rounded-2xl px-4 cursor-pointer w-full"
-          onClick={() => onImageClick(0)}
-          // style={{ maxHeight: '60%' }}
-        >
-          <img
+        <div className="px-4">
+          <ImageWithPlaceholder
             src={image.urlFile}
-            alt={image.fileName}
-            className="w-full h-fit rounded-2xl object-cover"
-            loading="lazy"
-            style={{ maxHeight: '60vh' }}
+            alt={image.fileName || 'Image'}
+            width={image.width || 1}
+            height={image.height || 1}
+            className="rounded-2xl cursor-pointer"
+            onClick={() => onImageClick(0)}
+            maxHeight="60vh"
+            objectFit="cover"
           />
         </div>
       </div>
@@ -58,30 +64,104 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, className = '', onImageCl
 
   return (
     <div className={`w-full ${className}`}>
-      <div
-        className="flex gap-2 overflow-x-auto scrollbar-thin pb-2 px-4"
-        style={{ maxHeight: '300px' }}
-      >
-        {images.map((image, index) => (
-          <div
-            key={image.id}
-            className="relative overflow-hidden rounded-lg cursor-pointer flex-shrink-0"
-            onClick={() => onImageClick(index)}
-            style={{ width: '200px', height: '200px' }}
-          >
-            <img
-              src={image.urlFile}
-              alt={image.fileName}
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
-              loading="lazy"
-            />
-            {/* {images.length > 5 && index === 4 && (
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <span className="text-white text-xl font-semibold">+{images.length - 5}</span>
-              </div>
-            )} */}
-          </div>
-        ))}
+      <div className="flex gap-2 px-4 overflow-x-auto scrollbar-thin" style={{ minHeight: '200px' }}>
+        {images.slice(0, 4).map((image, index) => {
+          const aspectRatio = (image.width || 1) / (image.height || 1);
+          const itemWidth = 200 * aspectRatio
+          
+          return (
+            <div
+              key={image.id}
+              className="relative"
+              style={{ 
+                // width: `${Math.min(itemWidth, 180)}px`, 
+                width: `auto`, 
+                height: '200px',
+                flex: '0 0 auto'
+              }}
+            >
+              <ImageWithPlaceholder
+                src={image.urlFile}
+                alt={image.fileName || 'Image'}
+                width={image.width || 200}
+                height={image.height || 200}
+                className="rounded-lg cursor-pointer hover:scale-105 transition-transform duration-200 w-full h-full"
+                onClick={() => onImageClick(index)}
+                maxHeight="none"
+                objectFit="cover"
+              />
+              {/* {images.length > 4 && index === 3 && (
+                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-lg">
+                  <span className="text-white text-xl font-semibold">+{images.length - 4}</span>
+                </div>
+              )} */}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const VideoGrid: React.FC<VideoGridProps> = ({ videos, className = '' }) => {
+  if (!videos.length) return null;
+
+  if (videos.length === 1) {
+    const video = videos[0];
+    return (
+      <div className={`w-full ${className}`}>
+        <div className="px-4">
+          <VideoWithPlaceholder
+            src={video.urlFile}
+            width={video.width || 200}
+            height={video.height || 200}
+            className="rounded-2xl"
+            maxHeight="60vh"
+            objectFit="cover"
+            controls={true}
+            muted={true}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`w-full ${className}`}>
+      <div className="flex flex-wrap gap-2 px-4" style={{ minHeight: '200px' }}>
+        {videos.slice(0, 4).map((video, index) => {
+          const aspectRatio = (video.width || 1) / (video.height || 1);
+          const itemWidth = 200 * aspectRatio;
+          
+          return (
+            <div
+              key={video.id}
+              className="relative"
+              style={{ 
+                width: `${Math.min(itemWidth, 180)}px`,
+                height: '200px',
+                flex: '0 0 auto'
+              }}
+            >
+              <VideoWithPlaceholder
+                src={video.urlFile}
+                width={video.width || 200}
+                height={video.height || 200}
+                className="rounded-lg w-full h-full"
+                maxHeight="none"
+                objectFit="cover"
+                controls={true}
+                muted={true}
+              />
+              {/* Show "+X more" overlay on the 4th video if there are more than 4 videos */}
+              {videos.length > 4 && index === 3 && (
+                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-lg">
+                  <span className="text-white text-xl font-semibold">+{videos.length - 4}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -322,39 +402,132 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
   if (!mediaFiles || mediaFiles.length === 0) return null;
 
   const imageUrls = categorized.images.map((img) => img.urlFile);
-
+  const visualMediaFiles = mediaFiles.filter(item => 
+    item.fileType.startsWith('image/') || item.fileType.startsWith('video/')
+  );
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={`${className}`}>
+      {visualMediaFiles.length === 1 ? (
+        <div className="px-4">
+          {(() => {
+            const item = visualMediaFiles[0];
+            return (
+              <div className="w-full">
+                {item.fileType.startsWith('image/') && (
+                  <ImageWithPlaceholder
+                    src={item.urlFile}
+                    alt={item.fileName || 'Image'}
+                    width={item.width || 1000}
+                    height={item.height || 1000}
+                    className="rounded-2xl cursor-pointer w-full"
+                    onClick={() => {
+                      const imageIndex = categorized.images.findIndex(img => img.id === item.id);
+                      if (imageIndex !== -1) {
+                        handleImageClick(imageIndex);
+                      }
+                    }}
+                    maxHeight="60vh"
+                    objectFit="cover"
+                  />
+                )}
+                
+                {item.fileType.startsWith('video/') && (
+                  <VideoWithPlaceholder
+                    src={item.urlFile}
+                    width={item.width || 1920}
+                    height={item.height || 1080}
+                    className="rounded-2xl w-full"
+                    maxHeight="60vh"
+                    objectFit="cover"
+                    controls={true}
+                    muted={true}
+                  />
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      ) : visualMediaFiles.length > 1 ? (
+        // Multiple media items - display in horizontal scroll
+        <div className="flex gap-2 px-4 overflow-x-auto scrollbar-thin" style={{ minHeight: '200px' }}>
+          {visualMediaFiles.map((item, index) => {
+            const aspectRatio = (item.width && item.height) ? (item.width / item.height) : 
+              (item.fileType.startsWith('video/') ? (16/9) : 1); 
+            const itemWidth = 200 * aspectRatio;
+            
+            return (
+              <div
+                key={`media-${item.id}`}
+                className="relative"
+                style={{ 
+                  width: `${Math.max(Math.min(itemWidth, 300), 100)}px`,
+                  height: '200px',
+                  flex: '0 0 auto'
+                }}
+              >
+                {item.fileType.startsWith('image/') && (
+                  <ImageWithPlaceholder
+                    src={item.urlFile}
+                    alt={item.fileName || 'Image'}
+                    width={item.width || 1000}
+                    height={item.height || 1000}
+                    className="rounded-lg cursor-pointer hover:scale-105 transition-transform duration-200 w-full h-full"
+                    onClick={() => {
+                      const imageIndex = categorized.images.findIndex(img => img.id === item.id);
+                      if (imageIndex !== -1) {
+                        handleImageClick(imageIndex);
+                      }
+                    }}
+                    maxHeight="none"
+                    objectFit="cover"
+                  />
+                )}
+                
+                {item.fileType.startsWith('video/') && (
+                  <VideoWithPlaceholder
+                    src={item.urlFile}
+                    width={item.width || 1920}
+                    height={item.height || 1080}
+                    className="rounded-lg w-full h-full"
+                    maxHeight="none"
+                    objectFit="cover"
+                    controls={true}
+                    muted={true}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+      
+      {/* Keep ImageLightbox for images */}
       {categorized.images.length > 0 && (
-        <>
-          <ImageGrid images={categorized.images} onImageClick={handleImageClick} />
-          <ImageLightbox
-            open={lightbox.open}
-            images={imageUrls}
-            initialIndex={lightbox.index}
-            onClose={handleCloseLightbox}
-            userInfo={lightboxUserName ? { name: lightboxUserName, avatar: lightboxUserAvatar || undefined } : undefined}
-            options={{
-              showDownload: true,
-              showPageIndicator: true,
-              showNavButtons: true,
-              showZoomControls: true,
-              enableZoom: true,
-              showHeader: true,
-              effect: 'slide',
-              spaceBetween: 30,
-            }}
-          />
-        </>
+        <ImageLightbox
+          open={lightbox.open}
+          images={imageUrls}
+          initialIndex={lightbox.index}
+          onClose={handleCloseLightbox}
+          userInfo={lightboxUserName ? { name: lightboxUserName, avatar: lightboxUserAvatar || undefined } : undefined}
+          options={{
+            showDownload: true,
+            showPageIndicator: true,
+            showNavButtons: true,
+            showZoomControls: true,
+            enableZoom: true,
+            showHeader: true,
+            effect: 'slide',
+            spaceBetween: 30,
+          }}
+        />
       )}
-      {categorized.videos.map((video) => (
-        <VideoPlayer key={video.id} videoFile={video} />
-      ))}
 
+      {/* Keep audios separate as before */}
       {categorized.audios.map((audio) => (
         <AudioPlayer key={audio.id} audioFile={audio} classNameAudio={classNameAudio} customLengthAudio={customLengthAudio}  />
       ))}
-
+      
+      {/* Keep documents separate */}
       {categorized.documents.map((doc) => (
         <DocumentDisplay key={doc.id} file={doc} />
       ))}

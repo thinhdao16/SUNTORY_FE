@@ -1,5 +1,5 @@
 import { useMutation } from 'react-query';
-import { uploadSocialFiles, UploadApiResponse } from '@/services/social/social-upload-service';
+import { uploadSocialFiles, UploadApiResponse, UploadFileRequest } from '@/services/social/social-upload-service';
 
 export interface UploadResponse {
     url: string;
@@ -8,8 +8,8 @@ export interface UploadResponse {
 
 export const useAudioUpload = () => {
     return useMutation({
-        mutationFn: async (audioFile: File): Promise<UploadResponse & { filename?: string }> => {
-            const response = await uploadSocialFiles({ files: [audioFile] });
+        mutationFn: async (uploadRequest: UploadFileRequest): Promise<UploadResponse & { filename?: string }> => {
+            const response = await uploadSocialFiles(uploadRequest);
             const uploadData = response.data[0];
             const filename = uploadData?.name 
             return { 
@@ -25,8 +25,8 @@ export const useAudioUpload = () => {
 
 export const useImageUpload = () => {
     return useMutation({
-        mutationFn: async (imageFiles: File[]): Promise<UploadApiResponse> => {
-            const response = await uploadSocialFiles({ files: imageFiles });
+        mutationFn: async (uploadRequest: UploadFileRequest): Promise<UploadApiResponse> => {
+            const response = await uploadSocialFiles(uploadRequest);
             return response;
         },
         onError: (error: any) => {

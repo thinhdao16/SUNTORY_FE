@@ -12,7 +12,9 @@ export const useCreatePost = () => {
         mutationFn: createSocialPost,
         onSuccess: (data: any) => {
             if (data.success) {
-                queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+                queryClient.invalidateQueries({ queryKey: ['socialFeed'] });
+                queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+                console.log('Post created successfully, feed will refresh');
             }
         },
         onError: (error: any) => {
