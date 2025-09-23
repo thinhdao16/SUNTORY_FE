@@ -6,6 +6,7 @@ import { ImageWithPlaceholder } from '@/components/common/ImageWithPlaceholder';
 import { VideoWithPlaceholder } from '@/components/common/VideoWithPlaceholder';
 import { categorizeMediaFiles, formatFileSize } from '@/utils/mediaUtils';
 import PlayAudioIcon from '@/icons/logo/play-audio.svg?react';
+import { IoVolumeHigh, IoVolumeMute } from 'react-icons/io5';
 
 interface MediaDisplayProps {
   mediaFiles: SocialMediaFile[];
@@ -85,13 +86,13 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, className = '', onImageCl
                 alt={image.fileName || 'Image'}
                 width={image.width || 200}
                 height={image.height || 200}
-                className="rounded-lg cursor-pointer hover:scale-105 transition-transform duration-200 w-full h-full"
+                className="rounded-2xl cursor-pointer hover:scale-105 transition-transform duration-200 w-full h-full"
                 onClick={() => onImageClick(index)}
                 maxHeight="none"
                 objectFit="cover"
               />
               {/* {images.length > 4 && index === 3 && (
-                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-lg">
+                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-2xl">
                   <span className="text-white text-xl font-semibold">+{images.length - 4}</span>
                 </div>
               )} */}
@@ -147,7 +148,7 @@ const VideoGrid: React.FC<VideoGridProps> = ({ videos, className = '' }) => {
                 src={video.urlFile}
                 width={video.width || 200}
                 height={video.height || 200}
-                className="rounded-lg w-full h-full"
+                className="rounded-2xl w-full h-full"
                 maxHeight="none"
                 objectFit="cover"
                 controls={true}
@@ -155,7 +156,7 @@ const VideoGrid: React.FC<VideoGridProps> = ({ videos, className = '' }) => {
               />
               {/* Show "+X more" overlay on the 4th video if there are more than 4 videos */}
               {videos.length > 4 && index === 3 && (
-                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-lg">
+                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-2xl">
                   <span className="text-white text-xl font-semibold">+{videos.length - 4}</span>
                 </div>
               )}
@@ -326,7 +327,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoFile, className = '' }) 
   }, []);
 
   return (
-    <div className={`relative rounded-lg px-4 overflow-hidden ${className}`}>
+    <div className={`relative rounded-2xl px-4 overflow-hidden ${className}`}>
       <video
         ref={videoRef}
         controls
@@ -346,10 +347,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoFile, className = '' }) 
 
 const DocumentDisplay: React.FC<{ file: SocialMediaFile; className?: string }> = ({ file, className = '' }) => {
   return (
-    <div className={`bg-gray-50 rounded-lg p-4 ${className}`}>
+    <div className={`bg-gray-50 rounded-2xl p-4 ${className}`}>
       <div className="flex items-center space-x-3">
         <div className="flex-shrink-0">
-          <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+          <div className="w-12 h-12 bg-gray-200 rounded-2xl flex items-center justify-center">
             <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
@@ -390,21 +391,36 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
 }) => {
   const categorized = useMemo(() => categorizeMediaFiles(mediaFiles || []), [mediaFiles]);
   const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
+  const [videoMuted, setVideoMuted] = useState<{ [key: string]: boolean }>({});
 
-  const handleImageClick = useCallback((index: number) => {
+  const handleMediaClick = useCallback((index: number) => {
     setLightbox({ open: true, index });
   }, []);
 
   const handleCloseLightbox = useCallback(() => {
-    setLightbox({ open: false, index: 0 });
+    setLightbox(prev => ({ ...prev, open: false }));
+    setTimeout(() => {
+      setLightbox({ open: false, index: 0 });
+    }, 300);
+  }, []);
+
+  const toggleVideoMute = useCallback((videoId: string) => {
+    setVideoMuted(prev => ({
+      ...prev,
+      [videoId]: !prev[videoId]
+    }));
   }, []);
 
   if (!mediaFiles || mediaFiles.length === 0) return null;
 
-  const imageUrls = categorized.images.map((img) => img.urlFile);
   const visualMediaFiles = mediaFiles.filter(item => 
     item.fileType.startsWith('image/') || item.fileType.startsWith('video/')
   );
+  
+  const mediaItems = visualMediaFiles.map(item => ({
+    url: item.urlFile,
+    type: item.fileType.startsWith('video/') ? 'video' : 'image' as 'video' | 'image'
+  }));
   return (
     <div className={`${className}`}>
       {visualMediaFiles.length === 1 ? (
@@ -421,9 +437,9 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
                     height={item.height || 1000}
                     className="rounded-2xl cursor-pointer w-full"
                     onClick={() => {
-                      const imageIndex = categorized.images.findIndex(img => img.id === item.id);
-                      if (imageIndex !== -1) {
-                        handleImageClick(imageIndex);
+                      const mediaIndex = visualMediaFiles.findIndex(media => media.id === item.id);
+                      if (mediaIndex !== -1) {
+                        handleMediaClick(mediaIndex);
                       }
                     }}
                     maxHeight="60vh"
@@ -432,50 +448,80 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
                 )}
                 
                 {item.fileType.startsWith('video/') && (
-                  <VideoWithPlaceholder
-                    src={item.urlFile}
-                    width={item.width || 1920}
-                    height={item.height || 1080}
-                    className="rounded-2xl w-full"
-                    maxHeight="60vh"
-                    objectFit="cover"
-                    controls={true}
-                    muted={true}
-                  />
+                  <div 
+                    className="cursor-pointer relative"
+                    onClick={() => {
+                      const mediaIndex = visualMediaFiles.findIndex(media => media.id === item.id);
+                      if (mediaIndex !== -1) {
+                        handleMediaClick(mediaIndex);
+                      }
+                    }}
+                  >
+                    <VideoWithPlaceholder
+                      src={item.urlFile}
+                      width={item.width || 1920}
+                      height={item.height || 1080}
+                      className="rounded-2xl w-full pointer-events-none"
+                      maxHeight="60vh"
+                      objectFit="cover"
+                      controls={false}
+                      muted={videoMuted[item.id] !== false} // Default muted, unmute when explicitly set to false
+                      autoPlay={true}
+                    />
+                    
+                    {/* Volume Toggle Button */}
+                    <button
+                      className="absolute bottom-3 right-3 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors pointer-events-auto"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleVideoMute(item.id.toString());
+                      }}
+                    >
+                      {videoMuted[item.id] !== false ? (
+                        <IoVolumeMute className="text-white text-sm" />
+                      ) : (
+                        <IoVolumeHigh className="text-white text-sm" />
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             );
           })()}
         </div>
       ) : visualMediaFiles.length > 1 ? (
-        // Multiple media items - display in horizontal scroll
-        <div className="flex gap-2 px-4 overflow-x-auto scrollbar-thin" style={{ minHeight: '200px' }}>
-          {visualMediaFiles.map((item, index) => {
-            const aspectRatio = (item.width && item.height) ? (item.width / item.height) : 
-              (item.fileType.startsWith('video/') ? (16/9) : 1); 
-            const itemWidth = 200 * aspectRatio;
+        <div className="flex gap-3 px-4 overflow-x-auto scrollbar-thin">
+          {(() => {
+            const maxHeight = Math.max(...visualMediaFiles.map(item => item.height || 0));
+            const containerHeight = Math.min(Math.max(maxHeight / 4, 200), 280);
             
-            return (
-              <div
-                key={`media-${item.id}`}
-                className="relative"
-                style={{ 
-                  width: `${Math.max(Math.min(itemWidth, 300), 100)}px`,
-                  height: '200px',
-                  flex: '0 0 auto'
-                }}
-              >
+            return visualMediaFiles.map((item, index) => {
+              const aspectRatio = (item.width && item.height) ? (item.width / item.height) : 
+                (item.fileType.startsWith('video/') ? (16/9) : 1); 
+              const itemWidth = containerHeight * aspectRatio;
+              const finalWidth = Math.min(Math.max(itemWidth, 150), 200); 
+              
+              return (
+                <div
+                  key={`media-${item.id}`}
+                  className="relative overflow-hidden"
+                  style={{ 
+                    width: `${finalWidth}px`,
+                    height: `${containerHeight}px`, 
+                    flex: '0 0 auto'
+                  }}
+                >
                 {item.fileType.startsWith('image/') && (
                   <ImageWithPlaceholder
                     src={item.urlFile}
                     alt={item.fileName || 'Image'}
                     width={item.width || 1000}
                     height={item.height || 1000}
-                    className="rounded-lg cursor-pointer hover:scale-105 transition-transform duration-200 w-full h-full"
+                    className="rounded-2xl cursor-pointer hover:scale-105 transition-transform duration-200 w-full h-full"
                     onClick={() => {
-                      const imageIndex = categorized.images.findIndex(img => img.id === item.id);
-                      if (imageIndex !== -1) {
-                        handleImageClick(imageIndex);
+                      const mediaIndex = visualMediaFiles.findIndex(media => media.id === item.id);
+                      if (mediaIndex !== -1) {
+                        handleMediaClick(mediaIndex);
                       }
                     }}
                     maxHeight="none"
@@ -484,28 +530,55 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
                 )}
                 
                 {item.fileType.startsWith('video/') && (
-                  <VideoWithPlaceholder
-                    src={item.urlFile}
-                    width={item.width || 1920}
-                    height={item.height || 1080}
-                    className="rounded-lg w-full h-full"
-                    maxHeight="none"
-                    objectFit="cover"
-                    controls={true}
-                    muted={true}
-                  />
+                  <div 
+                    className="cursor-pointer hover:scale-105 transition-transform duration-200 w-full h-full relative"
+                    onClick={() => {
+                      const mediaIndex = visualMediaFiles.findIndex(media => media.id === item.id);
+                      if (mediaIndex !== -1) {
+                        handleMediaClick(mediaIndex);
+                      }
+                    }}
+                  >
+                    <VideoWithPlaceholder
+                      src={item.urlFile}
+                      width={item.width || 1920}
+                      height={item.height || 1080}
+                      className="rounded-2xl w-full h-full pointer-events-none"
+                      maxHeight="none"
+                      objectFit="cover"
+                      controls={false}
+                      muted={videoMuted[item.id] !== false}
+                      autoPlay={true}
+                    />
+                    
+                    {/* Volume Toggle Button */}
+                    <button
+                      className="absolute bottom-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors pointer-events-auto"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleVideoMute(item.id.toString());
+                      }}
+                    >
+                      {videoMuted[item.id] !== false ? (
+                        <IoVolumeMute className="text-white text-sm" />
+                      ) : (
+                        <IoVolumeHigh className="text-white text-sm" />
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             );
-          })}
+          });
+          })()}
         </div>
       ) : null}
       
-      {/* Keep ImageLightbox for images */}
-      {categorized.images.length > 0 && (
+      {/* ImageLightbox for both images and videos */}
+      {visualMediaFiles.length > 0 && (
         <ImageLightbox
           open={lightbox.open}
-          images={imageUrls}
+          images={mediaItems}
           initialIndex={lightbox.index}
           onClose={handleCloseLightbox}
           userInfo={lightboxUserName ? { name: lightboxUserName, avatar: lightboxUserAvatar || undefined } : undefined}

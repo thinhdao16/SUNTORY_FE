@@ -335,7 +335,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                     </span>
                   </div>
                   <div className="flex items-center text-netural-100 gap-1">
-                    <span className="text-xs text-gray-500">{formatTimeFromNow(displayPost.createDate, t)}</span>
+                    <span className="text-sm ">{formatTimeFromNow(displayPost.createDate, t)}</span>
                     <GoDotFill className="w-2 h-2" />
                     <span className='opacity-20'>
                       {getPrivacyIcon(displayPost?.privacy)}
