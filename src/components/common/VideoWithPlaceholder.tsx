@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { IoPlay } from 'react-icons/io5';
 
 interface VideoWithPlaceholderProps {
@@ -26,8 +26,11 @@ export const VideoWithPlaceholder: React.FC<VideoWithPlaceholderProps> = ({
     muted = true,
     autoPlay = false
 }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
+    const [isInView, setIsInView] = useState(false);
 
     // Calculate aspect ratio
     const aspectRatio = width / height;
@@ -42,8 +45,38 @@ export const VideoWithPlaceholder: React.FC<VideoWithPlaceholderProps> = ({
         setIsLoaded(true);
     }, []);
 
+    // IntersectionObserver for autoplay
+    useEffect(() => {
+        const container = containerRef.current;
+        const video = videoRef.current;
+        if (!container || !video || !autoPlay) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsInView(entry.isIntersecting);
+                
+                if (entry.isIntersecting && isLoaded) {
+                    video.muted = muted;
+                    video.play().catch(() => {
+                        console.log('Auto-play failed');
+                    });
+                } else {
+                    video.pause();
+                }
+            },
+            {
+                threshold: 0.5,
+                rootMargin: '0px'
+            }
+        );
+
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, [autoPlay, isLoaded, muted]);
+
     return (
         <div 
+            ref={containerRef}
             className={`relative overflow-hidden ${className}`}
             style={{ 
                 aspectRatio: aspectRatio.toString(),
@@ -73,6 +106,7 @@ export const VideoWithPlaceholder: React.FC<VideoWithPlaceholderProps> = ({
 
             {/* Actual video */}
             <video
+                ref={videoRef}
                 src={src}
                 className={`w-full h-full transition-all duration-300 ${
                     isLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-sm'
@@ -85,8 +119,11 @@ export const VideoWithPlaceholder: React.FC<VideoWithPlaceholderProps> = ({
                 onError={handleError}
                 controls={controls}
                 muted={muted}
-                autoPlay={autoPlay}
+                loop
+                playsInline
+                webkit-playsinline="true"
                 preload="metadata"
+                poster={`${src}#t=0.1`}
             />
 
             {/* Error state */}

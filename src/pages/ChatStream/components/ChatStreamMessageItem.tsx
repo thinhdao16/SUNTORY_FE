@@ -138,7 +138,7 @@ const ChatStreamMessageItem: React.FC<{
                                     onTouchStart={handleBubbleClick}
                                 >
                                     <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] xl:max-w-[350px]">
-                                        <div className="prose prose-sm whitespace-break-spaces break-words text-[15px]">
+                                        <div className="">
                                             <MarkdownRenderer text={msg.text} />
                                         </div>
                                     </div>

@@ -114,6 +114,22 @@ const Chat: React.FC = () => {
         if (!sessionId) return [];
         return rawCompleted.filter((msg: any) => msg.chatCode === sessionId);
     }, [rawCompleted, sessionId]);
+    
+    // Track active streams for current session
+    const activeStreamsCount = useMemo(() => {
+        return signalRMessages.filter(msg => 
+            msg.chatCode === sessionId && 
+            msg.isStreaming && 
+            !msg.isComplete
+        ).length;
+    }, [signalRMessages, sessionId]);
+    
+    // Log active streams count for monitoring
+    useEffect(() => {
+        if (activeStreamsCount > 0) {
+            console.log(`[ChatStream] ${activeStreamsCount} active streams for session ${sessionId}`);
+        }
+    }, [activeStreamsCount, sessionId]);
 
     const signalRMessagesBackUp = useMemo(() =>
         allSignalRMessages.filter((msg: any) => msg.chatInfo?.code === sessionId || msg.code === sessionId),
@@ -485,8 +501,8 @@ useEffect(() => { recalc(); }, []);
                                 loading={isSending || hasPendingMessages}
                                 // loading={loadingStream.loading || isSending}
                                 onRetryMessage={retryMessage}
-                                isSpending={isSending}
-                                thinkLoading={isSending}
+                                isSpending={isSending || hasPendingMessages}
+                                thinkLoading={isSending || hasPendingMessages}
                                 scrollToBottom={scrollToBottom}
                             />
                             <div style={{ marginTop: pendingBarHeight }} />
@@ -527,14 +543,14 @@ useEffect(() => { recalc(); }, []);
                                     messageValue={messageValue}
                                     setMessageValue={setMessageValue}
                                     // isLoading={isLoading}
-                                    isLoading={loadingStream.loading || isSending}
+                                    isLoading={loadingStream.loading || isSending || hasPendingMessages}
                                     isLoadingHistory={isLoadingHistory}
                                     messageRef={messageRef}
                                     handleSendMessage={handleSendMessage}
                                     handleImageChange={handleImageChange}
                                     handleFileChange={handleFileChange}
                                     onTakePhoto={() => history.push("/camera")}
-                                    isSpending={false}
+                                    isSpending={isSending || hasPendingMessages}
                                     uploadImageMutation={uploadImageMutation}
                                     addPendingImages={addPendingImages}
                                     isNative={isNative}

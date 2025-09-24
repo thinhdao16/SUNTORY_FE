@@ -1,6 +1,7 @@
 import { ChatMessage } from "@/pages/Chat/hooks/useChatMessages";
 import { getChatMessage } from "@/services/chat/chat-service";
 import { create } from "zustand";
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface StreamChunk {
     chatCode: string;
@@ -62,7 +63,9 @@ interface SignalRStreamStore {
     setLoadingStream: (think: string, loading: boolean) => void;
 }
 
-export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
+export const useSignalRStreamStore = create<SignalRStreamStore>()(
+    persist(
+        (set, get) => ({
 
     isConnected: false,
     connectionId: undefined,
@@ -80,55 +83,56 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
     setConnection: (isConnected, connectionId) =>
         set({ isConnected, connectionId }),
 
-    addStreamChunk: (chunk) =>
-        setTimeout(() => {
-            set(state => {
-                const existing = state.streamMessages[chunk.messageCode];
-                const fullText = chunk.completeText;
+    addStreamChunk: (chunk) => 
+        // setTimeout(() => {
+        set(state => {
+            const existing = state.streamMessages[chunk.messageCode];
+            const fullText = chunk.completeText;
 
-                if (existing) {
-                    const prevText = existing.completeText || "";
-                    const delta = fullText.slice(prevText.length);
+            if (existing) {
+                const prevText = existing.completeText || "";
+                const delta = fullText.slice(prevText.length);
 
-                    if (!delta) {
-                        return {};
-                    }
-
-                    return {
-                        streamMessages: {
-                            ...state.streamMessages,
-                            [chunk.messageCode]: {
-                                ...existing,
-                                chunks: [...existing.chunks, chunk],
-                                completeText: fullText,
-                                isStreaming: true,
-                                isComplete: false,
-                                hasError: false,
-                            }
-                        }
-                    };
+                if (!delta) {
+                    return {};
                 }
+
                 return {
                     streamMessages: {
                         ...state.streamMessages,
                         [chunk.messageCode]: {
-                            messageCode: chunk.messageCode,
-                            chatCode: chunk.chatCode,
-                            chunks: [chunk],
+                            ...existing,
+                            chunks: [...existing.chunks, chunk],
+                            completeText: fullText,
                             isStreaming: true,
                             isComplete: false,
                             hasError: false,
-                            completeText: fullText,
-                            startTime: chunk.timestamp,
-                            code: chunk.code,
-                            id: chunk.id,
-                            userMessageId: chunk.userMessageId
+                            lastUpdateTime: Date.now()
                         }
                     }
                 };
-            });
-        }, 0),
-
+            }
+            return {
+                streamMessages: {
+                    ...state.streamMessages,
+                    [chunk.messageCode]: {
+                        messageCode: chunk.messageCode,
+                        chatCode: chunk.chatCode,
+                        chunks: [chunk],
+                        isStreaming: true,
+                        isComplete: false,
+                        hasError: false,
+                        completeText: fullText,
+                        startTime: chunk.timestamp,
+                        code: chunk.code,
+                        id: chunk.id,
+                        userMessageId: chunk.userMessageId,
+                        lastUpdateTime: Date.now() // Track last update
+                    }
+                }
+            };
+        }),
+    // }, 0),
     completeStream: (event) => {
         set((state) => {
             const existing = state.streamMessages[event.messageCode];
@@ -302,4 +306,19 @@ export const useSignalRStreamStore = create<SignalRStreamStore>((set, get) => ({
     //         }
     //     })),
 
-}));
+        }),
+        {
+            name: 'signalr-stream-storage',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) => ({
+                // Chỉ persist active streams và pending messages
+                streamMessages: Object.fromEntries(
+                    Object.entries(state.streamMessages).filter(
+                        ([_, msg]) => msg.isStreaming && !msg.isComplete && !msg.hasError
+                    )
+                ),
+                chatCode: state.chatCode,
+            }),
+        }
+    )
+);

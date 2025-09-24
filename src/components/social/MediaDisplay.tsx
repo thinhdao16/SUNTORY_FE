@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect, useMemo } from 'react';
 import { SocialMediaFile } from '@/types/social-feed';
+import { useTranslation } from 'react-i18next';
 import ImageLightbox from '@/components/common/ImageLightbox';
 import { ImageWithPlaceholder } from '@/components/common/ImageWithPlaceholder';
 import { VideoWithPlaceholder } from '@/components/common/VideoWithPlaceholder';
@@ -40,133 +40,6 @@ interface VideoPlayerProps {
   className?: string;
 }
 
-const ImageGrid: React.FC<ImageGridProps> = ({ images, className = '', onImageClick }) => {
-  if (!images.length) return null;
-
-  if (images.length === 1) {
-    const image = images[0];
-    return (
-      <div className={`w-full ${className}`}>
-        <div className="px-4">
-          <ImageWithPlaceholder
-            src={image.urlFile}
-            alt={image.fileName || 'Image'}
-            width={image.width || 1}
-            height={image.height || 1}
-            className="rounded-2xl cursor-pointer"
-            onClick={() => onImageClick(0)}
-            maxHeight="60vh"
-            objectFit="cover"
-          />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`w-full ${className}`}>
-      <div className="flex gap-2 px-4 overflow-x-auto scrollbar-thin" style={{ minHeight: '200px' }}>
-        {images.slice(0, 4).map((image, index) => {
-          const aspectRatio = (image.width || 1) / (image.height || 1);
-          const itemWidth = 200 * aspectRatio
-          
-          return (
-            <div
-              key={image.id}
-              className="relative"
-              style={{ 
-                // width: `${Math.min(itemWidth, 180)}px`, 
-                width: `auto`, 
-                height: '200px',
-                flex: '0 0 auto'
-              }}
-            >
-              <ImageWithPlaceholder
-                src={image.urlFile}
-                alt={image.fileName || 'Image'}
-                width={image.width || 200}
-                height={image.height || 200}
-                className="rounded-2xl cursor-pointer hover:scale-105 transition-transform duration-200 w-full h-full"
-                onClick={() => onImageClick(index)}
-                maxHeight="none"
-                objectFit="cover"
-              />
-              {/* {images.length > 4 && index === 3 && (
-                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-2xl">
-                  <span className="text-white text-xl font-semibold">+{images.length - 4}</span>
-                </div>
-              )} */}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const VideoGrid: React.FC<VideoGridProps> = ({ videos, className = '' }) => {
-  if (!videos.length) return null;
-
-  if (videos.length === 1) {
-    const video = videos[0];
-    return (
-      <div className={`w-full ${className}`}>
-        <div className="px-4">
-          <VideoWithPlaceholder
-            src={video.urlFile}
-            width={video.width || 200}
-            height={video.height || 200}
-            className="rounded-2xl"
-            maxHeight="60vh"
-            objectFit="cover"
-            controls={true}
-            muted={true}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`w-full ${className}`}>
-      <div className="flex flex-wrap gap-2 px-4" style={{ minHeight: '200px' }}>
-        {videos.slice(0, 4).map((video, index) => {
-          const aspectRatio = (video.width || 1) / (video.height || 1);
-          const itemWidth = 200 * aspectRatio;
-          
-          return (
-            <div
-              key={video.id}
-              className="relative"
-              style={{ 
-                width: `${Math.min(itemWidth, 180)}px`,
-                height: '200px',
-                flex: '0 0 auto'
-              }}
-            >
-              <VideoWithPlaceholder
-                src={video.urlFile}
-                width={video.width || 200}
-                height={video.height || 200}
-                className="rounded-2xl w-full h-full"
-                maxHeight="none"
-                objectFit="cover"
-                controls={true}
-                muted={true}
-              />
-              {/* Show "+X more" overlay on the 4th video if there are more than 4 videos */}
-              {videos.length > 4 && index === 3 && (
-                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-2xl">
-                  <span className="text-white text-xl font-semibold">+{videos.length - 4}</span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioFile, className = '', classNameAudio= '', customLengthAudio=6 }) => {
   const { t } = useTranslation();
@@ -294,56 +167,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioFile, className = '', cl
   );
 };
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoFile, className = '' }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isInView, setIsInView] = useState(false);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsInView(entry.isIntersecting);
-        
-        if (entry.isIntersecting) {
-          video.muted = true; 
-          video.play().catch(console.error);
-        } else {
-          video.pause();
-        }
-      },
-      {
-        threshold: 0.5, 
-        rootMargin: '0px'
-      }
-    );
-
-    observer.observe(video);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  return (
-    <div className={`relative rounded-2xl px-4 overflow-hidden ${className}`}>
-      <video
-        ref={videoRef}
-        controls
-        muted
-        loop
-        playsInline
-        className="w-full aspect-video rounded-2xl"
-        preload="metadata"
-        poster={videoFile.urlFile + '#t=0.1'}
-      >
-        <source src={videoFile.urlFile} type={videoFile.fileType} />
-        Your browser does not support the video element.
-      </video>
-    </div>
-  );
-};
 
 const DocumentDisplay: React.FC<{ file: SocialMediaFile; className?: string }> = ({ file, className = '' }) => {
   return (
@@ -465,11 +289,10 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
                       maxHeight="60vh"
                       objectFit="cover"
                       controls={false}
-                      muted={videoMuted[item.id] !== false} // Default muted, unmute when explicitly set to false
+                      muted={true}
                       autoPlay={true}
                     />
                     
-                    {/* Volume Toggle Button */}
                     <button
                       className="absolute bottom-3 right-3 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors pointer-events-auto"
                       onClick={(e) => {
@@ -551,7 +374,6 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
                       autoPlay={true}
                     />
                     
-                    {/* Volume Toggle Button */}
                     <button
                       className="absolute bottom-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors pointer-events-auto"
                       onClick={(e) => {
