@@ -8,7 +8,6 @@ import {
     StreamEvent,
 } from "@/store/zustand/signalr-stream-store";
 import { useChatStore } from "@/store/zustand/chat-store";
-import { useParams } from 'react-router';
 
 export interface UseSignalRStreamOptions {
     logLevel?: signalR.LogLevel;
@@ -39,6 +38,7 @@ export interface UseSignalRStreamReturn {
 
 export function useSignalRStream(
     deviceId: string,
+    sessionId?: string,
     options: UseSignalRStreamOptions = {}
 ): UseSignalRStreamReturn {
     const {
@@ -46,7 +46,6 @@ export function useSignalRStream(
         sendTimeoutMs = 15000,
         preferWebSockets = true,
     } = options;
-    const { sessionId } = useParams<{ sessionId?: string; type?: string }>();
 
     const {
         isConnected,
@@ -120,9 +119,18 @@ export function useSignalRStream(
     }, [logLevel, preferWebSockets]);
 
     const attachHandlers = useCallback((conn: signalR.HubConnection) => {
+        // Always remove existing handlers to prevent duplicates
         conn.off("ReceiveStreamChunk");
         conn.off("StreamComplete");
         conn.off("StreamError");
+
+        console.log(`[SignalR] Attaching handlers for session: ${sessionId || 'undefined'}`);
+
+        // Don't attach handlers if sessionId is not available yet
+        if (!sessionId) {
+            console.warn('[SignalR] SessionId is undefined, handlers not attached');
+            return;
+        }
 
         conn.on(
             "ReceiveStreamChunk",
@@ -140,7 +148,13 @@ export function useSignalRStream(
                     console.warn('[SignalR] Invalid stream chunk data:', data);
                     return;
                 }
-                console.log(data)
+                console.log('[SignalR] ReceiveStreamChunk:', {
+                    chatCode: data.chatCode,
+                    currentSessionId: sessionId,
+                    messageCode: data.userMessageCode,
+                    isForCurrentSession: data.chatCode === sessionId
+                });
+
                 if (data.chatCode !== sessionId) {
                     console.log(`[SignalR] Ignoring chunk for different session: ${data.chatCode} !== ${sessionId}`);
                     return;
@@ -434,7 +448,7 @@ export function useSignalRStream(
     useEffect(() => {
         if (!deviceId) return;
         void connect();
-        
+
         // Recover incomplete streams after connection
         setTimeout(() => {
             recoverIncompleteStreams();
@@ -454,6 +468,29 @@ export function useSignalRStream(
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [deviceId]);
+
+    // Re-attach handlers when sessionId changes to fix stale closure issue
+    useEffect(() => {
+        const conn = connectionRef.current;
+        if (conn && conn.state === signalR.HubConnectionState.Connected && sessionId) {
+            console.log(`[SignalR] Re-attaching handlers for session change: ${sessionId}`);
+            attachHandlers(conn);
+        } else if (!sessionId) {
+            console.log('[SignalR] Waiting for sessionId before attaching handlers');
+        }
+    }, [sessionId, attachHandlers]);
+
+    // Also attach handlers when connection is established and sessionId is available
+    useEffect(() => {
+        const conn = connectionRef.current;
+        if (conn && conn.state === signalR.HubConnectionState.Connected && sessionId && isConnected) {
+            // Small delay to ensure sessionId is properly set
+            setTimeout(() => {
+                console.log(`[SignalR] Attaching handlers after connection established: ${sessionId}`);
+                attachHandlers(conn);
+            }, 100);
+        }
+    }, [isConnected, sessionId, attachHandlers]);
 
     const sendStreamMessage = useCallback(
         async (chatCode: string, message: string, additionalData?: any) => {

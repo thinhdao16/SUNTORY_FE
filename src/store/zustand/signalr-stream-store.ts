@@ -311,14 +311,20 @@ export const useSignalRStreamStore = create<SignalRStreamStore>()(
             name: 'signalr-stream-storage',
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
-                // Chỉ persist active streams và pending messages
+                // Only persist recent active streams (within last 5 minutes to prevent stale data)
                 streamMessages: Object.fromEntries(
                     Object.entries(state.streamMessages).filter(
-                        ([_, msg]) => msg.isStreaming && !msg.isComplete && !msg.hasError
+                        ([_, msg]) => {
+                            const isActive = msg.isStreaming && !msg.isComplete && !msg.hasError;
+                            const isRecent = Date.now() - new Date(msg.startTime).getTime() < 5 * 60 * 1000; // 5 minutes
+                            return isActive && isRecent;
+                        }
                     )
                 ),
                 chatCode: state.chatCode,
             }),
+            // Add version to force clear old data format if needed
+            version: 1,
         }
     )
 );
