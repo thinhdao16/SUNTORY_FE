@@ -127,6 +127,7 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                         onRetryMessage={onRetryMessage}
                         isSpending={isSpending}
                         loading={loading}
+                        hideAvatar={isWaitingForFirstChunk || (loading && !streamingMessage)}
                     />
                 ))}
 
@@ -136,23 +137,7 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                 {/* {streamingMessage && (
                 <StreamingMessageItemComponent msg={streamingMessage} />
             )} */}
-                {isWaitingForFirstChunk && (
-                    <motion.div
-                        key="thinking-bubble"
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: 1 }}
-                        exit={{ scaleX: 0 }}
-                        transition={{ duration: 0.25, ease: 'easeOut' }}
-                        style={{ originX: 0 }}
-                        className="flex w-full mb-4"
-                    >
-                        <div className="flex gap-2 items-start w-fit">
-                            <BotIcon className="min-w-[30px] aspect-square object-contain" />
-                            <ThinkingStatus scrollToBottom={scrollToBottom ?? (() => {})} />
-                        </div>
-                    </motion.div>
-                )}
-                {loading && !isWaitingForFirstChunk && !streamingMessage && (
+                {(isWaitingForFirstChunk || (loading && !streamingMessage)) && (
                     <motion.div
                         key="thinking-bubble"
                         initial={{ scaleX: 0 }}
