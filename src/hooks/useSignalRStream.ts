@@ -155,7 +155,7 @@ export function useSignalRStream(
                     isForCurrentSession: data.chatCode === sessionId
                 });
 
-                if (data.chatCode !== sessionId) {
+                if (data.chatCode !== sessionId || data.chunkLength === 0) {
                     console.log(`[SignalR] Ignoring chunk for different session: ${data.chatCode} !== ${sessionId}`);
                     return;
                 }
