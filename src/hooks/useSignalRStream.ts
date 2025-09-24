@@ -73,12 +73,10 @@ export function useSignalRStream(
     const startPromiseRef = useRef<Promise<void> | null>(null);
     const manualRetryRef = useRef<(() => void) | undefined>(undefined);
     
-    // Network quality tracking
     const networkQualityRef = useRef<'good' | 'poor' | 'offline'>('good');
     const lastChunkTimeRef = useRef<{ [key: string]: number }>({});
     const streamBufferRef = useRef<{ [key: string]: any[] }>({});
 
-    // ====== Helpers ======
     const buildConnection = useCallback(() => {
         const tokenFactory = () => localStorage.getItem("token") || "";
 
@@ -96,42 +94,28 @@ export function useSignalRStream(
             });
         }
 
-        // Exponential backoff với jitter để tránh thundering herd
         builder.withAutomaticReconnect({
             nextRetryDelayInMilliseconds: (retryContext) => {
                 const baseDelay = Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 30000);
                 const jitter = Math.random() * 1000;
                 const delay = baseDelay + jitter;
-                
-                console.log(`[SignalR] Retry attempt ${retryContext.previousRetryCount + 1}, delay: ${delay}ms`);
-                
-                // Nếu retry quá 5 lần, có thể network rất tệ
                 if (retryContext.previousRetryCount > 5) {
                     networkQualityRef.current = 'offline';
-                    console.error('[SignalR] Network appears offline after 5 retries');
                 }
-                
                 return delay;
             }
         });
-
         return builder.build();
     }, [logLevel, preferWebSockets]);
 
     const attachHandlers = useCallback((conn: signalR.HubConnection) => {
-        // Always remove existing handlers to prevent duplicates
         conn.off("ReceiveStreamChunk");
         conn.off("StreamComplete");
         conn.off("StreamError");
-
-        console.log(`[SignalR] Attaching handlers for session: ${sessionId || 'undefined'}`);
-
-        // Don't attach handlers if sessionId is not available yet
         if (!sessionId) {
             console.warn('[SignalR] SessionId is undefined, handlers not attached');
             return;
         }
-
         conn.on(
             "ReceiveStreamChunk",
             (data: {
@@ -145,18 +129,9 @@ export function useSignalRStream(
                 chunkLength: number;
             }) => {
                 if (!data.chatCode || !data.userMessageCode || data.chunkLength === 0) {
-                    console.warn('[SignalR] Invalid stream chunk data:', data);
                     return;
                 }
-                console.log('[SignalR] ReceiveStreamChunk:', {
-                    chatCode: data.chatCode,
-                    currentSessionId: sessionId,
-                    messageCode: data.userMessageCode,
-                    isForCurrentSession: data.chatCode === sessionId
-                });
-
                 if (data.chatCode !== sessionId || data.chunkLength === 0) {
-                    console.log(`[SignalR] Ignoring chunk for different session: ${data.chatCode} !== ${sessionId}`);
                     return;
                 }
                 
@@ -184,10 +159,8 @@ export function useSignalRStream(
                 }
                 lastChunkTimeRef.current[messageKey] = now;
                 
-                // Add chunk immediately
                 addStreamChunk(chunk);
                 
-                // Set loading state for first chunk
                 const existingStream = getStreamMessage(data.userMessageCode);
                 if (!existingStream || existingStream.chunks.length === 0) {
                     setIsSending(true);
@@ -203,22 +176,10 @@ export function useSignalRStream(
                 chatCode: string;
                 userMessageCode: string;
             }) => {
-                // Validate data
                 if (!data.chatCode || !data.userMessageCode) {
-                    console.warn('[SignalR] Invalid StreamComplete data:', data);
                     return;
                 }
-                
-                console.log('[SignalR] StreamComplete:', {
-                    chatCode: data.chatCode,
-                    currentSessionId: sessionId,
-                    isForCurrentSession: data.chatCode === sessionId,
-                    messageCode: data.userMessageCode
-                });
-                
-                // ONLY process completion for current session
                 if (data.chatCode !== sessionId) {
-                    console.log(`[SignalR] Ignoring completion for different session: ${data.chatCode}`);
                     return;
                 }
                 
@@ -230,11 +191,9 @@ export function useSignalRStream(
                     code: data.botMessageCode,
                 };
                 
-                // Complete stream and reset loading
                 completeStream(event);
                 setIsSending(false);
                 
-                // Clean up tracking
                 delete lastChunkTimeRef.current[data.userMessageCode];
                 delete streamBufferRef.current[data.userMessageCode];
             }
@@ -249,23 +208,10 @@ export function useSignalRStream(
                 userMessageCode: string;
                 errorMessage: string;
             }) => {
-                // Validate data
                 if (!data.chatCode || !data.userMessageCode) {
-                    console.warn('[SignalR] Invalid StreamError data:', data);
                     return;
                 }
-                
-                console.log('[SignalR] StreamError:', {
-                    chatCode: data.chatCode,
-                    currentSessionId: sessionId,
-                    isForCurrentSession: data.chatCode === sessionId,
-                    messageCode: data.userMessageCode,
-                    error: data.errorMessage
-                });
-                
-                // ONLY process error for current session
                 if (data.chatCode !== sessionId) {
-                    console.log(`[SignalR] Ignoring error for different session: ${data.chatCode}`);
                     return;
                 }
                 
@@ -277,12 +223,8 @@ export function useSignalRStream(
                     errorMessage: data.errorMessage,
                     code: data.botMessageCode,
                 };
-                
-                // Handle error and reset loading
                 errorStream(event);
                 setIsSending(false);
-                
-                // Clean up tracking
                 delete lastChunkTimeRef.current[data.userMessageCode];
                 delete streamBufferRef.current[data.userMessageCode];
             }

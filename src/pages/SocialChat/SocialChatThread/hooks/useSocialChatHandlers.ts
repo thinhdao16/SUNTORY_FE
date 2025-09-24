@@ -1,3 +1,4 @@
+import { i18n } from 'i18next';
 import { UpdateSocialChatMessagePayload } from './../../../../services/social/social-chat-type';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable prefer-const */
@@ -6,19 +7,22 @@ import { uploadChatFile } from "@/services/file/file-service";
 import React, { useCallback } from "react";
 import { UseMutationResult } from "react-query";
 import { useToastStore } from "@/store/zustand/toast-store";
-import i18n from "@/config/i18n";
-import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
+import { useTranslation } from "react-i18next";
+import { PendingFile } from "../components/PendingFilesList";
 import dayjs from "dayjs";
 import { ChatMessage } from "@/types/social-chat";
 import { useSendSocialChatMessage, useUpdateSocialChatMessage } from "../../hooks/useSocialChat";
 import { CreateSocialChatMessagePayload } from "@/services/social/social-chat-type";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import { Language } from '@/store/zustand/language-store';
+import { generatePreciseTimestampFromDate } from '@/utils/time-stamp';
 interface UseSocialChatHandlersProps {
     addPendingImages: (images: string[]) => void;
     addPendingFiles: (files: { name: string; url: string }[]) => void;
     pendingImages: (string | File)[];
     pendingFiles: { name: string; url: string }[];
+    chatPendingFiles: PendingFile[];
+    clearPendingFiles: () => void;
     messageValue: string;
     setMessageValue: (value: string) => void;
     uploadImageMutation: UseMutationResult<any, unknown, File | Blob>;
@@ -56,6 +60,8 @@ export function useSocialChatHandlers({
     addPendingFiles,
     pendingImages,
     pendingFiles,
+    chatPendingFiles,
+    clearPendingFiles,
     messageValue,
     setMessageValue,
     uploadImageMutation,
@@ -154,9 +160,9 @@ export function useSocialChatHandlers({
                 createDate: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
                 localUrl: blobUrl,
                 serverUrl: undefined,
-                isUploading: true,                // ✅ Bắt đầu với uploading
-                isSending: false,                 // ✅ Chưa sending
-                uploadProgress: 0,                // ✅ 0% progress
+                isUploading: true,
+                isSending: false,
+                uploadProgress: 0,
             };
         });
 
@@ -454,7 +460,7 @@ export function useSocialChatHandlers({
         const selectedCount = files.length;
         if (totalCount + selectedCount > 3) {
             useToastStore.getState().showToast(
-                i18n.t("You can only send up to 3 images and files in total!"),
+                t("You can only send up to 3 images and files in total!"),
                 2000,
                 "warning"
             );
@@ -483,13 +489,13 @@ export function useSocialChatHandlers({
                 /^[\s\u200B\u2060\uFEFF]*$/g.test(text);
         };
         const hasMessage = !isEmptyText(messageValue) || !isEmptyText(messageTranslate);
-        const hasFiles = pendingImages.length > 0 || pendingFiles.length > 0;
+        const hasFiles = chatPendingFiles.length > 0;
         if (!hasMessage && !hasFiles) {
             return;
         }
         if (hasReachedLimit) {
             useToastStore.getState().showToast(
-                i18n.t("You have reached the message limit for this chat."),
+                t("You have reached the message limit for this chat."),
                 2000,
                 "warning"
             );
@@ -499,10 +505,9 @@ export function useSocialChatHandlers({
         if (isEmptyText(textToSend) && !hasFiles) { return }
         const tempId = `temp_${Date.now()}_${Math.random()}`;
         const now = dayjs.utc();
-        const filesArr = [
-            ...pendingFiles.map(f => ({ name: f.name })),
-            ...pendingImages.map((img, idx) => ({ name: typeof img === "string" ? img.split("/").pop() || `image_${idx}` : `image_${idx}` }))
-        ];
+        const filesArr = chatPendingFiles
+            .filter(f => !f.isUploading && !f.error && f.serverName)
+            .map(f => ({ name: f.serverName! }));
         const payload: CreateSocialChatMessagePayload = {
             chatCode: roomId || null,
             messageText: textToSend,
@@ -526,28 +531,24 @@ export function useSocialChatHandlers({
             chatInfoId: 1,
             code: roomId || "",
             status: 10,
-            attachments: pendingImages.map(file => {
-                if (typeof file === "string") {
-                    return {
-                        fileUrl: file,
-                        fileName: "",
-                        fileType: 1,
-                    };
-                } else {
-                    return {
-                        fileUrl: URL.createObjectURL(file),
-                        fileName: file.name,
-                        fileType: 1,
-                    };
-                }
-            }),
             isSend: false,
             isError: false,
-            hasAttachment: pendingImages.length > 0 ? 1 : 0,
+            hasAttachment: chatPendingFiles.length > 0 ? 1 : 0,
             isRead: 0,
             isRevoked: 0,
             isEdited: 0,
-            chatAttachments: [],
+            chatAttachments: chatPendingFiles.map((file, index) => ({
+                id: -index - 1,
+                chatMessageId: -1,
+                fileUrl: file.url || '',
+                fileName: file.name,
+                fileType: file.type === 'image' ? 1 : file.type === 'video' ? 2 : 3,
+                fileSize: 0,
+                createDate: new Date().toISOString(),
+                isUploading: true,
+                isError: false,
+                localUrl: file.url
+            })),
             chatInfo: null,
             reactions: [],
             replyToMessageId: replyingToMessage?.id || null,
@@ -587,7 +588,7 @@ export function useSocialChatHandlers({
                     hasAttachment: serverMsg.hasAttachment,
                     isRead: serverMsg.isRead,
                     userHasRead: serverMsg.userHasRead || [],
-                    attachments: serverMsg.chatAttachments?.length > 0 ?
+                    chatAttachments: serverMsg.chatAttachments?.length > 0 ?
                         serverMsg.chatAttachments.map((att: any) => ({
                             fileUrl: att.fileUrl,
                             fileName: att.fileName,
@@ -607,6 +608,11 @@ export function useSocialChatHandlers({
                 }
                 
                 setLoadingMessages(false);
+                
+                if (chatPendingFiles.length > 0) {
+                    console.log('Clearing pending files after successful send');
+                    clearPendingFiles();
+                }
             }
 
         } catch (error) {
