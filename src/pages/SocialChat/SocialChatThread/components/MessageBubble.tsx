@@ -46,8 +46,8 @@ export const MessageBubble: React.FC<{
                     ${isError && !isSend
                         ? "bg-red-50 text-red-700 border border-red-400 rounded-[16px]"
                         : isUser
-                            ? "bg-main text-white rounded-br-md rounded-[16px_16px_4px_16px]"
-                            : "bg-screen-page text-gray-900 rounded-[4px_16px_16px_16px]"
+                            ? "bg-primary-100 text-black rounded-br-md rounded-[16px_16px_4px_16px]"
+                            : "bg-success-500 text-black rounded-[4px_16px_16px_16px]"
                     }
                     ${isRevoked && "border border-netural-100 text-netural-200 bg-white"}
                 `}
@@ -93,7 +93,7 @@ export const MessageBubble: React.FC<{
                         {!isRevoked && (
                             <div
                                 ref={actionContainerRef}
-                                className={`absolute top-1/2 -translate-y-1/2 gap-2 p-1 text-main z-[2]
+                                className={`absolute top-1/2 -translate-y-1/2 gap-2 p-1 text-netural-900 z-[2]
                                     ${showActionsMobile ? "flex" : "hidden group-hover:flex"}
                                     ${isUser ? "right-full -mr-0" : "left-full -ml-0"}`}
                                 style={{ pointerEvents: "auto" }}
