@@ -30,18 +30,18 @@ const Profile: React.FC = () => {
 
     return (
         <PageContainer className="">
-            <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', '--ion-background-color': '#ffffff' } as any}>
-                <IonToolbar style={{ '--background': '#EDF1FC', '--ion-background-color': '#EDF1FC' } as any}>
+            <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
+                <IonToolbar style={{ '--background': '#EDF1FC', '--ion-background-color': '#EDF1FC' , '--item-color': 'black' } as any}>
                     <IonButtons slot="start">
                         <IonButton
                             fill="clear"
                             onClick={() => history.push('/my-profile')}
-                            className="ml-2"
+                            className="pl-4"
                         >
                             <IonIcon icon={arrowBack} className="text-gray-700 font-bold text-2xl" />
                         </IonButton>
                     </IonButtons>
-                    <IonTitle className="text-center font-semibold text-lg">
+                    <IonTitle className="text-center font-bold" style={{ fontSize: '15px' }}>
                         {section === "account"
                             ? t('My information')
                             : section === "health"
@@ -51,9 +51,9 @@ const Profile: React.FC = () => {
                                     : t('Settings and privacy')
                         }
                     </IonTitle>
-                    <IonButtons slot="end">
-                        <IonButton className="opacity-0 pointer-events-none" fill="clear">
-                            <IonIcon icon={arrowBack} />
+                    <IonButtons slot="end" style={{ textColor: 'black', fontSize: '15px' }}>
+                        <IonButton className="opacity-0 pointer-events-none pr-4" fill="clear" style={{ textColor: 'black', fontSize: '15px' }}>
+                            <IonIcon icon={arrowBack} className="text-black"/>
                         </IonButton>
                     </IonButtons>
                 </IonToolbar>

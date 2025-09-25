@@ -3,10 +3,10 @@ import { messaging, requestForToken } from "@/lib/firebase";
 import { onMessage } from "firebase/messaging";
 import { Warning } from "@/types/warning-type";
 import { saveFcmToken } from "@/utils/save-fcm-token";
-import { useNotificationStore } from "@/store/zustand/notify-store";
+import { NotificationType, useNotificationStore } from "@/store/zustand/notify-store";
 
 export function useFcmToken(mutate?: (data: { fcmToken: string }) => void) {
-    const { addNotification } = useNotificationStore.getState();
+    const { addNotification, clearOne } = useNotificationStore.getState();
     useEffect(() => {
         requestForToken().then(async (token) => {
             if (token) {
@@ -15,17 +15,31 @@ export function useFcmToken(mutate?: (data: { fcmToken: string }) => void) {
             }
         });
 
-        let unsubscribe = () => {};
+        let unsubscribe = () => { };
         if (messaging) {
             unsubscribe = onMessage(messaging, (payload) => {
-                console.log("🔥 Received payload22:", payload);
-
+                var id = crypto.randomUUID();
                 if (payload.notification) {
-                    // addNotification({
-                    //     type: "message",
-                    //     title: payload.notification.title || "No title",
-                    //     body: payload.notification.body || "No body",
-                    // });
+                    addNotification({
+                        id: id,
+                        type: payload?.data?.type.toLowerCase() as NotificationType || "chat_message",
+                        title: payload.notification.title || "No title",
+                        body: payload.notification.body || "No body",
+                        avatar: payload?.data?.image_icon || "/favicon.png",
+                        data: payload.data || {},
+                    });
+                    if (Notification.permission === "granted") {
+                        const title = payload.notification.title || "Thông báo";
+                        const body = payload.notification.body || "";
+                        new Notification(title, {
+                            body,
+                            icon: "/favicon.png",
+                            data: payload.data || {},
+                            requireInteraction: false,
+                            silent: false
+                        });
+                    }
+                    setTimeout(() => clearOne(id), 4000);
                 }
 
                 if (payload.data?.data) {

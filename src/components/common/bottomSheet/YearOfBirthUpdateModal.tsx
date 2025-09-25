@@ -68,10 +68,6 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
         year.length === 4 && !Number.isNaN(yearNum) && yearNum >= 1900 && yearNum <= currentYear;
 
     const handleSave = async () => {
-        if (!isValidYear) {
-            showToast(t("Please enter a valid year from 1900 to current year"), 1000, "error");
-            return;
-        }
         setIsSaving(true);
         try {
             const payload: UpdateAccountInformationV3Payload = {
@@ -126,12 +122,14 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
                         >
                             {/* Left spacer to keep title centered */}
                             <div style={{ width: 56, height: HEADER_PX }} />
-                            <div className="text-center font-semibold text-lg"
+                            <div className="text-center font-semibold"
                                 style={{
                                     flex: 1,
                                     lineHeight: 1.2,
                                     wordBreak: 'break-word',
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
+                                    fontSize: '15px',
+                                    color: 'black'
                                 }}
                             >
                                 {t('My year of birth')}
@@ -154,7 +152,7 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
                                 flexDirection: 'column'
                             }}
                         >
-                            <div className="px-6 flex-1 flex items-center justify-center">
+                            <div className="px-6 flex-1 flex flex-col items-center justify-center">
                                 <input
                                     inputMode="numeric"
                                     pattern="[0-9]*"
@@ -162,39 +160,58 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
                                     value={year}
                                     onChange={(e) => setYear(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
                                     placeholder={t('Enter year')}
-                                    className="w-full max-w-[2800px] mx-auto text-center text-xl font-medium border-0 border-b-2 border-gray-400 focus:border-black focus:outline-none py-3"
+                                    className={`w-full max-w-[2800px] mx-auto text-center text-xl font-medium border-0 border-b-2 focus:outline-none py-3 ${
+                                        year.trim().length === 0 || (year.length > 0 && (yearNum < 1900 || yearNum > currentYear)) ? 'border-red-400 focus:border-red-500' : 'border-gray-400 focus:border-black'
+                                    }`}
                                     autoFocus
                                 />
+                                {year.trim().length === 0 && (
+                                    <p className="text-xs text-red-500 font-medium mt-2">
+                                        Year of birth is required!
+                                    </p>
+                                )}
+                                {year.length > 0 && yearNum < 1900 && (
+                                    <p className="text-xs text-red-500 font-medium mt-2">
+                                        Year must be 1900 or later!
+                                    </p>
+                                )}
+                                {year.length > 0 && yearNum > currentYear && (
+                                    <p className="text-xs text-red-500 font-medium mt-2">
+                                        Year cannot be in the future!
+                                    </p>
+                                )}
                             </div>
 
                             {/* Save Button - sticky and lifts above keyboard */}
-                            <div className="px-4 py-4 border-t border-gray-100"
-                                style={{
-                                    position: 'sticky',
-                                    bottom: 0,
-                                    background: '#ffffff',
-                                    paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px + 12px)`,
-                                    zIndex: 10
-                                }}
-                            >
-                                <IonButton
-                                    expand="block"
-                                    shape="round"
-                                    onClick={handleSave}
-                                    className="h-14"
+                            {isValidYear && (
+                                <div className="px-4 py-4 border-t border-gray-100"
                                     style={{
-                                        '--background': '#1152F4',
-                                        '--background-hover': '#2563eb',
-                                        'font-weight': '700',
-                                        'borderRadius': '9999px',
-                                        'boxShadow': '0 8px 20px rgba(17, 82, 244, 0.35)',
-                                        'textTransform': 'uppercase',
-                                        'letterSpacing': '0.5px'
+                                        position: 'sticky',
+                                        bottom: 0,
+                                        background: '#ffffff',
+                                        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px + 12px)`,
+                                        zIndex: 10
                                     }}
                                 >
-                                    {isSaving ? <IonSpinner name="crescent" /> : t('Save')}
-                                </IonButton>
-                            </div>
+                                    <IonButton
+                                        expand="block"
+                                        shape="round"
+                                        onClick={handleSave}
+                                        className="h-14"
+                                        style={{
+                                            '--background': '#1152F4',
+                                            '--background-hover': '#2563eb',
+                                            'font-weight': '700',
+                                            'borderRadius': '9999px',
+                                            'boxShadow': '0 8px 20px rgba(17, 82, 244, 0.35)',
+                                            'textTransform': 'uppercase',
+                                            'letterSpacing': '0.5px'
+                                        }}
+                                    >
+                                        {isSaving ? <IonSpinner name="crescent" /> : t('Save')}
+                                    </IonButton>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </motion.div>

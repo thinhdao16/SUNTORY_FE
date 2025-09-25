@@ -139,16 +139,16 @@ const MyProfile: React.FC = () => {
   return (
     <PageContainer>
       <IonPage style={{ '--background': 'white', paddingBottom: '52px' } as any}>
-        <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', '--ion-background-color': '#ffffff' } as any}>
+        <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
           <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
             <IonButtons slot="start" className="pl-4">
               <BackIcon onClick={() => history.goBack()} />
-              <span className="text-lg font-semibold  ml-4">
+              <span className="font-bold  ml-4" style={{ fontSize: '15px', color: 'black' }}>
                 {t('My profile')}
               </span  >
             </IonButtons>
             <IonButtons slot="end" onClick={() => history.push('/social-feed/create')}>
-              <IonButton fill="clear">
+              <IonButton fill="clear" style={{ textColor: 'black', fontSize: '15px' }}>
                 <EditProfileIcon />
               </IonButton>
             </IonButtons>
@@ -162,7 +162,7 @@ const MyProfile: React.FC = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 ">
-                      <h1 className="text-[25px] font-bold text-gray-900 overflow-hidden max-w-[150px] truncate">{userInfo?.name}</h1>
+                      <h1 className="text-[20px] font-bold text-gray-900 overflow-hidden max-w-[200px] truncate">{userInfo?.name}</h1>
                       <span className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`} style={{ width: 20, height: 20, borderRadius: 9999 }} ></span>
                     </div>
                     <div className="flex items-center space-x-1 mb-2">

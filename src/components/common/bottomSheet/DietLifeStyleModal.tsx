@@ -8,6 +8,10 @@ import { updateHealthConditionV2 } from "@/services/auth/auth-service";
 import { UpdateHealthConditionV2Payload } from "@/services/auth/auth-types";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import { useToastStore } from "@/store/zustand/toast-store";
+import OmnivoreIcon from "@/icons/logo/menu/omnivore.svg?react";
+import KetoIcon from "@/icons/logo/menu/keto.svg?react";
+import VeganIcon from "@/icons/logo/menu/vegetarian.svg?react";
+import LowCarbIcon from "@/icons/logo/menu/lowcarb.svg?react";
 
 interface DietOption {
     id: string;
@@ -54,7 +58,10 @@ const DietLifeStyleModal: React.FC<DietLifeStyleModalProps> = ({
                 : String(item.name.toLowerCase().replace(/\s+/g, '-')),
             name: item.name,
             description: item.description || `${item.name} diet for your health journey.`,
-            icon: '🥗'
+            icon: item.name.toLowerCase() === "omnivore" ? <OmnivoreIcon /> 
+            : item.name.toLowerCase() === "keto" ? <KetoIcon /> 
+            : item.name.toLowerCase() === "vegetarian" ? <VeganIcon /> 
+            : item.name.toLowerCase() === "low carb" ? <LowCarbIcon /> : '🥗'
         })) || [];
     }, [healthMasterData]);
 
@@ -133,12 +140,14 @@ const DietLifeStyleModal: React.FC<DietLifeStyleModalProps> = ({
                         {/* Header */}
                         <div className="px-2" style={{ minHeight: HEADER_PX, display: 'flex', alignItems: 'center', touchAction: 'none' }}>
                             <div style={{ width: 56, height: HEADER_PX }} />
-                            <div className="text-center font-semibold text-lg"
+                            <div className="text-center font-semibold"
                                 style={{
                                     flex: 1,
                                     lineHeight: 1.2,
                                     wordBreak: 'break-word',
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
+                                    fontSize: '15px',
+                                    color: 'black'
                                 }}>{t('Your current diet')}</div>
                             <IonButton fill="clear" onClick={onClose} style={{ width: 56, height: HEADER_PX, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <IonIcon icon={close} style={{ width: 24, height: 24, color: '#000000' }} />
