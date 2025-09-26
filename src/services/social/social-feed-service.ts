@@ -216,7 +216,7 @@ export class SocialFeedService {
         const payload = {
             originalPostCode,
             captionRepost,
-            privacy
+            privacy,
         };
         
         await httpClient.post('/api/v1/social/post/repost', payload);

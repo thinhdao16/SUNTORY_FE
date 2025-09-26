@@ -91,22 +91,22 @@ const MyInformation: React.FC = () => {
 
     return (
         <PageContainer>
-            <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', '--ion-background-color': '#ffffff' } as any}>
+            <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
                 <IonToolbar style={{ '--background': '#EDF1FC', '--ion-background-color': '#EDF1FC' } as any}>
                     <IonButtons slot="start">
                         <IonButton
                             fill="clear"
                             onClick={() => history.push('/profile-setting')}
-                            className="ml-2"
+                            className="pl-4"
                         >
                             <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
                         </IonButton>
                     </IonButtons>
-                    <IonTitle className="text-center font-semibold text-lg">
+                    <IonTitle className="text-center font-bold" style={{ fontSize: '15px' , textColor: 'black' }}>
                         {t('My information')}
                     </IonTitle>
                     <IonButtons slot="end">
-                        <IonButton className="opacity-0 pointer-events-none" fill="clear">
+                        <IonButton className="opacity-0 pointer-events-none pr-4" fill="clear" style={{ textColor: 'black' , fontSize: '15px' }}>
                             <IonIcon icon={arrowBack} />
                         </IonButton>
                     </IonButtons>

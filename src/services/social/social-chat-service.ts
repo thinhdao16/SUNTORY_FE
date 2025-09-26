@@ -96,3 +96,8 @@ export const transferAdminApi = async (payload: { chatCode: string; newAdminUser
     const res = await httpClient.post("/api/v1/chat-user/chatroom/transfer-admin", payload);
     return res.data;
 };
+
+export const markAsReadMessageApi = async (payload: { chatCode: string , messageCode: string }) => {
+    const res = await httpClient.post("/api/v1/chat-user/message/mark-read", payload);
+    return res.data;
+};

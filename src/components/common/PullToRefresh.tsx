@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { IonRefresher, IonRefresherContent } from '@ionic/react';
-import { RefresherEventDetail } from '@ionic/core';
+import { IonRefresher, IonRefresherContent, RefresherEventDetail } from '@ionic/react';
 import { motion } from 'framer-motion';
 
 interface PullToRefreshProps {
