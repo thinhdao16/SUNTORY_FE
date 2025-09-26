@@ -1,17 +1,21 @@
 import { useNotificationStore } from "@/store/zustand/notify-store";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAcceptFriendRequest, useRejectFriendRequest } from "@/pages/SocialPartner/hooks/useSocialPartner";
 import { useToastStore } from "@/store/zustand/toast-store";
 import { useSendSocialChatMessage } from "@/pages/SocialChat/hooks/useSocialChat";
 import { useHistory, useLocation } from "react-router-dom";
 import LogoIcon from "@/icons/logo/logo.svg?react";
+import { markAsReadMessageApi } from "@/services/social/social-chat-service";
 
 export const NotificationList = () => {
     const { notifications, markAsRead, clearOne } = useNotificationStore();
     const [replyOpenId, setReplyOpenId] = useState<string | number | null>(null);
     const [replyText, setReplyText] = useState<string>("");
     const [expandedNotifications, setExpandedNotifications] = useState<Set<string | number>>(new Set());
+    const [pinnedNotifications, setPinnedNotifications] = useState<Set<string | number>>(new Set());
+    const timersRef = useRef<Map<string | number, number>>(new Map());
+    const prevReplyIdRef = useRef<string | number | null>(null);
     const showToast = useToastStore((state) => state.showToast);
     const history = useHistory();
     const { mutate: acceptRequest } = useAcceptFriendRequest(showToast);
@@ -35,8 +39,14 @@ export const NotificationList = () => {
             const newSet = new Set(prev);
             if (newSet.has(notificationId)) {
                 newSet.delete(notificationId);
+                // Unpin when collapsing (unless reply is open) - with shorter timer
+                if (replyOpenId !== notificationId) {
+                    unpinNotification(notificationId, true);
+                }
             } else {
                 newSet.add(notificationId);
+                // Pin when expanding
+                pinNotification(notificationId);
             }
             return newSet;
         });
@@ -67,7 +77,76 @@ export const NotificationList = () => {
         }
     };
 
-    console.log("notifications", notifications);
+    const pinNotification = (id: string | number) => {
+        setPinnedNotifications(prev => new Set(prev).add(id));
+        // Clear existing timer if notification is pinned
+        const timer = timersRef.current.get(id);
+        if (timer) {
+            clearTimeout(timer);
+            timersRef.current.delete(id);
+        }
+    };
+
+    const unpinNotification = (id: string | number, isAfterInteraction: boolean = false) => {
+        setPinnedNotifications(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(id);
+            return newSet;
+        });
+        // Restart timer when unpinned - shorter duration if after interaction
+        const duration = isAfterInteraction ? 1500 : 3500;
+        startTimer(id, duration);
+    };
+
+    const startTimer = (id: string | number, duration: number = 3500) => {
+        // Don't start timer if notification is pinned
+        if (pinnedNotifications.has(id)) return;
+        
+        const timer = setTimeout(() => {
+            clearOne(String(id));
+            timersRef.current.delete(id);
+        }, duration);
+        
+        timersRef.current.set(id, timer);
+    };
+
+    // Auto-dismiss notifications after 3.5 seconds (unless pinned)
+    useEffect(() => {
+        notifications.forEach((notification) => {
+            // Only start timer if not already exists and not pinned
+            if (!timersRef.current.has(notification.id) && !pinnedNotifications.has(notification.id)) {
+                startTimer(notification.id);
+            }
+        });
+
+        // Cleanup timers for notifications that no longer exist
+        const currentIds = new Set(notifications.map(n => String(n.id)));
+        timersRef.current.forEach((timer, id) => {
+            if (!currentIds.has(String(id))) {
+                clearTimeout(timer);
+                timersRef.current.delete(id);
+            }
+        });
+
+        // Cleanup function
+        return () => {
+            timersRef.current.forEach(timer => clearTimeout(timer));
+            timersRef.current.clear();
+        };
+    }, [notifications, clearOne, pinnedNotifications]);
+
+    // Pin notification when reply input is open
+    useEffect(() => {
+        if (replyOpenId) {
+            pinNotification(replyOpenId);
+        } else if (prevReplyIdRef.current && !replyOpenId) {
+            // When closing reply, use shorter timer
+            unpinNotification(prevReplyIdRef.current, true);
+        }
+        
+        prevReplyIdRef.current = replyOpenId;
+    }, [replyOpenId]);
+
     return (
         <div className="fixed inset-x-0 top-0 z-[9999] flex justify-center pointer-events-none pt-4">
             <div className="pointer-events-auto flex flex-col gap-3 w-100 max-w-[110vw]">
@@ -212,13 +291,15 @@ export const NotificationList = () => {
                                         return null;
                                     }
                                     const isChatExpanded = expandedNotifications.has(n.id);
-                                    
+
                                     return (
                                         <div className="relative z-10 text-neutral-900">
                                             {/* Collapsed State */}
                                             <div
                                                 className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                                                onClick={() => toggleExpanded(n.id)}
+                                                onClick={() => {
+                                                    history.push(`/social-chat/t/${n.data.chat_code}`);
+                                                }}
                                             >
                                                 <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
                                                     <LogoIcon className="w-8 h-8" />
@@ -298,9 +379,13 @@ export const NotificationList = () => {
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 markAsRead(n.id);
+                                                                markAsReadMessageApi({
+                                                                    chatCode: n.data.chat_code,
+                                                                    messageCode: n.data.message_id,
+                                                                });
                                                                 clearOne(n.id);
                                                             }}
-                                                            className="text-gray-500 text-sm font-semibold hover:text-gray-600 transition-colors"
+                                                            className="text-blue-500 text-sm font-semibold hover:text-gray-600 transition-colors"
                                                         >
                                                             Mark as read
                                                         </button>
@@ -507,28 +592,30 @@ export const NotificationList = () => {
                                         return null;
                                     }
                                     return (
-                                        <div className="relative z-10 flex items-center gap-4 p-5 sm:p-5 text-neutral-900"
-                                            onClick={() => {
-                                                history.push(`/social-feed/f/${n.data.post_code}`);
-                                                markAsRead(n.id);
-                                            }}
-                                        >
-                                            {n.avatar && (
-                                                <img
-                                                    src={n.avatar}
-                                                    className="w-12 h-12 rounded-xl object-cover border-2 border-gray-200"
-                                                />
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
-                                                <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
-                                                    <span className="font-semibold mr-1 text-neutral-900">{(n.data.liker_name || "")} </span>
-                                                    {n.body}
-                                                </p>
+                                        <div className="relative z-10 text-neutral-900">
+                                            <div
+                                                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                                                onClick={() => {
+                                                    history.push(`/social-feed/f/${n.data.post_code}`);
+                                                    markAsRead(n.id);
+                                                    clearOne(n.id);
+                                                }}
+                                            >
+                                                <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                                    <LogoIcon className="w-8 h-8" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="mb-1">
+                                                        <span className="text-sm text-gray-400">
+                                                            Wayjet • {formatTimeAgo(new Date(n.createdAt))}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-base">
+                                                        <span className="font-bold text-black">{(n.data.liker_name || "")} </span>
+                                                        <span className="text-black">liked your post</span>
+                                                    </p>
+                                                </div>
                                             </div>
-                                            {(n as any)?.data?.time_ago && (
-                                                <span className="shrink-0 text-[11px] text-neutral-700">{(n as any).data.time_ago}</span>
-                                            )}
                                         </div>
                                     );
                                 case "commented_post":
@@ -537,28 +624,30 @@ export const NotificationList = () => {
                                         return null;
                                     }
                                     return (
-                                        <div className="relative z-10 flex items-center gap-4 p-5 sm:p-5 text-neutral-900"
-                                            onClick={() => {
-                                                history.push(`/social-feed/f/${n.data.post_code}`);
-                                                markAsRead(n.id);
-                                            }}
-                                        >
-                                            {n.avatar && (
-                                                <img
-                                                    src={n.avatar}
-                                                    className="w-12 h-12 rounded-xl object-cover border-2 border-gray-200"
-                                                />
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
-                                                <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
-                                                    <span className="font-semibold mr-1 text-neutral-900">{(n.data.commenter_name || "")} </span>
-                                                    {n.body}
-                                                </p>
+                                        <div className="relative z-10 text-neutral-900">
+                                            <div
+                                                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                                                onClick={() => {
+                                                    history.push(`/social-feed/f/${n.data.post_code}`);
+                                                    markAsRead(n.id);
+                                                    clearOne(n.id);
+                                                }}
+                                            >
+                                                <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                                    <LogoIcon className="w-8 h-8" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="mb-1">
+                                                        <span className="text-sm text-gray-400">
+                                                            Wayjet • {formatTimeAgo(new Date(n.createdAt))}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-base">
+                                                        <span className="font-bold text-black">{(n.data.commenter_name || "")} </span>
+                                                        <span className="text-black">commented on your post</span>
+                                                    </p>
+                                                </div>
                                             </div>
-                                            {(n as any)?.data?.time_ago && (
-                                                <span className="shrink-0 text-[11px] text-neutral-700">{(n as any).data.time_ago}</span>
-                                            )}
                                         </div>
                                     );
                                 case "reposted_post":
@@ -567,28 +656,30 @@ export const NotificationList = () => {
                                         return null;
                                     }
                                     return (
-                                        <div className="relative z-10 flex items-center gap-4 p-5 sm:p-5 text-neutral-900"
-                                            onClick={() => {
-                                                history.push(`/social-feed/f/${n.data.post_code}`);
-                                                markAsRead(n.id);
-                                            }}
-                                        >
-                                            {n.avatar && (
-                                                <img
-                                                    src={n.avatar}
-                                                    className="w-12 h-12 rounded-xl object-cover border-2 border-gray-200"
-                                                />
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
-                                                <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
-                                                    <span className="font-semibold mr-1 text-neutral-900">{(n.data.reposter_name || "")} </span>
-                                                    {n.body}
-                                                </p>
+                                        <div className="relative z-10 text-neutral-900">
+                                            <div
+                                                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                                                onClick={() => {
+                                                    history.push(`/social-feed/f/${n.data.post_code}`);
+                                                    markAsRead(n.id);
+                                                    clearOne(n.id);
+                                                }}
+                                            >
+                                                <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                                    <LogoIcon className="w-8 h-8" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="mb-1">
+                                                        <span className="text-sm text-gray-400">
+                                                            Wayjet • {formatTimeAgo(new Date(n.createdAt))}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-base">
+                                                        <span className="font-bold text-black">{(n.data.reposter_name || "")} </span>
+                                                        <span className="text-black">reposted your post</span>
+                                                    </p>
+                                                </div>
                                             </div>
-                                            {(n as any)?.data?.time_ago && (
-                                                <span className="shrink-0 text-[11px] text-neutral-700">{(n as any).data.time_ago}</span>
-                                            )}
                                         </div>
                                     );
                                 case "comment_liked_post":
@@ -597,54 +688,58 @@ export const NotificationList = () => {
                                         return null;
                                     }
                                     return (
-                                        <div className="relative z-10 flex items-center gap-4 p-5 sm:p-5 text-neutral-900"
-                                            onClick={() => {
-                                                history.push(`/social-feed/f/${n.data.post_code}`);
-                                                markAsRead(n.id);
-                                            }}
-                                        >
-                                            {n.avatar && (
-                                                <img
-                                                    src={n.avatar}
-                                                    className="w-12 h-12 rounded-xl object-cover border-2 border-gray-200"
-                                                />
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
-                                                <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
-                                                    <span className="font-semibold mr-1 text-neutral-900">{(n.data.liker_name || "")} </span>
-                                                    {n.body}
-                                                </p>
+                                        <div className="relative z-10 text-neutral-900">
+                                            <div
+                                                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                                                onClick={() => {
+                                                    history.push(`/social-feed/f/${n.data.post_code}`);
+                                                    markAsRead(n.id);
+                                                    clearOne(n.id);
+                                                }}
+                                            >
+                                                <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                                    <LogoIcon className="w-8 h-8" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="mb-1">
+                                                        <span className="text-sm text-gray-400">
+                                                            Wayjet • {formatTimeAgo(new Date(n.createdAt))}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-base">
+                                                        <span className="font-bold text-black">{(n.data.liker_name || "")} </span>
+                                                        <span className="text-black">liked your comment</span>
+                                                    </p>
+                                                </div>
                                             </div>
-                                            {(n as any)?.data?.time_ago && (
-                                                <span className="shrink-0 text-[11px] text-neutral-700">{(n as any).data.time_ago}</span>
-                                            )}
                                         </div>
                                     );
                                 case "reply_comment_post":
                                     return (
-                                        <div className="relative z-10 flex items-center gap-4 p-5 sm:p-5 text-neutral-900"
-                                            onClick={() => {
-                                                history.push(`/social-feed/f/${n.data.post_code}`);
-                                                markAsRead(n.id);
-                                            }}
-                                        >
-                                            {n.avatar && (
-                                                <img
-                                                    src={n.avatar}
-                                                    className="w-12 h-12 rounded-xl object-cover border-2 border-gray-200"
-                                                />
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
-                                                <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
-                                                    <span className="font-semibold mr-1 text-neutral-900">{(n.data.replyer_name || "")} </span>
-                                                    {n.body}
-                                                </p>
+                                        <div className="relative z-10 text-neutral-900">
+                                            <div
+                                                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                                                onClick={() => {
+                                                    history.push(`/social-feed/f/${n.data.post_code}`);
+                                                    markAsRead(n.id);
+                                                    clearOne(n.id);
+                                                }}
+                                            >
+                                                <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                                    <LogoIcon className="w-8 h-8" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="mb-1">
+                                                        <span className="text-sm text-gray-400">
+                                                            Wayjet • {formatTimeAgo(new Date(n.createdAt))}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-base">
+                                                        <span className="font-bold text-black">{(n.data.replyer_name || "")} </span>
+                                                        <span className="text-black">replied to your comment</span>
+                                                    </p>
+                                                </div>
                                             </div>
-                                            {(n as any)?.data?.time_ago && (
-                                                <span className="shrink-0 text-[11px] text-neutral-700">{(n as any).data.time_ago}</span>
-                                            )}
                                         </div>
                                     );
                                 default:
@@ -678,16 +773,20 @@ export const NotificationList = () => {
                                 exit={{ opacity: 0, y: -40 }}
                                 transition={{ duration: 0.3 }}
                                 className="relative overflow-hidden rounded-2xl shadow-lg bg-white border border-gray-200"
-                                drag
+                                drag="x"
                                 dragElastic={0.12}
                                 dragMomentum={false}
                                 onDragEnd={(_, info) => {
-                                    if (info.offset.y < -60 || info.offset.x < -60) {
+                                    if (info.offset.x < -60) {
                                         markAsRead(n.id);
+                                        clearOne(String(n.id));
                                     }
                                 }}
-                                whileDrag={{ scale: 0.98, opacity: 0.9 }}
-                                onClick={() => markAsRead(n.id)}
+                                whileDrag={{ x: -8, opacity: 0.95 }}
+                                onMouseEnter={() => pinNotification(n.id)}
+                                onMouseLeave={() => unpinNotification(n.id, true)}
+                                onTouchStart={() => pinNotification(n.id)}
+                                onTouchEnd={() => unpinNotification(n.id, true)}
                             >
                                 {renderNotification()}
                             </motion.div>

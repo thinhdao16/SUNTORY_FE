@@ -39,7 +39,6 @@ export function useFcmToken(mutate?: (data: { fcmToken: string }) => void) {
                             silent: false
                         });
                     }
-                    setTimeout(() => clearOne(id), 4000);
                 }
 
                 if (payload.data?.data) {

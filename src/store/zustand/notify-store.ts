@@ -13,7 +13,8 @@ export type NotificationType = "chat_message"
 | "liked_post"
 | "commented_post"
 | "reposted_post"
-| "comment_liked_post";
+| "comment_liked_post"
+| "reply_comment_post";
 
 export interface Notification {
     id: string;
