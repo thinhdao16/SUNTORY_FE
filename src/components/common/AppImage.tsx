@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import "react-lazy-load-image-component/src/effects/blur.css";
 
 type Effect = "blur" | "black-and-white" | "opacity";
+export type MediaType = "image" | "video" | "auto" ;
 
 type AppImageProps = {
   src: string;
@@ -20,6 +21,8 @@ type AppImageProps = {
   fit?: "cover" | "contain";
   backgroundColor?: string;
   serverSrc?: string;
+  mediaType?: MediaType | any;
+  videoProps?: React.VideoHTMLAttributes<HTMLVideoElement>; 
   [key: string]: any;
 };
 
@@ -35,9 +38,11 @@ const AppImage: React.FC<AppImageProps> = ({
   animate = true,
   animationType = "fadeScale",
   duration = 0.25,
-  fit = "contain",
+  fit = "cover",
   backgroundColor = "#f3f4f6",
-  serverSrc, 
+  serverSrc,
+  mediaType = "auto",
+  videoProps = {},
   style,
   ...props
 }) => {
@@ -45,6 +50,30 @@ const AppImage: React.FC<AppImageProps> = ({
   const [serverLoaded, setServerLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [currentSrc, setCurrentSrc] = useState(src);
+  const [detectedMediaType, setDetectedMediaType] = useState<"image" | "video">("image");
+
+  // Function to detect media type from URL or file extension
+  const detectMediaType = useCallback((url: string): "image" | "video" => {
+    if (mediaType !== "auto") {
+      return mediaType as "image" | "video";
+    }
+    
+    const videoExtensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.m4v'];
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+    
+    const urlLower = url.toLowerCase();
+    
+    if (videoExtensions.some(ext => urlLower.includes(ext))) {
+      return "video";
+    }
+    
+    if (imageExtensions.some(ext => urlLower.includes(ext))) {
+      return "image";
+    }
+    
+    // Default to image if can't determine
+    return "image";
+  }, [mediaType]);
 
   const handleLocalLoad = useCallback(() => {
     setLocalLoaded(true);
@@ -54,7 +83,7 @@ const AppImage: React.FC<AppImageProps> = ({
 
   const handleServerLoad = useCallback(() => {
     setServerLoaded(true);
-    console.log("✅ Server image loaded, ready to transition");
+    console.log("✅ Server media loaded, ready to transition");
   }, []);
 
   const handleError = useCallback(() => {
@@ -62,21 +91,77 @@ const AppImage: React.FC<AppImageProps> = ({
     setLocalLoaded(false);
   }, []);
 
+  const handleVideoLoad = useCallback(() => {
+    setLocalLoaded(true);
+    setHasError(false);
+    onLoad?.();
+  }, [onLoad]);
+
+  const handleServerVideoLoad = useCallback(() => {
+    setServerLoaded(true);
+    console.log("✅ Server video loaded, ready to transition");
+  }, []);
+
   useEffect(() => {
     if (src !== currentSrc) {
       setCurrentSrc(src);
+      setDetectedMediaType(detectMediaType(src));
       if (!src?.startsWith("blob:")) {
         setLocalLoaded(false);
         setServerLoaded(false);
         setHasError(false);
       }
     }
-  }, [src, currentSrc]);
+  }, [src, currentSrc, detectMediaType]);
 
   const variants =
     animationType === "fadeScale"
       ? { hidden: { opacity: 0, scale: 0.98 }, show: { opacity: 1, scale: 1 } }
       : { hidden: { opacity: 0 }, show: { opacity: 1 } };
+
+  const commonStyle = {
+    width: "100%",
+    height: "100%",
+    objectFit: fit,
+    objectPosition: "center",
+  };
+
+  const renderMedia = (mediaSrc: string, isServer = false) => {
+    const currentMediaType = detectMediaType(mediaSrc);
+    
+    if (currentMediaType === "video") {
+      return (
+        <video
+          src={mediaSrc}
+          className={className}
+          onLoadedData={isServer ? handleServerVideoLoad : handleVideoLoad}
+          onError={handleError}
+          style={commonStyle}
+          controls
+          preload="metadata"
+          {...videoProps}
+        />
+      );
+    } else {
+      return (
+        <LazyLoadImage
+          src={mediaSrc}
+          alt={alt}
+          className={className}
+          effect={isServer ? "opacity" : effect}
+          placeholderSrc={isServer ? undefined : placeholderSrc}
+          onLoad={isServer ? handleServerLoad : handleLocalLoad}
+          onError={handleError}
+          width="100%"
+          height="100%"
+          style={commonStyle}
+          decoding="async"
+          loading="lazy"
+          {...props}
+        />
+      );
+    }
+  };
 
   return (
     <div
@@ -88,7 +173,7 @@ const AppImage: React.FC<AppImageProps> = ({
         ...style,
       }}
     >
-      {/* ✅ Local/Primary image layer */}
+      {/* ✅ Local/Primary media layer */}
       <motion.div
         initial="hidden"
         animate={localLoaded && animate ? "show" : "hidden"}
@@ -100,28 +185,10 @@ const AppImage: React.FC<AppImageProps> = ({
           zIndex: serverLoaded ? 1 : 2,
         }}
       >
-        <LazyLoadImage
-          src={currentSrc}
-          alt={alt}
-          className={className}
-          effect={effect}
-          placeholderSrc={placeholderSrc}
-          onLoad={handleLocalLoad}
-          onError={handleError}
-          width="100%"
-          height="100%"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: fit,
-            objectPosition: "center",
-          }}
-          decoding="async"
-          loading="lazy"
-          {...props}
-        />
+        {renderMedia(currentSrc)}
       </motion.div>
 
+      {/* ✅ Server media layer */}
       {serverSrc && serverSrc !== currentSrc && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -133,26 +200,7 @@ const AppImage: React.FC<AppImageProps> = ({
             zIndex: serverLoaded ? 2 : 1,
           }}
         >
-          <LazyLoadImage
-            src={serverSrc}
-            alt={alt}
-            className={className}
-            effect="opacity"
-            onLoad={handleServerLoad}
-            onError={() => {
-              console.warn("Server image failed to load");
-            }}
-            width="100%"
-            height="100%"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: fit,
-              objectPosition: "center",
-            }}
-            decoding="async"
-            loading="lazy"
-          />
+          {renderMedia(serverSrc, true)}
         </motion.div>
       )}
 

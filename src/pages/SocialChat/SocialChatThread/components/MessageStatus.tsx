@@ -33,9 +33,10 @@ const MessageStatus: React.FC<MessageStatusProps> = ({ message, isGroup, current
             return 'sending';
         }
 
-        const hasUploadingAttachments = message.chatAttachments?.some(att =>
-            (att as any).isUploading || (att as any).isSending
-        );
+        const hasUploadingAttachments = Array.isArray(message?.chatAttachments)
+  ? message.chatAttachments.some(att => (att as any).isUploading || (att as any).isSending)
+  : false;
+
         if (hasUploadingAttachments) {
             return 'sending';
         }

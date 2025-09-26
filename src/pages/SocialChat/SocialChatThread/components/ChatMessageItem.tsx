@@ -81,9 +81,8 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     isSendingMessage,
     activeUserIds,
     isLatestFriendlyAccepted = false,
-    roomData
+    roomData,
 }) => {
-
     const isDesktop = () => window.innerWidth > 1024;
 
     const { roomId } = useParams<{ roomId?: string; type?: string }>();
@@ -385,7 +384,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 />
             ) : (
                 <DraggableMessageContainer
-                    messageId={typeof msg.id === "string" || typeof msg.id === "number" ? msg.id : String(msg.createdAt)}
+                    messageId={typeof msg.tempId === "string" || typeof msg.tempId === "number" ? msg.tempId : String(msg.createdAt) || `${msg.id}`}
                     isUser={isUser}
                     isRevoked={isRevoked}
                     onReply={reply}
@@ -512,10 +511,10 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                             onContextMenu={(e) => e.preventDefault()}
                             onDragStart={(e) => e.preventDefault()}
                             onMouseDown={(e) => {
-                                if (e.detail > 1) e.preventDefault(); // Prevent double-click selection
+                                if (e.detail > 1) e.preventDefault(); 
                             }}
                             onTouchStart={(e) => {
-                                e.preventDefault(); // Prevent touch selection on mobile
+                                e.preventDefault(); 
                             }}
                         >
                             {overlayKind === "message" ? (
@@ -606,12 +605,12 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 </Portal>
             )}
 
-            <ImagesPreviewModal
-                open={openModal}
-                images={previewList}
-                index={previewIndex}
-                onClose={() => setOpenModal(false)}
-            />
+                {/* <ImagesPreviewModal
+                    open={openModal}
+                    images={previewList}
+                    index={previewIndex}
+                    onClose={() => setOpenModal(false)}
+                /> */}
         </>
     );
 };

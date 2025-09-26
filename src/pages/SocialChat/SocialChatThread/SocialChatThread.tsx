@@ -145,7 +145,6 @@ const SocialChatThread: React.FC = () => {
             botName: msg.botName === null ? undefined : msg.botName,
         }));
     }, [serverMessages, messages, roomId, userInfo]);
-
     const userRightCount = useMemo(
         () => displayMessages.reduce((acc, m) => {
             if (!m?.isRight) return acc;
@@ -228,7 +227,9 @@ const SocialChatThread: React.FC = () => {
         uploadImageMutation,
         originalHandleSendMessage,
         clearTypingAfterSend,
-        showToast
+        showToast,
+        messageValue,
+        messageTranslate,
     });
 
  

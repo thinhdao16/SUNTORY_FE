@@ -30,9 +30,8 @@ export const MessageSequence: React.FC<MessageSequenceProps> = ({
     isSendingMessage = false,
     activeUserIds = [],
     allMessages = [],
-    roomData
+    roomData,
 }) => {
-
     const latestFriendlyAcceptedIndex = allMessages.reduce((latestIdx, msg, idx) => {
         if (msg.messageType === 10 && msg.messageText) {
             try {
@@ -54,7 +53,7 @@ export const MessageSequence: React.FC<MessageSequenceProps> = ({
                 const isUser = !!msg._isUser || !!msg.isRight;
                 const shouldShowAvatar = msg._shouldShowAvatar !== false;
                 const isFirstInSequence = msg._isFirstInSequence !== false;
-                const messageCode = msg.code ?? msg.tempId ?? `${idx}`;
+                const messageCode =  msg.tempId ?? msg.code ??`${idx}`;
                 const isLastUserMessage = isUser && (
                     messageCode === globalLastUserMessageId 
                 );

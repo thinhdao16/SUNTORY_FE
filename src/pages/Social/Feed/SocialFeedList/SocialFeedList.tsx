@@ -51,7 +51,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     const staticTabs = [
       { key: 'everyone', label: 'Everyone', type: 'static' as const },
       { key: 'your-friends', label: 'Your friends', type: 'static' as const },
-      // { key: 'for-you', label: 'For you', type: 'static' as const },
+      { key: 'for-you', label: 'For you', type: 'static' as const },
     ];
 
     const hashtagTabs = recentHashtags.map(hashtag => ({

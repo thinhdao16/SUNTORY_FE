@@ -475,6 +475,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
               <MediaDisplay
                 mediaFiles={displayPost.media}
                 className="mt-3 "
+                classNameAudio='px-4'
                 lightboxUserName={displayPost.user.fullName}
                 lightboxUserAvatar={displayPost.user.avatarUrl}
               />

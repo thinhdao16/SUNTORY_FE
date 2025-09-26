@@ -40,7 +40,6 @@ const FeedHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, search
                 <input
                     type="search"
                     value={search}
-                    disabled= {true}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder={t("Search")}
                     className="bg-transparent outline-none  flex-grow"
