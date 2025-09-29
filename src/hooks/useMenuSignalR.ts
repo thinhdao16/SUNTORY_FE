@@ -11,16 +11,14 @@ export function useMenuSignalR(userId: string, key: string) {
     // Tách logic xử lý message ra thành callback riêng
     const handleReceive = useCallback((msg: any) => {
         if (msg?.success === true) {
-            const newCount = foodSuccess + 1;
-            setFoodSuccess(newCount);
-            console.log("🍽️ FoodSuccess count: ", foodSuccess, "→", newCount);
+            setFoodSuccess(1);
+            console.log("🍽️ FoodSuccess count: ", 0, "→", 1);
         }
         else {
-            const newCount = foodFailed + 1;
-            setFoodFailed(newCount);
-            console.log("🍽️ FoodFailed count: ", foodFailed, "→", newCount);
+            setFoodFailed(1);
+            console.log("🍽️ FoodFailed count: ", 0, "→", 1);
         }
-    }, [foodSuccess, setFoodSuccess, foodFailed, setFoodFailed]);
+    }, [setFoodSuccess, setFoodFailed]);
 
     // Tách logic kết nối ra thành callback riêng
     const startConnection = useCallback(async () => {
