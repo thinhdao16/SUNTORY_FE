@@ -347,7 +347,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         <div key={post.code} className="border-b border-gray-100" data-post-code={post.code}>
             <SocialFeedCard
                 post={post}
-                onPostClick={() => history.push(`/social-feed/f/${post.code}`)}
+                onPostClick={() => onPostClick(post)}
                 onLike={() => handleLike(post.code)}
                 onComment={() => handleComment(post.code)}
                 onShare={() => handleShare(post.code)}

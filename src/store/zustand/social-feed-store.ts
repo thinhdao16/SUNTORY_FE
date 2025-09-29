@@ -335,6 +335,21 @@ export const useSocialFeedStore = create<SocialFeedStore>((set, get) => ({
           }
         }
       });
+    } else {
+      // Create a placeholder feed entry to store scroll position for custom keys (e.g., search pages)
+      set({
+        cachedFeeds: {
+          ...state.cachedFeeds,
+          [key]: {
+            posts: [],
+            currentPage: 0,
+            hasNextPage: false,
+            totalPages: 0,
+            totalRecords: 0,
+            scrollPosition: position
+          }
+        }
+      });
     }
   },
   

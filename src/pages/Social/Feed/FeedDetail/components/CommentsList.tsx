@@ -89,7 +89,6 @@ const CommentsList: React.FC<CommentsListProps> = ({
             </div>
         );
     }
-    console.log(organizedComments)
     return (
         <div className="bg-white">
             {organizedComments.map((comment: any) => (

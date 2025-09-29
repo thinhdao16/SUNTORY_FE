@@ -8,6 +8,8 @@ import BackInputIcon from "@/icons/logo/social-chat/back-input.svg?react"
 import SearchIcon from "@/icons/logo/social-chat/search.svg?react"
 import ClearInputIcon from '@/icons/logo/social-chat/clear-input.svg?react';
 import BackIcon from "@/icons/logo/back-default.svg?react"
+import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
+import { useScrollRestoration } from '@/pages/Social/Feed/hooks/useScrollRestoration';
 
 
 interface SearchResultParams {
@@ -15,6 +17,7 @@ interface SearchResultParams {
 }
 
 const SearchResult: React.FC = () => {
+    const { t } = useTranslation();
     const tabs = [
         { key: 'all', label: t('All') },
         { key: 'latest', label: t('Latest') },
@@ -24,6 +27,7 @@ const SearchResult: React.FC = () => {
     const { feedId: tab } = useParams<SearchResultParams>();
     const location = useLocation();
     const history = useHistory();
+    const { setCurrentPost } = useSocialFeedStore();
 
     const urlParams = new URLSearchParams(location.search);
     const queryFromUrl = urlParams.get('q') || '';
@@ -39,6 +43,15 @@ const SearchResult: React.FC = () => {
         activeTab: tab || 'all',
         shouldSaveHistory: false
     });
+
+    const { setScrollContainer } = useScrollRestoration({
+        hashtagNormalized: `search:${tab || 'all'}:${(searchQuery || queryFromUrl).trim()}`,
+        enabled: true
+    });
+    const containerRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        setScrollContainer(containerRef.current as unknown as HTMLElement | null);
+    }, [setScrollContainer]);
 
     const [inputValue, setInputValue] = useState(queryFromUrl);
     const saveHistoryMutation = useSaveSearchHistory();
@@ -73,6 +86,8 @@ const SearchResult: React.FC = () => {
     };
 
     const handlePostClick = (post: any) => {
+        setCurrentPost(post);
+        history.push(`/social-feed/f/${post.code}`);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,7 +134,7 @@ const SearchResult: React.FC = () => {
     };
 
     return (
-        <div className="bg-white min-h-screen flex flex-col ">
+        <div className="bg-white min-h-screen flex flex-col " ref={containerRef}>
 
             <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-200  ">
                 <button

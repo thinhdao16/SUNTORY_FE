@@ -25,10 +25,16 @@ export const useScrollRestoration = (options: UseScrollRestorationOptions = {}) 
             const ionContent = document.querySelector('ion-content');
             if (ionContent) {
                 const scrollElement = ionContent.shadowRoot?.querySelector('.inner-scroll') || ionContent;
-                return scrollElement;
+                return scrollElement as Element;
             }
 
-            return scrollContainerRef.current;
+            const el = scrollContainerRef.current as HTMLElement | null;
+            if (el && el.scrollHeight > el.clientHeight) {
+                return el as Element;
+            }
+
+            // Fallback: use window scroll
+            return null;
         };
 
         const handleScroll = () => {
@@ -82,7 +88,10 @@ export const useScrollRestoration = (options: UseScrollRestorationOptions = {}) 
                 if (ionContent) {
                     scrollElement = (ionContent.shadowRoot?.querySelector('.inner-scroll') || ionContent) as HTMLElement;
                 } else {
-                    scrollElement = scrollContainerRef.current;
+                    const el = scrollContainerRef.current as HTMLElement | null;
+                    if (el && el.scrollHeight > el.clientHeight) {
+                        scrollElement = el;
+                    }
                 }
 
                 if (scrollElement) {
