@@ -699,5 +699,12 @@
   "Last Week": "Last Week",
   "Just now": "Just now",
   "{{count}} minutes ago_one": "{{count}} minute ago",
-  "{{count}} minutes ago_other": "{{count}} minutes ago"
+  "{{count}} minutes ago_other": "{{count}} minutes ago",
+  "First name too long! Maximum 20 characters.": "First name too long! Maximum 20 characters.",
+  "Last name too long! Maximum 20 characters.": "Last name too long! Maximum 20 characters.",
+  "First name is required!": "First name is required!",
+  "Last name is required!": "Last name is required!",
+  "Year of birth is required!": "Year of birth is required!",
+  "Year must be 1900 or later!": "Year must be 1900 or later!",
+  "Year cannot be in the future!": "Year cannot be in the future!"
 }

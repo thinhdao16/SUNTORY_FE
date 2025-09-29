@@ -149,7 +149,7 @@ const ShareProfile = () => {
                                         {t('Share Profile')}
                                     </IonTitle>
                                     <IonButtons slot="end">
-                                        <IonButton className="opacity-0 pointer-events-none" fill="clear">
+                                        <IonButton className="opacity-0 pointer-events-none" fill="clear" style={{ textColor: 'black' , fontSize: '15px' }}>
                                             <IonIcon icon={arrowBack} />
                                         </IonButton>
                                     </IonButtons>

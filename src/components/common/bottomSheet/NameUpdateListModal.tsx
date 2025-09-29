@@ -51,8 +51,9 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
         return () => vv.removeEventListener('resize', handleResize);
     }, []);
 
-    // Check if name has changed from current values
+    // Check if name has changed from current values and is valid
     const hasNameChanged = firstName.trim() !== currentFirstName || lastName.trim() !== currentLastName;
+    const isNameValid = firstName.trim().length > 0 && lastName.trim().length > 0 && firstName.length <= 20 && lastName.length <= 20;
 
     const SHEET_MAX_VH = 80;
     const HEADER_PX = 56;
@@ -69,19 +70,6 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
     }, [isOpen, currentFirstName, currentLastName]);
 
     const handleSave = async () => {
-        if (!firstName.trim() && !lastName.trim()) {
-            showToast(t("First name and last name are required"), 1000, "error");
-            return;
-        }
-        if (!firstName.trim()) {
-            showToast(t("First name is required"), 1000, "error");
-            return;
-        }
-        if (!lastName.trim()) {
-            showToast(t("Last name is required"), 1000, "error");
-            return;
-        }
-
         setIsLoading(true);
         try {
             const payload: UpdateAccountInformationV3Payload = {
@@ -136,14 +124,16 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
                         >
                             {/* Left spacer to balance the close button so title stays centered */}
                             <div style={{ width: 56, height: HEADER_PX }} />
-                            <div className="text-center font-semibold text-lg"
+                            <div className="text-center font-semibold"
                                 style={{
                                     flex: 1,
                                     lineHeight: 1.2,
                                     wordBreak: 'break-word',
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
+                                    fontSize: '15px',
+                                    color: 'black'
                                 }}
-                            >   
+                            >
                                 {t('My name')}
                             </div>
                             <IonButton
@@ -176,9 +166,21 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
                                         placeholder={t('Enter first name')}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent ${
+                                            firstName.length > 20 || firstName.trim().length === 0 ? 'border-red-300 focus:ring-red-400' : 'border-gray-300 focus:ring-black'
+                                        }`}
                                         autoFocus
                                     />
+                                    {firstName.length > 20 && (
+                                        <p className="text-xs text-red-500 font-medium mt-1">
+                                            First name too long! Maximum 20 characters.
+                                        </p>
+                                    )}
+                                    {firstName.trim().length === 0 && (
+                                        <p className="text-xs text-red-500 font-medium mt-1">
+                                            First name is required!
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Last Name Field */}
@@ -191,13 +193,25 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
                                         placeholder={t('Enter last name')}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent ${
+                                            lastName.length > 20 || lastName.trim().length === 0 ? 'border-red-300 focus:ring-red-400' : 'border-gray-300 focus:ring-black'
+                                        }`}
                                     />
+                                    {lastName.length > 20 && (
+                                        <p className="text-xs text-red-500 font-medium mt-1">
+                                            Last name too long! Maximum 20 characters.
+                                        </p>
+                                    )}
+                                    {lastName.trim().length === 0 && (
+                                        <p className="text-xs text-red-500 font-medium mt-1">
+                                            Last name is required!
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Save Button - sticky and lifts above keyboard */}
-                            {hasNameChanged && (
+                            {hasNameChanged && isNameValid && (
                                 <div className="px-4 py-4 border-t border-gray-100"
                                     style={{
                                         position: 'sticky',

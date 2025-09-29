@@ -1,10 +1,14 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { IonPage, IonContent, IonButton, IonIcon, IonRadio, IonRadioGroup, IonItem, IonHeader, IonToolbar, IonButtons, IonTitle, IonFooter } from '@ionic/react';
+import { IonPage, IonContent, IonButton, IonIcon, IonRadioGroup, IonItem, IonHeader, IonToolbar, IonButtons, IonTitle, IonFooter } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { chevronBackOutline } from 'ionicons/icons';
 import { useHealthMasterDataStore } from '@/store/zustand/health-master-data-store';
 import { useHealthMasterData } from '@/hooks/common/useHealth';
 import { useMenuTranslationStore } from '@/store/zustand/menuTranslationStore';
+import OmnivoreIcon from "@/icons/logo/menu/omnivore.svg?react";
+import KetoIcon from "@/icons/logo/menu/keto.svg?react";
+import VeganIcon from "@/icons/logo/menu/vegetarian.svg?react";
+import LowCarbIcon from "@/icons/logo/menu/lowcarb.svg?react";
 
 interface AllergyItem {
     allergyId: number;
@@ -45,7 +49,10 @@ const DietSetup: React.FC = () => {
                 : String(item.name.toLowerCase().replace(/\s+/g, '-')),
             name: item.name,
             description: item.description || `${item.name} diet for your health journey.`,
-            icon: '🥗'
+            icon: item.name.toLowerCase() === "omnivore" ? <OmnivoreIcon /> 
+            : item.name.toLowerCase() === "keto" ? <KetoIcon /> 
+            : item.name.toLowerCase() === "vegetarian" ? <VeganIcon /> 
+            : item.name.toLowerCase() === "low carb" ? <LowCarbIcon /> : '🥗'
         })) || [];
     }, [healthMasterData]);
 
@@ -72,7 +79,7 @@ const DietSetup: React.FC = () => {
         sessionStorage.setItem('mt_allergies_initialized', '0');
         history.push('/menu-translation/confirm-setup', { payload: payload });
     };
-    
+
     useEffect(() => {
         if (diet && healthMasterData?.groupedLifestyles) {
             const group = healthMasterData.groupedLifestyles.find(
@@ -83,8 +90,7 @@ const DietSetup: React.FC = () => {
                 const dietId = (dietItem?.id != null && dietItem?.id !== undefined)
                     ? String(dietItem.id)
                     : String(dietItem.name.toLowerCase().replace(/\s+/g, '-'));
-                if (diet)
-                {
+                if (diet) {
                     setSelectedDiet(String(diet));
                     selectedDietRef.current = String(diet);
                 }
@@ -97,9 +103,9 @@ const DietSetup: React.FC = () => {
         }
     }, []);
 
-    useEffect(() => {   
+    useEffect(() => {
         if (diet) {
-           setSelectedDiet(String(diet));
+            setSelectedDiet(String(diet));
         }
     }, [diet]);
 
@@ -110,7 +116,7 @@ const DietSetup: React.FC = () => {
                 <div className="flex flex-col min-h-full pb-28 bg-white">
                     {/* Main Content Area */}
                     <div className="flex-1 space-y-4">
-                        <div className="px-2 pt-2 sticky top-0 z-50 bg-white" style={{ boxShadow: '0 4px 10px rgba(0,0,0,0.06)' , '--ion-background-color': 'white' } as any}>
+                        <div className="px-2 pt-2 sticky top-0 z-50 bg-white" style={{ boxShadow: '0 4px 10px rgba(0,0,0,0.06)', '--ion-background-color': 'white' } as any}>
                             <div className="flex items-center gap-3 relative">
                                 <div className="flex-1 h-2 rounded-full bg-blue-200" />
                                 <div className="flex-1 h-2 rounded-full bg-blue-600" />
@@ -208,8 +214,8 @@ const DietSetup: React.FC = () => {
                                 flexShrink: 0
                             }}
                         >
-                            <IonIcon 
-                                icon={chevronBackOutline} 
+                            <IonIcon
+                                icon={chevronBackOutline}
                                 style={{
                                     color: '#6b7280',
                                     fontSize: '20px'
@@ -217,10 +223,10 @@ const DietSetup: React.FC = () => {
                             />
                         </IonButton>
                         <div className="flex-1 ml-4">
-                            <IonButton 
-                                expand="block" 
-                                shape="round" 
-                                onClick={() => handleContinue()} 
+                            <IonButton
+                                expand="block"
+                                shape="round"
+                                onClick={() => handleContinue()}
                                 className="h-14"
                                 style={{
                                     '--background': '#1152F4',

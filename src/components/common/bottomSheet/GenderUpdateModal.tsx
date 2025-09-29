@@ -106,12 +106,14 @@ const GenderUpdateModal: React.FC<GenderUpdateModalProps> = ({
                         >
                             {/* Left spacer to balance the close button so title stays centered */}
                             <div style={{ width: 56, height: HEADER_PX }} />
-                            <div className="text-center font-semibold text-lg"
+                            <div className="text-center font-semibold"
                                 style={{
                                     flex: 1,
                                     lineHeight: 1.2,
                                     wordBreak: 'break-word',
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
+                                    fontSize: '15px',
+                                    color: 'black'
                                 }}
                             >
                                 {t('My gender assigned at birth')}

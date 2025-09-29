@@ -821,12 +821,14 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                         {/* Header */}
                         <div className="px-2" style={{ minHeight: HEADER_PX, display: 'flex', alignItems: 'center', touchAction: 'none' }}>
                             <div style={{ width: 56, height: HEADER_PX }} />
-                            <div className="text-center font-semibold text-lg"
+                            <div className="text-center font-semibold"
                                 style={{
                                     flex: 1,
                                     lineHeight: 1.2,
                                     wordBreak: 'break-word',
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
+                                    fontSize: '15px',
+                                    color: 'black'
                                 }}
                             >{t('My weight')}</div>
                             <IonButton fill="clear" onClick={onClose} style={{ width: 56, height: HEADER_PX, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

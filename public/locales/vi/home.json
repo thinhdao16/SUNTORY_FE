@@ -695,5 +695,12 @@
   "{{n}} days ago": "{{n}} ngày trước",
   "Last Week": "Tuần trước",
   "Just now": "Vừa xong",
-  "{{count}} minutes ago_other": "{{count}} phút trước"
+  "{{count}} minutes ago_other": "{{count}} phút trước",
+  "First name too long! Maximum 20 characters.": "Tên quá dài! Tối đa 20 ký tự.",
+  "Last name too long! Maximum 20 characters.": "Họ quá dài! Tối đa 20 ký tự.",
+  "First name is required!": "Tên là bắt buộc!",
+  "Last name is required!": "Họ là bắt buộc!",
+  "Year of birth is required!": "Năm sinh là bắt buộc!",
+  "Year must be 1900 or later!": "Năm sinh phải lớn hơn hoặc bằng 1900!",
+  "Year cannot be in the future!": "Năm sinh không thể là trong tương lai!"
 }

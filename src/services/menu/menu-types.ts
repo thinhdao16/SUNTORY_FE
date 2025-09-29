@@ -13,6 +13,7 @@ export interface MenuAnalyzingResponse {
         status: number;
         createDate: string;
         totalFood: number;
+        key: string;
     };
 }
 
