@@ -54,7 +54,7 @@ const MenuAnalyzing: React.FC = () => {
         return new File([u8arr], filename, { type: mime });
     };
 
-    useMenuSignalR(user?.id?.toString() || "", key);
+    useMenuSignalR(user?.id?.toString() || "", key || "");
 
     const analyzeMenu = async () => {
         try {
