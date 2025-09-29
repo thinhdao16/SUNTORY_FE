@@ -33,7 +33,6 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({ onHistoryClick, onUserCli
     };
 
     const getDisplayContent = (history: SearchHistoryType) => {
-        // searchType 20 = user search
         if (history.searchType === 20 && history.targetUser) {
             return {
                 text: history.targetUser.fullName,
@@ -45,19 +44,17 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({ onHistoryClick, onUserCli
                 userId: history.targetUser.id
             };
         }
-        // searchType 40 = hashtag search
         else if (history.searchType === 40 && history.targetHashtag) {
             return {
-                text: `#${history.targetHashtag.tag}`,
+                text: `#${history.targetHashtag.normalized}`,
                 subtitle: null,
                 avatar: null,
                 icon: <HiHashtag className="w-4 h-4 text-blue-500" />,
-                clickValue: `#${history.targetHashtag.tag}`,
+                clickValue: `#${history.targetHashtag.normalized}`,
                 type: 'hashtag',
-                hashtag: history.targetHashtag.tag
+                hashtag: history.targetHashtag.normalized
             };
         }
-        // searchType 10 = text search
         else if (history.searchText) {
             return {
                 text: history.searchText,

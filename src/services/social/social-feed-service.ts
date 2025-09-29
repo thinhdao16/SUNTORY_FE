@@ -263,15 +263,18 @@ export class SocialFeedService {
         lastPostCode?: string,
         pageSize: number = 10,
         feedType?: number,
-        hashtagNormalized?: string
+        hashtagNormalized?: string,
+        keyword?: string
     ): Promise<{ data: SocialPost[] }> {
         const queryParams = new URLSearchParams();
         
         if (feedType !== undefined) {
             queryParams.append('FeedType', feedType.toString());
         }
-        if (hashtagNormalized) {
+        if (hashtagNormalized && hashtagNormalized.length > 0) {
             queryParams.append('HashtagNormalized', hashtagNormalized);
+        } else if (keyword && keyword.length > 0) {
+            queryParams.append('Keyword', keyword);
         }
         if (lastPostCode) {
             queryParams.append('LastPostCode', lastPostCode);

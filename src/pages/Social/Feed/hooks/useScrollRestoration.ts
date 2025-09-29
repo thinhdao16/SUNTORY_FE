@@ -27,13 +27,10 @@ export const useScrollRestoration = (options: UseScrollRestorationOptions = {}) 
                 const scrollElement = ionContent.shadowRoot?.querySelector('.inner-scroll') || ionContent;
                 return scrollElement as Element;
             }
-
             const el = scrollContainerRef.current as HTMLElement | null;
             if (el && el.scrollHeight > el.clientHeight) {
                 return el as Element;
             }
-
-            // Fallback: use window scroll
             return null;
         };
 
@@ -76,15 +73,11 @@ export const useScrollRestoration = (options: UseScrollRestorationOptions = {}) 
         if (!enabled) return;
 
         const savedPosition = getScrollPosition(feedKey);
-
-
         if (savedPosition > 0) {
             isRestoringRef.current = true;
-
             const restorePosition = () => {
                 const ionContent = document.querySelector('ion-content');
                 let scrollElement: HTMLElement | null = null;
-
                 if (ionContent) {
                     scrollElement = (ionContent.shadowRoot?.querySelector('.inner-scroll') || ionContent) as HTMLElement;
                 } else {
@@ -93,13 +86,11 @@ export const useScrollRestoration = (options: UseScrollRestorationOptions = {}) 
                         scrollElement = el;
                     }
                 }
-
                 if (scrollElement) {
                     scrollElement.scrollTop = savedPosition;
                 } else {
                     window.scrollTo(0, savedPosition);
                 }
-
                 setTimeout(() => {
                     isRestoringRef.current = false;
                 }, 200);

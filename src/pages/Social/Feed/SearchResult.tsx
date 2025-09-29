@@ -18,17 +18,10 @@ interface SearchResultParams {
 
 const SearchResult: React.FC = () => {
     const { t } = useTranslation();
-    const tabs = [
-        { key: 'all', label: t('All') },
-        { key: 'latest', label: t('Latest') },
-        { key: 'people', label: t('People') },
-        { key: 'posts', label: t('Posts') }
-    ];
     const { feedId: tab } = useParams<SearchResultParams>();
     const location = useLocation();
     const history = useHistory();
     const { setCurrentPost } = useSocialFeedStore();
-
     const urlParams = new URLSearchParams(location.search);
     const queryFromUrl = urlParams.get('q') || '';
     const {
@@ -45,37 +38,18 @@ const SearchResult: React.FC = () => {
     });
 
     const { setScrollContainer } = useScrollRestoration({
-        hashtagNormalized: `search:${tab || 'all'}:${(searchQuery || queryFromUrl).trim()}`,
+        hashtagNormalized: `search:${tab || 'all'}:${queryFromUrl.trim()}`,
         enabled: true
     });
     const containerRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        setScrollContainer(containerRef.current as unknown as HTMLElement | null);
-    }, [setScrollContainer]);
+
 
     const [inputValue, setInputValue] = useState(queryFromUrl);
+
     const saveHistoryMutation = useSaveSearchHistory();
     const hasSearched = useRef(false);
 
-    useEffect(() => {
-        if (queryFromUrl && queryFromUrl !== searchQuery) {
-            setSearchQuery(queryFromUrl);
-            setInputValue(queryFromUrl);
-            hasSearched.current = false;
-        }
-    }, [queryFromUrl]);
-
-    useEffect(() => {
-        if (searchQuery && searchQuery.trim() && !hasSearched.current) {
-            hasSearched.current = true;
-            handleSearchSubmit();
-        }
-    }, [searchQuery, handleSearchSubmit]);
-
-    const handleTabChange = (newTab: string) => {
-        hasSearched.current = false;
-        history.push(`/social-feed/search-result/${newTab}?q=${encodeURIComponent(searchQuery)}`);
-    };
+    // Tab handling is managed inside SearchResults now
 
     const handleUserClick = (user: any) => {
         saveHistoryMutation.mutate({
@@ -94,18 +68,12 @@ const SearchResult: React.FC = () => {
         setInputValue(e.target.value);
     };
 
-    const handleInputSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleInputSubmit = () => {
         if (inputValue.trim()) {
             const trimmedInput = inputValue.trim();
-
             const isHashtag = trimmedInput.startsWith('#');
-            const searchParams = isHashtag
-                ? { searchText: '', hashtagText: trimmedInput.substring(1) }
-                : { searchText: trimmedInput };
-
+            const searchParams = isHashtag ? { searchText: '', hashtagText: trimmedInput.substring(1) }: { searchText: trimmedInput };
             saveHistoryMutation.mutate(searchParams);
-
             setSearchQuery(trimmedInput);
             history.push(`/social-feed/search-result/${tab || 'all'}?q=${encodeURIComponent(trimmedInput)}`);
             setTimeout(() => {
@@ -132,6 +100,25 @@ const SearchResult: React.FC = () => {
     const handleBackClick = () => {
         history.push('/social-feed/search');
     };
+    
+    useEffect(() => {
+        if (queryFromUrl && queryFromUrl !== searchQuery) {
+            setSearchQuery(queryFromUrl);
+            setInputValue(queryFromUrl);
+            hasSearched.current = false;
+        }
+    }, [queryFromUrl]);
+
+    useEffect(() => {
+        if (searchQuery && searchQuery.trim() && !hasSearched.current) {
+            hasSearched.current = true;
+            handleInputSubmit();
+        }
+    }, [searchQuery, handleSearchSubmit]);
+
+    useEffect(() => {
+        setScrollContainer(containerRef.current as unknown as HTMLElement | null);
+    }, [setScrollContainer]);
 
     return (
         <div className="bg-white min-h-screen flex flex-col " ref={containerRef}>
@@ -144,7 +131,13 @@ const SearchResult: React.FC = () => {
                     <BackIcon className="text-xl text-gray-600" />
                 </button>
 
-                <form onSubmit={(e) => { e.preventDefault(); handleSearchSubmit(); }} className="flex items-center flex-grow bg-chat-to rounded-lg px-4 py-2 gap-2 relative">
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        handleInputFocus()
+                    }}
+                    className="flex items-center flex-grow bg-chat-to rounded-lg px-4 py-2 gap-2 relative"
+                >
                     <SearchIcon
                         className="text-gray-400 text-lg"
                     />
@@ -153,10 +146,23 @@ const SearchResult: React.FC = () => {
                         value={inputValue}
                         onChange={handleInputChange}
                         // onFocus={handleInputFocus}
+                        onClick={() => {
+                            const q = (inputValue || queryFromUrl).trim();
+                            if (q) {
+                                history.push(`/social-feed/search?q=${encodeURIComponent(q)}`);
+                            } else {
+                                history.push('/social-feed/search');
+                            }
+                        }}
                         onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                                 e.preventDefault();
-                                handleInputSubmit(e as any);
+                                const q = (inputValue || queryFromUrl).trim();
+                                if (q) {
+                                    history.push(`/social-feed/search?q=${encodeURIComponent(q)}`);
+                                } else {
+                                    history.push('/social-feed/search');
+                                }
                             }
                         }}
                         placeholder={t('Search for people and posts...')}
@@ -176,29 +182,10 @@ const SearchResult: React.FC = () => {
                 </form>
 
             </div>
-            <div className="flex border-b border-gray-100 flex-shrink-0 sticky top-16 z-10 bg-white pt-2">
-                {tabs.map((tabItem) => (
-                    <button
-                        key={tabItem.key}
-                        onClick={() => handleTabChange(tabItem.key)}
-                        className={`flex-1 py-3 px-4 text-sm transition-colors font-semibold flex justify-center ${(tab || 'all') === tabItem.key
-                            ? 'text-black'
-                            : 'text-netural-300'
-                            }`}
-                    >
-                        <span className="relative">
-                            {tabItem.label}
-                            {(tab || 'all') === tabItem.key && (
-                                <div className="absolute -bottom-3 left-0 right-0 h-0.5 bg-black rounded-full"></div>
-                            )}
-                        </span>
-                    </button>
-                ))}
-            </div>
+            {/* Tab header is handled within SearchResults */}
             <SearchResults
                 searchQuery={searchQuery}
                 activeTab={tab || 'all'}
-                onTabChange={handleTabChange}
                 onUserClick={handleUserClick}
                 onPostClick={handlePostClick}
             />

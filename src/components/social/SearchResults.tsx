@@ -5,7 +5,7 @@ import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
 import { SearchUser, SearchPost } from '@/services/social/search-service';
 import { SocialFeedCard } from '@/pages/Social/Feed/components/SocialFeedCard';
 import { SocialPost } from '@/types/social-feed';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import { useInfiniteSearch } from '@/hooks/useInfiniteSearch';
 import InfiniteScrollContainer from '@/components/common/InfiniteScrollContainer';
 import { usePostLike } from '@/pages/Social/Feed/hooks/usePostLike';
@@ -35,11 +35,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 }) => {
     const { t } = useTranslation();
     const history = useHistory();
+    const location = useLocation();
     const [localActiveTab, setLocalActiveTab] = useState<'all' | 'latest' | 'people' | 'posts'>('all');
 
     const activeTab = propActiveTab || localActiveTab;
 
-    // Use infinite search hook
+    const urlQuery = (new URLSearchParams(location.search).get('q') || '').trim();
+    const effectiveQuery = urlQuery.length > 0 ? urlQuery : (searchQuery || '').trim();
+
     const {
         users,
         posts,
@@ -47,7 +50,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         hasMore,
         loadMoreData
     } = useInfiniteSearch({
-        searchQuery,
+        searchQuery: effectiveQuery,
         activeTab,
         pageSize: 20
     });
@@ -62,6 +65,21 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     const [repostPrivacy, setRepostPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
     const [pendingRepostCode, setPendingRepostCode] = useState<string | null>(null);
     const [localPosts, setLocalPosts] = useState<SocialPost[]>([]);
+
+    const tabs = useMemo(() => ([
+        { key: 'all', label: t('All') },
+        { key: 'latest', label: t('Latest') },
+        { key: 'people', label: t('People') },
+        { key: 'posts', label: t('Posts') }
+    ] as const), [t]);
+
+    const handleTabChange = useCallback((newTab: 'all' | 'latest' | 'people' | 'posts') => {
+        const q = effectiveQuery;
+        if (!propActiveTab) setLocalActiveTab(newTab);
+        const path = `/social-feed/search-result/${newTab}?q=${encodeURIComponent(q)}`;
+        history.push(path);
+        if (onTabChange) onTabChange(newTab);
+    }, [effectiveQuery, history, onTabChange, propActiveTab]);
 
     const { joinPostUpdates, leavePostUpdates } = usePostSignalR(deviceInfo.deviceId ?? '', {
         autoConnect: true,
@@ -173,7 +191,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         });
     }, [posts]);
 
-    // Update local posts when transformed posts change
     useEffect(() => {
         setLocalPosts(transformedPosts);
     }, [transformedPosts]);
@@ -184,7 +201,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
         const currentIsLiked = post.isLike || false;
         
-        // Optimistic update - update UI immediately
         setLocalPosts(prevPosts => 
             prevPosts.map(p => 
                 p.code === postCode 
@@ -247,7 +263,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
     const handlePrivacySelect = useCallback((privacy: PrivacyPostType) => {
         if (pendingRepostCode) {
-            // Optimistic update for repost
             setLocalPosts(prevPosts => 
                 prevPosts.map(p => 
                     p.code === pendingRepostCode 
@@ -276,7 +291,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         });
                     },
                     onError: () => {
-                        // Rollback repost optimistic update
                         setLocalPosts(prevPosts => 
                             prevPosts.map(p => 
                                 p.code === pendingRepostCode 
@@ -455,6 +469,25 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
     return (
         <>
+            <div className="flex border-b border-gray-100 flex-shrink-0 sticky top-16 z-10 bg-white pt-2">
+                {tabs.map((tabItem) => (
+                    <button
+                        key={tabItem.key}
+                        onClick={() => handleTabChange(tabItem.key)}
+                        className={`flex-1 py-3 px-4 text-sm transition-colors font-semibold flex justify-center ${activeTab === tabItem.key
+                            ? 'text-black'
+                            : 'text-netural-300'
+                            }`}
+                    >
+                        <span className="relative">
+                            {tabItem.label}
+                            {activeTab === tabItem.key && (
+                                <div className="absolute -bottom-3 left-0 right-0 h-0.5 bg-black rounded-full"></div>
+                            )}
+                        </span>
+                    </button>
+                ))}
+            </div>
             <InfiniteScrollContainer
                 onLoadMore={loadMoreData}
                 hasMore={hasMore}
