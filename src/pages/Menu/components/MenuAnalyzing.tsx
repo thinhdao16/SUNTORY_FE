@@ -23,6 +23,7 @@ const MenuAnalyzing: React.FC = () => {
     const foodSuccess = useMenuTranslationStore(state => state.foodSuccess);
     const { user } = useAuthStore();
     const [menuId, setMenuId] = useState(0);
+    const [key, setKey] = useState("");
     // State cho Step 1: Analyzing Menu Content
     const [analyzingMenuContentProgress, setAnalyzingMenuContentProgress] = useState(0);
     const [isActiveAnalyzingMenuContent, setIsActiveAnalyzingMenuContent] = useState(true);
@@ -53,7 +54,7 @@ const MenuAnalyzing: React.FC = () => {
         return new File([u8arr], filename, { type: mime });
     };
 
-    useMenuSignalR(user?.id?.toString() || "");
+    useMenuSignalR(user?.id?.toString() || "", key);
 
     const analyzeMenu = async () => {
         try {
@@ -62,6 +63,7 @@ const MenuAnalyzing: React.FC = () => {
             formData.append("file", file);
             const result = await menuAnalyzing(formData);
             setMenuId(result.data.id);
+            setKey(result.data.key);
             if (result?.data != null) {
                 setTotalFood(result.data.totalFood);
                 setAnalyzingMenuContentProgress(100);

@@ -3,7 +3,7 @@ import * as signalR from "@microsoft/signalr";
 import ENV from "@/config/env";
 import { useMenuTranslationStore } from "@/store/zustand/menuTranslationStore";
 
-export function useMenuSignalR(userId: string) {
+export function useMenuSignalR(userId: string, key: string) {
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const { setIsConnected, setFoodSuccess, foodSuccess, setFoodFailed, foodFailed } = useMenuTranslationStore();
     const isConnectingRef = useRef(false);
@@ -25,17 +25,17 @@ export function useMenuSignalR(userId: string) {
     // Tách logic kết nối ra thành callback riêng
     const startConnection = useCallback(async () => {
         if (!connectionRef.current || isConnectingRef.current) return;
-        
+
         try {
             isConnectingRef.current = true;
-            
+
             if (connectionRef.current.state === signalR.HubConnectionState.Connected) {
                 console.log("🔄 Menu SignalR already connected");
                 return;
             }
 
             await connectionRef.current.start();
-            await connectionRef.current.invoke("JoinFoodGroup", userId);
+            await connectionRef.current.invoke("JoinFoodGroup", userId, key);
             console.log("✅ Menu SignalR connected successfully");
             setIsConnected(true);
         } catch (err) {
@@ -44,19 +44,19 @@ export function useMenuSignalR(userId: string) {
         } finally {
             isConnectingRef.current = false;
         }
-    }, [userId, setIsConnected]);
+    }, [userId, key, setIsConnected]);
 
     // Tách logic join group ra thành callback riêng
     const joinGroup = useCallback(async () => {
         if (connectionRef.current?.state === signalR.HubConnectionState.Connected) {
             try {
-                await connectionRef.current.invoke("JoinFoodGroup", userId);
+                await connectionRef.current.invoke("JoinFoodGroup", userId, key);
                 console.log("👥 Joined food image group:", userId);
             } catch (err) {
                 console.error("❌ Failed to join group:", err);
             }
         }
-    }, [userId]);
+    }, [userId, key]);
 
     useEffect(() => {
         if (Number(userId) <= 0) return;
@@ -99,22 +99,22 @@ export function useMenuSignalR(userId: string) {
         // Cleanup function
         return () => {
             console.log("🧹 Cleaning up Menu SignalR");
-            
+
             // Remove event handlers
             connection.off("FoodGenerated", handleReceive);
-            
+
             // Stop connection
             if (connection.state !== signalR.HubConnectionState.Disconnected) {
                 connection.stop().catch((err) => {
                     console.error("❌ Error stopping connection:", err);
                 });
             }
-            
+
             // Reset refs
             connectionRef.current = null;
             isConnectingRef.current = false;
         };
-    }, [userId, startConnection, joinGroup, handleReceive, setIsConnected]);
+    }, [userId, key, startConnection, joinGroup, handleReceive, setIsConnected]);
 
     // Return connection state để component có thể sử dụng
     return {
