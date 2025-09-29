@@ -133,7 +133,10 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
                                     <h3 className="text-base font-semibold text-gray-900 mb-3">{'3. ' + t('What\'s Inside')}</h3>
                                     {
                                         food.ingredients.map((ingredient, index) => (
-                                            <div key={index} className="font-semibold text-black">•{ingredient}</div>
+                                            <div key={index} className="text-black">
+                                                <span className="font-semibold mr-1">•</span>
+                                                <span className="font-normal">{ingredient}</span>
+                                            </div>
                                         ))
                                     }
                                 </div>
