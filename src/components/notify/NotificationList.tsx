@@ -16,6 +16,8 @@ export const NotificationList = () => {
     const [pinnedNotifications, setPinnedNotifications] = useState<Set<string | number>>(new Set());
     const timersRef = useRef<Map<string | number, number>>(new Map());
     const prevReplyIdRef = useRef<string | number | null>(null);
+    const isDraggingRef = useRef(false);
+    const [swipeDismissIds, setSwipeDismissIds] = useState<Set<string | number>>(new Set());
     const showToast = useToastStore((state) => state.showToast);
     const history = useHistory();
     const { mutate: acceptRequest } = useAcceptFriendRequest(showToast);
@@ -456,7 +458,7 @@ export const NotificationList = () => {
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
                                                 <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
-                                                    <span className="font-semibold mr-1 text-neutral-900">{(n.data.creator_name || "")}: </span>
+                                                    <span className="font-semibold mr-1 text-neutral-900">{n.data.creator_name ? (`${n.data.creator_name}: `) : ""}</span>
                                                     {n.body}
                                                 </p>
                                             </div>
@@ -481,7 +483,7 @@ export const NotificationList = () => {
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
                                                 <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
-                                                    <span className="font-semibold mr-1 text-neutral-900">{(n.data.updater_name || "")}: </span>
+                                                    <span className="font-semibold mr-1 text-neutral-900">{n.data.updater_name ?(`${n.data.updater_name}: `) : ""}</span>
                                                     {n.body}
                                                 </p>
                                             </div>
@@ -506,7 +508,7 @@ export const NotificationList = () => {
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
                                                 <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
-                                                    <span className="font-semibold mr-1 text-neutral-900">{(n.data.adder_name || "")}: </span>
+                                                    <span className="font-semibold mr-1 text-neutral-900">{n.data.adder_name ? (`${n.data.adder_name}: `) : ""}</span>
                                                     {n.body}
                                                 </p>
                                             </div>
@@ -531,7 +533,7 @@ export const NotificationList = () => {
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
                                                 <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
-                                                    <span className="font-semibold mr-1 text-neutral-900">{(n.data.remover_name || "")}: </span>
+                                                    <span className="font-semibold mr-1 text-neutral-900">{n.data.remover_name ? (`${n.data.remover_name}: `) : ""}</span>
                                                     {n.body}
                                                 </p>
                                             </div>
@@ -577,7 +579,7 @@ export const NotificationList = () => {
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
                                                 <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
-                                                    <span className="font-semibold mr-1 text-neutral-900">{(n.data.remover_name || "")} </span>
+                                                    <span className="font-semibold mr-1 text-neutral-900">{n.data.remover_name ? (`${n.data.remover_name}: `) : ""}</span>
                                                     {n.body}
                                                 </p>
                                             </div>
@@ -769,20 +771,33 @@ export const NotificationList = () => {
                             <motion.div
                                 key={n.id}
                                 initial={{ opacity: 0, y: -40 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -40 }}
+                                animate={swipeDismissIds.has(n.id)
+                                    ? { opacity: 0, x: -200, transition: { duration: 0.22 } }
+                                    : { opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -40, transition: { duration: 0.22 } }}
                                 transition={{ duration: 0.3 }}
                                 className="relative overflow-hidden rounded-2xl shadow-lg bg-white border border-gray-200"
                                 drag="x"
                                 dragElastic={0.12}
                                 dragMomentum={false}
+                                dragConstraints={{ left: -300, right: 0 }}
+                                dragSnapToOrigin
+                                onDragStart={() => { isDraggingRef.current = true; }}
                                 onDragEnd={(_, info) => {
-                                    if (info.offset.x < -60) {
+                                    const passedOffset = info.offset.x < -40;
+                                    const passedVelocity = info.velocity.x < -300;
+                                    if (passedOffset || passedVelocity) {
+                                        // animate sang trái rồi xóa
+                                        setSwipeDismissIds(prev => { const s = new Set(prev); s.add(n.id); return s; });
                                         markAsRead(n.id);
-                                        clearOne(String(n.id));
+                                        setTimeout(() => clearOne(n.id), 220);
                                     }
+                                    // allow clicks again on next tick
+                                    setTimeout(() => { isDraggingRef.current = false; }, 0);
                                 }}
                                 whileDrag={{ x: -8, opacity: 0.95 }}
+                                
+                                onClickCapture={(e) => { if (isDraggingRef.current) e.stopPropagation(); }}
                                 onMouseEnter={() => pinNotification(n.id)}
                                 onMouseLeave={() => unpinNotification(n.id, true)}
                                 onTouchStart={() => pinNotification(n.id)}
