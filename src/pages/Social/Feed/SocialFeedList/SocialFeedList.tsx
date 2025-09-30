@@ -11,7 +11,6 @@ import { useAuthStore } from '@/store/zustand/auth-store';
 import { usePostLike } from '@/pages/Social/Feed/hooks/usePostLike';
 import { usePostRepost } from '../hooks/usePostRepost';
 import { TabNavigation, HashtagInput, PostsList, LoadingStates } from './components';
-import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
 import PullToRefresh from '@/components/common/PullToRefresh';
 import { useIonToast, IonContent } from '@ionic/react';
 import { useRefreshCallback } from '@/contexts/RefreshContext';
@@ -43,9 +42,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   const [currentPrivacy, setCurrentPrivacy] = useState<PrivacyPostType | undefined>(privacy);
   const [selectedHashtag, setSelectedHashtag] = useState<string>(specificHashtag || '');
   const [recentHashtags, setRecentHashtags] = useState<string[]>([]);
-  const [repostingPostCode, setRepostingPostCode] = useState<string | null>(null);
-  const [showPrivacySheet, setShowPrivacySheet] = useState(false);
-  const [selectedPrivacy, setSelectedPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
+  // Repost privacy handled inside SocialFeedCard via embedded PrivacyBottomSheet
 
   const getTabsConfig = () => {
     const staticTabs = [
@@ -110,12 +107,12 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     enableDebugLogs: false,
     onPostCreated: (data) => {
       console.log('New post created via SignalR:', data);
-      presentToast({
-        message: t('New post added to feed'),
-        duration: 2000,
-        position: 'top',
-        color: 'success'
-      });
+      // presentToast({
+      //   message: t('New post added to feed'),
+      //   duration: 2000,
+      //   position: 'top',
+      //   color: 'success'
+      // });
     },
     onPostUpdated: (data) => {
       console.log('Post updated via SignalR:', data);
@@ -373,44 +370,13 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   const handleShare = useCallback((postCode: string) => {
   }, []);
 
-  const handleRepost = useCallback((postCode: string) => {
-    const post = posts.find((p: any) => p.code === postCode);
-    if (!post || !user) return;
-
-    const isOwnPost = post.user.id === user.id;
-    const isOwnOriginalPost = post.isRepost && post.originalPost && post.originalPost.user.id === user.id;
-
-    // if (isOwnPost || isOwnOriginalPost) {
-    //   presentToast({
-    //     message: t('You cannot repost your own post'),
-    //     duration: 3000,
-    //     position: 'bottom',
-    //     color: 'warning'
-    //   });
-    //   return;
-    // }
-
-    setRepostingPostCode(postCode);
-    setShowPrivacySheet(true);
-  }, [posts, user, presentToast, t]);
-
-  const handleSelectPrivacy = useCallback((privacy: PrivacyPostType) => {
-    if (repostingPostCode) {
-      postRepostMutation.mutate({
-        postCode: repostingPostCode,
-        caption: "Repost", 
-        privacy: Number(privacy)
-      });
-      setRepostingPostCode(null);
-    }
-    setSelectedPrivacy(privacy);
-    setShowPrivacySheet(false);
-  }, [repostingPostCode, postRepostMutation]);
-
-  const handleCloseModal = useCallback(() => {
-    setRepostingPostCode(null);
-    setShowPrivacySheet(false);
-  }, []);
+  const handleRepostConfirm = useCallback((postCode: string, privacy: PrivacyPostType) => {
+    postRepostMutation.mutate({
+      postCode,
+      caption: 'Repost',
+      privacy: Number(privacy)
+    });
+  }, [postRepostMutation]);
 
   useEffect(() => {
     let newPrivacy: PrivacyPostType | undefined;
@@ -520,7 +486,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
             onLike={handleLike}
             onComment={handleComment}
             onShare={handleShare}
-            onRepost={handleRepost}
+            onRepostConfirm={handleRepostConfirm}
             onPostClick={handlePostClick}
             onVisiblePostsChange={handleVisiblePostsChange}
           />
@@ -539,12 +505,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
         />
       </div>
 
-      <PrivacyBottomSheet
-        isOpen={showPrivacySheet}
-        closeModal={handleCloseModal}
-        selectedPrivacy={selectedPrivacy}
-        onSelectPrivacy={handleSelectPrivacy}
-      />
+      {/* PrivacyBottomSheet is embedded inside SocialFeedCard now */}
     </IonContent>
   );
 };

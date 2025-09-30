@@ -13,7 +13,6 @@ import { usePostRepost } from '@/pages/Social/Feed/hooks/usePostRepost';
 import { usePostSignalR } from '@/hooks/usePostSignalR';
 import { useIonToast } from '@ionic/react';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
-import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
 import { PrivacyPostType } from '@/types/privacy';
 import { handleCopyToClipboard } from '@/components/common/HandleCoppy';
 import { useQueryClient } from 'react-query';
@@ -61,9 +60,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     const deviceInfo = useDeviceInfo();
     const [presentToast] = useIonToast();
     
-    const [showPrivacySheet, setShowPrivacySheet] = useState(false);
-    const [repostPrivacy, setRepostPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
-    const [pendingRepostCode, setPendingRepostCode] = useState<string | null>(null);
     const [localPosts, setLocalPosts] = useState<SocialPost[]>([]);
 
     const tabs = useMemo(() => ([
@@ -77,7 +73,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         const q = effectiveQuery;
         if (!propActiveTab) setLocalActiveTab(newTab);
         const path = `/social-feed/search-result/${newTab}?q=${encodeURIComponent(q)}`;
-        history.push(path);
+        // Replace instead of push to avoid stacking history entries for tab switches
+        history.replace(path);
         if (onTabChange) onTabChange(newTab);
     }, [effectiveQuery, history, onTabChange, propActiveTab]);
 
@@ -86,12 +83,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         enableDebugLogs: false,
         onPostCreated: (data) => {
             console.log('New post created via SignalR:', data);
-            presentToast({
-                message: t('New post added to feed'),
-                duration: 2000,
-                position: 'top',
-                color: 'success'
-            });
+            // presentToast({
+            //     message: t('New post added to feed'),
+            //     duration: 2000,
+            //     position: 'top',
+            //     color: 'success'
+            // });
         },
         onPostUpdated: (data) => {
             console.log('Post updated via SignalR:', data);
@@ -128,7 +125,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     const transformedPosts: SocialPost[] = useMemo(() => {
         return (posts || []).map((post: any, index: number) => {
             const isFeedPost = post.hasOwnProperty('reactionCount');
-
             if (isFeedPost) {
                 return {
                     ...post,
@@ -256,66 +252,56 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         });
     }, [presentToast, t]);
 
-    const handleRepost = useCallback((postCode: string) => {
-        setPendingRepostCode(postCode);
-        setShowPrivacySheet(true);
-    }, []);
+    const handleRepostConfirm = useCallback((postCode: string, privacy: PrivacyPostType) => {
+        setLocalPosts(prevPosts => 
+            prevPosts.map(p => 
+                p.code === postCode 
+                    ? { 
+                        ...p, 
+                        isUserReposted: true,
+                        repostCount: (p.repostCount || 0) + 1
+                    } 
+                    : p
+            )
+        );
 
-    const handlePrivacySelect = useCallback((privacy: PrivacyPostType) => {
-        if (pendingRepostCode) {
-            setLocalPosts(prevPosts => 
-                prevPosts.map(p => 
-                    p.code === pendingRepostCode 
-                        ? { 
-                            ...p, 
-                            isUserReposted: true,
-                            repostCount: (p.repostCount || 0) + 1
-                        } 
-                        : p
-                )
-            );
-
-            postRepostMutation.mutate(
-                {
-                    postCode: pendingRepostCode,
-                    caption: 'Repost',
-                    privacy: Number(privacy)
+        postRepostMutation.mutate(
+            {
+                postCode,
+                caption: 'Repost',
+                privacy: Number(privacy)
+            },
+            {
+                onSuccess: () => {
+                    presentToast({
+                        message: t('Post reposted successfully'),
+                        duration: 2000,
+                        position: 'top',
+                        color: 'success'
+                    });
                 },
-                {
-                    onSuccess: () => {
-                        presentToast({
-                            message: t('Post reposted successfully'),
-                            duration: 2000,
-                            position: 'top',
-                            color: 'success'
-                        });
-                    },
-                    onError: () => {
-                        setLocalPosts(prevPosts => 
-                            prevPosts.map(p => 
-                                p.code === pendingRepostCode 
-                                    ? { 
-                                        ...p, 
-                                        isUserReposted: false,
-                                        repostCount: Math.max(0, (p.repostCount || 0) - 1)
-                                    } 
-                                    : p
-                            )
-                        );
-                        presentToast({
-                            message: t('Failed to repost'),
-                            duration: 2000,
-                            position: 'top',
-                            color: 'danger'
-                        });
-                    }
+                onError: () => {
+                    setLocalPosts(prevPosts => 
+                        prevPosts.map(p => 
+                            p.code === postCode 
+                                ? { 
+                                    ...p, 
+                                    isUserReposted: false,
+                                    repostCount: Math.max(0, (p.repostCount || 0) - 1)
+                                } 
+                                : p
+                        )
+                    );
+                    presentToast({
+                        message: t('Failed to repost'),
+                        duration: 2000,
+                        position: 'top',
+                        color: 'danger'
+                    });
                 }
-            );
-        }
-        setShowPrivacySheet(false);
-        setPendingRepostCode(null);
-        setRepostPrivacy(PrivacyPostType.Public);
-    }, [pendingRepostCode, postRepostMutation, presentToast, t]);
+            }
+        );
+    }, [postRepostMutation, presentToast, t]);
 
     useEffect(() => {
         if (searchQuery && activeTab) {
@@ -365,7 +351,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 onLike={() => handleLike(post.code)}
                 onComment={() => handleComment(post.code)}
                 onShare={() => handleShare(post.code)}
-                onRepost={() => handleRepost(post.code)}
+                onRepostConfirm={(code, privacy) => handleRepostConfirm(code, privacy)}
             />
         </div>
     );
@@ -429,7 +415,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                                 <div className="flex items-center justify-between px-4 py-2 ">
                                     <h3 className="font-semibold text-gray-900">People</h3>
                                     <button
-                                        onClick={() => onTabChange ? onTabChange('people') : setLocalActiveTab('people')}
+                                        onClick={() => handleTabChange('people')}
                                         className="text-main text-sm"
                                     >
                                         See all
@@ -445,7 +431,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                                 <div className="flex items-center justify-between px-4 py-2">
                                     <span className="font-semibold text-gray-900">Posts</span>
                                     <button
-                                        onClick={() => onTabChange ? onTabChange('posts') : setLocalActiveTab('posts')}
+                                        onClick={() => handleTabChange('posts')}
                                         className="text-main text-sm"
                                     >
                                         See All 
@@ -496,16 +482,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             >
                 {renderContent()}
             </InfiniteScrollContainer>
-            <PrivacyBottomSheet
-                isOpen={showPrivacySheet}
-                closeModal={() => {
-                    setShowPrivacySheet(false);
-                    setPendingRepostCode(null);
-                    setRepostPrivacy(PrivacyPostType.Public);
-                }}
-                selectedPrivacy={repostPrivacy}
-                onSelectPrivacy={handlePrivacySelect}
-            />
+            {/* PrivacyBottomSheet is embedded inside SocialFeedCard now */}
         </>
     );
 };

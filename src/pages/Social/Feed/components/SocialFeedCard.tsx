@@ -28,13 +28,17 @@ import PostActionsProvider from '@/components/social/PostActionsProvider';
 import { useSendFriendRequest, useUnfriend, useAcceptFriendRequest, useCancelFriendRequest, useRejectFriendRequest } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import ConfirmModal from '@/components/common/modals/ConfirmModal';
 import { useToastStore } from '@/store/zustand/toast-store';
+import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
+import ExpandableText from '@/components/common/ExpandableText';
+import SharePostBottomSheet from '@/components/social/SharePostBottomSheet';
 
 interface SocialFeedCardProps {
   post: SocialPost;
   onLike?: (postCode: string) => void;
   onComment?: (postCode: string) => void;
   onShare?: (postCode: string) => void;
-  onRepost?: (postCode: string) => void;
+  onRepost?: (postCode: string) => void; // deprecated: use onRepostConfirm instead
+  onRepostConfirm?: (postCode: string, privacy: PrivacyPostType) => void;
   onPostClick?: (postCode: string) => void;
   onSendFriendRequest?: (userId: number) => void;
   onUnfriend?: (userId: number) => void;
@@ -52,6 +56,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   onComment,
   onShare,
   onRepost,
+  onRepostConfirm,
   onPostClick,
   onSendFriendRequest,
   onUnfriend,
@@ -67,11 +72,19 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const { user } = useAuthStore.getState();
   const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
   const toLanguageId = useMemo(() => selectedLanguageSocialChat?.id || selectedLanguageTo?.id || 2, [selectedLanguageSocialChat, selectedLanguageTo]);
+  const displayPost = post.isRepost && post.originalPost ? post.originalPost : post;
+  const isRepost = post.isRepost && post.originalPost;
+  const isRepostWithDeletedOriginal = post.isRepost && !post.originalPost || post?.isRepost && post?.originalPost?.status === 190;
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState(true);
   const [isPostOptionsOpen, setIsPostOptionsOpen] = useState(false);
+  const [showPrivacySheet, setShowPrivacySheet] = useState(false);
+  const [selectedPrivacy, setSelectedPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
+  const contentText = useMemo(() => (showOriginal ? (displayPost?.content || '') : (translatedText || '')), [displayPost?.content, showOriginal, translatedText]);
 
   const showToast = useToastStore((state) => state.showToast);
+
+  const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
 
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -111,9 +124,6 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
         return <GlobalIcon className="w-4 h-4 text-gray-500" />;
     }
   };
-  const displayPost = post.isRepost && post.originalPost ? post.originalPost : post;
-  const isRepost = post.isRepost && post.originalPost;
-  const isRepostWithDeletedOriginal = post.isRepost && !post.originalPost || post?.isRepost && post?.originalPost?.status === 190;
   const history = useHistory();
   const { user: currentUser } = useAuthStore();
 
@@ -240,7 +250,6 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
       onClick={handlePostClick}
       ref={containerRefCallback ? containerRefCallback : undefined}
     >
-      {/* Reposter header */}
       <div className="flex justify-between p-4 pb-2">
         <div className="flex items-center gap-3">
           <img
@@ -288,13 +297,12 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
 
       {/* {isRepost && post.captionRepost && (
         <div className="px-4 pb-2">
-          <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+          <div className="">
             {post.captionRepost}
           </div>
         </div>
       )} */}
 
-      {/* Original post content (or regular post content if not a repost) */}
       {post?.isRepost ? (
         <div
           className="mx-4 mb-4 border border-gray-200 rounded-2xl overflow-hidden pb-4 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -347,12 +355,17 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             </>
           )}
           {!isRepostWithDeletedOriginal && (
-            <div className="px-4 py-3">
-              <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-                {parseHashtagsWithClick(displayPost?.content)}
-              </div>
+            <div className="px-4 py-3 relative">
+              <ExpandableText
+                className=""
+                contentClassName="text-gray-800 leading-relaxed"
+                clampClassName="line-clamp-2"
+                resetKey={contentText}
+              >
+                {parseHashtagsWithClick(contentText)}
+              </ExpandableText>
               <div className="mt-2">
-                {displayPost?.content && showOriginal ? (
+                {contentText && showOriginal ? (
                   <ActionButton
                     variant="ghost"
                     size="none"
@@ -373,7 +386,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                       <LogoIcon className="w-5 h-5" /> {t('Translate')}
                     </div>
                   </ActionButton>
-                ) : displayPost?.content && !showOriginal ? (
+                ) : contentText && !showOriginal ? (
                   <ActionButton
                     variant="ghost"
                     size="none"
@@ -417,11 +430,18 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
         </div>
       ) : (
         <div className="">
-          <div className="text-gray-800 leading-relaxed whitespace-pre-wrap px-4">
-            {parseHashtagsWithClick(displayPost?.content)}
+          <div className="px-4 relative">
+            <ExpandableText
+              className=""
+              contentClassName="text-gray-800 leading-relaxed"
+              clampClassName="line-clamp-2"
+              resetKey={contentText}
+            >
+              {parseHashtagsWithClick(contentText)}
+            </ExpandableText>
           </div>
           <div className="mt-2 px-4">
-            {displayPost?.content && showOriginal ? (
+            {contentText && showOriginal ? (
               <ActionButton
                 spinnerPosition="right"
                 variant="ghost"
@@ -431,19 +451,19 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                 onClick={async (e) => {
                   e.stopPropagation();
                   try {
-                    const res = await createTranslationMutation.mutateAsync({ toLanguageId: user?.language?.id as number, originalText: displayPost?.content || '' });
+                    const res = await createTranslationMutation.mutateAsync({ toLanguageId: user?.language?.id as number, originalText: contentText || '' });
                     const text = (res as any)?.data?.translated_text || (res as any)?.data?.translatedText || '';
                     setTranslatedText(text);
                     setShowOriginal(false);
                   } catch { }
                 }}
-                disabled={!displayPost?.content}
+                disabled={!contentText}
               >
                 <div className="flex items-center gap-1">
                   <LogoIcon className="w-5 h-5" /> {t('Translate')}
                 </div>
               </ActionButton>
-            ) : displayPost?.content && !showOriginal ? (
+            ) : contentText && !showOriginal ? (
               <ActionButton
                 variant="ghost"
                 size="none"
@@ -508,7 +528,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             icon={<RetryIcon />}
             count={post.repostCount}
             isActive={false}
-            onClick={() => onRepost?.(post.code)}
+            onClick={() => setShowPrivacySheet(true)}
             inactiveColor="text-netural-900"
           />
 
@@ -516,7 +536,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             icon={<SendIcon />}
             count={post.shareCount}
             isActive={false}
-            onClick={() => onShare?.(post.code)}
+            onClick={() => setIsShareSheetOpen(true)}
             inactiveColor="text-netural-900"
           />
         </div>
@@ -542,7 +562,6 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
         )}
       </PostActionsProvider>
 
-      {/* Confirmation Modal */}
       <ConfirmModal
         isOpen={confirmState.open}
         onClose={closeConfirmModal}
@@ -578,6 +597,25 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
           }
           closeConfirmModal();
         }}
+      />
+
+      {/* Privacy Bottom Sheet for Repost */}
+      <PrivacyBottomSheet
+        isOpen={showPrivacySheet}
+        closeModal={() => setShowPrivacySheet(false)}
+        selectedPrivacy={selectedPrivacy}
+        onSelectPrivacy={(privacy) => {
+          setSelectedPrivacy(privacy);
+          onRepostConfirm?.(post.code, privacy);
+          setShowPrivacySheet(false);
+        }}
+      />
+
+      {/* Share Bottom Sheet */}
+      <SharePostBottomSheet
+        isOpen={isShareSheetOpen}
+        onClose={() => setIsShareSheetOpen(false)}
+        postCode={post.code}
       />
     </div>
   );

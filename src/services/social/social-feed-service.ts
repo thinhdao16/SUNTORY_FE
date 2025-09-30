@@ -8,6 +8,14 @@ export interface FeedQueryParams {
     pageSize: number;
 }
 
+export interface SharePostPayload {
+    postCode: string;
+    type: number; // 0: multi-target chats, 30: Social (backward values kept for compatibility)
+    otherUserIds?: number[];
+    chatCodes?: string[];
+    messageShare?: string;
+}
+
 export interface CreatePostRequest {
     content: string;
     mediaFilenames?: string[];
@@ -292,5 +300,9 @@ export class SocialFeedService {
         await httpClient.post('/api/v1/social/hashtag/interest', {
             hashtagText
         });
+    }
+
+    static async sharePost(payload: SharePostPayload): Promise<void> {
+        await httpClient.post('/api/v1/social/post/share', payload);
     }
 }

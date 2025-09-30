@@ -103,7 +103,7 @@ const CreateFeed: React.FC = () => {
     const handleClose = () => {
         history.goBack();
     };
-
+console.log(images)
     const handlePost = async () => {
         if (!postText.trim() && images.length === 0 && !audioBlob) {
             return;

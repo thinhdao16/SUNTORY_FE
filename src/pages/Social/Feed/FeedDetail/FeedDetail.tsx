@@ -34,6 +34,7 @@ import CommentsList from './components/CommentsList';
 import PostOptionsBottomSheet from '@/components/social/PostOptionsBottomSheet';
 import { usePostOptions } from '@/hooks/usePostOptions';
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
+import SharePostBottomSheet from '@/components/social/SharePostBottomSheet';
 
 const FeedDetail: React.FC = () => {
     const { t } = useTranslation();
@@ -102,6 +103,7 @@ const FeedDetail: React.FC = () => {
     const [isRepostSheetOpen, setIsRepostSheetOpen] = useState(false);
     const [repostPrivacy, setRepostPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
     const [isCommentOptionsOpen, setIsCommentOptionsOpen] = useState(false);
+    const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
     const [selectedComment, setSelectedComment] = useState<any>(null);
     const showToast = useToastStore((state) => state.showToast);
     const openPostOptions = () => setIsPostOptionsOpen(true);
@@ -566,7 +568,7 @@ const FeedDetail: React.FC = () => {
                     onLike={handleLikePost}
                     onComment={() => inputRef.current?.focus()}
                     onRepost={() => setIsRepostSheetOpen(true)}
-                    onShare={handleCopyLink}
+                    onShare={() => setIsShareSheetOpen(true)}
                     postLikeMutation={postLikeMutation}
                 />
 
@@ -637,6 +639,13 @@ const FeedDetail: React.FC = () => {
                 closeModal={() => setIsRepostSheetOpen(false)}
                 selectedPrivacy={repostPrivacy}
                 onSelectPrivacy={handleSelectRepostPrivacy}
+            />
+
+            {/* Share Bottom Sheet */}
+            <SharePostBottomSheet
+                isOpen={isShareSheetOpen}
+                onClose={() => setIsShareSheetOpen(false)}
+                postCode={displayPost.code}
             />
 
             <PostOptionsBottomSheet

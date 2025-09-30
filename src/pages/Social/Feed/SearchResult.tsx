@@ -4,7 +4,6 @@ import { useHistory, useParams, useLocation } from 'react-router-dom';
 import { useSearch } from '@/hooks/useSearch';
 import SearchResults from '@/components/social/SearchResults';
 import { useSaveSearchHistory } from '@/hooks/useSearchQueries';
-import BackInputIcon from "@/icons/logo/social-chat/back-input.svg?react"
 import SearchIcon from "@/icons/logo/social-chat/search.svg?react"
 import ClearInputIcon from '@/icons/logo/social-chat/clear-input.svg?react';
 import BackIcon from "@/icons/logo/back-default.svg?react"
@@ -49,7 +48,6 @@ const SearchResult: React.FC = () => {
     const saveHistoryMutation = useSaveSearchHistory();
     const hasSearched = useRef(false);
 
-    // Tab handling is managed inside SearchResults now
 
     const handleUserClick = (user: any) => {
         saveHistoryMutation.mutate({
@@ -72,10 +70,14 @@ const SearchResult: React.FC = () => {
         if (inputValue.trim()) {
             const trimmedInput = inputValue.trim();
             const isHashtag = trimmedInput.startsWith('#');
-            const searchParams = isHashtag ? { searchText: '', hashtagText: trimmedInput.substring(1) }: { searchText: trimmedInput };
+            const searchParams = isHashtag ? { searchText: '', hashtagText: trimmedInput.substring(1) } : { searchText: trimmedInput };
             saveHistoryMutation.mutate(searchParams);
             setSearchQuery(trimmedInput);
-            history.push(`/social-feed/search-result/${tab || 'all'}?q=${encodeURIComponent(trimmedInput)}`);
+            const targetPath = `/social-feed/search-result/${tab || 'all'}?q=${encodeURIComponent(trimmedInput)}`;
+            const currentPath = `${location.pathname}${location.search}`;
+            if (currentPath !== targetPath) {
+                history.replace(targetPath);
+            }
             setTimeout(() => {
                 handleSearchSubmit();
             }, 100);
@@ -98,7 +100,7 @@ const SearchResult: React.FC = () => {
     };
 
     const handleBackClick = () => {
-        history.push('/social-feed/search');
+        history.goBack();
     };
     
     useEffect(() => {

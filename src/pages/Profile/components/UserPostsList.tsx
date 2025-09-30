@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SocialFeedCard } from '@/pages/Social/Feed/components/SocialFeedCard';
 import { useUserPosts, ProfileTabType } from '../hooks/useUserPosts';
@@ -9,7 +9,6 @@ import { useUserPostUpdate } from '../hooks/useUserPostUpdate';
 import { handleCopyToClipboard } from '@/components/common/HandleCoppy';
 import { useToastStore } from '@/store/zustand/toast-store';
 import { useHistory } from 'react-router-dom';
-import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
 import { PrivacyPostType } from '@/types/privacy';
 
 interface UserPostsListProps {
@@ -24,9 +23,7 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
     const showToast = useToastStore((state) => state.showToast);
     const scrollRef = useRef<HTMLDivElement>(null);
     
-    const [showPrivacySheet, setShowPrivacySheet] = useState(false);
-    const [repostPrivacy, setRepostPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
-    const [pendingRepostCode, setPendingRepostCode] = useState<string | null>(null);
+    // Repost privacy handled inside SocialFeedCard via embedded PrivacyBottomSheet
 
     const {
         data,
@@ -93,22 +90,12 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
         showToast(t('Link copied to clipboard'), 2000, 'success');
     };
 
-    const handleRepost = (postCode: string) => {
-        setPendingRepostCode(postCode);
-        setShowPrivacySheet(true);
-    };
-
-    const handlePrivacySelect = (privacy: PrivacyPostType) => {
-        if (pendingRepostCode) {
-            postRepostMutation.mutate({
-                postCode: pendingRepostCode,
-                caption: 'Repost',
-                privacy: Number(privacy)
-            });
-        }
-        setShowPrivacySheet(false);
-        setPendingRepostCode(null);
-        setRepostPrivacy(PrivacyPostType.Public);
+    const handleRepostConfirm = (postCode: string, privacy: PrivacyPostType) => {
+        postRepostMutation.mutate({
+            postCode,
+            caption: 'Repost',
+            privacy: Number(privacy)
+        });
     };
 
 
@@ -165,7 +152,7 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
                         onLike={handleLike}
                         onComment={handleComment}
                         onShare={handleShare}
-                        onRepost={handleRepost}
+                        onRepostConfirm={handleRepostConfirm}
                         onPostClick={handlePostClick}
                         onPostUpdate={(updatedPost) => {
                             postUpdateMutation.mutate(updatedPost);
@@ -188,17 +175,7 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
                 </div>
             )}
 
-            {/* Privacy Bottom Sheet for Repost */}
-            <PrivacyBottomSheet
-                isOpen={showPrivacySheet}
-                closeModal={() => {
-                    setShowPrivacySheet(false);
-                    setPendingRepostCode(null);
-                    setRepostPrivacy(PrivacyPostType.Public);
-                }}
-                selectedPrivacy={repostPrivacy}
-                onSelectPrivacy={handlePrivacySelect}
-            />
+            {/* PrivacyBottomSheet is embedded inside SocialFeedCard now */}
         </div>
     );
 };

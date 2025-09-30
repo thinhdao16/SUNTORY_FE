@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback, forwardRef } from 'react';
 import { SocialPost } from '@/types/social-feed';
 import { SocialFeedCard } from '@/pages/Social/Feed/components/SocialFeedCard';
+import { PrivacyPostType } from '@/types/privacy';
 
 interface PostsListProps {
   posts: SocialPost[];
@@ -11,7 +12,7 @@ interface PostsListProps {
   onLike: (postCode: string) => void;
   onComment: (postCode: string) => void;
   onShare: (postCode: string) => void;
-  onRepost: (postCode: string) => void;
+  onRepostConfirm?: (postCode: string, privacy: PrivacyPostType) => void;
   onPostClick: (postCode: string) => void;
   onVisiblePostsChange?: (postCodes: string[]) => void;
 }
@@ -25,7 +26,7 @@ export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
   onLike,
   onComment,
   onShare,
-  onRepost,
+  onRepostConfirm,
   onPostClick,
   onVisiblePostsChange
 }, ref) => {
@@ -137,7 +138,7 @@ export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
               onLike={onLike}
               onComment={onComment}
               onShare={onShare}
-              onRepost={onRepost}
+              onRepostConfirm={onRepostConfirm}
               onPostClick={onPostClick}
               containerRefCallback={(node) => setItemRef(post.code, node)}
             />

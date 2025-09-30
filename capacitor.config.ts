@@ -6,6 +6,10 @@ const config: CapacitorConfig = {
   appId: 'com.wayjet.app',
   appName: 'WayJet',
   webDir: 'dist',
+  // server: {
+  //   cleartext: true,
+  //   url:"http://192.168.1.94:5173"
+  // },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,

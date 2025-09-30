@@ -10,7 +10,8 @@ interface BottomSheetProps {
     children: ReactNode;
     className?: string;
     maxWidth?: string;
-    classNameContainer?:string
+    classNameContainer?:string;
+    lockDismiss?: boolean;
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({
@@ -22,22 +23,22 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
     className = "",
     maxWidth = "450px",
     classNameContainer,
+    lockDismiss = false,
 }) => {
     return (
         <IonModal
             isOpen={isOpen}
             onDidDismiss={onClose}
-            backdropDismiss
-            canDismiss
+            backdropDismiss={!lockDismiss}
+            canDismiss={!lockDismiss}
             breakpoints={[0, 1]}
             initialBreakpoint={1}
             className={`bottom-sheet ${className}`}
         >
             <div 
-                className={`bg-white rounded-t-[20px] p-6 w-full mx-auto shadow-lg ${classNameContainer}`}
+                className={`bg-white rounded-t-[20px] px-4 py-6 w-full mx-auto shadow-lg ${classNameContainer}`}
                 style={{ maxWidth }}
             >
-                {/* Header */}
                 {(title || showCloseButton) && (
                     <div className="mb-6">
                         <div className="flex items-center justify-between">
