@@ -25,7 +25,7 @@ const PostActions: React.FC<PostActionsProps> = ({
     postLikeMutation
 }) => {
     const { t } = useTranslation();
-
+    
     return (
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
             <div className="flex items-center gap-6">

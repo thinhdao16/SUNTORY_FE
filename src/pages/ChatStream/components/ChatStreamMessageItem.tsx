@@ -19,8 +19,9 @@ const ChatStreamMessageItem: React.FC<{
     isSend?: boolean;
     isSpending?: boolean;
     loading?: boolean;
+    hideAvatar?: boolean;
     onRetryMessage?: (msgId: string) => void;
-}> = ({ msg, isUser, isError, isSend, onRetryMessage, isSpending, loading }) => {
+}> = ({ msg, isUser, isError, isSend, onRetryMessage, isSpending, loading, hideAvatar }) => {
     const [showCopy, setShowCopy] = useState(false);
     const [previewImg, setPreviewImg] = useState<string | null>(null);
     const handleBubbleClick = () => {
@@ -45,7 +46,7 @@ const ChatStreamMessageItem: React.FC<{
                 className={`flex w-full mb-4 ${isUser ? "justify-end" : "justify-start"}`}
             >
                 <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : ""} items-start w-full`}>
-                    {!isUser && msg.text !== MessageState.PENDING && (
+                    {!isUser && msg.text !== MessageState.PENDING && !hideAvatar && (
                         <div>
                             <BotIcon className="min-w-[30px] aspect-square object-contain" />
                         </div>
@@ -138,7 +139,7 @@ const ChatStreamMessageItem: React.FC<{
                                     onTouchStart={handleBubbleClick}
                                 >
                                     <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] xl:max-w-[350px]">
-                                        <div className="prose prose-sm whitespace-break-spaces break-words text-[15px]">
+                                        <div className="">
                                             <MarkdownRenderer text={msg.text} />
                                         </div>
                                     </div>

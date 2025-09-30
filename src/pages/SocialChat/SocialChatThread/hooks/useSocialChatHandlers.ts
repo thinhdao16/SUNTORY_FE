@@ -1,4 +1,5 @@
-import { UpdateSocialChatMessagePayload } from './../../../../services/social/social-chat-type';
+import { i18n } from "i18next";
+import { UpdateSocialChatMessagePayload } from "./../../../../services/social/social-chat-type";
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable prefer-const */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -6,19 +7,26 @@ import { uploadChatFile } from "@/services/file/file-service";
 import React, { useCallback } from "react";
 import { UseMutationResult } from "react-query";
 import { useToastStore } from "@/store/zustand/toast-store";
-import i18n from "@/config/i18n";
-import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
+import { useTranslation } from "react-i18next";
+import { PendingFile } from "../components/PendingFilesList";
 import dayjs from "dayjs";
 import { ChatMessage } from "@/types/social-chat";
-import { useSendSocialChatMessage, useUpdateSocialChatMessage } from "../../hooks/useSocialChat";
+import {
+    useSendSocialChatMessage,
+    useUpdateSocialChatMessage,
+} from "../../hooks/useSocialChat";
 import { CreateSocialChatMessagePayload } from "@/services/social/social-chat-type";
 import { useAuthStore } from "@/store/zustand/auth-store";
-import { Language } from '@/store/zustand/language-store';
+import { Language } from "@/store/zustand/language-store";
+import { generatePreciseTimestampFromDate } from "@/utils/time-stamp";
+import { isEmptyText } from "@/utils/text";
 interface UseSocialChatHandlersProps {
     addPendingImages: (images: string[]) => void;
     addPendingFiles: (files: { name: string; url: string }[]) => void;
     pendingImages: (string | File)[];
     pendingFiles: { name: string; url: string }[];
+    chatPendingFiles: PendingFile[];
+    clearPendingFiles: () => void;
     messageValue: string;
     setMessageValue: (value: string) => void;
     uploadImageMutation: UseMutationResult<any, unknown, File | Blob>;
@@ -27,17 +35,35 @@ interface UseSocialChatHandlersProps {
     roomId: string;
     addMessage: (message: ChatMessage) => void;
     updateMessageByTempId: (message: ChatMessage) => void;
-    updateMessageWithServerResponse: (tempId: string, serverData: Partial<ChatMessage>) => void;
-    updateOldMessagesWithReadStatus: (roomId: string, newUserHasRead: any[], currentUserId: number) => void;
+    updateMessageWithServerResponse: (
+        tempId: string,
+        serverData: Partial<ChatMessage>
+    ) => void;
+    updateOldMessagesWithReadStatus: (
+        roomId: string,
+        newUserHasRead: any[],
+        currentUserId: number
+    ) => void;
     setLoadingMessages: (loading: boolean) => void;
     onContainerScroll: any;
     hasNextPage?: boolean;
     isFetchingNextPage?: boolean;
     fetchNextPage: () => Promise<void>;
-    updateMessageByCode: (messageCode: string, updatedData: Partial<ChatMessage>) => void;
+    updateMessageByCode: (
+        messageCode: string,
+        updatedData: Partial<ChatMessage>
+    ) => void;
     displayMessages: ChatMessage[];
-    updateMessageMutation: UseMutationResult<ChatMessage, unknown, UpdateSocialChatMessagePayload>;
-    revokeMessageMutation: UseMutationResult<any, unknown, { messageCode: string }>;
+    updateMessageMutation: UseMutationResult<
+        ChatMessage,
+        unknown,
+        UpdateSocialChatMessagePayload
+    >;
+    revokeMessageMutation: UseMutationResult<
+        any,
+        unknown,
+        { messageCode: string }
+    >;
     replyingToMessage: ChatMessage | null;
     history: any;
     clearReplyingToMessage: () => void;
@@ -46,7 +72,11 @@ interface UseSocialChatHandlersProps {
     createTranslationMutation: any;
     setMessageTranslate: (text: string) => void;
     messageTranslate: string;
-    showToast: (message: string, duration?: number, type?: "success" | "error" | "warning") => void;
+    showToast: (
+        message: string,
+        duration?: number,
+        type?: "success" | "error" | "warning"
+    ) => void;
     t: (key: string) => string;
     recalc: () => void;
 }
@@ -56,7 +86,9 @@ export function useSocialChatHandlers({
     addPendingFiles,
     pendingImages,
     pendingFiles,
-    messageValue,
+    // chatPendingFiles,
+    clearPendingFiles,
+    // messageValue,
     setMessageValue,
     uploadImageMutation,
     removePendingImageByUrl,
@@ -82,10 +114,10 @@ export function useSocialChatHandlers({
     selectedLanguageSocialChat,
     createTranslationMutation,
     setMessageTranslate,
-    messageTranslate,
+    // messageTranslate,
     showToast,
     t,
-    recalc
+    recalc,
 }: UseSocialChatHandlersProps) {
     const currentUserId = useAuthStore.getState().user?.id;
     const sendMessageMutation = useSendSocialChatMessage({ roomId });
@@ -99,10 +131,16 @@ export function useSocialChatHandlers({
 
         if (matches && matches.length > 1) {
             const firstDomain = matches[0];
-            const restOfUrl = url.split(matches[0]).slice(1).join('').replace(/^\/+/, '');
+            const restOfUrl = url
+                .split(matches[0])
+                .slice(1)
+                .join("")
+                .replace(/^\/+/, "");
             let cleanedRest = restOfUrl;
-            matches.slice(1).forEach(duplicateDomain => {
-                cleanedRest = cleanedRest.replace(duplicateDomain + '/', '').replace(duplicateDomain, '');
+            matches.slice(1).forEach((duplicateDomain) => {
+                cleanedRest = cleanedRest
+                    .replace(duplicateDomain + "/", "")
+                    .replace(duplicateDomain, "");
             });
 
             return `${firstDomain}/${cleanedRest}`;
@@ -119,7 +157,9 @@ export function useSocialChatHandlers({
         for (const file of files) {
             if (file.size > MAX_IMAGE_SIZE) {
                 failedFiles.push(`${file.name} (>15MB)`);
-                useToastStore.getState().showToast(`${file.name} quá lớn (>15MB)`, 3000, "warning");
+                useToastStore
+                    .getState()
+                    .showToast(`${file.name} quá lớn (>15MB)`, 3000, "warning");
                 continue;
             }
             validFiles.push(file);
@@ -127,11 +167,13 @@ export function useSocialChatHandlers({
 
         if (validFiles.length === 0) {
             if (failedFiles.length > 0) {
-                useToastStore.getState().showToast(
-                    `${failedFiles.length} file thất bại: ${failedFiles.join(", ")}`,
-                    4000,
-                    "warning"
-                );
+                useToastStore
+                    .getState()
+                    .showToast(
+                        `${failedFiles.length} file thất bại: ${failedFiles.join(", ")}`,
+                        4000,
+                        "warning"
+                    );
             }
             return;
         }
@@ -154,9 +196,9 @@ export function useSocialChatHandlers({
                 createDate: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
                 localUrl: blobUrl,
                 serverUrl: undefined,
-                isUploading: true,                // ✅ Bắt đầu với uploading
-                isSending: false,                 // ✅ Chưa sending
-                uploadProgress: 0,                // ✅ 0% progress
+                isUploading: true,
+                isSending: false,
+                uploadProgress: 0,
             };
         });
 
@@ -187,7 +229,8 @@ export function useSocialChatHandlers({
             replyToMessageId: replyingToMessage?.id ?? null,
             replyToMessage: replyingToMessage ?? null,
             replyToMessageCode:
-                replyingToMessage?.code !== undefined && replyingToMessage?.code !== null
+                replyingToMessage?.code !== undefined &&
+                    replyingToMessage?.code !== null
                     ? String(replyingToMessage.code)
                     : null,
             isUploading: false,
@@ -196,7 +239,12 @@ export function useSocialChatHandlers({
         addMessage(finalMessage);
         setTimeout(() => scrollToBottom(), 100);
 
-        const uploadedFiles: { name: string; linkImage: string; localUrl: string; index: number }[] = [];
+        const uploadedFiles: {
+            name: string;
+            linkImage: string;
+            localUrl: string;
+            index: number;
+        }[] = [];
 
         try {
             setLoadingMessages(true);
@@ -211,7 +259,7 @@ export function useSocialChatHandlers({
                                 };
                             }
                             return att;
-                        })
+                        }),
                     });
 
                     const localUrl = localChatAttachments[index].fileUrl;
@@ -225,7 +273,7 @@ export function useSocialChatHandlers({
                             name: serverFile.name,
                             linkImage: serverUrl,
                             localUrl: localUrl,
-                            index: index
+                            index: index,
                         });
                         updateMessageWithServerResponse(tempId, {
                             chatAttachments: finalMessage.chatAttachments.map((att, i) => {
@@ -237,46 +285,50 @@ export function useSocialChatHandlers({
                                     };
                                 }
                                 return att;
-                            })
+                            }),
                         });
                         await new Promise<void>((resolve) => {
                             const preloadImage = new Image();
                             preloadImage.onload = () => {
                                 updateMessageWithServerResponse(tempId, {
-                                    chatAttachments: finalMessage.chatAttachments.map((att, i) => {
-                                        if (i === index) {
-                                            return {
-                                                ...att,
-                                                serverUrl: serverUrl,
-                                                isUploading: false, 
-                                                isSending: true,    
-                                                uploadProgress: 100,
-                                            };
+                                    chatAttachments: finalMessage.chatAttachments.map(
+                                        (att, i) => {
+                                            if (i === index) {
+                                                return {
+                                                    ...att,
+                                                    serverUrl: serverUrl,
+                                                    isUploading: false,
+                                                    isSending: true,
+                                                    uploadProgress: 100,
+                                                };
+                                            }
+                                            return att;
                                         }
-                                        return att;
-                                    })
+                                    ),
                                 });
                                 resolve();
                             };
 
                             preloadImage.onerror = () => {
                                 updateMessageWithServerResponse(tempId, {
-                                    chatAttachments: finalMessage.chatAttachments.map((att, i) => {
-                                        if (i === index) {
-                                            return {
-                                                ...att,
-                                                isUploading: false,
-                                                isSending: true,    
-                                                uploadProgress: 100,
-                                            };
+                                    chatAttachments: finalMessage.chatAttachments.map(
+                                        (att, i) => {
+                                            if (i === index) {
+                                                return {
+                                                    ...att,
+                                                    isUploading: false,
+                                                    isSending: true,
+                                                    uploadProgress: 100,
+                                                };
+                                            }
+                                            return att;
                                         }
-                                        return att;
-                                    })
+                                    ),
                                 });
                                 resolve();
                             };
 
-                            setTimeout(() => resolve(), 3000); 
+                            setTimeout(() => resolve(), 3000);
                             preloadImage.src = serverUrl;
                         });
                     } else {
@@ -291,7 +343,7 @@ export function useSocialChatHandlers({
                                     };
                                 }
                                 return att;
-                            })
+                            }),
                         });
                     }
                 } catch (e) {
@@ -306,7 +358,7 @@ export function useSocialChatHandlers({
                                 };
                             }
                             return att;
-                        })
+                        }),
                     });
                 }
             });
@@ -317,9 +369,10 @@ export function useSocialChatHandlers({
                 const payload: CreateSocialChatMessagePayload = {
                     chatCode: roomId || null,
                     messageText: "",
-                    files: uploadedFiles.map(f => ({ name: f.name })),
+                    files: uploadedFiles.map((f) => ({ name: f.name })),
                     replyToMessageCode:
-                        replyingToMessage?.code !== undefined && replyingToMessage?.code !== null
+                        replyingToMessage?.code !== undefined &&
+                            replyingToMessage?.code !== null
                             ? String(replyingToMessage.code)
                             : null,
                     tempId,
@@ -333,7 +386,9 @@ export function useSocialChatHandlers({
                             messageText: serverMsg.messageText,
                             createDate: serverMsg.createDate,
                             timeStamp: serverMsg.createDate
-                                ? generatePreciseTimestampFromDate(new Date(serverMsg.createDate))
+                                ? generatePreciseTimestampFromDate(
+                                    new Date(serverMsg.createDate)
+                                )
                                 : finalMessage.timeStamp,
                             messageType: serverMsg.messageType,
                             senderType: serverMsg.senderType,
@@ -365,7 +420,7 @@ export function useSocialChatHandlers({
                                         uploadProgress: 100,
                                     };
                                 })
-                                : finalMessage.chatAttachments.map(att => ({
+                                : finalMessage.chatAttachments.map((att) => ({
                                     ...att,
                                     isSending: false,
                                     isUploading: false,
@@ -375,58 +430,64 @@ export function useSocialChatHandlers({
                         });
                         if (serverMsg.userHasRead && serverMsg.userHasRead.length > 1) {
                             updateOldMessagesWithReadStatus(
-                                roomId, 
-                                serverMsg.userHasRead, 
+                                roomId,
+                                serverMsg.userHasRead,
                                 finalMessage.userId
                             );
                         }
-                        
                     }
                 } catch (e) {
-                    console.error('Send message failed:', e);
+                    console.error("Send message failed:", e);
                     updateMessageWithServerResponse(tempId, {
                         isError: true,
                         isSend: false,
-                        chatAttachments: finalMessage.chatAttachments.map(att => ({
+                        chatAttachments: finalMessage.chatAttachments.map((att) => ({
                             ...att,
                             isSending: false,
                             isError: true,
                         })),
-                        messageText: "Gửi tin nhắn thất bại"
+                        messageText: "Gửi tin nhắn thất bại",
                     });
-                    useToastStore.getState().showToast("Gửi tin nhắn thất bại", 3000, "error");
+                    useToastStore
+                        .getState()
+                        .showToast("Gửi tin nhắn thất bại", 3000, "error");
                 }
             }
         } catch (error) {
-            console.error('Upload process failed:', error);
+            console.error("Upload process failed:", error);
             updateMessageWithServerResponse(tempId, {
                 isError: true,
                 isSend: false,
-                chatAttachments: finalMessage.chatAttachments.map(att => ({
+                chatAttachments: finalMessage.chatAttachments.map((att) => ({
                     ...att,
                     isSending: false,
                     isUploading: false,
                     isError: true,
                 })),
-                messageText: "Upload thất bại"
+                messageText: "Upload thất bại",
             });
         } finally {
             setLoadingMessages(false);
         }
 
         if (failedFiles.length > 0) {
-            useToastStore.getState().showToast(
-                `${failedFiles.length} file thất bại: ${failedFiles.join(", ")}`,
-                4000,
-                "warning"
-            );
+            useToastStore
+                .getState()
+                .showToast(
+                    `${failedFiles.length} file thất bại: ${failedFiles.join(", ")}`,
+                    4000,
+                    "warning"
+                );
         }
 
         setTimeout(() => scrollToBottom(), 100);
     };
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files ?? []);
-        if (files.length === 0) {e.target.value = ""; return;}
+        if (files.length === 0) {
+            e.target.value = "";
+            return;
+        }
         const isImageFile = (f: File) =>
             (f.type && f.type.startsWith("image/")) ||
             /\.(jpeg|png|gif|webp|svg|heic|heif)$/i.test(f.name);
@@ -434,18 +495,20 @@ export function useSocialChatHandlers({
         const invalidFiles = files.filter((f) => !isImageFile(f));
         if (invalidFiles.length > 0) {
             showToast(
-                `${invalidFiles.length} file không phải ảnh: ${invalidFiles.map(f => f.name).join(", ")}`,
+                `${invalidFiles.length} file không phải ảnh: ${invalidFiles
+                    .map((f) => f.name)
+                    .join(", ")}`,
                 4000,
                 "warning"
             );
-            return
+            return;
         }
         await sendPickedFiles(files);
         if (imageFiles.length === 0) {
             e.target.value = "";
             return;
         }
-    }
+    };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -453,11 +516,13 @@ export function useSocialChatHandlers({
         const totalCount = pendingFiles.length + pendingImages.length;
         const selectedCount = files.length;
         if (totalCount + selectedCount > 3) {
-            useToastStore.getState().showToast(
-                i18n.t("You can only send up to 3 images and files in total!"),
-                2000,
-                "warning"
-            );
+            useToastStore
+                .getState()
+                .showToast(
+                    t("You can only send up to 3 images and files in total!"),
+                    2000,
+                    "warning"
+                );
             e.target.value = "";
             return;
         }
@@ -472,233 +537,305 @@ export function useSocialChatHandlers({
         e.target.value = "";
     };
 
-    const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent, field: string, force?: boolean,) => {
+    const handleSendMessage = async (
+        e: React.KeyboardEvent | React.MouseEvent,
+        field: string,
+        force?: boolean,
+        messageValue?: string,
+        messageTranslate?: string,
+        chatPendingFiles?: PendingFile[]
+    ) => {
         e.preventDefault();
 
-        const isEmptyText = (text: string | null | undefined): boolean => {
-            if (!text) return true;
-            const trimmedText = text.replace(/\s+/g, '');
-            return trimmedText.length === 0 ||
-                trimmedText === '' ||
-                /^[\s\u200B\u2060\uFEFF]*$/g.test(text);
-        };
-        const hasMessage = !isEmptyText(messageValue) || !isEmptyText(messageTranslate);
-        const hasFiles = pendingImages.length > 0 || pendingFiles.length > 0;
+        const hasMessage =
+            !isEmptyText(messageValue) || !isEmptyText(messageTranslate);
+        const hasFiles = (chatPendingFiles ?? []).length > 0;
         if (!hasMessage && !hasFiles) {
             return;
         }
         if (hasReachedLimit) {
-            useToastStore.getState().showToast(
-                i18n.t("You have reached the message limit for this chat."),
-                2000,
-                "warning"
-            );
+            useToastStore
+                .getState()
+                .showToast(
+                    t("You have reached the message limit for this chat."),
+                    2000,
+                    "warning"
+                );
             return;
         }
-        const textToSend = field === "inputTranslate" ? messageTranslate.trim() : messageValue.trim();
-        if (isEmptyText(textToSend) && !hasFiles) { return }
+        const textToSend =
+            field === "inputTranslate"
+                ? (messageTranslate ?? "").trim()
+                : (messageValue ?? "").trim();
+        if (isEmptyText(textToSend) && !hasFiles) {
+            return;
+        }
         const tempId = `temp_${Date.now()}_${Math.random()}`;
         const now = dayjs.utc();
-        const filesArr = [
-            ...pendingFiles.map(f => ({ name: f.name })),
-            ...pendingImages.map((img, idx) => ({ name: typeof img === "string" ? img.split("/").pop() || `image_${idx}` : `image_${idx}` }))
-        ];
-        const payload: CreateSocialChatMessagePayload = {
-            chatCode: roomId || null,
-            messageText: textToSend,
-            files: filesArr,
-            replyToMessageCode: replyingToMessage?.code !== undefined && replyingToMessage?.code !== null ? String(replyingToMessage.code) : null,
-            tempId: tempId,
-        };
+        const filesArr = (chatPendingFiles ?? [])
+            .filter((f) => !f.isUploading && !f.error && f.serverName)
+            .map((f) => ({ name: f.serverName! }));
+        const hasMessAndFiles = !isEmptyText(textToSend) && hasFiles;
+        const payloads: CreateSocialChatMessagePayload[] = [];
+        if (hasMessAndFiles) {
+            // Payload 1: text
+            payloads.push({
+                chatCode: roomId || null,
+                messageText: textToSend,
+                files: [],
+                replyToMessageCode:
+                    replyingToMessage?.code != null
+                        ? String(replyingToMessage.code)
+                        : null,
+                tempId: `temp_text_${Date.now()}_${Math.random()}`,
+            });
+
+            payloads.push({
+                chatCode: roomId || null,
+                messageText: "",
+                files: filesArr,
+                replyToMessageCode: null, 
+                tempId: `temp_file_${Date.now()}_${Math.random()}`,
+            });
+        } else {
+            payloads.push({
+                chatCode: roomId || null,
+                messageText: textToSend,
+                files: filesArr,
+                replyToMessageCode:
+                    replyingToMessage?.code != null
+                        ? String(replyingToMessage.code)
+                        : null,
+                tempId: `temp_${Date.now()}_${Math.random()}`,
+            });
+        }
+
         clearReplyingToMessage();
-
-        const pendingMsg: ChatMessage = {
-            id: 1,
-            tempId: tempId,
-            messageText: textToSend,
-            messageType: 1,
-            senderType: 1,
-            userId: currentUserId ?? 0,
-            userName: "currentUserName",
-            userAvatar: "currentUserAvatar",
-            createDate: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
-            timeStamp: generatePreciseTimestampFromDate(now.toDate()),
-            chatInfoId: 1,
-            code: roomId || "",
-            status: 10,
-            attachments: pendingImages.map(file => {
-                if (typeof file === "string") {
-                    return {
-                        fileUrl: file,
-                        fileName: "",
-                        fileType: 1,
-                    };
-                } else {
-                    return {
-                        fileUrl: URL.createObjectURL(file),
+        const pendingMessages: ChatMessage[] = [];
+        for (let i = 0; i < payloads.length; i++) {
+            const payload:any = payloads[i];
+            const isTextMessage = payload.messageText !== "";
+            const isFileMessage = payload.files.length > 0;
+            const pendingMsg: ChatMessage = {
+                id: 1,
+                tempId: payload.tempId,
+                messageText: payload.messageText,
+                messageType: 1,
+                senderType: 1,
+                userId: currentUserId ?? 0,
+                userName: "currentUserName",
+                userAvatar: "currentUserAvatar",
+                createDate: now.add(i, "millisecond").format("YYYY-MM-DDTHH:mm:ss.SSS"),
+                timeStamp: generatePreciseTimestampFromDate(
+                    now.add(i, "millisecond").toDate()
+                ),
+                chatInfoId: 1,
+                code: payload.tempId || "",
+                status: 10,
+                isSend: false,
+                isError: false,
+                hasAttachment: isFileMessage ? 1 : 0,
+                isRead: 0,
+                isRevoked: 0,
+                isEdited: 0,
+                chatAttachments: isFileMessage
+                    ? (chatPendingFiles ?? []).map((file, index) => ({
+                        id: -index - 1,
+                        chatMessageId: -1,
+                        fileUrl: file.url || "",
                         fileName: file.name,
-                        fileType: 1,
-                    };
-                }
-            }),
-            isSend: false,
-            isError: false,
-            hasAttachment: pendingImages.length > 0 ? 1 : 0,
-            isRead: 0,
-            isRevoked: 0,
-            isEdited: 0,
-            chatAttachments: [],
-            chatInfo: null,
-            reactions: [],
-            replyToMessageId: replyingToMessage?.id || null,
-            replyToMessage: replyingToMessage ?? null,
-            replyToMessageCode: replyingToMessage?.code !== undefined && replyingToMessage?.code !== null ? String(replyingToMessage.code) : null
-        };
+                        fileType:
+                            file.type === "image" ? 1 : file.type === "video" ? 2 : 3,
+                        fileSize: file?.file?.size ?? 0,
+                        createDate: new Date().toISOString(),
+                        isUploading: true,
+                        isError: false,
+                        localUrl: file.url,
+                    }))
+                    : [],
+                chatInfo: null,
+                reactions: [],
+                replyToMessageId: i === 0 ? replyingToMessage?.id || null : null,
+                replyToMessage: i === 0 ? replyingToMessage ?? null : null,
+                replyToMessageCode: i === 0 ? payload.replyToMessageCode : null,
+            };
+            pendingMessages.push(pendingMsg);
+            addMessage(pendingMsg);
+        }
 
-        addMessage(pendingMsg);
-        setMessageValue('');
-        setMessageTranslate('');
+        setMessageValue("");
+        setMessageTranslate("");
         scrollToBottom();
+        clearPendingFiles();
+        const apiPromises: Promise<any>[] = [];
 
+        for (let i = 0; i < payloads.length; i++) {
+            const payload:any = payloads[i];
+            const pendingMsg = pendingMessages[i];
+            const isFileMessage = payload?.files?.length > 0;
+
+            const apiCall = async () => {
+                if (isFileMessage && hasMessAndFiles) {
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                }
+
+                try {
+                    const serverMsg = await sendMessageMutation.mutateAsync(payload);
+
+                    if (serverMsg) {
+                        updateMessageWithServerResponse(payload.tempId, {
+                            id: serverMsg.id,
+                            code: serverMsg.code,
+                            messageText: serverMsg.messageText,
+                            createDate: serverMsg.createDate,
+                            timeStamp: serverMsg.createDate
+                                ? generatePreciseTimestampFromDate(
+                                    new Date(serverMsg.createDate)
+                                )
+                                : pendingMsg.timeStamp,
+                            messageType: serverMsg.messageType,
+                            senderType: serverMsg.senderType,
+                            replyToMessageId: serverMsg.replyToMessageId,
+                            replyToMessageCode: serverMsg.replyToMessageCode,
+                            replyToMessage: serverMsg.replyToMessage || null,
+                            status: serverMsg.status,
+                            chatInfoId: serverMsg.chatInfoId,
+                            userName: serverMsg.userName,
+                            userAvatar: serverMsg.userAvatar,
+                            hasAttachment: serverMsg.hasAttachment,
+                            isRead: serverMsg.isRead,
+                            userHasRead: serverMsg.userHasRead || [],
+                            chatAttachments:
+                                serverMsg.chatAttachments?.length > 0
+                                    ? serverMsg.chatAttachments.map((att: any) => ({
+                                        fileUrl: att.fileUrl,
+                                        fileName: att.fileName,
+                                        fileType: att.fileType,
+                                        createDate: att.createDate,
+                                    }))
+                                    : pendingMsg.chatAttachments,
+                            isSend: true,
+                            isError: false,
+                        });
+
+                        if (serverMsg.userHasRead && serverMsg.userHasRead.length > 1) {
+                            updateOldMessagesWithReadStatus(
+                                roomId,
+                                serverMsg.userHasRead,
+                                pendingMsg.userId
+                            );
+                        }
+                    }
+                } catch (error) {
+                    console.error("Send message failed:", error);
+                    updateMessageByTempId({
+                        ...pendingMsg,
+                        isError: true,
+                        isSend: false,
+                    });
+                }
+            };
+
+            apiPromises.push(apiCall());
+        }
 
         try {
             setLoadingMessages(true);
-            const serverMsg = await sendMessageMutation.mutateAsync(payload);
+            await Promise.allSettled(apiPromises);
 
-            if (serverMsg) {
-                console.log('Server response userHasRead:', serverMsg.userHasRead);
-                updateMessageWithServerResponse(tempId, {
-                    id: serverMsg.id,
-                    code: serverMsg.code,
-                    messageText: serverMsg.messageText,
-                    createDate: serverMsg.createDate,
-                    timeStamp: serverMsg.createDate ?
-                        generatePreciseTimestampFromDate(new Date(serverMsg.createDate)) :
-                        pendingMsg.timeStamp,
-                    messageType: serverMsg.messageType,
-                    senderType: serverMsg.senderType,
-                    replyToMessageId: serverMsg.replyToMessageId,
-                    replyToMessageCode: serverMsg.replyToMessageCode,
-                    replyToMessage: serverMsg.replyToMessage || null,
-                    status: serverMsg.status,
-                    chatInfoId: serverMsg.chatInfoId,
-                    userName: serverMsg.userName,
-                    userAvatar: serverMsg.userAvatar,
-                    hasAttachment: serverMsg.hasAttachment,
-                    isRead: serverMsg.isRead,
-                    userHasRead: serverMsg.userHasRead || [],
-                    attachments: serverMsg.chatAttachments?.length > 0 ?
-                        serverMsg.chatAttachments.map((att: any) => ({
-                            fileUrl: att.fileUrl,
-                            fileName: att.fileName,
-                            fileType: att.fileType,
-                            createDate: att.createDate,
-                        })) : pendingMsg.attachments,
-                    isSend: true,
-                    isError: false,
-                });
-                
-                if (serverMsg.userHasRead && serverMsg.userHasRead.length > 1) {
-                    updateOldMessagesWithReadStatus(
-                        roomId, 
-                        serverMsg.userHasRead, 
-                        pendingMsg.userId
-                    );
-                }
-                
-                setLoadingMessages(false);
+            if ((chatPendingFiles?.length ?? 0) > 0) {
+                clearPendingFiles();
             }
-
-        } catch (error) {
-            console.error('Send message failed:', error);
-            updateMessageByTempId({
-                ...pendingMsg,
-                isError: true,
-                isSend: false
-            });
+        } finally {
             setLoadingMessages(false);
         }
-        
+
         scrollToBottom();
     };
 
-    const handleScrollWithLoadMore = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-        onContainerScroll?.(e);
-        recalc();
-        const target = e.target as HTMLDivElement;
-        const { scrollTop, scrollHeight, clientHeight } = target;
+    const handleScrollWithLoadMore = useCallback(
+        (e: React.UIEvent<HTMLDivElement>) => {
+            onContainerScroll?.(e);
+            recalc();
+            const target = e.target as HTMLDivElement;
+            const { scrollTop, scrollHeight, clientHeight } = target;
 
+            if (scrollTop < 100 && hasNextPage && !isFetchingNextPage) {
+                const currentScrollHeight = scrollHeight;
 
-
-        if (scrollTop < 100 && hasNextPage && !isFetchingNextPage) {
-            const currentScrollHeight = scrollHeight;
-
-            fetchNextPage()
-                .then(() => {
-                    requestAnimationFrame(() => {
-                        const newScrollHeight = target.scrollHeight;
-                        const heightDifference = newScrollHeight - currentScrollHeight;
-                        target.scrollTop = scrollTop + heightDifference;
+                fetchNextPage()
+                    .then(() => {
+                        requestAnimationFrame(() => {
+                            const newScrollHeight = target.scrollHeight;
+                            const heightDifference = newScrollHeight - currentScrollHeight;
+                            target.scrollTop = scrollTop + heightDifference;
+                        });
+                    })
+                    .catch((error) => {
+                        console.error("Error fetching next page:", error);
                     });
-                })
-                .catch((error) => {
-                    console.error("Error fetching next page:", error);
-                });
-        }
-    }, [onContainerScroll, hasNextPage, isFetchingNextPage, fetchNextPage, recalc]);
-
-    const handleEditMessage = useCallback(async (messageCode: string | number, newText: string) => {
-        try {
-            updateMessageByCode(String(messageCode), {
-                messageText: newText,
-                isEdited: 1,
-            });
-            await updateMessageMutation.mutateAsync({
-                messageCode: String(messageCode),
-                messageText: newText
-            });
-        } catch (error) {
-            console.error("Edit message failed:", error);
-            const originalMessage = displayMessages.find(msg =>
-                msg.code === String(messageCode) || msg.id === messageCode
-            );
-            if (originalMessage) {
-                updateMessageByCode(String(messageCode), {
-                    messageText: originalMessage.messageText,
-                    isEdited: originalMessage.isEdited || 0,
-                });
             }
-        }
-    }, [updateMessageByCode, updateMessageMutation, displayMessages]);
+        },
+        [onContainerScroll, hasNextPage, isFetchingNextPage, fetchNextPage, recalc]
+    );
 
-    const handleRevokeMessage = useCallback(async (messageCode: string | number) => {
-        try {
-            updateMessageByCode(String(messageCode), {
-                isRevoked: 1,
-                messageText: "",
-            });
-
-            await revokeMessageMutation.mutateAsync({
-                messageCode: String(messageCode)
-            });
-
-        } catch (error) {
-            console.error("Revoke message failed:", error);
-            const originalMessage = displayMessages.find(msg =>
-                msg.code === String(messageCode) || msg.id === messageCode
-            );
-            if (originalMessage) {
+    const handleEditMessage = useCallback(
+        async (messageCode: string | number, newText: string) => {
+            try {
                 updateMessageByCode(String(messageCode), {
-                    isRevoked: originalMessage.isRevoked || 0,
-                    messageText: originalMessage.messageText
+                    messageText: newText,
+                    isEdited: 1,
                 });
+                await updateMessageMutation.mutateAsync({
+                    messageCode: String(messageCode),
+                    messageText: newText,
+                });
+            } catch (error) {
+                console.error("Edit message failed:", error);
+                const originalMessage = displayMessages.find(
+                    (msg) => msg.code === String(messageCode) || msg.id === messageCode
+                );
+                if (originalMessage) {
+                    updateMessageByCode(String(messageCode), {
+                        messageText: originalMessage.messageText,
+                        isEdited: originalMessage.isEdited || 0,
+                    });
+                }
             }
-        }
-    }, [updateMessageByCode, revokeMessageMutation, displayMessages]);
+        },
+        [updateMessageByCode, updateMessageMutation, displayMessages]
+    );
+
+    const handleRevokeMessage = useCallback(
+        async (messageCode: string | number) => {
+            try {
+                updateMessageByCode(String(messageCode), {
+                    isRevoked: 1,
+                    messageText: "",
+                });
+
+                await revokeMessageMutation.mutateAsync({
+                    messageCode: String(messageCode),
+                });
+            } catch (error) {
+                console.error("Revoke message failed:", error);
+                const originalMessage = displayMessages.find(
+                    (msg) => msg.code === String(messageCode) || msg.id === messageCode
+                );
+                if (originalMessage) {
+                    updateMessageByCode(String(messageCode), {
+                        isRevoked: originalMessage.isRevoked || 0,
+                        messageText: originalMessage.messageText,
+                    });
+                }
+            }
+        },
+        [updateMessageByCode, revokeMessageMutation, displayMessages]
+    );
     const handleTakePhoto = () => {
         localStorage.setItem("roomId", roomId);
-        history.push("/social-chat/camera")
-    }
+        history.push("/social-chat/camera");
+    };
     const handleTranslate = useCallback(
         async (text: string) => {
             if (!text?.trim()) return;
@@ -731,7 +868,13 @@ export function useSocialChatHandlers({
                 console.error("Translation failed:", err);
             }
         },
-        [selectedLanguageSocialChat?.id, createTranslationMutation, showToast, t, setMessageTranslate]
+        [
+            selectedLanguageSocialChat?.id,
+            createTranslationMutation,
+            showToast,
+            t,
+            setMessageTranslate,
+        ]
     );
     return {
         handleImageChange,

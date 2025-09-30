@@ -6,6 +6,7 @@ import { TopicType } from "@/constants/topicType";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRefresh } from "@/contexts/RefreshContext";
 import HomeIcon from "@/icons/logo/footer/home.svg?react";
 import HomeActiveIcon from "@/icons/logo/footer/home_active.svg?react";
 import ChatIcon from "@/icons/logo/footer/chat.svg?react";
@@ -36,6 +37,7 @@ const BottomTabBar: React.FC = () => {
     const history = useHistory();
     const [keyboardOpen, setKeyboardOpen] = useState(false);
     const { keyboardResizeScreen } = useKeyboardResize();
+    const { triggerRefresh } = useRefresh();
 
     const tabs: TabItem[] = [
         {
@@ -106,6 +108,25 @@ const BottomTabBar: React.FC = () => {
         useSignalRStreamStore.getState().clearAllStreams();
     };
 
+    const isCurrentTab = (tab: TabItem) => {
+        return typeof tab.activePath === "function"
+            ? tab.activePath(location.pathname)
+            : location.pathname === tab.activePath;
+    };
+
+    const handleTabClick = (tab: TabItem) => {
+        const isActive = isCurrentTab(tab);
+        const isExactPath = location.pathname === tab.path;
+        
+        if (isActive && isExactPath) {
+            triggerRefresh(tab.path);
+        } else {
+            clearAll();
+            history.push(tab.path);
+            useChatStore.getState().setIsSending(false);
+        }
+    };
+
     useEffect(() => {
         let initialHeight = window.innerHeight;
 
@@ -170,19 +191,12 @@ const BottomTabBar: React.FC = () => {
                     className="fixed bottom-0 left-0 right-0 bg-white shadow-[0px_-3px_10px_0px_#0000000D] flex justify-between items-center px-8 z-[101] rounded-t-3xl h-[60px]"
                 >
                     {tabs.map((tab) => {
-                        const isActive =
-                            typeof tab.activePath === "function"
-                                ? tab.activePath(location.pathname)
-                                : location.pathname === tab.activePath;
+                        const isActive = isCurrentTab(tab);
                         const Icon = isActive ? tab.iconActive : tab.icon;
                         return (
                             <button
                                 key={tab.label}
-                                onClick={() => {
-                                    clearAll();
-                                    history.push(tab.path);
-                                    useChatStore.getState().setIsSending(false);
-                                }}
+                                onClick={() => handleTabClick(tab)}
                                 className={`flex flex-col items-center  justify-end text-sm ${tab.className} ${isActive ? "text-main" : "text-black"}`}
                             >
                                 <Icon className={tab.classNameIcon} />

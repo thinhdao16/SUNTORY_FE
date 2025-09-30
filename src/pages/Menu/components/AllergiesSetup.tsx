@@ -215,7 +215,7 @@ const AllergiesSetup: React.FC = () => {
                                     }}
                                 />
                                 <IonButton slot="end" fill="clear" onClick={addAllergy} aria-label="Add allergy">
-                                    <IonIcon icon={paperPlaneOutline} className="text-gray-700" style={{ color: isIconSendStyle }} />
+                                    <IonIcon icon={paperPlaneOutline} className="text-black h-5 w-5" style={{ color: isIconSendStyle }} />
                                 </IonButton>
                             </IonItem>
 

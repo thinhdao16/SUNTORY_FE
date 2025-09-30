@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, forwardRef } from 'react';
 import { SocialPost } from '@/types/social-feed';
 import { SocialFeedCard } from '@/pages/Social/Feed/components/SocialFeedCard';
 
@@ -16,7 +16,7 @@ interface PostsListProps {
   onVisiblePostsChange?: (postCodes: string[]) => void;
 }
 
-export const PostsList: React.FC<PostsListProps> = ({
+export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
   posts,
   hasNextPage,
   isFetchingNextPage,
@@ -28,7 +28,7 @@ export const PostsList: React.FC<PostsListProps> = ({
   onRepost,
   onPostClick,
   onVisiblePostsChange
-}) => {
+}, ref) => {
   const lastPostElementRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
@@ -118,7 +118,12 @@ export const PostsList: React.FC<PostsListProps> = ({
     }
   }, []);
   return (
-    <div className="flex-1 overflow-x-hidden overflow-y-auto scrollbar-thin min-h-0 max-h-[calc(100vh-150px)] pb-32">
+    <div 
+      ref={ref}
+      // className="flex-1 overflow-x-hidden overflow-y-auto scrollbar-thin min-h-0 max-h-[calc(100vh-150px)] pb-32"
+      className="min-h-0 pb-32"
+
+    >
       {posts.map((post, index) => {
         const isLastPost = index === posts.length - 1;
         
@@ -141,4 +146,6 @@ export const PostsList: React.FC<PostsListProps> = ({
       })}
     </div>
   );
-};
+});
+
+PostsList.displayName = 'PostsList';

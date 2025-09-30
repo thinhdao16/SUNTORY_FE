@@ -46,7 +46,6 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
     const [isSaving, setIsSaving] = useState(false);
     const healthMasterData = useHealthMasterDataStore((state) => state.masterData);
     const { refetch } = useAuthInfo();
-    console.log('healthConditions', savedHealthConditions);
     const showToast = useToastStore.getState().showToast;
     // Mock data - sẽ được thay thế bằng data thật sau
     const mockHealthConditions: HealthConditionItem[] = [
@@ -282,7 +281,7 @@ const HealthConditionUpdateModal: React.FC<HealthConditionUpdateModalProps> = ({
                                                 }}
                                             />
                                             <IonButton slot="end" fill="clear" onClick={addAllHealthConditions} aria-label="Add health condition">
-                                                <IonIcon icon={paperPlaneOutline} className="text-gray-700" style={{ color: isIconSendStyle }} />
+                                                <IonIcon icon={paperPlaneOutline} className="text-gray-700 h-5 w-5" style={{ color: isIconSendStyle }} />
                                             </IonButton>
                                         </IonItem>
 

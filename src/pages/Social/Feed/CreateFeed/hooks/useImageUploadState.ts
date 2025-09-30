@@ -81,6 +81,14 @@ export const useImageUploadState = () => {
     }, []);
 
 
+    const reorderImages = useCallback((newImages: ImageItem[]) => {
+        setImages(newImages);
+        // Update the manager's internal order as well
+        if (imageUploadManager.current) {
+            imageUploadManager.current.reorderImages(newImages);
+        }
+    }, []);
+
     const clearImages = useCallback(() => {
         images.forEach(img => URL.revokeObjectURL(img.localUrl));
         setImages([]);
@@ -95,6 +103,7 @@ export const useImageUploadState = () => {
         addImages,
         addAudioItem,
         removeImage,
+        reorderImages,
         clearImages,
         imageUploadManager: imageUploadManager.current
     };

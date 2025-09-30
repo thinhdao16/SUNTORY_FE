@@ -55,6 +55,17 @@ const Chat: React.FC = () => {
     const history = useHistory();
     const queryClient = useQueryClient();
 
+    // Ensure sessionId is a string
+    const sessionIdString = useMemo(() => {
+        if (typeof sessionId === 'string') {
+            return sessionId;
+        } else if (sessionId && typeof sessionId === 'object') {
+            // If sessionId is somehow an object, try to extract string value
+            return String(sessionId);
+        }
+        return sessionId;
+    }, [sessionId]);
+
     // ==== Device & Platform ====
     const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
     const isNative = Capacitor.isNativePlatform();
@@ -111,13 +122,29 @@ const Chat: React.FC = () => {
     const addStreamChunk = useSignalRStreamStore((state) => state.addStreamChunk);
     const { loadingStream } = useSignalRStreamStore()
     const completedMessages = useMemo(() => {
-        if (!sessionId) return [];
-        return rawCompleted.filter((msg: any) => msg.chatCode === sessionId);
-    }, [rawCompleted, sessionId]);
+        if (!sessionIdString) return [];
+        return rawCompleted.filter((msg: any) => msg.chatCode === sessionIdString);
+    }, [rawCompleted, sessionIdString]);
+    
+    // Track active streams for current session
+    const activeStreamsCount = useMemo(() => {
+        return signalRMessages.filter(msg =>
+            msg.chatCode === sessionIdString &&
+            msg.isStreaming &&
+            !msg.isComplete
+        ).length;
+    }, [signalRMessages, sessionIdString]);
+    
+    // Log active streams count for monitoring
+    useEffect(() => {
+        if (activeStreamsCount > 0) {
+            console.log(`[ChatStream] ${activeStreamsCount} active streams for session ${sessionIdString}`);
+        }
+    }, [activeStreamsCount, sessionIdString]);
 
     const signalRMessagesBackUp = useMemo(() =>
-        allSignalRMessages.filter((msg: any) => msg.chatInfo?.code === sessionId || msg.code === sessionId),
-        [allSignalRMessages, sessionId]
+        allSignalRMessages.filter((msg: any) => msg.chatInfo?.code === sessionIdString || msg.code === sessionIdString),
+        [allSignalRMessages, sessionIdString]
     );
     const dataBackUpMap = useMemo<Record<string, StreamMsg>>(() => {
         return signalRMessagesBackUp.reduce((acc: any, msg: any) => {
@@ -152,7 +179,7 @@ const Chat: React.FC = () => {
     const anActivate = topicType === TopicType.MedicalSupport || topicType === TopicType.DocumentTranslation || topicType === TopicType.FoodDiscovery;
     // ==== Hooks: Chat & Message ====
     // useSignalRChat(deviceInfo.deviceId || "");
-    useSignalRStream(deviceInfo.deviceId || "", {
+    useSignalRStream(deviceInfo.deviceId || "", sessionIdString, {
         logLevel: 0,
     });
         const uploadImageMutation = useUploadChatFile();
@@ -169,17 +196,17 @@ const Chat: React.FC = () => {
         scrollToBottom,
         messageValue,
         setMessageValue,
-    } = useChatStreamMessages(messageRef, messagesEndRef, messagesContainerRef, sessionId, false, isOnline, recalc);
+    } = useChatStreamMessages(messageRef, messagesEndRef, messagesContainerRef, sessionIdString, false, isOnline, recalc);
 
 
 
 
     const shouldFetchHistory = useMemo(() => {
-        if (sessionId) {
+        if (sessionIdString) {
             return false;
         }
         return true;
-    }, [sessionId]);
+    }, [sessionIdString]);
 
     const { chatHistory, isLoading: isLoadingHistory } = useChatHistoryLastModule(
         parseInt(type || "0", 10),
@@ -197,7 +224,7 @@ const Chat: React.FC = () => {
         setSignalRMessages: () => { },
         clearAll,
         history,
-        sessionId,
+        sessionId: sessionIdString,
         topicType: topicType !== undefined ? String(topicType) : "",
         pendingImages,
         pendingFiles,
@@ -238,6 +265,23 @@ const Chat: React.FC = () => {
             return true;
         });
     }, [signalRMessages, pendingMessages, pendingImages, pendingFiles, signalRMessagesBackUp, messages, completedMessages, dataBackUpMap]);
+
+    // Debug logging for sessionId and message flow tracking
+    useEffect(() => {
+        console.log('[ChatStream] Component state for session:', sessionIdString || 'undefined', {
+            sessionIdFromParams: sessionId,
+            sessionIdString: sessionIdString,
+            sessionIdType: typeof sessionId,
+            signalRMessages: signalRMessages.length,
+            completedMessages: completedMessages.length,
+            mergedMessages: mergedMessages.length,
+            pendingMessages: pendingMessages.length,
+            activeStreamsCount,
+            sessionStreams: signalRMessages.filter(msg => msg.chatCode === sessionIdString).length,
+            urlPath: window.location.pathname
+        });
+    }, [signalRMessages, completedMessages, mergedMessages, pendingMessages, sessionId, sessionIdString, activeStreamsCount]);
+
 
     const { retryMessage } = useMessageRetry(
         handleSendMessage,
@@ -281,11 +325,29 @@ const Chat: React.FC = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
     }, []);
 
+    const forceScrollToBottomSmooth = useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, []);
+
     const autoScrollIfNeeded = useCallback(() => {
         if (!showScrollButton) {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }
     }, [showScrollButton]);
+
+    // Force re-render when new SignalR data arrives for current session
+    useEffect(() => {
+        const currentSessionMessages = signalRMessages.filter(msg => msg.chatCode === sessionIdString);
+        if (currentSessionMessages.length > 0) {
+            console.log(`[ChatStream] Force re-render: ${currentSessionMessages.length} SignalR messages for session ${sessionIdString}`);
+
+            // Trigger scroll to bottom for new messages if not showing scroll button
+            if (!showScrollButton) {
+                setTimeout(forceScrollToBottomSmooth, 100);
+            }
+        }
+    }, [signalRMessages, sessionIdString, showScrollButton, forceScrollToBottomSmooth]);
+
     // ==== Lifecycle Effects ====
 
     // useEffect(() => {
@@ -299,15 +361,64 @@ const Chat: React.FC = () => {
         if (!isValidTopicType) history.push("/home");
     }, [isValidTopicType, history]);
 
+    // Debug sessionId changes
     useEffect(() => {
-        if (prevSessionIdRef.current !== sessionId) {
-            initialAutoScrollRef.current = true;
-            prevSessionIdRef.current = sessionId;
+        console.log('[ChatStream] SessionId from useParams changed:', {
+            sessionId: sessionId || 'undefined',
+            sessionIdType: typeof sessionId,
+            sessionIdValue: sessionId,
+            type: type || 'undefined',
+            urlPath: window.location.pathname,
+            timestamp: new Date().toISOString()
+        });
+    }, [sessionId, type]);
+
+    // Clear stale streams on component mount
+    useEffect(() => {
+        if (!sessionIdString) {
+            console.log('[ChatStream] SessionIdString not available yet, skipping stale stream cleanup');
+            return;
         }
-    }, [sessionId]);
+
+        const allStreams = Object.values(useSignalRStreamStore.getState().streamMessages);
+        const staleStreams = allStreams.filter(stream => {
+            const isStale = Date.now() - new Date(stream.startTime).getTime() > 5 * 60 * 1000; // > 5 minutes
+            const isDifferentSession = stream.chatCode !== sessionIdString;
+            return isStale || isDifferentSession;
+        });
+
+        if (staleStreams.length > 0) {
+            console.log(`[ChatStream] Clearing ${staleStreams.length} stale streams on mount`);
+            staleStreams.forEach(stream => {
+                useSignalRStreamStore.getState().clearStream(stream.messageCode);
+            });
+        }
+    }, [sessionIdString]); // Only run when sessionIdString changes
 
     useEffect(() => {
-        if (!sessionId) return;
+        if (prevSessionIdRef.current !== sessionIdString) {
+            console.log(`[ChatStream] Session changed: ${prevSessionIdRef.current} → ${sessionIdString}`);
+
+            // Clear streams from previous session to prevent conflicts
+            if (prevSessionIdRef.current) {
+                const prevSessionStreams = signalRMessages.filter(msg =>
+                    msg.chatCode === prevSessionIdRef.current
+                );
+                console.log(`[ChatStream] Clearing ${prevSessionStreams.length} streams from previous session`);
+
+                // Clear streams for previous session
+                prevSessionStreams.forEach(stream => {
+                    useSignalRStreamStore.getState().clearStream(stream.messageCode);
+                });
+            }
+
+            initialAutoScrollRef.current = true;
+            prevSessionIdRef.current = sessionIdString;
+        }
+    }, [sessionIdString, signalRMessages]);
+
+    useEffect(() => {
+        if (!sessionIdString) return;
         if (!initialAutoScrollRef.current) return;
 
         const ready = !isLoading && mergedMessages.length > 0;
@@ -317,7 +428,7 @@ const Chat: React.FC = () => {
         setTimeout(forceScrollToBottomNow, 0);
 
         initialAutoScrollRef.current = false;
-    }, [sessionId, isLoading, mergedMessages.length, forceScrollToBottomNow]);
+    }, [sessionIdString, isLoading, mergedMessages.length, forceScrollToBottomNow]);
 
     useEffect(() => {
         autoScrollIfNeeded();
@@ -376,14 +487,14 @@ const Chat: React.FC = () => {
             currentPath.split("/").length === 4 &&
             chatHistory.length > 0;
 
-        if (!sessionId) {
+        if (!sessionIdString) {
             const timer = setTimeout(() => {
                 setDebouncedLoading(false);
                 if (mergedMessages.length > 0 && !isNavigationFromTopicOnly) {
                     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
                 }
             }, 100);
-            if (!sessionId && chatHistory.length > 0) {
+            if (!sessionIdString && chatHistory.length > 0) {
                 const code = getCodeByTopic(parseInt(type || "0", 10));
                 if (code) {
                     const expectedPath = `/chat/${type}/${code}`;
@@ -408,7 +519,7 @@ useEffect(() => { recalc(); }, [keyboardHeight]);
 useEffect(() => { recalc(); }, []); 
 
     useAppState(() => {
-        if (sessionId) queryClient.invalidateQueries(["messages", sessionId]);
+        if (sessionIdString) queryClient.invalidateQueries(["messages", sessionIdString]);
     });
 
     return (
@@ -485,8 +596,8 @@ useEffect(() => { recalc(); }, []);
                                 loading={isSending || hasPendingMessages}
                                 // loading={loadingStream.loading || isSending}
                                 onRetryMessage={retryMessage}
-                                isSpending={isSending}
-                                thinkLoading={isSending}
+                                isSpending={isSending || hasPendingMessages}
+                                thinkLoading={isSending || hasPendingMessages}
                                 scrollToBottom={scrollToBottom}
                             />
                             <div style={{ marginTop: pendingBarHeight }} />
@@ -527,14 +638,14 @@ useEffect(() => { recalc(); }, []);
                                     messageValue={messageValue}
                                     setMessageValue={setMessageValue}
                                     // isLoading={isLoading}
-                                    isLoading={loadingStream.loading || isSending}
+                                    isLoading={loadingStream.loading || isSending || hasPendingMessages}
                                     isLoadingHistory={isLoadingHistory}
                                     messageRef={messageRef}
                                     handleSendMessage={handleSendMessage}
                                     handleImageChange={handleImageChange}
                                     handleFileChange={handleFileChange}
                                     onTakePhoto={() => history.push("/camera")}
-                                    isSpending={false}
+                                    isSpending={isSending || hasPendingMessages}
                                     uploadImageMutation={uploadImageMutation}
                                     addPendingImages={addPendingImages}
                                     isNative={isNative}

@@ -98,8 +98,8 @@ const CommentsList: React.FC<CommentsListProps> = ({
                         editingComment?.id === comment.id ? 'bg-green-50 border-l-4 border-l-green-500' : ''
                         }`}>
                         <img
-                            src={comment.user.avatarUrl || avatarFallback}
-                            alt={comment.user.fullName}
+                            src={comment?.user?.avatarUrl || avatarFallback}
+                            alt={comment?.user?.fullName}
                             className="w-9 h-9 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
                             onError={(e) => {
                                 (e.target as HTMLImageElement).src = avatarFallback;
@@ -111,12 +111,12 @@ const CommentsList: React.FC<CommentsListProps> = ({
                                 <div className="flex items-center gap-1 mb-1">
                                     <span 
                                         className="font-semibold text-sm cursor-pointer hover:underline max-w-[200px] truncate"
-                                        onClick={(e) => handleUserProfileClick(e, comment.user.id)}
+                                        onClick={(e) => handleUserProfileClick(e, comment?.user?.id)}
                                     >
-                                        {comment.user.fullName}
+                                        {comment?.user?.fullName}
                                     </span>
                                     <GoDotFill className="w-2 h-2 text-netural-100 " />
-                                    <span className="text-netural-100 text-sm">{formatTimeAgo(comment.createDate)}</span>
+                                    <span className="text-netural-100 text-sm">{formatTimeAgo(comment?.createDate)}</span>
                                 </div>
                                 <button
                                     className="text-gray-400 hover:text-gray-600 "
@@ -128,16 +128,16 @@ const CommentsList: React.FC<CommentsListProps> = ({
                             </div>
 
                             <div className="text-gray-800 text-sm leading-relaxed">
-                                {parseHashtagsWithClick(comment.content)}
+                                {parseHashtagsWithClick(comment?.content)}
                             </div>
                             <div className="flex items-center justify-between mt-2">
                                 <div className="flex items-center gap-4">
                                     <AnimatedActionButton
                                         icon={<ReactHeartIcon />}
                                         activeIcon={<ReactHeartRedIcon />}
-                                        count={comment.reactionCount || 0}
-                                        isActive={comment.isLike || false}
-                                        onClick={() => onLikeComment(comment.code, comment.isLike || false)}
+                                        count={comment?.reactionCount || 0}
+                                        isActive={comment?.isLike || false}
+                                        onClick={() => onLikeComment(comment?.code, comment?.isLike || false)}
                                         disabled={commentLikeMutation.isLoading}
                                         activeColor="text-red-500"
                                         inactiveColor="text-gray-600"
@@ -158,9 +158,9 @@ const CommentsList: React.FC<CommentsListProps> = ({
                     </div>
 
                     {/* Replies */}
-                    {comment.replies && comment.replies.length > 0 && (
+                    {comment?.replies && comment?.replies.length > 0 && (
                         <div className=" ">
-                            {comment.replies
+                            {comment?.replies
                                 .sort((a: any, b: any) => new Date(a.createDate).getTime() - new Date(b.createDate).getTime())
                                 .map((reply: any) => (
                                     <div key={reply.id} className={`flex gap-3 p-4 pl-12 border-b border-gray-50 bg-gray-25 transition-colors ${replyingTo === reply.id ? 'bg-blue-50 border-l-4 border-l-blue-500' :

@@ -19,11 +19,22 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log("Received background message: ", payload);
 
-  const notificationTitle = payload.notification.title;
+  const notificationTitle = payload?.notification?.title || "Thông báo";
   const notificationOptions = {
-    body: payload.notification.body,
-    icon: payload.notification.icon || "/icon.png",
+    type: payload?.notification?.type || "message",
+    body: payload?.notification?.body || "",
+    icon: payload?.notification?.icon || "/favicon.png",
+    requireInteraction: false,
+    tag: String(Date.now()),
+    data: payload?.data || {},
+    silent: false
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+
+  setTimeout(async () => {
+    const notifications = await self.registration.getNotifications();
+    notifications.forEach(n => n.close());
+    notifications.forEach(n => n.clear());
+  }, 5000);
 });

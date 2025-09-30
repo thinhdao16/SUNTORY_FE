@@ -169,16 +169,20 @@ export function mergeMessagesStream(
         const msgId = msg.id || msg.messageCode;
         if (!msgId) return true;
 
+        // Check duplication with session awareness
         const isDupWithExisting = messages.some((m: any) =>
-            (m.id && m.id === msgId) ||
-            (m.messageCode && msg.messageCode && msg.messageCode === msg.messageCode)
+            (m.id && m.id === msgId && m.chatCode === msg.chatCode) ||
+            (m.messageCode && msg.messageCode &&
+             m.messageCode === msg.messageCode &&
+             m.chatCode === msg.chatCode)
         );
 
         const isDupWithinSignalR = allSignalR.slice(0, index).some((prev: any) =>
-            prev.messageCode === msg.messageCode ||
+            (prev.messageCode === msg.messageCode && prev.chatCode === msg.chatCode) ||
             (typeof prev.text === 'string' &&
                 prev.text.trim() === (msg.text as string).trim() &&
-                msg.text.length > 10)
+                msg.text.length > 10 &&
+                prev.chatCode === msg.chatCode) // Same session check
         );
 
         return !isDupWithExisting && !isDupWithinSignalR;

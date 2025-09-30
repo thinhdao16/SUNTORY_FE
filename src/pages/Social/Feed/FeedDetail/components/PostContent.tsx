@@ -9,12 +9,14 @@ import { formatTimeFromNow } from '@/utils/formatTime';
 import { useCreateTranslationChat } from '@/pages/Translate/hooks/useTranslationLanguages';
 import useLanguageStore from '@/store/zustand/language-store';
 import GlobalIcon from "@/icons/logo/social-feed/global-default.svg?react";
+import FriendIcon from "@/icons/logo/social-feed/friend-default.svg?react";
 import LockIcon from "@/icons/logo/social-feed/lock-default.svg?react";
 import ActionButton from '@/components/loading/ActionButton';
 import LogoIcon from "@/icons/logo/logo-rounded-full.svg?react";
 import AddFriendIcon from "@/icons/logo/social-feed/add-friend.svg?react";
 import { GoDotFill } from 'react-icons/go';
 import { useAuthStore } from '@/store/zustand/auth-store';
+import { PrivacyPostType } from '@/types/privacy';
 
 interface PostContentProps {
     displayPost: any;
@@ -61,6 +63,21 @@ const PostContent: React.FC<PostContentProps> = ({
         }
     };
 
+    const getPrivacyIcon = (privacy: number) => {
+        switch (privacy) {
+            case PrivacyPostType.Public:
+                return <GlobalIcon className="w-4 h-4 text-gray-500" />;
+            case PrivacyPostType.Friend:
+                return <FriendIcon className="w-4 h-4 text-gray-500" />;
+            case PrivacyPostType.Private:
+                return <LockIcon className="w-4 h-4 text-gray-500" />;
+            case PrivacyPostType.Hashtag:
+                return <GlobalIcon className="w-4 h-4 text-gray-500" />;
+            default:
+                return <GlobalIcon className="w-4 h-4 text-gray-500" />;
+        }
+    };
+
     return (
         <div className="bg-white">
             {isRepost && (
@@ -78,7 +95,7 @@ const PostContent: React.FC<PostContentProps> = ({
                             />
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <div 
+                                    <div
                                         className="font-semibold text-sm max-w-[150px] truncate cursor-pointer hover:text-blue-600 transition-colors"
                                         onClick={() => onUserProfileClick?.(displayPost?.user?.id)}
                                     >
@@ -89,8 +106,13 @@ const PostContent: React.FC<PostContentProps> = ({
                                         <span className="text-sm text-gray-500">{t('reposted')}</span>
                                     </div>
                                 </div>
-
-                                <span className="text-gray-500 text-sm">{formatTimeAgo(displayPost?.createDate || '')}</span>
+                                <div className="flex items-center text-netural-100 gap-1">
+                                            <span className="text-sm text-gray-500">{formatTimeFromNow(displayPost?.createDate || '', t)}</span>
+                                            <GoDotFill className="w-2 h-2" />
+                                            <span className='opacity-20'>
+                                                {getPrivacyIcon(displayPost?.privacy)}
+                                            </span>
+                                        </div>
                             </div>
                         </div>
                         {!isOwnPost && displayPost?.isFriend === false && displayPost?.friendRequest === null && (
@@ -136,18 +158,25 @@ const PostContent: React.FC<PostContentProps> = ({
                                             (e.target as HTMLImageElement).src = avatarFallback;
                                         }}
                                     />
-                                    <div className="flex items-center gap-2">
-                                        <span 
-                                            className="font-semibold text-sm cursor-pointer hover:text-blue-600 transition-colors"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onUserProfileClick?.(postToDisplay?.user?.id);
-                                            }}
-                                        >
-                                            {postToDisplay?.user?.fullName}
-                                        </span>
-                                        <GoDotFill className="w-1 h-1 text-gray-400" />
-                                        <span className="text-xs text-gray-500">{formatTimeAgo(postToDisplay?.createDate || '')}</span>
+                                    <div className="grid gap-0">
+                                        <div className="flex items-center gap-2">
+                                            <span
+                                                className="font-semibold text-sm cursor-pointer hover:underline max-w-[200px] truncate"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onUserProfileClick?.(postToDisplay?.user?.id);
+                                                }}
+                                            >
+                                                {postToDisplay?.user?.fullName}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center text-netural-100 gap-1">
+                                            <span className="text-sm text-gray-500">{formatTimeFromNow(postToDisplay?.createDate || '', t)}</span>
+                                            <GoDotFill className="w-2 h-2" />
+                                            <span className='opacity-20'>
+                                                {getPrivacyIcon(postToDisplay?.privacy)}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </>
@@ -236,16 +265,22 @@ const PostContent: React.FC<PostContentProps> = ({
                                 (e.target as HTMLImageElement).src = avatarFallback;
                             }}
                         />
-                        <div>
-                            <div className="flex items-center gap-1">
-                                <span 
-                                    className="font-semibold text-sm cursor-pointer hover:text-blue-600 transition-colors"
+                        <div className="grid gap-0">
+                            <div className="flex items-center gap-2">
+                                <span
+                                    className="font-semibold text-sm cursor-pointer hover:underline max-w-[200px] truncate"
                                     onClick={() => onUserProfileClick?.(displayPost.user.id)}
                                 >
                                     {displayPost.user.fullName}
                                 </span>
                             </div>
-                            <span className="text-gray-500 text-sm">{formatTimeAgo(displayPost.createDate)}</span>
+                            <div className="flex items-center text-netural-100 gap-1">
+                                <span className="text-sm text-gray-500">{formatTimeFromNow(displayPost.createDate, t)}</span>
+                                <GoDotFill className="w-2 h-2" />
+                                <span className='opacity-20'>
+                                    {getPrivacyIcon(displayPost.privacy)}
+                                </span>
+                            </div>
                         </div>
                     </div>
                     {!isOwnPost && postToDisplay?.isFriend === false && postToDisplay?.friendRequest === null && (
@@ -326,7 +361,6 @@ const PostContent: React.FC<PostContentProps> = ({
                                 mediaFiles={displayPost.media}
                                 lightboxUserName={displayPost.user.fullName}
                                 lightboxUserAvatar={displayPost.user.avatarUrl}
-                                className='px-4'
                             />
                         </div>
                     )}

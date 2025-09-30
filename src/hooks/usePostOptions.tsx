@@ -42,18 +42,19 @@ export const usePostOptions = ({
             label: t('Copy link'),
             icon: <IoLinkOutline className="w-5 h-5" />,
             tone: 'default' as const,
-            onClick: () => handleCopyToClipboard(`${window.location.origin}/social-feed/detail/${post?.code}`),
+            onClick: () => handleCopyToClipboard(`${window.location.origin}/social-feed/f/${post?.code}`),
         });
 
         if (isOwnPost) {
-            // Options for current user's own posts
-            items.push({
-                key: 'edit-post',
-                label: t('Edit post'),
-                icon: <IoPencilOutline className="w-5 h-5" />,
-                tone: 'default' as const,
-                onClick: () => onEditPost?.(),
-            });
+            if (!post?.isRepost) {
+                items.push({
+                    key: 'edit-post',
+                    label: t('Edit post'),
+                    icon: <IoPencilOutline className="w-5 h-5" />,
+                    tone: 'default' as const,
+                    onClick: () => onEditPost?.(),
+                });
+            }
 
             items.push({
                 key: 'pin-to-profile',
@@ -168,27 +169,28 @@ export const usePostOptions = ({
             label: t('Copy link'),
             icon: <IoLinkOutline className="w-5 h-5" />,
             tone: 'default' as const,
-            onClick: () => handleCopyToClipboard(`${window.location.origin}/social-feed/detail/${post?.code}`),
+            onClick: () => handleCopyToClipboard(`${window.location.origin}/social-feed/f/${post?.code}`),
         });
 
         if (isOwnPost) {
-            // Options for current user's own posts
-            standardActions.push(
-                {
+            // Only allow edit if it's not a repost (original post by user)
+            if (!post?.isRepost) {
+                standardActions.push({
                     key: 'edit-post',
                     label: t('Edit post'),
                     icon: <IoPencilOutline className="w-5 h-5" />,
                     tone: 'default' as const,
                     onClick: () => onEditPost?.(),
-                },
-                {
-                    key: 'pin-to-profile',
-                    label: t('Pin to profile'),
-                    icon: <IoStarOutline className="w-5 h-5" />,
-                    tone: 'default' as const,
-                    onClick: () => onPinToProfile?.(),
-                }
-            );
+                });
+            }
+
+            standardActions.push({
+                key: 'pin-to-profile',
+                label: t('Pin to profile'),
+                icon: <IoStarOutline className="w-5 h-5" />,
+                tone: 'default' as const,
+                onClick: () => onPinToProfile?.(),
+            });
         } else {
             // Options for other users' posts
             standardActions.push(

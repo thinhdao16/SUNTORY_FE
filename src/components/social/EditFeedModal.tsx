@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IonModal } from '@ionic/react';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
-import { FlexImageGrid } from '@/components/common/FlexImageGrid';
+import { DraggableImageGrid } from '@/components/common/DraggableImageGrid';
 import { AudioRecorder } from '@/components/common/AudioRecorder';
 import ActionButton from '@/components/loading/ActionButton';
 import { useUpdatePost } from '@/pages/Social/Feed/hooks/useUpdatePost';
@@ -39,7 +39,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [originalPost, setOriginalPost] = useState<SocialPost | null>(null);
     
-    const { images, isUploading, setIsUploading, addImages, addAudioItem, removeImage, clearImages, setImages } = useImageUploadState();
+    const { images, isUploading, setIsUploading, addImages, addAudioItem, removeImage, reorderImages, clearImages, setImages } = useImageUploadState();
     const {
         audioBlob,
         setAudioBlob,
@@ -61,7 +61,6 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
         addImages,
         clearAudio
     });
-
     const handleAudioRecordedWithImageItem = useCallback((blob: Blob, duration: number, serverUrl?: string, filename?: string) => {
         const audioItemsToRemove = images.filter(item => item.mediaType === 'audio');
         audioItemsToRemove.forEach((item) => {
@@ -320,9 +319,13 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                                 </div>
                             </div>
 
-                            <FlexImageGrid
-                                images={images.filter(item => item.mediaType === 'image')}
+                            <DraggableImageGrid
+                                images={images.filter(item => item.mediaType === 'image' || (item.mediaType as any) === 'video')}
                                 onRemoveImage={removeImage}
+                                onReorderImages={reorderImages}
+                                enableDragDrop={true}
+                                showDragHandle={true}
+                                dragFromTopArea={true}
                             />
 
                             {(audioBlob || audioServerUrl) && (

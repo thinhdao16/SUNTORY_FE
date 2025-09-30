@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { RoomChatInfo, useListChatRooms, useNotificationCounts, useUserChatRooms } from '../hooks/useSocialChat';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
@@ -18,6 +18,9 @@ import { SystemMessageType } from "@/constants/socialChat";
 import MuteIcon from "@/icons/logo/social-chat/mute.svg?react"
 import UnMuteIcon from "@/icons/logo/social-chat/unmute.svg?react"
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
+import PullToRefresh from '@/components/common/PullToRefresh';
+import { IonContent } from '@ionic/react';
+import { useRefreshCallback } from '@/contexts/RefreshContext';
 dayjs.extend(utc);
 
 export default function SocialChatRecent() {
@@ -25,6 +28,7 @@ export default function SocialChatRecent() {
   const history = useHistory();
   const isNative = Capacitor.isNativePlatform();
   const deviceInfo: { deviceId: string | null } = useDeviceInfo();
+  const [refreshing, setRefreshing] = useState(false);
 
   const { chatRooms, setChatRooms, setRoomChatInfo, getLastMessageForRoom, getRoomUnread, clearRoomUnread } = useSocialChatStore();
 
@@ -35,7 +39,7 @@ export default function SocialChatRecent() {
     hasNextPage,
     isFetchingNextPage,
     refetch: refetchUserChatRooms
-  } = useUserChatRooms(15,setChatRooms);
+  } = useUserChatRooms(15, setChatRooms);
   const {
     refetch: refetchFriendshipRequests
   } = useFriendshipReceivedRequests(20);
@@ -65,6 +69,28 @@ export default function SocialChatRecent() {
   });
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLIonContentElement>(null);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+
+    if (contentRef.current) {
+      contentRef.current.scrollToTop(300);
+    }
+
+    try {
+      await Promise.all([
+        refetchUserChatRooms(),
+        refetchFriendshipRequests()
+      ]);
+    } catch (error) {
+      console.error('Refresh failed:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useRefreshCallback('/social-chat', handleRefresh);
+
   // useEffect(() => {
   //   if (data?.pages) {
   //     const allRooms = data.pages.flat();
@@ -169,7 +195,7 @@ export default function SocialChatRecent() {
             systemPreview = `${t("System notification")}`;
         }
       }
-    } catch {}
+    } catch { }
     if (systemPreview) return systemPreview;
 
     let content = text || `📷 ${t('Photo')}`;
@@ -255,76 +281,92 @@ export default function SocialChatRecent() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
-    <div className="h-screen">
-      <div
-        ref={scrollRef}
-        className={`overflow-y-auto px-4 pt-4 pb-24 ${isNative
-          ? 'max-h-[85vh]'
-          : 'max-h-[75vh] lg:max-h-[75vh] xl:max-h-[85vh]'
-          }`}
-      >
-        <div className="">
-          {sortedChatRooms.map((room) => {
-            const unread = room.unreadCount ?? getRoomUnread(room.code) ?? 0;
-            const isUnread = unread > 0;
-            return (
-              <div
-                key={room.id}
-                onClick={() => {
-                  setRoomChatInfo(room);
-                  clearRoomUnread(room.code);
-                  history.push(`/social-chat/t/${room.code}`);
-                }}
-                className="py-2 flex items-center justify-between bg-white hover:bg-gray-100 cursor-pointer"
-              >
-                <div className="flex items-center flex-1 min-w-0">
-                  <img
-                    src={room?.avatarRoomChat || avatarFallback}
-                    alt={room?.title}
-                    className="w-[50px] h-[50px] rounded-2xl object-cover flex-none"
-                    onError={(e) => { e.currentTarget.src = avatarFallback; }}
-                  />
-                  <div className="ml-3 min-w-0 flex-1 overflow-hidden">
-                    <p className="text-base font-semibold truncate">{room.title}</p>
-                    <p
-                      className={`text-xs text-netural-300 ${isUnread ? "font-semibold" : ""} truncate`}
-                    >
-                      {(() => {
-                        const text = getDisplayMessageText(room, userInfo?.id || 0);
-                        return text.length > 80 ? text.slice(0, 80) + "..." : text;
-                      })()}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex-shrink-0 text-right w-[92px] flex flex-col items-end gap-2 justify-center">
-                  <p className={`text-xs text-netural-500 ${isUnread ? 'font-semibold' : ''}`}>
-                    {formatTimeFromNow(getLatestUpdateDate(room), t)}
-                  </p>
-                  {room.isQuiet && (
-                    <p className="text-[11px] text-netural-300">
-                      <MuteIcon className="w-[14px] h-[14px] inline-block mr-1" />
-                    </p>
-                  )}
-                  {isUnread && (
-                    <button className="flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px] bg-main">
-                      {unread > 99 ? '99+' : unread}
-                    </button>
-                  )}
-                </div>
+    <IonContent
+      ref={contentRef}
+      className={`no-scrollbar `}
+      style={{
+        height: 'calc(100vh - 100px)'
+      }}
+      scrollY={true}
+    >
+      <div className="relative">
+        {refreshing && (
+          <div className="absolute top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
+            <div className="flex items-center justify-center py-3">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                <span className="text-sm text-gray-600">{t('Refreshing...')}</span>
               </div>
-            )
-          })}
+            </div>
+          </div>
+        )}
+        <div
+          ref={scrollRef}
+          className={`   px-4 pt-4 `}
+        >
+          <PullToRefresh onRefresh={handleRefresh}>
+            <div className="">
+              {sortedChatRooms.map((room) => {
+                const unread = room.unreadCount ?? getRoomUnread(room.code) ?? 0;
+                const isUnread = unread > 0;
+                return (
+                  <div
+                    key={room.id}
+                    onClick={() => {
+                      setRoomChatInfo(room);
+                      clearRoomUnread(room.code);
+                      history.push(`/social-chat/t/${room.code}`);
+                    }}
+                    className="py-2 flex items-center justify-between bg-white hover:bg-gray-100 cursor-pointer"
+                  >
+                    <div className="flex items-center flex-1 min-w-0">
+                      <img
+                        src={room?.avatarRoomChat || avatarFallback}
+                        alt={room?.title}
+                        className="w-[50px] h-[50px] rounded-2xl object-cover flex-none"
+                        onError={(e) => { e.currentTarget.src = avatarFallback; }}
+                      />
+                      <div className="ml-3 min-w-0 flex-1 overflow-hidden">
+                        <p className="text-base font-semibold truncate">{room.title}</p>
+                        <p className={`text-xs text-netural-300 ${isUnread ? "font-semibold" : ""} truncate`} >
+                          {(() => {
+                            const text = getDisplayMessageText(room, userInfo?.id || 0);
+                            return text.length > 80 ? text.slice(0, 80) + "..." : text;
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 text-right w-[92px] flex flex-col items-end gap-2 justify-center">
+                      <p className={`text-xs text-netural-500 ${isUnread ? 'font-semibold' : ''}`}>
+                        {formatTimeFromNow(getLatestUpdateDate(room), t)}
+                      </p>
+                      {room.isQuiet && (
+                        <p className="text-[11px] text-netural-300">
+                          <MuteIcon className="w-[14px] h-[14px] inline-block mr-1" />
+                        </p>
+                      )}
+                      {isUnread && (
+                        <button className="flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px] bg-main">
+                          {unread > 99 ? '99+' : unread}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
 
-          {(isLoading || isFetchingNextPage) && (
-            <div className="text-center py-4 text-gray-500 text-sm">{t('Loading...')}</div>
-          )}
+              {(isLoading || isFetchingNextPage) && (
+                <div className="text-center py-4 text-gray-500 text-sm">{t('Loading...')}</div>
+              )}
 
-          {!hasNextPage && !isLoading && chatRooms.length === 0 && (
-            <div className="text-center py-2  text-gray-400">{t('No more chats.')}</div>
-          )}
+              {!hasNextPage && !isLoading && chatRooms.length === 0 && (
+                <div className="text-center py-2  text-gray-400">{t('No more chats.')}</div>
+              )}
+            </div>
+          </PullToRefresh>
+
         </div>
       </div>
-    </div>
+    </IonContent>
   );
 }

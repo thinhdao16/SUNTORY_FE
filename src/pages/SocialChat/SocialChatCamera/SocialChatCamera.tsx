@@ -312,9 +312,30 @@ const handleCapture = async () => {
 
     const handleSendImage = async () => {
         if (capturedFile) {
-            await handleUploadImageFile(capturedFile);
-            setCapturedImage(null);
-            setCapturedFile(null);
+            // Check if we should use pending files system
+            const cameraCallback = localStorage.getItem("cameraCallback");
+            
+            if (cameraCallback === "pending") {
+                // Save to localStorage for pending files system
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const imageData = reader.result as string;
+                    localStorage.setItem("cameraResult", JSON.stringify({
+                        roomId: roomId,
+                        imageData: imageData,
+                        timestamp: Date.now()
+                    }));
+                    
+                    // Navigate back
+                    history.goBack();
+                };
+                reader.readAsDataURL(capturedFile);
+            } else {
+                // Original direct upload logic
+                await handleUploadImageFile(capturedFile);
+                setCapturedImage(null);
+                setCapturedFile(null);
+            }
         }
     };
 

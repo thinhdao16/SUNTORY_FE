@@ -1,4 +1,6 @@
 import AppImage from "@/components/common/AppImage";
+import ImageLightbox from "@/components/common/ImageLightbox";
+import { MediaType } from "@/utils/imageUpload";
 import React, { useState, useRef, useEffect } from "react";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { MdOutlineReply } from "react-icons/md";
@@ -36,7 +38,7 @@ function useOddLastImageHeight(photoAlbumPhotos: any[]): [React.RefObject<HTMLIm
     return [ref1, ref2, bottomHeight];
 }
 
-const MAX_PREVIEW = 5;
+const MAX_PREVIEW = 4;
 
 export const ImageGallery: React.FC<ImageGalleryProps> = ({
     chatAttachments,
@@ -51,36 +53,44 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
     hasReachedLimit = false
 }) => {
     const [showAll, setShowAll] = useState(false);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+    const [lightboxIndex, setLightboxIndex] = useState(0);
 
-    const imageFiles = chatAttachments.filter((file: any) =>
-        /\.(jpg|jpeg|png|gif|webp)$/i.test(file.fileName || "")
-    );
+    const mediaFiles = chatAttachments.filter((file: any) => {
+        const fileName = file.fileName || "";
+        return /\.(jpg|jpeg|png|gif|webp|mp4|avi|mov|wmv|flv|webm|mkv|m4v)$/i.test(fileName);
+    });
 
-    const sortedImageFiles = imageFiles.sort((a: any, b: any) => {
+    const sortedMediaFiles = mediaFiles.sort((a: any, b: any) => {
         const indexA = a.originalIndex ?? 0;
         const indexB = b.originalIndex ?? 0;
         return indexA - indexB;
     });
 
-    const photoAlbumPhotos = sortedImageFiles.map((file: any, index: number) => ({
+    const photoAlbumPhotos = sortedMediaFiles.map((file: any, index: number) => ({
         src: file.fileUrl,
         serverSrc: file.serverUrl,
         width: 800,
         height: 600,
         attachment: file,
-        stableKey: file.tempAttachmentId || file.id || `img_${index}`,
+        stableKey: file.tempAttachmentId || file.id || `media_${index}`,
+        mediaType: /\.(mp4|avi|mov|wmv|flv|webm|mkv|m4v)$/i.test(file.fileName || "") ? "video" : "image"
     }));
 
     const displayPhotos = showAll ? photoAlbumPhotos : photoAlbumPhotos.slice(0, MAX_PREVIEW);
-    const remaining = photoAlbumPhotos.length - MAX_PREVIEW;
+    const remaining = Math.max(0, photoAlbumPhotos.length - MAX_PREVIEW);
     const [ref1, ref2, bottomHeight] = useOddLastImageHeight(photoAlbumPhotos);
 
     const handleImageClick = (idx: number) => {
         const allImages = photoAlbumPhotos.map((p: { src: string }) => p.src);
+        setLightboxImages(allImages);
+        setLightboxIndex(idx);
+        setLightboxOpen(true);
         onImageClick(idx, allImages);
     };
 
-    if (imageFiles.length === 0) return null;
+    if (mediaFiles.length === 0) return null;
 
     return (
         <div className={isUser ? "self-end w-fit" : "self-start w-fit"}>
@@ -89,16 +99,27 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                     className={
                         displayPhotos.length === 1
                             ? `w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "justify-end" : "justify-start"}`
-                            : "grid gap-2 w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
+                            : displayPhotos.length === 2
+                                ? "grid  w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
+                                : displayPhotos.length === 3
+                                    ? "grid  w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2 grid-rows-2"
+                                    : "grid  w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
                     }
                 >
-                    {displayPhotos.map((photo: { src: string; serverSrc?: string; attachment?: any; stableKey: string }, idx: number) => {
+                    {displayPhotos.map((photo: {
+                        src: any;
+                        serverSrc: any;
+                        width: number;
+                        height: number;
+                        attachment: any;
+                        stableKey: any;
+                        mediaType: string;
+                    }, idx: number) => {
                         const attachment = photo.attachment;
                         const isUploading = attachment?.isUploading;
                         const uploadProgress = attachment?.uploadProgress || 0;
                         const isError = attachment?.isError;
-                        const isSending = attachment?.isSending; // ✅ Thêm flag cho sending
-
+                        const isSending = attachment?.isSending;
                         const isLast = !showAll && idx === MAX_PREVIEW - 1 && remaining > 0;
                         const isLastOdd = displayPhotos.length % 2 === 1 && idx === displayPhotos.length - 1;
                         const isSecondLast = displayPhotos.length % 2 === 1 && idx === displayPhotos.length - 2;
@@ -135,7 +156,6 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                             <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                             <span className="text-white text-sm font-medium">
                                                 {t("Uploading...")}
-                                                {/* {uploadProgress > 0 ? `${uploadProgress}%` : t("Uploading...")} */}
                                             </span>
                                         </div>
                                     </div>
@@ -145,6 +165,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                             return null;
                         };
 
+                        const videoProps = photo.mediaType === "video" ? {
+                            controls: true,
+                            preload: "metadata" as const,
+                            playsInline: true,
+                            muted: true
+                        } : {};
+
                         if (displayPhotos.length === 1) {
                             return (
                                 <div key={photo.stableKey} className="relative w-full rounded-2xl overflow-hidden">
@@ -152,14 +179,34 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                         src={photo.src}
                                         serverSrc={photo.serverSrc}
                                         alt=""
-                                        fit="contain"
+                                        fit="cover"
                                         wrapperClassName="w-full rounded-2xl overflow-hidden"
                                         className="rounded-2xl"
                                         onClick={() => handleImageClick(idx)}
                                         style={{ cursor: "pointer" }}
+                                        mediaType={photo.mediaType}
+                                        videoProps={videoProps}
                                     />
+                                    {renderOverlay()}
+                                </div>
+                            );
+                        }
 
-                                    {/* ✅ Render overlay states */}
+                        if (displayPhotos.length === 3 && idx === 2) {
+                            return (
+                                <div
+                                    key={photo.stableKey}
+                                    className="relative col-span-2 w-full h-[160px] rounded-b-2xl overflow-hidden cursor-pointer"
+                                    onClick={() => handleImageClick(idx)}
+                                >
+                                    <AppImage
+                                        src={photo.src}
+                                        serverSrc={photo.serverSrc}
+                                        alt=""
+                                        className="w-full h-full object-cover rounded-b-2xl"
+                                        mediaType={photo.mediaType}
+                                        videoProps={videoProps}
+                                    />
                                     {renderOverlay()}
                                 </div>
                             );
@@ -179,34 +226,15 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                         alt=""
                                         className="w-full h-full object-cover rounded-2xl"
                                         style={{ filter: "brightness(0.7)" }}
+                                        mediaType={photo.mediaType}
+                                        videoProps={videoProps}
                                     />
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         <span className="text-white font-bold text-2xl bg-black/50 px-4 py-2 rounded-2xl select-none pointer-events-none">
                                             +{remaining}
                                         </span>
                                     </div>
-
-                                    {(isUploading || isSending || isError) && (
-                                        <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center z-20">
-                                            <div className="flex flex-col items-center gap-2">
-                                                {isError ? (
-                                                    <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
-                                                        {t("Failed")}
-                                                    </div>
-                                                ) : isSending ? (
-                                                    <>
-                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                        <span className="text-white text-sm font-medium">{t("Sending...")}</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                        <span className="text-white text-xs">{t("Loading...")}</span>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
+                                    {renderOverlay()}
                                 </div>
                             );
                         }
@@ -215,44 +243,24 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                             return (
                                 <div
                                     key={photo.stableKey}
-                                    className="relative object-cover rounded-2xl w-full h-full cursor-pointer overflow-hidden"
+                                    className="relative object-cover rounded-e-2xl w-full h-full cursor-pointer overflow-hidden"
                                     onClick={() => handleImageClick(idx)}
                                 >
                                     <AppImage
                                         src={photo.src}
                                         serverSrc={photo.serverSrc}
                                         alt=""
-                                        className="w-full h-full object-cover rounded-2xl"
+                                        className="w-full h-full object-cover rounded-e-2xl"
                                         style={{ filter: "brightness(0.7)" }}
+                                        mediaType={photo.mediaType}
+                                        videoProps={videoProps}
                                     />
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <span className="text-white font-bold text-2xl bg-black/50 px-4 py-2 rounded-2xl select-none pointer-events-none">
+                                        <span className="text-white font-bold text-2xl bg-black/50 px-4 py-2 rounded-e-2xl select-none pointer-events-none">
                                             +{remaining}
                                         </span>
                                     </div>
-
-                                    {/* ✅ Render overlay với higher z-index */}
-                                    {(isUploading || isSending || isError) && (
-                                        <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center z-20">
-                                            <div className="flex flex-col items-center gap-2">
-                                                {isError ? (
-                                                    <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
-                                                        Failed
-                                                    </div>
-                                                ) : isSending ? (
-                                                    <>
-                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                        <span className="text-white text-sm font-medium">Đang gửi...</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                        <span className="text-white text-xs">Đang tải...</span>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
+                                    {renderOverlay()}
                                 </div>
                             );
                         }
@@ -272,9 +280,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                             height: bottomHeight || 180,
                                             objectFit: "cover",
                                         }}
+                                        mediaType={photo.mediaType}
+                                        videoProps={videoProps}
                                     />
-
-                                    {/* ✅ Render overlay states */}
                                     {renderOverlay()}
                                 </div>
                             );
@@ -289,11 +297,11 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                         alt=""
                                         ref={ref1}
                                         onClick={() => handleImageClick(idx)}
-                                        className="object-cover rounded-2xl w-full h-full"
+                                        className="object-cover  w-full h-full"
                                         style={{ cursor: "pointer" }}
+                                        mediaType={photo.mediaType}
+                                        videoProps={videoProps}
                                     />
-
-                                    {/* ✅ Render overlay states */}
                                     {renderOverlay()}
                                 </div>
                             );
@@ -308,11 +316,11 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                         alt=""
                                         ref={ref2}
                                         onClick={() => handleImageClick(idx)}
-                                        className="object-cover rounded-2xl w-full h-full"
+                                        className="object-cover w-full h-full"
                                         style={{ cursor: "pointer" }}
+                                        mediaType={photo.mediaType}
+                                        videoProps={videoProps}
                                     />
-
-                                    {/* ✅ Render overlay states */}
                                     {renderOverlay()}
                                 </div>
                             );
@@ -325,11 +333,11 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                     serverSrc={photo.serverSrc}
                                     alt=""
                                     onClick={() => handleImageClick(idx)}
-                                    className="object-cover rounded-2xl w-full h-full"
+                                    className="object-cover w-full h-full"
                                     style={{ cursor: "pointer" }}
+                                    mediaType={photo.mediaType}
+                                    videoProps={videoProps}
                                 />
-
-                                {/* ✅ Render overlay states */}
                                 {renderOverlay()}
                             </div>
                         );
@@ -361,6 +369,24 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                     </div>
                 )}
             </div>
+
+            <ImageLightbox
+                open={lightboxOpen}
+                images={lightboxImages}
+                initialIndex={lightboxIndex}
+                onClose={() => setLightboxOpen(false)}
+                options={{
+                    showDownload: true,
+                    showPageIndicator: true,
+                    showNavButtons: false,
+                    enableZoom: true,
+                    showHeader: true,
+                    effect: 'slide',
+                    spaceBetween: 50,
+                    showActions: false,
+                    showZoomControls: false
+                }}
+            />
         </div>
     );
 };

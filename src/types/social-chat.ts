@@ -102,7 +102,7 @@ export interface ChatMessage {
     botAvatarUrl?: string | null;
 
     // Arrays và Objects
-    chatAttachments: ChatAttachment[];
+    chatAttachments: ChatAttachment[] ;
     chatInfo: ChatInfo | null;
     botInfo?: any | null;
     userChatMessage?: any | null;
@@ -125,6 +125,8 @@ export interface ChatMessage {
     isError?: boolean;
     translatedText?: string; 
     isTranslating?: boolean;
+    translateNeed?: boolean;
+
 }
 
 // export interface PendingMessage {
