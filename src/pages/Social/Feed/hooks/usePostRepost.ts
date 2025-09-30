@@ -20,9 +20,9 @@ export const usePostRepost = () => {
                 });
                 console.log('Repost successful for post:', data.postCode);
             },
-            onError: (err) => {
+            onError: (err: any) => {
                 present({
-                    message: 'Failed to repost. Please try again.',
+                    message: t(err?.response?.data?.message, { ns: "api" }) || 'Failed to repost. Please try again.',
                     duration: 3000,
                     position: 'bottom',
                     color: 'danger'

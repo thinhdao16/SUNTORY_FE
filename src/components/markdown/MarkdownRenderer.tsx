@@ -12,7 +12,6 @@ export const MarkdownRenderer = ({ text }: { text: string }) => {
     },
     isStreamFinished: true,
   });
-
   return (
     <>
       {blockMatches.map((blockMatch, index) => {

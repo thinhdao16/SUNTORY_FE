@@ -81,9 +81,8 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     isSendingMessage,
     activeUserIds,
     isLatestFriendlyAccepted = false,
-    roomData
+    roomData,
 }) => {
-
     const isDesktop = () => window.innerWidth > 1024;
 
     const { roomId } = useParams<{ roomId?: string; type?: string }>();
@@ -385,7 +384,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 />
             ) : (
                 <DraggableMessageContainer
-                    messageId={typeof msg.id === "string" || typeof msg.id === "number" ? msg.id : String(msg.createdAt)}
+                    messageId={typeof msg.tempId === "string" || typeof msg.tempId === "number" ? msg.tempId : String(msg.createdAt) || `${msg.id}`}
                     isUser={isUser}
                     isRevoked={isRevoked}
                     onReply={reply}
@@ -477,8 +476,17 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             {!isRevoked && menuOpen && anchorRect && layout && (
                 <Portal>
                     <motion.div
-                        className="fixed inset-0 z-[50] bg-black/10 backdrop-blur-sm pointer-events-auto"
+                        className="fixed inset-0 z-[50] bg-black/10 backdrop-blur-sm pointer-events-auto select-none"
+                        style={{
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            MozUserSelect: 'none',
+                            msUserSelect: 'none',
+                            WebkitTouchCallout: 'none',
+                            WebkitTapHighlightColor: 'transparent'
+                        }}
                         onPointerDown={() => setMenuOpen(false)}
+                        onContextMenu={(e) => e.preventDefault()}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                     />
@@ -492,8 +500,22 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                                 maxHeight: Math.max(48, layout.bubbleH),
                                 overflowY: anchorRect.height > layout.bubbleH ? "auto" : "visible",
                                 WebkitOverflowScrolling: "touch",
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                MozUserSelect: 'none',
+                                msUserSelect: 'none',
+                                WebkitTouchCallout: 'none',
+                                WebkitTapHighlightColor: 'transparent'
                             }}
-                            className="pointer-events-auto"
+                            className="pointer-events-auto select-none"
+                            onContextMenu={(e) => e.preventDefault()}
+                            onDragStart={(e) => e.preventDefault()}
+                            onMouseDown={(e) => {
+                                if (e.detail > 1) e.preventDefault(); 
+                            }}
+                            onTouchStart={(e) => {
+                                e.preventDefault(); 
+                            }}
                         >
                             {overlayKind === "message" ? (
                                 <MessageBubble
@@ -583,12 +605,12 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 </Portal>
             )}
 
-            <ImagesPreviewModal
-                open={openModal}
-                images={previewList}
-                index={previewIndex}
-                onClose={() => setOpenModal(false)}
-            />
+                {/* <ImagesPreviewModal
+                    open={openModal}
+                    images={previewList}
+                    index={previewIndex}
+                    onClose={() => setOpenModal(false)}
+                /> */}
         </>
     );
 };

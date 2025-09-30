@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { useKeyboardResize } from "@/hooks/useKeyboardResize";
@@ -27,6 +27,9 @@ import MessageLimitNotice from "./components/MessageLimitNotice";
 import ExpandInputModal from "@/components/common/bottomSheet/ExpandInputModal";
 import { useCompensateScrollOnFooterChange } from "@/hooks/useCompensateScrollOnFooterChange";
 import TypingIndicator from './components/TypingIndicator';
+import PendingFilesList, { PendingFile } from "./components/PendingFilesList";
+import { usePendingFiles } from "./hooks/usePendingFiles";
+import { usePendingFilesHandlers } from "./hooks/usePendingFilesHandlers";
 
 const TypingIndicatorWrapper: React.FC<{
     typingUsers: { userId: number, userName: string, avatar?: string }[];
@@ -72,6 +75,15 @@ const SocialChatThread: React.FC = () => {
 
     const [inputBarHeight, setInputBarHeight] = useState(0);
     const [typingIndicatorHeight, setTypingIndicatorHeight] = useState(0);
+    
+    const {
+        pendingFiles: chatPendingFiles,
+        addPendingFile,
+        addPendingFiles: addChatPendingFiles,
+        updatePendingFile,
+        removePendingFile,
+        clearPendingFiles,
+    } = usePendingFiles();
 
     const {
         messagesEndRef, messagesContainerRef,
@@ -133,7 +145,6 @@ const SocialChatThread: React.FC = () => {
             botName: msg.botName === null ? undefined : msg.botName,
         }));
     }, [serverMessages, messages, roomId, userInfo]);
-
     const userRightCount = useMemo(
         () => displayMessages.reduce((acc, m) => {
             if (!m?.isRight) return acc;
@@ -154,7 +165,6 @@ const SocialChatThread: React.FC = () => {
     const isSendingMessage = getLoadingForRoom(roomId || "");
 
 
-
     const {
         handleScrollWithLoadMore,
         handleSendMessage: originalHandleSendMessage,
@@ -169,6 +179,8 @@ const SocialChatThread: React.FC = () => {
         addPendingFiles,
         pendingImages,
         pendingFiles,
+        chatPendingFiles,
+        clearPendingFiles,
         messageValue,
         setMessageValue,
         uploadImageMutation,
@@ -178,7 +190,7 @@ const SocialChatThread: React.FC = () => {
         updateMessageByTempId,
         updateMessageWithServerResponse,
         updateOldMessagesWithReadStatus,
-        roomId: roomId ?? "",
+        roomId : roomId ?? "",
         setLoadingMessages,
         onContainerScroll,
         hasNextPage,
@@ -201,15 +213,26 @@ const SocialChatThread: React.FC = () => {
         recalc
     });
 
-    const handleSendMessage = useCallback(async (e: any, field: string, force?: boolean) => {
-        await clearTypingAfterSend();
-        return originalHandleSendMessage(e, field, force);
-    }, [originalHandleSendMessage, clearTypingAfterSend]);
+    const {
+        handleSendMessage: handleSendMessageWithPending,
+        handleOpenGallery,
+        handleRetryUpload,
+        handleCameraResult
+    } = usePendingFilesHandlers({
+        chatPendingFiles,
+        addPendingFile,
+        updatePendingFile,
+        removePendingFile,
+        clearPendingFiles,
+        uploadImageMutation,
+        originalHandleSendMessage,
+        clearTypingAfterSend,
+        showToast,
+        messageValue,
+        messageTranslate,
+    });
 
-    // const handleSubmit = async (items: PhotoItem[]) => {
-    //     const files = await Promise.all(items.map(photoItemToFile));
-    //     await sendPickedFiles(files);
-    // };
+ 
     useCompensateScrollOnFooterChange(messagesContainerRef, effectiveFooterHeight, {
         stickToBottomThreshold: 16,
         clampDelta: 800,
@@ -440,11 +463,17 @@ const SocialChatThread: React.FC = () => {
                                         messageValue={messageValue}
                                         setMessageValue={setMessageValue}
                                         messageRef={messageRef}
-                                        handleSendMessage={handleSendMessage}
+                                        handleSendMessage={handleSendMessageWithPending}
                                         handleImageChange={handleImageChange}
                                         onTakePhoto={handleTakePhoto}
+                                        onOpenGallery={handleOpenGallery}
+                                        onCameraResult={handleCameraResult}
+                                        roomId={roomId}
                                         uploadImageMutation={uploadImageMutation}
                                         addPendingImages={addPendingImages}
+                                        pendingFiles={chatPendingFiles}
+                                        onRemovePendingFile={removePendingFile}
+                                        onRetryUpload={handleRetryUpload}
                                         isNative={isNative}
                                         isDesktop={isDesktop}
                                         messageTranslateRef={messageTranslateRef}
@@ -504,7 +533,7 @@ const SocialChatThread: React.FC = () => {
                         value={expandValue}
                         onChange={setExpandValue}
                         placeholder={expandPlaceholder}
-                        handleSendMessage={handleSendMessage}
+                        handleSendMessage={handleSendMessageWithPending}
                         actionFieldSend={actionFieldSend}
                         translateActionStatus={translateActionStatus}
                         sheetExpandMode={sheetExpandMode}

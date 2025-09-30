@@ -244,14 +244,12 @@ export const useSocialChatStore = create<SocialChatState>()(
 
                 if (index !== -1) {
                     const msg = state.messagesByRoomId[roomId][index];
-                    console.log('Updating message with userHasRead:', serverData.userHasRead);
                     Object.assign(msg, {
                         ...serverData,
                         id: serverData.id !== undefined ? serverData.id : msg.id,
                         isSend: true,
                         isError: false,
                     });
-                    console.log('Message after update:', msg.userHasRead);
                 }
             }),
             updateOldMessagesWithReadStatus: (roomId: string, activeUsersData: any[], currentUserId: number) =>
@@ -290,7 +288,7 @@ export const useSocialChatStore = create<SocialChatState>()(
                             oldMsg.userHasRead.length > 0 && 
                             !recentMessagesByUser.has(oldMsg.userId) || 
                             recentMessagesByUser.get(oldMsg.userId) !== index) {
-                            const hasActiveUsers = oldMsg.userHasRead.some((reader:any) => 
+                            const hasActiveUsers = oldMsg?.userHasRead?.some((reader:any) => 
                                 activeUserIds.includes(reader.userId)
                             );
                             if (hasActiveUsers) {

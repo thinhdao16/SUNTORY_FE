@@ -8,7 +8,6 @@ import {
     StreamEvent,
 } from "@/store/zustand/signalr-stream-store";
 import { useChatStore } from "@/store/zustand/chat-store";
-import { useParams } from 'react-router';
 
 export interface UseSignalRStreamOptions {
     logLevel?: signalR.LogLevel;
@@ -34,10 +33,12 @@ export interface UseSignalRStreamReturn {
     hasStreamError: (messageCode: string) => boolean;
     getStreamError: (messageCode: string) => string | null;
     manualRetry: () => void;
+    forceResetLoading: () => void;
 }
 
 export function useSignalRStream(
     deviceId: string,
+    sessionId?: string,
     options: UseSignalRStreamOptions = {}
 ): UseSignalRStreamReturn {
     const {
@@ -45,7 +46,6 @@ export function useSignalRStream(
         sendTimeoutMs = 15000,
         preferWebSockets = true,
     } = options;
-    const { sessionId } = useParams<{ sessionId?: string; type?: string }>();
 
     const {
         isConnected,
@@ -71,8 +71,12 @@ export function useSignalRStream(
 
     const connectingRef = useRef(false);
     const startPromiseRef = useRef<Promise<void> | null>(null);
+    const manualRetryRef = useRef<(() => void) | undefined>(undefined);
+    
+    const networkQualityRef = useRef<'good' | 'poor' | 'offline'>('good');
+    const lastChunkTimeRef = useRef<{ [key: string]: number }>({});
+    const streamBufferRef = useRef<{ [key: string]: any[] }>({});
 
-    // ====== Helpers ======
     const buildConnection = useCallback(() => {
         const tokenFactory = () => localStorage.getItem("token") || "";
 
@@ -90,8 +94,17 @@ export function useSignalRStream(
             });
         }
 
-        builder.withAutomaticReconnect([0, 2000, 10000, 30000]);
-
+        builder.withAutomaticReconnect({
+            nextRetryDelayInMilliseconds: (retryContext) => {
+                const baseDelay = Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 30000);
+                const jitter = Math.random() * 1000;
+                const delay = baseDelay + jitter;
+                if (retryContext.previousRetryCount > 5) {
+                    networkQualityRef.current = 'offline';
+                }
+                return delay;
+            }
+        });
         return builder.build();
     }, [logLevel, preferWebSockets]);
 
@@ -99,7 +112,10 @@ export function useSignalRStream(
         conn.off("ReceiveStreamChunk");
         conn.off("StreamComplete");
         conn.off("StreamError");
-
+        if (!sessionId) {
+            console.warn('[SignalR] SessionId is undefined, handlers not attached');
+            return;
+        }
         conn.on(
             "ReceiveStreamChunk",
             (data: {
@@ -110,7 +126,15 @@ export function useSignalRStream(
                 completeText: string;
                 userMessageCode: string;
                 userMessageId: number;
+                chunkLength: number;
             }) => {
+                if (!data.chatCode || !data.userMessageCode || data.chunkLength === 0) {
+                    return;
+                }
+                if (data.chatCode !== sessionId || data.chunkLength === 0) {
+                    return;
+                }
+                
                 const chunk: StreamChunk = {
                     id: data.botMessageId,
                     chatCode: data.chatCode,
@@ -121,9 +145,25 @@ export function useSignalRStream(
                     code: data.botMessageCode,
                     timestamp: new Date().toISOString(),
                 };
-                if (data.chatCode === sessionId ) {
-                    addStreamChunk(chunk);
-                    // setIsSending(true);
+                
+                const now = Date.now();
+                const messageKey = data.userMessageCode;
+                if (lastChunkTimeRef.current[messageKey]) {
+                    const timeDiff = now - lastChunkTimeRef.current[messageKey];
+                    if (timeDiff > 5000) {
+                        networkQualityRef.current = 'poor';
+                        console.warn(`[SignalR] Poor network: ${timeDiff}ms between chunks`);
+                    } else {
+                        networkQualityRef.current = 'good';
+                    }
+                }
+                lastChunkTimeRef.current[messageKey] = now;
+                
+                addStreamChunk(chunk);
+                
+                const existingStream = getStreamMessage(data.userMessageCode);
+                if (!existingStream || existingStream.chunks.length === 0) {
+                    setIsSending(true);
                 }
             }
         );
@@ -136,6 +176,13 @@ export function useSignalRStream(
                 chatCode: string;
                 userMessageCode: string;
             }) => {
+                if (!data.chatCode || !data.userMessageCode) {
+                    return;
+                }
+                if (data.chatCode !== sessionId) {
+                    return;
+                }
+                
                 const event: StreamEvent = {
                     id: data.botMessageId,
                     chatCode: data.chatCode,
@@ -143,10 +190,12 @@ export function useSignalRStream(
                     timestamp: new Date().toISOString(),
                     code: data.botMessageCode,
                 };
-                if (data.chatCode === sessionId) {
+                
                 completeStream(event);
                 setIsSending(false);
-                }
+                
+                delete lastChunkTimeRef.current[data.userMessageCode];
+                delete streamBufferRef.current[data.userMessageCode];
             }
         );
 
@@ -159,6 +208,13 @@ export function useSignalRStream(
                 userMessageCode: string;
                 errorMessage: string;
             }) => {
+                if (!data.chatCode || !data.userMessageCode) {
+                    return;
+                }
+                if (data.chatCode !== sessionId) {
+                    return;
+                }
+                
                 const event: StreamEvent = {
                     id: data.botMessageId,
                     chatCode: data.chatCode,
@@ -167,22 +223,63 @@ export function useSignalRStream(
                     errorMessage: data.errorMessage,
                     code: data.botMessageCode,
                 };
-                if (data.chatCode === sessionId) {
                 errorStream(event);
                 setIsSending(false);
-                }
+                delete lastChunkTimeRef.current[data.userMessageCode];
+                delete streamBufferRef.current[data.userMessageCode];
             }
         );
 
-        conn.onreconnecting(() => setConnection(false));
-        conn.onreconnected(async () => {
-            setConnection(true, conn.connectionId || undefined);
-            if (joinedForDeviceRef.current !== deviceId) {
-                try {
-                    await conn.invoke("JoinChatRoom", deviceId);
-                    joinedForDeviceRef.current = deviceId;
-                } catch (e) {
+        conn.onreconnecting((error) => {
+            console.log('[SignalR] Reconnecting...', error?.message);
+            setConnection(false);
+            setIsSending(false);
+            networkQualityRef.current = 'poor';
+        });
+        
+        conn.onreconnected(async (connectionId) => {
+            console.log('[SignalR] Reconnected with ID:', connectionId);
+            setConnection(true, connectionId || undefined);
+            setIsSending(false);
+            networkQualityRef.current = 'good';
+            
+            // ALWAYS rejoin room after reconnect
+            try {
+                await conn.invoke("JoinChatRoom", deviceId);
+                joinedForDeviceRef.current = deviceId;
+                console.log('[SignalR] Rejoined chat room:', deviceId);
+                
+                // Request recovery of incomplete streams for current session
+                if (sessionId) {
+                    const activeStreams = getActiveStreams();
+                    const sessionStreams = activeStreams.filter(s => s.chatCode === sessionId);
+                    
+                    if (sessionStreams.length > 0) {
+                        console.log(`[SignalR] Found ${sessionStreams.length} incomplete streams for session ${sessionId}`);
+                        
+                        // Try to recover each stream
+                        for (const stream of sessionStreams) {
+                            try {
+                                await conn.invoke("RecoverStream", {
+                                    messageCode: stream.messageCode,
+                                    chatCode: stream.chatCode,
+                                    lastChunkIndex: stream.chunks.length
+                                });
+                                console.log(`[SignalR] Requested recovery for stream ${stream.messageCode}`);
+                            } catch (err) {
+                                console.error(`[SignalR] Failed to recover stream ${stream.messageCode}:`, err);
+                            }
+                        }
+                    }
                 }
+            } catch (e) {
+                console.error("[SignalR] Failed to rejoin chat room:", e);
+                // Try manual retry if rejoin fails
+                setTimeout(() => {
+                    if (manualRetryRef.current) {
+                        manualRetryRef.current();
+                    }
+                }, 2000);
             }
         });
 
@@ -191,7 +288,7 @@ export function useSignalRStream(
             setIsSending(false);
             joinedForDeviceRef.current = null;
         });
-    }, [addStreamChunk, completeStream, errorStream, setConnection, setIsSending, deviceId]);
+    }, [addStreamChunk, completeStream, errorStream, setConnection, setIsSending, deviceId, sessionId, getActiveStreams]);
 
     const connect = useCallback(async () => {
         if (startedForDeviceRef.current === deviceId && connectionRef.current) {
@@ -233,9 +330,71 @@ export function useSignalRStream(
         return startPromise;
     }, [attachHandlers, buildConnection, deviceId, setConnection]);
 
+    // Recovery mechanism cho incomplete streams sau khi reload
+    const recoverIncompleteStreams = useCallback(async () => {
+        const activeStreams = getActiveStreams();
+        if (activeStreams.length > 0) {
+            console.log(`[SignalR] Recovering ${activeStreams.length} incomplete streams`);
+            
+            // Đợi connection stable
+            let retries = 0;
+            while (!isConnected && retries < 10) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                retries++;
+            }
+            
+            if (isConnected) {
+                // Request backend resend incomplete streams
+                activeStreams.forEach(stream => {
+                    console.log(`[SignalR] Requesting recovery for stream ${stream.messageCode}`);
+                    
+                    // Nếu stream đã quá 60s mà chưa complete, force complete
+                    const streamAge = Date.now() - new Date(stream.startTime).getTime();
+                    if (streamAge > 60000) {
+                        console.warn(`[SignalR] Stream ${stream.messageCode} too old (${streamAge}ms), force completing`);
+                        completeStream({
+                            id: stream.id,
+                            chatCode: stream.chatCode,
+                            messageCode: stream.messageCode,
+                            timestamp: new Date().toISOString(),
+                            code: stream.code,
+                        });
+                        setIsSending(false);
+                    } else {
+                        // Try to request resend from backend
+                        const conn = connectionRef.current;
+                        if (conn && conn.state === signalR.HubConnectionState.Connected) {
+                            conn.invoke("RecoverStream", {
+                                messageCode: stream.messageCode,
+                                chatCode: stream.chatCode,
+                                lastChunkIndex: stream.chunks.length
+                            }).catch(err => {
+                                console.error(`[SignalR] Failed to recover stream ${stream.messageCode}:`, err);
+                                // Fallback: force complete nếu không recover được
+                                completeStream({
+                                    id: stream.id,
+                                    chatCode: stream.chatCode,
+                                    messageCode: stream.messageCode,
+                                    timestamp: new Date().toISOString(),
+                                    code: stream.code,
+                                });
+                                setIsSending(false);
+                            });
+                        }
+                    }
+                });
+            }
+        }
+    }, [getActiveStreams, isConnected, completeStream, setIsSending]);
+
     useEffect(() => {
         if (!deviceId) return;
         void connect();
+
+        // Recover incomplete streams after connection
+        setTimeout(() => {
+            recoverIncompleteStreams();
+        }, 2000);
 
         return () => {
             (async () => {
@@ -252,10 +411,34 @@ export function useSignalRStream(
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [deviceId]);
 
+    // Re-attach handlers when sessionId changes to fix stale closure issue
+    useEffect(() => {
+        const conn = connectionRef.current;
+        if (conn && conn.state === signalR.HubConnectionState.Connected && sessionId) {
+            console.log(`[SignalR] Re-attaching handlers for session change: ${sessionId}`);
+            attachHandlers(conn);
+        } else if (!sessionId) {
+            console.log('[SignalR] Waiting for sessionId before attaching handlers');
+        }
+    }, [sessionId, attachHandlers]);
+
+    // Also attach handlers when connection is established and sessionId is available
+    useEffect(() => {
+        const conn = connectionRef.current;
+        if (conn && conn.state === signalR.HubConnectionState.Connected && sessionId && isConnected) {
+            // Small delay to ensure sessionId is properly set
+            setTimeout(() => {
+                console.log(`[SignalR] Attaching handlers after connection established: ${sessionId}`);
+                attachHandlers(conn);
+            }, 100);
+        }
+    }, [isConnected, sessionId, attachHandlers]);
+
     const sendStreamMessage = useCallback(
         async (chatCode: string, message: string, additionalData?: any) => {
             const conn = connectionRef.current;
             if (!conn || conn.state !== signalR.HubConnectionState.Connected) {
+                setIsSending(false); // Reset loading state khi connection fail
                 throw new Error("SignalR is not connected. Vui lòng đợi kết nối ổn định.");
             }
 
@@ -270,21 +453,59 @@ export function useSignalRStream(
             };
 
             const timeout = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error(`SendStreamMessage timeout ${sendTimeoutMs}ms`)), sendTimeoutMs)
+                setTimeout(() => {
+                    setIsSending(false); // Reset loading state khi timeout
+                    reject(new Error(`SendStreamMessage timeout ${sendTimeoutMs}ms`));
+                }, sendTimeoutMs)
             );
 
-            await Promise.race([conn.invoke("SendStreamMessage", payload), timeout]);
-            return messageCode;
+            try {
+                await Promise.race([conn.invoke("SendStreamMessage", payload), timeout]);
+                
+                // Thêm fallback timeout cho stream completion
+                setTimeout(() => {
+                    const streamMsg = getStreamMessage(messageCode);
+                    if (streamMsg && streamMsg.isStreaming && !streamMsg.isComplete) {
+                        console.warn(`Stream ${messageCode} không complete sau 60s, force complete`);
+                        completeStream({
+                            id: streamMsg.id,
+                            chatCode,
+                            messageCode,
+                            timestamp: new Date().toISOString(),
+                            code: streamMsg.code,
+                        });
+                        setIsSending(false);
+                    }
+                }, 60000); // 60 giây fallback
+                
+                return messageCode;
+            } catch (error) {
+                setIsSending(false); // Reset loading state khi có error
+                throw error;
+            }
         },
-        [deviceId, sendTimeoutMs]
+        [deviceId, sendTimeoutMs, getStreamMessage, completeStream, setIsSending]
     );
 
     const manualRetry = useCallback(() => {
         if (!deviceId) return;
+        // Reset tất cả states khi manual retry
+        setIsSending(false);
         startedForDeviceRef.current = null;
         joinedForDeviceRef.current = null;
         void connect();
-    }, [connect, deviceId]);
+    }, [connect, deviceId, setIsSending]);
+    
+    // Set ref for manualRetry to avoid circular dependency
+    useEffect(() => {
+        manualRetryRef.current = manualRetry;
+    }, [manualRetry]);
+
+    // Thêm function để force reset loading state
+    const forceResetLoading = useCallback(() => {
+        setIsSending(false);
+        console.warn("Force reset loading state");
+    }, [setIsSending]);
     useEffect(() => {
         const onOnline = () => {
             if (connectionRef.current?.state === signalR.HubConnectionState.Disconnected) manualRetry();
@@ -302,6 +523,57 @@ export function useSignalRStream(
             document.removeEventListener('visibilitychange', onVisible);
         };
     }, [manualRetry]);
+
+    // Heartbeat mechanism để keep connection alive
+    useEffect(() => {
+        if (!isConnected || !connectionRef.current) return;
+        
+        const heartbeatInterval = setInterval(() => {
+            const conn = connectionRef.current;
+            if (conn && conn.state === signalR.HubConnectionState.Connected) {
+                conn.invoke("Ping").catch(err => {
+                    console.warn('[SignalR] Heartbeat failed:', err);
+                    // Try to reconnect if heartbeat fails
+                    if (conn.state === signalR.HubConnectionState.Disconnected) {
+                        manualRetry();
+                    }
+                });
+            }
+        }, 30000); // Ping every 30 seconds
+        
+        return () => clearInterval(heartbeatInterval);
+    }, [isConnected, manualRetry]);
+    
+    // Stale stream detection - check for streams không nhận chunk trong 10s
+    useEffect(() => {
+        const checkStaleStreams = setInterval(() => {
+            const activeStreams = getActiveStreams();
+            const now = Date.now();
+            
+            activeStreams.forEach(stream => {
+                const lastUpdate = lastChunkTimeRef.current[stream.messageCode];
+                if (lastUpdate && (now - lastUpdate) > 10000) {
+                    console.warn(`[SignalR] Stale stream detected: ${stream.messageCode}, last update ${now - lastUpdate}ms ago`);
+                    
+                    // Nếu stream quá 30s không có update, force complete
+                    if ((now - lastUpdate) > 30000) {
+                        console.error(`[SignalR] Force completing stale stream: ${stream.messageCode}`);
+                        completeStream({
+                            id: stream.id,
+                            chatCode: stream.chatCode,
+                            messageCode: stream.messageCode,
+                            timestamp: new Date().toISOString(),
+                            code: stream.code,
+                        });
+                        setIsSending(false);
+                        delete lastChunkTimeRef.current[stream.messageCode];
+                    }
+                }
+            });
+        }, 5000); // Check every 5 seconds
+        
+        return () => clearInterval(checkStaleStreams);
+    }, [getActiveStreams, completeStream, setIsSending]);
 
     // ====== selectors/metrics
     const isStreamActive = useCallback(
@@ -359,5 +631,6 @@ export function useSignalRStream(
         hasStreamError,
         getStreamError,
         manualRetry,
+        forceResetLoading, // Thêm function để force reset
     };
 }

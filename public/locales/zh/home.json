@@ -695,5 +695,12 @@
   "{{n}} days ago": "{{n}}天前",
   "Last Week": "上周",
   "Just now": "刚刚",
-  "{{count}} minutes ago_other": "{{count}}分钟前"
+  "{{count}} minutes ago_other": "{{count}}分钟前",
+  "First name too long! Maximum 20 characters.": "名字太长！最多20个字符。",
+  "Last name too long! Maximum 20 characters.": "姓氏太长！最多20个字符。",
+  "First name is required!": "名字是必需的！",
+  "Last name is required!": "姓氏是必需的！",
+  "Year of birth is required!": "年份是必需的！",
+  "Year must be 1900 or later!": "年份必须是1900或更早！",
+  "Year cannot be in the future!": "年份不能是未来！"
 }

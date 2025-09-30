@@ -14,6 +14,7 @@ export interface UsePostSignalROptions {
     enableDebugLogs?: boolean;
     preferWebSockets?: boolean;
     onPostUpdated?: (data: any) => void;
+    onPostCreated?: (data: any) => void;
     onCommentAdded?: (data: any) => void;
     onCommentUpdated?: (data: any) => void;
     onCommentDeleted?: (data: any) => void;
@@ -33,6 +34,7 @@ export function usePostSignalR(
         enableDebugLogs = false,
         preferWebSockets = true,
         onPostUpdated,
+        onPostCreated,
         onCommentAdded,
         onCommentUpdated,
         onCommentDeleted,
@@ -103,7 +105,6 @@ export function usePostSignalR(
     const leavePostUpdates = useCallback(async (postCode: string) => {
         const conn = connectionRef.current;
         if (!conn || conn.state !== signalR.HubConnectionState.Connected) {
-            // If connection is not available, just remove from local tracking
             joinedPostsRef.current.delete(postCode);
             log(`Connection not available, removed ${postCode} from local tracking`);
             return false;
@@ -117,7 +118,6 @@ export function usePostSignalR(
             return true;
         } catch (e) {
             log("LeavePostUpdates failed", e);
-            // Still remove from local tracking even if server call failed
             joinedPostsRef.current.delete(postCode);
             return false;
         }
@@ -187,32 +187,38 @@ export function usePostSignalR(
                 return { ...old, ...patch };
             });
         });
+    }, [queryClient]);
 
-        // queryClient.setQueriesData<{ pages?: Array<{ data?: SocialPost[] }> }>(
-        //     { predicate: ({ queryKey }) => Array.isArray(queryKey) && queryKey[0] === 'socialFeed' },
-        //     (old) => {
-        //         if (!old?.pages) return old;
-        //         const pages = old.pages.map(page => {
-        //             if (!page?.data) return page;
-        //             const data = page.data.map(post => codes.includes(post.code) ? { ...post, ...patch } : post);
-        //             return { ...page, data };
-        //         });
-        //         return { ...old, pages };
-        //     }
-        // );
+    const applyCommentUpdate = useCallback((postCode: string, commentData: any, action: 'add' | 'update' | 'delete') => {
+        if (!postCode || !commentData) return;
 
-        // queryClient.setQueriesData<{ pages?: Array<{ data?: SocialPost[] }> }>(
-        //     { predicate: ({ queryKey }) => Array.isArray(queryKey) && queryKey[0] === 'socialFeedPosts' },
-        //     (old) => {
-        //         if (!old?.pages) return old;
-        //         const pages = old.pages.map(page => {
-        //             if (!page?.data) return page;
-        //             const data = page.data.map(post => codes.includes(post.code) ? { ...post, ...patch } : post);
-        //             return { ...page, data };
-        //         });
-        //         return { ...old, pages };
-        //     }
-        // );
+        queryClient.setQueryData(['comments', postCode], (old: any) => {
+            if (!old?.pages) return old;
+
+            const pages = old.pages.map((page: any) => {
+                if (!page?.data) return page;
+
+                let updatedData = [...page.data];
+
+                switch (action) {
+                    case 'add':
+                        updatedData = [commentData, ...updatedData];
+                        break;
+                    case 'update':
+                        updatedData = updatedData.map((comment: any) => 
+                            comment.id === commentData.id ? { ...comment, ...commentData } : comment
+                        );
+                        break;
+                    case 'delete':
+                        updatedData = updatedData.filter((comment: any) => comment.id !== commentData.id);
+                        break;
+                }
+
+                return { ...page, data: updatedData };
+            });
+
+            return { ...old, pages };
+        });
     }, [queryClient]);
 
     const schedulePostRefresh = useCallback((postCode: string, delay = 600) => {
@@ -273,7 +279,10 @@ export function usePostSignalR(
                         });
                         queryClient.invalidateQueries(['feedDetail', originalPostCode]);
                     }
+                    
+                    queryClient.invalidateQueries({ queryKey: ['socialFeed'] });
                 }
+                onPostCreated?.(data);
                 onPostUpdated?.(data);
                 return;
             }
@@ -291,10 +300,14 @@ export function usePostSignalR(
             console.log("CommentAdded received:", data);
             const { primary, codes } = resolveCodesFromPayload(data);
             if (!primary || !joinedPostsRef.current.has(primary)) return;
+            
+            if (data.comment) {
+                applyCommentUpdate(primary, data.comment, 'add');
+            }
+            
             const patch = applyPatchSafe(codes, data);
             applyPatchToQueryCache(codes, patch);
             schedulePostRefresh(primary);
-            queryClient.invalidateQueries(['comments', primary]);
             onCommentAdded?.(data);
         });
 
@@ -303,6 +316,11 @@ export function usePostSignalR(
             console.log("CommentUpdated received:", data);
             const { primary, codes } = resolveCodesFromPayload(data);
             if (!primary || !joinedPostsRef.current.has(primary)) return;
+            
+            if (data.comment) {
+                applyCommentUpdate(primary, data.comment, 'update');
+            }
+            
             const patch = applyPatchSafe(codes, data);
             applyPatchToQueryCache(codes, patch);
             schedulePostRefresh(primary);
@@ -315,6 +333,12 @@ export function usePostSignalR(
             console.log("CommentDeleted received:", data);
             const { primary, codes } = resolveCodesFromPayload(data);
             if (!primary || !joinedPostsRef.current.has(primary)) return;
+            
+            if (data.comment || data.commentId) {
+                const commentToDelete = data.comment || { id: data.commentId };
+                applyCommentUpdate(primary, commentToDelete, 'delete');
+            }
+            
             const patch = applyPatchSafe(codes, data);
             applyPatchToQueryCache(codes, patch);
             schedulePostRefresh(primary);
@@ -348,10 +372,19 @@ export function usePostSignalR(
 
         connection.off("CommentLiked");
         connection.on("CommentLiked", (data: any) => {
-            log("CommentLiked received:", data);
+            console.log("CommentLiked received:", data);
             if (data?.userId === useAuthStore.getState().user?.id) return;
             const { primary, codes } = resolveCodesFromPayload(data);
             if (!primary || !joinedPostsRef.current.has(primary)) return;
+            if (data.comment) {
+                const updatedComment = {
+                    ...data.comment,
+                    reactionCount: data.reactionCount || data.comment.reactionCount,
+                    isLike: data.isLike !== undefined ? data.isLike : data.comment.isLike
+                };
+                applyCommentUpdate(primary, updatedComment, 'update');
+            }
+            
             const patch = applyPatchSafe(codes, data);
             applyPatchToQueryCache(codes, patch);
             schedulePostRefresh(primary);
@@ -365,6 +398,15 @@ export function usePostSignalR(
             if (data?.userId === useAuthStore.getState().user?.id) return;
             const { primary, codes } = resolveCodesFromPayload(data);
             if (!primary || !joinedPostsRef.current.has(primary)) return;
+            if (data.comment) {
+                const updatedComment = {
+                    ...data.comment,
+                    reactionCount: data.reactionCount || data.comment.reactionCount,
+                    isLike: data.isLike !== undefined ? data.isLike : data.comment.isLike
+                };
+                applyCommentUpdate(primary, updatedComment, 'update');
+            }
+            
             const patch = applyPatchSafe(codes, data);
             applyPatchToQueryCache(codes, patch);
             schedulePostRefresh(primary);
@@ -393,7 +435,6 @@ export function usePostSignalR(
             isConnectedRef.current = true;
             log("Reconnected:", id);
             
-            // Rejoin all previously joined posts after reconnection
             const postsToRejoin = Array.from(joinedPostsRef.current);
             joinedPostsRef.current.clear();
             
@@ -471,12 +512,10 @@ export function usePostSignalR(
         const conn = connectionRef.current;
         if (!conn) return;
         try {
-            // Only try to leave post updates if connection is still connected
             if (conn.state === signalR.HubConnectionState.Connected) {
                 const joinedPosts = Array.from(joinedPostsRef.current);
                 log(`Stopping khi xóa  thì LeavePostUpdates cho signal`, joinedPosts);
                 
-                // Use Promise.allSettled to avoid stopping on first failure
                 const leavePromises = joinedPosts.map(code => 
                     leavePostUpdates(code).catch(error => {
                         log(`Failed to leave post updates for ${code}:`, error);

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { IonApp, IonRouterOutlet, setupIonicReact } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
 import "@ionic/react/css/core.css";
@@ -20,6 +20,7 @@ import { GOOGLE_WEB_CLIENT_ID, initGoogleAuth } from "@/config/google";
 import useAppInit from "./hooks/useAppInit";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { NotificationList } from "./components/notify/NotificationList";
+import { RefreshProvider } from "@/contexts/RefreshContext";
 
 setupIonicReact();
 initGoogleAuth();
@@ -33,15 +34,17 @@ const App: React.FC = () => {
   }, []);
   return (
     <GoogleOAuthProvider clientId={GOOGLE_WEB_CLIENT_ID}>
-      <IonApp className="ion-light">
-        <IonReactRouter>
-          <IonRouterOutlet>
-            <AppRoutes />
-          </IonRouterOutlet>
-            <NotificationList />
-          <Global />
-        </IonReactRouter>
-      </IonApp>
+      <RefreshProvider>
+        <IonApp className="ion-light">
+          <IonReactRouter>
+            <IonRouterOutlet>
+              <AppRoutes />
+            </IonRouterOutlet>
+              <NotificationList />
+            <Global />
+          </IonReactRouter>
+        </IonApp>
+      </RefreshProvider>
     </GoogleOAuthProvider>
   );
 };

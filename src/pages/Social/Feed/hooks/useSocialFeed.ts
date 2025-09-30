@@ -15,6 +15,8 @@ interface UseSocialFeedOptions {
   feedType?: number;
   hashtagNormalized?: string;
   enabled?: boolean;
+  staleTime?: number;
+  cacheTime?: number;
 }
 
 export const useSocialFeedQuery = (options: UseSocialFeedQueryOptions = {}) => {
@@ -68,7 +70,7 @@ export const useSocialFeedQuery = (options: UseSocialFeedQueryOptions = {}) => {
 };
 
 export const useSocialFeed = (options: UseSocialFeedOptions = {}) => {
-  const { pageSize = 20, feedType, hashtagNormalized, enabled = true } = options;
+  const { pageSize = 20, feedType, hashtagNormalized, enabled = true, staleTime = 5 * 60 * 1000, cacheTime = 30 * 60 * 1000 } = options;
 
   const {
     getFeedPosts,
@@ -99,6 +101,8 @@ export const useSocialFeed = (options: UseSocialFeedOptions = {}) => {
       SocialFeedService.getFeedWithLastPostCode(pageParam, pageSize, feedType, hashtagNormalized),
     {
       enabled,
+      staleTime,
+      cacheTime,
       getNextPageParam: (lastPage, pages) => {
         if (!lastPage?.data) return undefined;
         
@@ -111,7 +115,7 @@ export const useSocialFeed = (options: UseSocialFeedOptions = {}) => {
       },
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
-      refetchOnMount: true,
+      refetchOnMount: false,
       onSuccess: (data) => {
         const allPosts = data?.pages?.flatMap(page => page.data || []) || [];
         if (data?.pages?.length === 1) {

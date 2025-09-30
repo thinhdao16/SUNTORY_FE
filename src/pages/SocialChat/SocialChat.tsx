@@ -1,12 +1,12 @@
 import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { useEffect } from 'react';
 import SocialChatHeader from './SocialChatHeader';
 import { useSocialChatLayout } from './useSocialChatLayout';
 import { motion } from "framer-motion";
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { Capacitor } from '@capacitor/core';
 import { useTranslation } from 'react-i18next';
-import { useLanguageSwitcher } from '@/pages/Home/hooks/useLanguageSwitcher';
-import { useAuthInfo } from '../Auth/hooks/useAuthInfo';
+
 
 function ChatSocial() {
   const { t } = useTranslation();
@@ -40,7 +40,7 @@ function ChatSocial() {
             goTo={goTo}
             setSearch={setSearch}
             search={search}
-            handleQR={handleQR}
+            handleQR={handleQR} 
             type={type || "recent"}
           />
         )}

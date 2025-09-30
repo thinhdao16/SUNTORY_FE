@@ -77,36 +77,10 @@ const FeedDetail: React.FC = () => {
         isFetchingNextPage,
         refetch: refetchComments
     } = useInfiniteComments(postCode);
-
     const postSignalR = usePostSignalR(deviceInfo.deviceId ?? '', {
         postId: postCode || '',
         autoConnect: true,
-        enableDebugLogs: true,
-        onPostUpdated: () => {
-            void refetchPost();
-        },
-        onCommentAdded: () => {
-            void refetchComments();
-        },
-        onCommentUpdated: () => {
-            void refetchComments();
-        },
-        onCommentDeleted: () => {
-            void refetchComments();
-        },
-        onPostLiked: () => {
-            void refetchPost();
-        },
-        onPostUnliked: () => {
-            void refetchPost();
-        },
-        onCommentLiked: () => {
-            void refetchComments();
-        },
-        onCommentUnliked: () => {
-            void refetchComments();
-        },
-    });
+        enableDebugLogs: true});
     const { joinPostUpdates } = postSignalR;
 
     useEffect(() => {
@@ -188,7 +162,8 @@ const FeedDetail: React.FC = () => {
             if (editingComment) {
                 await updateCommentMutation.mutateAsync({
                     commentCode: editingComment.code,
-                    content: commentText.trim()
+                    content: commentText.trim(),
+                    postCode: postCode
                 });
                 setEditingComment(null);
             } else if (replyingTo) {
@@ -345,11 +320,14 @@ const FeedDetail: React.FC = () => {
     };
 
     const handleDeleteComment = async () => {
-        if (!selectedComment) return;
+        if (!selectedComment || !postCode) return;
         closeCommentOptions();
 
         try {
-            await deleteCommentMutation.mutateAsync(selectedComment.code);
+            await deleteCommentMutation.mutateAsync({
+                commentCode: selectedComment.code,
+                postCode: postCode
+            });
             void refetchComments();
             void refetchPost();
         } catch (error) {

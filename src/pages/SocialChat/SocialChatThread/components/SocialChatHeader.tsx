@@ -56,7 +56,6 @@ const SocialChatHeader: React.FC<SocialChatHeaderProps> = ({
     currentUserId,
     roomId
 }) => {
-    console.log(roomChatInfo)
     const history = useHistory()
     const src = roomChatInfo?.avatarRoomChat?.trim() ? roomChatInfo.avatarRoomChat : avatarFallback;
     const isFriend = !!roomData?.isFriend;

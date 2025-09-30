@@ -19,7 +19,7 @@ const Feed: React.FC = () => {
   return (
     <>
     <div className={`${type === "camera" ? "h-screen" : "bg-white h-screen flex flex-col"} `}>
-      {( type === 'search-result' || type === undefined || type === "recent") && (
+      {(  type === undefined || type === "recent") && (
         <FeedHeader
           leftIcon={leftIcon}
           rightIcon={rightIcon}
