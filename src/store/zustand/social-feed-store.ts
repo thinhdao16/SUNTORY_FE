@@ -273,20 +273,50 @@ export const useSocialFeedStore = create<SocialFeedStore>((set, get) => ({
       }
       acc[key] = {
         ...feed,
-        posts: feed.posts.map((post: SocialPost) =>
-          post.code === postCode
-            ? mergePost(post)
-            : post
-        ),
+        posts: feed.posts.map((post: SocialPost) => {
+          if (post.code === postCode) {
+            // Direct match: merge into the post itself (and nested original if same)
+            return mergePost(post);
+          }
+          // If this is a repost card whose original matches the target code, update nested original
+          if (post.originalPost && post.originalPost.code === postCode) {
+            return {
+              ...post,
+              // Propagate key counters/flags to top-level so UI reads stay in sync
+              repostCount: (patch as any)?.repostCount ?? post.repostCount,
+              reactionCount: (patch as any)?.reactionCount ?? post.reactionCount,
+              commentCount: (patch as any)?.commentCount ?? post.commentCount,
+              shareCount: (patch as any)?.shareCount ?? post.shareCount,
+              isRepostedByCurrentUser: (patch as any)?.isRepostedByCurrentUser ?? post.isRepostedByCurrentUser,
+              originalPost: { ...post.originalPost, ...patch },
+            } as SocialPost;
+          }
+          return post;
+        }),
       };
       return acc;
     }, {} as Record<string, CachedFeed | undefined>) as Record<string, CachedFeed>;
 
+    // Sync currentPost as well (detail page)
+    const curr = state.currentPost;
+    let newCurrent = curr;
+    if (curr?.code === postCode) {
+      newCurrent = mergePost(curr);
+    } else if (curr?.originalPost && curr.originalPost.code === postCode) {
+      newCurrent = {
+        ...curr,
+        repostCount: (patch as any)?.repostCount ?? curr.repostCount,
+        reactionCount: (patch as any)?.reactionCount ?? curr.reactionCount,
+        commentCount: (patch as any)?.commentCount ?? curr.commentCount,
+        shareCount: (patch as any)?.shareCount ?? curr.shareCount,
+        isRepostedByCurrentUser: (patch as any)?.isRepostedByCurrentUser ?? curr.isRepostedByCurrentUser,
+        originalPost: { ...curr.originalPost, ...patch },
+      } as SocialPost;
+    }
+
     set({
       cachedFeeds: updatedFeeds,
-      currentPost: state.currentPost?.code === postCode
-        ? mergePost(state.currentPost)
-        : state.currentPost,
+      currentPost: newCurrent,
     });
   },
 

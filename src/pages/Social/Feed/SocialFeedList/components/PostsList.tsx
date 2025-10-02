@@ -34,6 +34,8 @@ export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const visibilityMapRef = useRef<Map<string, boolean>>(new Map());
+  const fetchLockRef = useRef(false);
+  const lastFetchTsRef = useRef(0);
 
   const handleVisibilityChange = useCallback((entries: IntersectionObserverEntry[]) => {
     let hasChange = false;
@@ -61,13 +63,26 @@ export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
     const observer = new IntersectionObserver(
       (entries) => {
         const lastEntry = entries[0];
-        if (lastEntry.isIntersecting && hasNextPage && !isFetchingNextPage && !loading) {
-          onFetchNextPage();
-        }
+        if (!lastEntry?.isIntersecting) return;
+        if (!hasNextPage || isFetchingNextPage || loading) return;
+        if (fetchLockRef.current) return;
+
+        // throttle to at most 1 call per 400ms
+        const now = Date.now();
+        if (now - lastFetchTsRef.current < 400) return;
+
+        fetchLockRef.current = true;
+        lastFetchTsRef.current = now;
+        Promise.resolve(onFetchNextPage()).finally(() => {
+          // release lock slightly later to avoid back-to-back triggers on same frame
+          setTimeout(() => {
+            fetchLockRef.current = false;
+          }, 200);
+        });
       },
       {
         threshold: 0.1,
-        rootMargin: '100px'
+        rootMargin: '150px'
       }
     );
 

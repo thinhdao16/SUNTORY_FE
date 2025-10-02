@@ -5,6 +5,7 @@ import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
 import { SearchUser, SearchPost } from '@/services/social/search-service';
 import { SocialFeedCard } from '@/pages/Social/Feed/components/SocialFeedCard';
 import { SocialPost } from '@/types/social-feed';
+import { SocialFeedService } from '@/services/social/social-feed-service';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useInfiniteSearch } from '@/hooks/useInfiniteSearch';
 import InfiniteScrollContainer from '@/components/common/InfiniteScrollContainer';
@@ -12,6 +13,7 @@ import { usePostLike } from '@/pages/Social/Feed/hooks/usePostLike';
 import { usePostRepost } from '@/pages/Social/Feed/hooks/usePostRepost';
 import { usePostSignalR } from '@/hooks/usePostSignalR';
 import { useIonToast } from '@ionic/react';
+import { useAuthStore } from '@/store/zustand/auth-store';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 import { PrivacyPostType } from '@/types/privacy';
 import { handleCopyToClipboard } from '@/components/common/HandleCoppy';
@@ -73,7 +75,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         const q = effectiveQuery;
         if (!propActiveTab) setLocalActiveTab(newTab);
         const path = `/social-feed/search-result/${newTab}?q=${encodeURIComponent(q)}`;
-        // Replace instead of push to avoid stacking history entries for tab switches
         history.replace(path);
         if (onTabChange) onTabChange(newTab);
     }, [effectiveQuery, history, onTabChange, propActiveTab]);
@@ -135,7 +136,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     totalComments: post.commentCount || 0,
                     totalReposts: post.repostCount || 0,
                     userReaction: null,
-                    isUserReposted: false,
+                    isRepostedByCurrentUser: false,
                     viewCount: post.viewCount || 0,
                     isBookmarked: post.isBookmarked || false,
                     bookmarkCount: post.bookmarkCount || 0
@@ -190,6 +191,21 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     useEffect(() => {
         setLocalPosts(transformedPosts);
     }, [transformedPosts]);
+
+    // Determine if there is any result for the current tab to avoid showing
+    // both the empty-state and the container's "No more results" indicator
+    const hasAnyResults = useMemo(() => {
+        switch (activeTab) {
+            case 'people':
+                return users.length > 0;
+            case 'posts':
+            case 'latest':
+                return localPosts.length > 0;
+            case 'all':
+            default:
+                return users.length > 0 || localPosts.length > 0;
+        }
+    }, [activeTab, users.length, localPosts.length]);
 
     const handleLike = useCallback((postCode: string) => {
         const post = localPosts.find((p: SocialPost) => p.code === postCode);
@@ -253,17 +269,27 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     }, [presentToast, t]);
 
     const handleRepostConfirm = useCallback((postCode: string, privacy: PrivacyPostType) => {
-        setLocalPosts(prevPosts => 
-            prevPosts.map(p => 
-                p.code === postCode 
-                    ? { 
-                        ...p, 
-                        isUserReposted: true,
-                        repostCount: (p.repostCount || 0) + 1
-                    } 
-                    : p
-            )
-        );
+        const { user } = useAuthStore.getState();
+        const prevSnapshot = localPosts;
+
+        const isUnrepostCase = localPosts.some(p => !!p.isRepost && p.user?.id === user?.id && p.originalPost?.code === postCode);
+
+        setLocalPosts(prev => {
+            let next = prev.map(p => {
+                if (p.code === postCode) {
+                    return {
+                        ...p,
+                        isRepostedByCurrentUser: isUnrepostCase ? false : true,
+                        repostCount: Math.max(0, (p.repostCount || 0) + (isUnrepostCase ? -1 : 1))
+                    };
+                }
+                return p;
+            });
+            if (isUnrepostCase) {
+                next = next.filter(p => !(p.isRepost && p.user?.id === user?.id && p.originalPost?.code === postCode));
+            }
+            return next;
+        });
 
         postRepostMutation.mutate(
             {
@@ -272,28 +298,23 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 privacy: Number(privacy)
             },
             {
-                onSuccess: () => {
-                    presentToast({
-                        message: t('Post reposted successfully'),
-                        duration: 2000,
-                        position: 'top',
-                        color: 'success'
-                    });
+                onSuccess: async () => {
+                    try {
+                        const fresh = await SocialFeedService.getPostByCode(postCode);
+                        setLocalPosts(prev => prev.map(p => p.code === postCode ? {
+                            ...p,
+                            isRepostedByCurrentUser: (fresh as any)?.isRepostedByCurrentUser as any,
+                            repostCount: fresh?.repostCount,
+                            reactionCount: fresh?.reactionCount,
+                            commentCount: fresh?.commentCount,
+                            shareCount: fresh?.shareCount,
+                        } : p));
+                    } catch {}
                 },
                 onError: () => {
-                    setLocalPosts(prevPosts => 
-                        prevPosts.map(p => 
-                            p.code === postCode 
-                                ? { 
-                                    ...p, 
-                                    isUserReposted: false,
-                                    repostCount: Math.max(0, (p.repostCount || 0) - 1)
-                                } 
-                                : p
-                        )
-                    );
+                    setLocalPosts(prevSnapshot);
                     presentToast({
-                        message: t('Failed to repost'),
+                        message: t('Failed to update repost'),
                         duration: 2000,
                         position: 'top',
                         color: 'danger'
@@ -301,7 +322,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 }
             }
         );
-    }, [postRepostMutation, presentToast, t]);
+    }, [localPosts, postRepostMutation, presentToast, t]);
 
     useEffect(() => {
         if (searchQuery && activeTab) {
@@ -479,6 +500,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 hasMore={hasMore}
                 isLoading={isLoading}
                 className="pb-32"
+                showEndIndicator={hasAnyResults}
             >
                 {renderContent()}
             </InfiniteScrollContainer>

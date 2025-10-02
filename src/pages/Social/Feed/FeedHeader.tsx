@@ -26,7 +26,7 @@ const FeedHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, search
                 </>
             ) : (
                 <img
-                    src={user?.avatar || avatarFallback}
+                    src={user?.avatarLink || avatarFallback}
                     alt={user?.name}
                     className="w-9 h-9  rounded-2xl object-cover"
                     onError={(e) => {

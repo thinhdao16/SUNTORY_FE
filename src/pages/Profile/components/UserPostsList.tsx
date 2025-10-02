@@ -23,7 +23,6 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
     const showToast = useToastStore((state) => state.showToast);
     const scrollRef = useRef<HTMLDivElement>(null);
     
-    // Repost privacy handled inside SocialFeedCard via embedded PrivacyBottomSheet
 
     const {
         data,

@@ -96,13 +96,14 @@ export const useSocialFeed = (options: UseSocialFeedOptions = {}) => {
     refetch,
     isRefetching,
   } = useInfiniteQuery(
-    ['socialFeed', { feedType, hashtagNormalized, pageSize }],
+    ['socialFeed', feedType ?? 'all', hashtagNormalized ?? 'none', pageSize],
     ({ pageParam }) =>
       SocialFeedService.getFeedWithLastPostCode(pageParam, pageSize, feedType, hashtagNormalized),
     {
       enabled,
       staleTime,
       cacheTime,
+      keepPreviousData: true,
       getNextPageParam: (lastPage, pages) => {
         if (!lastPage?.data) return undefined;
         
@@ -114,8 +115,9 @@ export const useSocialFeed = (options: UseSocialFeedOptions = {}) => {
         return lastPost?.code || undefined;
       },
       refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
+      refetchOnReconnect: false,
       refetchOnMount: false,
+      retry: 1,
       onSuccess: (data) => {
         const allPosts = data?.pages?.flatMap(page => page.data || []) || [];
         if (data?.pages?.length === 1) {

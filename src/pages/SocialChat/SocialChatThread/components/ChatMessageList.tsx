@@ -63,7 +63,6 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     roomData
 }) => {
     const { t } = useTranslation();
-
     const messageGroups = useMemo(() => {
         const latestFriendlyAcceptedIndex = allMessages.reduce((latestIdx, msg: any, idx) => {
             if ((msg as any).messageType === 10 && (msg as any).messageText) {

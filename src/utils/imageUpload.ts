@@ -15,25 +15,62 @@ export interface ImageItem {
     mediaType: MediaType;
     isExisting?: boolean;
     isUploaded?: boolean;
+    // internal: upload abort controller id/reference
+    _abortId?: string;
 }
-
+ 
 export interface ImageUploadOptions {
     onProgress?: (imageIndex: number, progress: 'uploading' | 'success' | 'error') => void;
     onComplete?: (images: ImageItem[]) => void;
-    uploadFunction: (params: { files: File[], width?: number, height?: number }) => Promise<any>;
+    uploadFunction: (params: { files: File[], width?: number, height?: number, signal?: AbortSignal }) => Promise<any>;
 }
 
-/**
- * Reusable image upload utility that handles:
- * - Local preview creation
- * - File upload with progress tracking
- * - Error handling
- * - Memory cleanup
- */
+export function getImageDimensions(file: File): Promise<{width: number, height: number}> {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve({ width: img.naturalWidth, height: img.naturalHeight });
+        };
+        
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('Failed to load image'));
+        };
+        
+        img.src = url;
+    });
+}
+
+export function getVideoDimensions(file: File): Promise<{width: number, height: number}> {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        const url = URL.createObjectURL(file);
+        
+        video.onloadedmetadata = () => {
+            URL.revokeObjectURL(url);
+            resolve({ width: video.videoWidth, height: video.videoHeight });
+        };
+        
+        video.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('Failed to load video'));
+        };
+        
+        video.src = url;
+    });
+}
+
 export class ImageUploadManager {
     private images: ImageItem[] = [];
     private options: ImageUploadOptions;
     private uploadMutation?: any;
+    // Track controllers by unique id
+    private controllers: Map<string, AbortController> = new Map();
+    // Track files that have been canceled even if their ImageItem isn't created yet
+    private canceledFiles: WeakSet<File> = new WeakSet();
 
     constructor(options: ImageUploadOptions, uploadMutation?: any) {
         this.options = options;
@@ -50,6 +87,10 @@ export class ImageUploadManager {
         const newImages: ImageItem[] = [];
         
         for (const file of files) {
+            // Skip files that were canceled before their turn
+            if (this.canceledFiles.has(file)) {
+                continue;
+            }
             try {
                 let dimensions;
                 let mediaType: MediaType;
@@ -66,6 +107,7 @@ export class ImageUploadManager {
                     mediaType = 'image';
                 }
                 
+                const abortId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
                 newImages.push({
                     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     file,
@@ -73,17 +115,20 @@ export class ImageUploadManager {
                     isUploading: true,
                     width: dimensions.width,
                     height: dimensions.height,
-                    mediaType
+                    mediaType,
+                    _abortId: abortId
                 });
             } catch (error) {
                 // Fallback without dimensions
                 const mediaType: MediaType = file.type.startsWith('video/') ? 'video' : 'image';
+                const abortId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
                 newImages.push({
                     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     file,
                     localUrl: URL.createObjectURL(file),
                     isUploading: true,
-                    mediaType
+                    mediaType,
+                    _abortId: abortId
                 });
             }
         }
@@ -172,11 +217,47 @@ export class ImageUploadManager {
     removeImage(index: number): ImageItem[] {
         if (index >= 0 && index < this.images.length) {
             const imageToRemove = this.images[index];
+            // Mark file as canceled to avoid later re-add when addFiles finishes
+            if (imageToRemove?.file) {
+                this.canceledFiles.add(imageToRemove.file);
+            }
+            // Cancel in-flight upload if any
+            if (imageToRemove?._abortId) {
+                const ctrl = this.controllers.get(imageToRemove._abortId);
+                if (ctrl) {
+                    ctrl.abort();
+                    this.controllers.delete(imageToRemove._abortId);
+                }
+            }
             // Clean up local URL to prevent memory leaks
             URL.revokeObjectURL(imageToRemove.localUrl);
             this.images = this.images.filter((_, i) => i !== index);
         }
         return this.images;
+    }
+
+    /**
+     * Mark a file as canceled even if its ImageItem hasn't been added yet.
+     * Also abort any existing controller associated with this file.
+     */
+    cancelFile(file: File): void {
+        try {
+            this.canceledFiles.add(file);
+            // If an item already exists for this file, abort and remove it
+            const idx = this.images.findIndex(it => it.file === file);
+            if (idx >= 0) {
+                const it = this.images[idx];
+                if (it?._abortId) {
+                    const ctrl = this.controllers.get(it._abortId);
+                    if (ctrl) {
+                        ctrl.abort();
+                        this.controllers.delete(it._abortId);
+                    }
+                }
+                try { URL.revokeObjectURL(it.localUrl); } catch {}
+                this.images.splice(idx, 1);
+            }
+        } catch {}
     }
 
     /**
@@ -204,6 +285,14 @@ export class ImageUploadManager {
      * Clear all images and cleanup URLs
      */
     clear(): void {
+        // Abort all ongoing uploads
+        try {
+            this.controllers.forEach((ctrl) => {
+                try { ctrl.abort(); } catch {}
+            });
+        } finally {
+            this.controllers.clear();
+        }
         this.images.forEach(img => URL.revokeObjectURL(img.localUrl));
         this.images = [];
     }
@@ -214,14 +303,38 @@ export class ImageUploadManager {
     private async uploadFiles(files: File[], startIndex: number): Promise<void> {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const imageIndex = startIndex + i;
+            // Skip canceled files
+            if (this.canceledFiles.has(file)) {
+                const idx = this.images.findIndex(it => it.file === file);
+                if (idx !== -1) {
+                    this.images[idx] = {
+                        ...this.images[idx],
+                        isUploading: false,
+                        uploadError: 'Canceled'
+                    };
+                    this.options.onProgress?.(idx, 'error');
+                }
+                continue;
+            }
+            // Item may have been removed before its turn; find current index by file
+            let imageIndex = this.images.findIndex(it => it.file === file);
+            if (imageIndex === -1) {
+                // Skip uploading this file entirely
+                continue;
+            }
             const imageItem = this.images[imageIndex];
-            
+
             this.options.onProgress?.(imageIndex, 'uploading');
-            
+
+            // Ensure we have a stable abortId for this item
+            let abortId = imageItem?._abortId || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            if (imageItem && !imageItem._abortId) {
+                this.images[imageIndex]._abortId = abortId;
+            }
+
             try {
                 let uploadResponse;
-                
+
                 // Use React Query mutation if available
                 if (this.uploadMutation) {
                     uploadResponse = await new Promise((resolve, reject) => {
@@ -229,25 +342,43 @@ export class ImageUploadManager {
                         const uploadRequest = {
                             files: [file],
                             width: imageItem?.width,
-                            height: imageItem?.height
+                            height: imageItem?.height,
+                            signal: undefined as AbortSignal | undefined,
                         };
-                        
+                        // Create controller and attach by abortId
+                        const controller = new AbortController();
+                        this.controllers.set(abortId, controller);
+                        uploadRequest.signal = controller.signal;
+
                         this.uploadMutation.mutate(uploadRequest, {
                             onSuccess: (data: any) => {
+                                if (controller.signal.aborted) {
+                                    this.controllers.delete(abortId);
+                                    return reject(new DOMException('Aborted', 'AbortError'));
+                                }
+                                this.controllers.delete(abortId);
                                 resolve(data);
                             },
-                            onError: (error: any) => reject(error)
+                            onError: (error: any) => { this.controllers.delete(abortId); reject(error); }
                         });
                     });
                 } else {
                     // Fallback to direct upload function with dimensions
+                    const controller = new AbortController();
+                    this.controllers.set(abortId, controller);
                     uploadResponse = await this.options.uploadFunction({ 
                         files: [file],
                         width: imageItem?.width,
-                        height: imageItem?.height
+                        height: imageItem?.height,
+                        signal: controller.signal,
                     });
+                    if (controller.signal.aborted) {
+                        this.controllers.delete(abortId);
+                        throw new DOMException('Aborted', 'AbortError');
+                    }
+                    this.controllers.delete(abortId);
                 }
-                
+
                 // Handle different response structures
                 let serverUrl = '';
                 let serverName = '';
@@ -268,75 +399,52 @@ export class ImageUploadManager {
                     serverName = uploadResponse.name || '';
                 }
 
-                // Update image with server URL and name
-                this.images[imageIndex] = {
-                    ...this.images[imageIndex],
-                    serverUrl,
-                    serverName,
-                    isUploading: false
-                };
-
-                this.options.onProgress?.(imageIndex, 'success');
-                
+                // Update image with server URL and name by locating current index via this upload's abortId (handles reorder/removal)
+                {
+                    const currentIndex = this.images.findIndex(it => it._abortId === abortId || it.file === file);
+                    if (currentIndex !== -1) {
+                        this.images[currentIndex] = {
+                            ...this.images[currentIndex],
+                            serverUrl,
+                            serverName,
+                            isUploading: false
+                        };
+                        this.options.onProgress?.(currentIndex, 'success');
+                    }
+                }
             } catch (error) {
-                this.images[imageIndex] = {
-                    ...this.images[imageIndex],
-                    isUploading: false,
-                    uploadError: 'Upload failed'
-                };
-
-                this.options.onProgress?.(imageIndex, 'error');
+                // If aborted (DOM AbortError or Axios ERR_CANCELED), just skip updating/adding
+                const err: any = error;
+                if (err?.name === 'AbortError' || err?.code === 'ERR_CANCELED' || String(err?.message || '').toLowerCase().includes('canceled')) {
+                    const currentIndex = this.images.findIndex(it => it._abortId === abortId || it.file === file);
+                    if (currentIndex !== -1) {
+                        this.images[currentIndex] = {
+                            ...this.images[currentIndex],
+                            isUploading: false,
+                            uploadError: 'Canceled'
+                        };
+                        this.options.onProgress?.(currentIndex, 'error');
+                    }
+                    continue;
+                }
+                {
+                    const currentIndex = this.images.findIndex(it => it._abortId === abortId || it.file === file);
+                    if (currentIndex !== -1) {
+                        this.images[currentIndex] = {
+                            ...this.images[currentIndex],
+                            isUploading: false,
+                            uploadError: 'Upload failed'
+                        };
+                        this.options.onProgress?.(currentIndex, 'error');
+                    }
+                }
             }
         }
 
         this.options.onComplete?.(this.images);
+       // Do not clear globally here to avoid interfering with concurrent uploads; controllers are deleted per-upload
     }
 }
-
-/**
- * Extract image dimensions from file
- */
-export const getImageDimensions = (file: File): Promise<{width: number, height: number}> => {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        
-        img.onload = () => {
-            URL.revokeObjectURL(url);
-            resolve({ width: img.naturalWidth, height: img.naturalHeight });
-        };
-        
-        img.onerror = () => {
-            URL.revokeObjectURL(url);
-            reject(new Error('Failed to load image'));
-        };
-        
-        img.src = url;
-    });
-};
-
-/**
- * Extract video dimensions from file
- */
-export const getVideoDimensions = (file: File): Promise<{width: number, height: number}> => {
-    return new Promise((resolve, reject) => {
-        const video = document.createElement('video');
-        const url = URL.createObjectURL(file);
-        
-        video.onloadedmetadata = () => {
-            URL.revokeObjectURL(url);
-            resolve({ width: video.videoWidth, height: video.videoHeight });
-        };
-        
-        video.onerror = () => {
-            URL.revokeObjectURL(url);
-            reject(new Error('Failed to load video'));
-        };
-        
-        video.src = url;
-    });
-};
-
 /**
  * Utility function to capture image from camera
  */
@@ -347,7 +455,7 @@ export const captureFromCamera = (): Promise<File | null> => {
         input.accept = 'image/*';
         input.capture = 'environment'; // Use back camera by default
         
-        input.onchange = (e) => {
+        input.onchange = (e: Event) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             resolve(file || null);
         };
@@ -368,7 +476,7 @@ export const selectFromGallery = (multiple: boolean = true): Promise<File[]> => 
         input.accept = 'image/*,video/*';
         input.multiple = multiple;
         
-        input.onchange = (e) => {
+        input.onchange = (e: Event) => {
             const files = Array.from((e.target as HTMLInputElement).files || []);
             resolve(files);
         };

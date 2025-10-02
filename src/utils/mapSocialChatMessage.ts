@@ -12,20 +12,16 @@ export function mergeSocialChatMessages(
     currentUserId: number
 ): ChatMessage[] {
     const safeMessages = Array.isArray(messages) ? messages : [];
-    
-    const filteredMessages = safeMessages.filter(msg => {
-        if (msg.messageType === 10 && (!msg.messageText || msg.messageText.trim() === "")) {
-            return false;
-        }
-        return true;
-    });
+
+    const filteredMessages = safeMessages;
     
     const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const eligibleMessages = filteredMessages.filter(msg => 
         msg.messageType === 10 && 
         msg.messageText && 
-        msg.messageText.trim()
+        msg.messageText.trim() &&
+        !(msg.id === 0 || msg.id === 1)
     );
     
     const recentEligibleMessages = eligibleMessages.slice(-5);
@@ -34,15 +30,7 @@ export function mergeSocialChatMessages(
     const translateIndices = new Set<number>();
     
     if (recentCount > 0) {
-        const randomCount = Math.floor(Math.random() * 3) + 2; 
-        const selectedCount = Math.min(randomCount, recentCount);
-        
-        const shuffled = [...Array(recentCount).keys()]
-            .sort(() => Math.random() - 0.5)
-            .slice(0, selectedCount);
-        
-        shuffled.forEach(recentIdx => {
-            const selectedMsg = recentEligibleMessages[recentIdx];
+        recentEligibleMessages.forEach(selectedMsg => {
             const originalIndex = filteredMessages.findIndex(msg => 
                 (msg.id && msg.id === selectedMsg.id) || 
                 (msg.tempId && msg.tempId === selectedMsg.tempId) ||
