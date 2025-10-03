@@ -54,7 +54,6 @@ const BottomTabBar: React.FC = () => {
             try {
                 const count = await getUnreadNotificationCountsApi();
                 setUnreadNotificationCount(count);
-                console.log('Unread notification count:', unreadNotificationCount);
             } catch (error) {
                 console.error('Error fetching unread notification count:', error);
             }
