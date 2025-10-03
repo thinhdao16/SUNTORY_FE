@@ -543,7 +543,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             inactiveColor="text-netural-900"
           />
 
-          {!isRepostByMeCard && (
+          {!isRepostByMeCard && !post.isRepost && (
             <AnimatedActionButton
               icon={<RetryIcon />}
               activeIcon={<UnretryIcon />}
