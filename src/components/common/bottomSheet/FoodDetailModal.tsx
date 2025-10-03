@@ -142,7 +142,7 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
                                 </div>
                                 <div className='border-b border-gray-200 mb-6'></div>
                                 <div className="mb-2">  
-                                    <h3 className="text-base font-semibold text-gray-900 mb-3">{'3. ' + t('Advice')}</h3>
+                                    <h3 className="text-base font-semibold text-gray-900 mb-3">{'4. ' + t('Advice')}</h3>
                                     {/* Render advice với hỗ trợ **bold** và xuống dòng */}
                                     {(() => {
                                         const formatAdviceToHtml = (text: string) => {

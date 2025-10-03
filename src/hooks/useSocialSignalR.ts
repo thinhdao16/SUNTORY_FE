@@ -6,6 +6,7 @@ import { useSocialChatStore } from "@/store/zustand/social-chat-store";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import { useHistory } from "react-router";
 import { useQueryClient } from "react-query";
+import { useNotificationStore } from "@/store/zustand/notify-store";
 
 export interface UseSocialSignalROptions {
     roomId: string;
@@ -33,6 +34,7 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
     const autoConnectRef = useRef(autoConnect);
     const debugRef = useRef(enableDebugLogs);
     const refetchRef = useRef(refetchRoomData);
+    const triggerRefresh = useNotificationStore((state) => state.triggerRefresh);
     const onTypingUsersRef = useRef(onTypingUsers);
     const userIdRef = useRef<number | undefined>(userInfo?.id);
     useEffect(() => { deviceIdRef.current = deviceId; }, [deviceId]);
@@ -323,8 +325,8 @@ export function useSocialSignalR(deviceId: string, options: UseSocialSignalROpti
 
         connection.off("FriendRequestEvent");
         connection.on("FriendRequestEvent", () => {
-            console.log("first")
             refetchRef.current?.();
+            triggerRefresh();
         });
 
         connection.off("ActiveUsersUpdated");

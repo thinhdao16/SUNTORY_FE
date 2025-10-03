@@ -17,8 +17,11 @@ import ProfileIcon from "@/icons/logo/footer/profile.svg?react";
 import ProfileActiveIcon from "@/icons/logo/footer/profile_active.svg?react";
 import TranslationIcon from "@/icons/logo/footer/translation.svg?react";
 import TranslationActiveIcon from "@/icons/logo/footer/translation_active.svg?react";
+import NotificationIcon from "@/icons/logo/footer/notification.svg?react";
+import NotificationActiveIcon from "@/icons/logo/footer/notification_active.svg?react";
 import { useKeyboardResize } from "@/hooks/useKeyboardResize";
 import { useSignalRStreamStore } from "@/store/zustand/signalr-stream-store";
+import { useModalContext } from "@/contexts/ModalContext";
 
 
 interface TabItem {
@@ -38,6 +41,7 @@ const BottomTabBar: React.FC = () => {
     const [keyboardOpen, setKeyboardOpen] = useState(false);
     const { keyboardResizeScreen } = useKeyboardResize();
     const { triggerRefresh } = useRefresh();
+    const { hideBottomTabBar } = useModalContext();
 
     const tabs: TabItem[] = [
         {
@@ -79,6 +83,14 @@ const BottomTabBar: React.FC = () => {
             iconActive: TranslationActiveIcon,
             path: "/translate",
             activePath: (pathname: string) => pathname.startsWith("/translate"),
+            classNameIcon: "",
+        },
+        {
+            label: t("Notification"),
+            icon: NotificationIcon,
+            iconActive: NotificationActiveIcon,
+            path: "/notification-list",
+            activePath: (pathname: string) => pathname.startsWith("/notification-list"),
             classNameIcon: "",
         },
         {
@@ -180,7 +192,7 @@ const BottomTabBar: React.FC = () => {
 
     return (
         <AnimatePresence>
-            {!keyboardOpen && !keyboardResizeScreen && (
+            {!keyboardOpen && !keyboardResizeScreen && !hideBottomTabBar && (
                 <motion.div
                     key="bottom-tab-bar"
                     initial={{ y: 80, opacity: 0 }}

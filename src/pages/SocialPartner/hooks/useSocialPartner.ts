@@ -10,6 +10,7 @@ import {
     unfriend,
 } from "@/services/social/social-partner-service";
 import { useInfiniteQuery, useMutation, useQueryClient } from "react-query";
+import { useNotificationStore } from "@/store/zustand/notify-store";
 
 export const useSearchFriendshipUsers = (keyword: string, pageSize = 10) => {
     return useInfiniteQuery(
@@ -111,7 +112,6 @@ export const useAcceptFriendRequest = (
             showToast(t("Friend request accepted."), 1000, "success");
             queryClient.invalidateQueries(["searchFriendshipUsers"]);
             queryClient.invalidateQueries(["friendshipReceivedRequests"]);
-
             onSuccessCallback?.();
         },
         onError: () => showToast(t("Unacceptable."), 1000, "error"),

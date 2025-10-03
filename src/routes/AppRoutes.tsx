@@ -57,6 +57,7 @@ const routes = {
   FriendList: lazy(() => import("@/pages/Profile/Friend/FriendList")),
   FriendRequestSent: lazy(() => import("@/pages/Profile/Friend/FriendRequestSent")),
   ShareProfile: lazy(() => import("@/pages/Profile/ShareProfile/ShareProfile")),
+  Notification: lazy(() => import("@/pages/Notification/Notification")),
 };
 
 const authRoutes = ["/login", "/register"];
@@ -121,6 +122,7 @@ const AppRoutes: React.FC = () => {
           <PrivateRoute path="/ai-profile-setting" component={routes.AiProfileInformation} exact />
           <PrivateRoute path="/friend-list" component={routes.FriendList} exact />
           <PrivateRoute path="/friend-request-sent" component={routes.FriendRequestSent} exact />
+          <PrivateRoute path="/notification-list" component={routes.Notification} exact />
           <Route exact path="/" render={() => <Redirect to="/social-chat" />} />
           <Route path="*" component={routes.NotFound} />
         </Switch>

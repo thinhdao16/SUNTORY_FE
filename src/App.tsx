@@ -21,6 +21,7 @@ import useAppInit from "./hooks/useAppInit";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { NotificationList } from "./components/notify/NotificationList";
 import { RefreshProvider } from "@/contexts/RefreshContext";
+import { ModalProvider } from "@/contexts/ModalContext";
 
 setupIonicReact();
 initGoogleAuth();
@@ -35,15 +36,17 @@ const App: React.FC = () => {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_WEB_CLIENT_ID}>
       <RefreshProvider>
-        <IonApp className="ion-light">
-          <IonReactRouter>
-            <IonRouterOutlet>
-              <AppRoutes />
-            </IonRouterOutlet>
-              <NotificationList />
-            <Global />
-          </IonReactRouter>
-        </IonApp>
+        <ModalProvider>
+          <IonApp className="ion-light">
+            <IonReactRouter>
+              <IonRouterOutlet>
+                <AppRoutes />
+              </IonRouterOutlet>
+                <NotificationList />
+              <Global />
+            </IonReactRouter>
+          </IonApp>
+        </ModalProvider>
       </RefreshProvider>
     </GoogleOAuthProvider>
   );

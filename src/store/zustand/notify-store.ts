@@ -1,20 +1,20 @@
 import { create } from "zustand";
 
-export type NotificationType = "chat_message" 
-| "friend_request" 
-| "reaction"    
-| "friend_request_accepted" 
-| "group_chat_created" 
-| "group_chat_updated" 
-| "group_members_added" 
-| "group_members_removed" 
-| "member_added_to_group"
-| "group_chat_removed"
-| "liked_post"
-| "commented_post"
-| "reposted_post"
-| "comment_liked_post"
-| "reply_comment_post";
+export type NotificationType = "chat_message"
+    | "friend_request"
+    | "reaction"
+    | "friend_request_accepted"
+    | "group_chat_created"
+    | "group_chat_updated"
+    | "group_members_added"
+    | "group_members_removed"
+    | "member_added_to_group"
+    | "group_chat_removed"
+    | "liked_post"
+    | "commented_post"
+    | "reposted_post"
+    | "comment_liked_post"
+    | "reply_comment_post";
 
 export interface Notification {
     id: string;
@@ -30,14 +30,19 @@ export interface Notification {
 
 interface NotificationState {
     notifications: Notification[];
+    lastNotificationTime: number;
+    lastActionTime: number;
     addNotification: (n: Omit<Notification, "createdAt">) => void;
     markAsRead: (id: string) => void;
     clearAll: () => void;
     clearOne: (id: string) => void;
+    triggerRefresh: () => void;
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
     notifications: [],
+    lastNotificationTime: 0,
+    lastActionTime: 0,
     addNotification: (n) =>
         set((state) => ({
             notifications: [
@@ -48,6 +53,11 @@ export const useNotificationStore = create<NotificationState>((set) => ({
                 },
                 ...state.notifications,
             ],
+            lastNotificationTime: Date.now(),
+        })),
+    triggerRefresh: () =>
+        set(() => ({
+            lastActionTime: Date.now(),
         })),
     markAsRead: (id) =>
         set((state) => ({
