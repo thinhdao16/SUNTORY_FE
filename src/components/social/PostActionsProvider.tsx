@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useDeletePost } from '@/pages/Social/Feed/hooks/useDeletePost';
+import { usePinPost } from '@/pages/Social/Feed/hooks/usePinPost';
 import { usePostOptions } from '@/hooks/usePostOptions';
 import EditFeedModal from '@/components/social/EditFeedModal';
 import { SocialPost } from '@/types/social-feed';
 import { useAuthStore } from '@/store/zustand/auth-store';
+import ConfirmModal from '@/components/common/modals/ConfirmModal';
+import { useTranslation } from 'react-i18next';
+import { useQueryClient } from 'react-query';
 
 interface PostActionsProviderProps {
     post: SocialPost;
@@ -35,9 +39,43 @@ export const PostActionsProvider: React.FC<PostActionsProviderProps> = ({
     children
 }) => {
     const { user } = useAuthStore();
+    const { t } = useTranslation();
     const history = useHistory();
+    const queryClient = useQueryClient();
     const deletePostMutation = useDeletePost();
+    const pinPostMutation = usePinPost();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [showPinConfirm, setShowPinConfirm] = useState(false);
+
+    // Check if there's already a pinned post
+    const checkForPinnedPost = (): boolean => {
+        const userPostsQueries = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+        for (const [, data] of userPostsQueries) {
+            if (!data?.pages) continue;
+            for (const page of data.pages) {
+                const posts = Array.isArray(page?.data?.data) ? page.data.data : [];
+                const hasPinnedPost = posts.some((p: any) => p?.isPin && p?.code !== post?.code);
+                if (hasPinnedPost) return true;
+            }
+        }
+        return false;
+    };
+
+    const handlePinPost = () => {
+        // If already pinned, just unpin
+        if (post?.isPin) {
+            pinPostMutation.mutate(post?.code);
+            return;
+        }
+
+        // Check if there's another pinned post
+        const hasExistingPin = checkForPinnedPost();
+        if (hasExistingPin) {
+            setShowPinConfirm(true);
+        } else {
+            pinPostMutation.mutate(post?.code);
+        }
+    };
 
     const { actionItems } = usePostOptions({
         post,
@@ -62,9 +100,7 @@ export const PostActionsProvider: React.FC<PostActionsProviderProps> = ({
                 }
             });
         },
-        onPinToProfile: () => {
-            console.log('Pin to profile:', post?.code);
-        }
+        onPinToProfile: handlePinPost
     });
 
     const EditModalComponent = (
@@ -87,6 +123,19 @@ export const PostActionsProvider: React.FC<PostActionsProviderProps> = ({
                 setIsEditModalOpen,
                 EditModalComponent
             })}
+
+            <ConfirmModal
+                isOpen={showPinConfirm}
+                onClose={() => setShowPinConfirm(false)}
+                title={t('Pin new post?')}
+                message={t('You can only pin 1 post. Pinning this will replace the current pinned post.')}
+                confirmText={t('Pin new')}
+                cancelText={t('Cancel')}
+                onConfirm={() => {
+                    pinPostMutation.mutate(post?.code);
+                    setShowPinConfirm(false);
+                }}
+            />
         </>
     );
 };
