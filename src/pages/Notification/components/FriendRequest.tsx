@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { IonContent, IonInfiniteScroll, IonInfiniteScrollContent, IonSkeletonText } from '@ionic/react';
 import avatarFallback from '@/icons/logo/social-chat/avt-rounded-full.svg';
 import {
-    getFriendshipReceivedRequests,
     acceptFriendRequest,
     rejectFriendRequest
 } from '@/services/social/social-partner-service';
@@ -80,7 +79,6 @@ const FriendRequest = () => {
         const currentCount = notificationCounts.pendingFriendRequestsCount;
         const previousCount = prevFriendRequestCount.current;
         if (previousCount !== currentCount && previousCount !== undefined) {
-            console.log(`Friend request count changed: ${previousCount} -> ${currentCount}, refetching...`);
             refetch();
         }
         prevFriendRequestCount.current = currentCount;

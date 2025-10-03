@@ -48,3 +48,8 @@ export const deleteNotificationApi = async (payload: DeleteNotificationParams) =
     const res = await httpClient.delete("/api/v1/social-notification/delete", { data: payload });
     return res.data;
 };
+
+export const getUnreadNotificationCountsApi = async (): Promise<number> => {
+    const res = await httpClient.get("/api/v1/social-notification/number-unread");
+    return res.data.result;
+};
