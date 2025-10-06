@@ -36,6 +36,7 @@ interface UseChatStreamHandlersProps {
     stopMessages?: boolean;
     setStopMessages: (value: boolean) => void;
     removePendingImageByUrl: (url: string) => void;
+    replacePendingImage: (oldUrl: string, newUrl: string) => void;
     messageRetry: string;
     setMessageRetry: (value: string) => void;
 }
@@ -57,6 +58,7 @@ export function useChatStreamHandlers({
     setHasFirstSignalRMessage,
     setStopMessages,
     removePendingImageByUrl,
+    replacePendingImage,
     messageRetry,
     setMessageRetry,
     deviceInfo
@@ -96,11 +98,13 @@ export function useChatStreamHandlers({
             }
             try {
                 const uploaded = await uploadImageMutation.mutateAsync(file);
-                removePendingImageByUrl(localUrl);
-                URL.revokeObjectURL(localUrl);
                 if (uploaded && uploaded.length > 0) {
-                    addPendingImages([uploaded[0].linkImage]);
+                    // Replace local preview with server URL in-place to avoid duplication/flicker
+                    replacePendingImage(localUrl, uploaded[0].linkImage);
+                } else {
+                    removePendingImageByUrl(localUrl);
                 }
+                URL.revokeObjectURL(localUrl);
             } catch {
                 removePendingImageByUrl(localUrl);
                 URL.revokeObjectURL(localUrl);

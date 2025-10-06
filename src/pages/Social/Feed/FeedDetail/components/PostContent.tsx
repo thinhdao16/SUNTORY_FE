@@ -17,6 +17,7 @@ import AddFriendIcon from "@/icons/logo/social-feed/add-friend.svg?react";
 import { GoDotFill } from 'react-icons/go';
 import { useAuthStore } from '@/store/zustand/auth-store';
 import { PrivacyPostType } from '@/types/privacy';
+import ExpandableText from '@/components/common/ExpandableText';
 
 interface PostContentProps {
     displayPost: any;
@@ -183,9 +184,13 @@ const PostContent: React.FC<PostContentProps> = ({
                         )}
                         {!isRepostWithDeletedOriginal && (
                             <div className="px-4 py-3">
-                                <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
+                                <ExpandableText
+                                    contentClassName="text-gray-800 text-sm leading-relaxed"
+                                    clampClassName="line-clamp-2"
+                                    resetKey={postToDisplay?.content || ''}
+                                >
                                     {parseHashtagsWithClick(postToDisplay?.content || '')}
-                                </div>
+                                </ExpandableText>
                                 <div className="mt-2">
                                     {postToDisplay?.content && showOriginal ? (
                                         <ActionButton
@@ -300,9 +305,13 @@ const PostContent: React.FC<PostContentProps> = ({
             {!isRepost && (
                 <>
                     <div className="px-4">
-                        <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
+                        <ExpandableText
+                            contentClassName="text-gray-800 text-sm leading-relaxed"
+                            clampClassName="line-clamp-2"
+                            resetKey={displayPost?.content || ''}
+                        >
                             {parseHashtagsWithClick(displayPost.content)}
-                        </div>
+                        </ExpandableText>
                         <div className="mt-2">
                             {displayPost.content && showOriginal ? (
                                 <ActionButton

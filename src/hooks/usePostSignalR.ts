@@ -265,22 +265,19 @@ export function usePostSignalR(
                     Object.keys(store.cachedFeeds).forEach(feedKey => {
                         const currentFeed = store.cachedFeeds[feedKey];
                         if (currentFeed && currentFeed.posts) {
-                            const updatedPosts = [newPost, ...currentFeed.posts];
-                            store.setFeedPosts(updatedPosts, feedKey);
+                            // Append to the end to avoid pushing viewport content down
+                            store.appendFeedPosts([newPost], feedKey);
                         }
                     });
-                    if (Object.keys(store.cachedFeeds).length === 0) {
-                        store.appendFeedPosts([newPost], 'home');
-                    }
                     if (data.originalPostCode && data.interactionType === 50) {
                         const originalPostCode = data.originalPostCode;
                         store.applyRealtimePatch(originalPostCode, {
-                            repostCount: data.repostCount || 0
+                            repostCount: data.repostCount || 0,
                         });
                         queryClient.invalidateQueries(['feedDetail', originalPostCode]);
                     }
-                    
-                    queryClient.invalidateQueries({ queryKey: ['socialFeed'] });
+                    // Do NOT invalidate ['socialFeed'] to avoid feed refetch that causes scroll jump.
+                    // Store already updated in-memory feed; react-query cache can remain warm.
                 }
                 onPostCreated?.(data);
                 onPostUpdated?.(data);

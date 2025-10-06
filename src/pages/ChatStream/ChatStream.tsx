@@ -100,7 +100,8 @@ const Chat: React.FC = () => {
         pendingImages, pendingFiles,
         addPendingImages, addPendingFiles,
         removePendingImage, removePendingFile,
-        clearAll, removePendingImageByUrl
+        clearAll, removePendingImageByUrl,
+        replacePendingImage,
     } = useImageStore();
 
     const isSending = useChatStore((s) => s.isSending);
@@ -240,6 +241,7 @@ const Chat: React.FC = () => {
         stopMessages,
         setStopMessages,
         removePendingImageByUrl,
+        replacePendingImage,
         messageRetry,
         setMessageRetry
     });

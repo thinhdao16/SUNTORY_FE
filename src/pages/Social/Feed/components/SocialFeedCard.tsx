@@ -14,9 +14,11 @@ import { GoDotFill } from 'react-icons/go';
 import ReactHeartIcon from "@/icons/logo/social-feed/react-heart.svg?react";
 import CommentsIcon from "@/icons/logo/social-feed/comments.svg?react";
 import RetryIcon from "@/icons/logo/social-feed/retry.svg?react";
+import UnretryIcon from "@/icons/logo/social-feed/unretry.svg?react";
 import SendIcon from "@/icons/logo/social-feed/send.svg?react";
 import { MdMoreHoriz } from 'react-icons/md';
-import { useCreateTranslationChat } from '@/pages/Translate/hooks/useTranslationLanguages';
+import { TbPin } from "react-icons/tb";
+import { useCreateTranslationChat, useTranslationLanguages } from '@/pages/Translate/hooks/useTranslationLanguages';
 import useLanguageStore from '@/store/zustand/language-store';
 import ActionButton from '@/components/loading/ActionButton';
 import AnimatedActionButton from '@/components/common/AnimatedActionButton';
@@ -24,10 +26,16 @@ import ReactHeartRedIcon from "@/icons/logo/social-feed/react-heart-red.svg?reac
 import PostOptionsBottomSheet from '@/components/social/PostOptionsBottomSheet';
 import LogoIcon from "@/icons/logo/logo-rounded-full.svg?react";
 import { useAuthStore } from '@/store/zustand/auth-store';
+import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
 import PostActionsProvider from '@/components/social/PostActionsProvider';
 import { useSendFriendRequest, useUnfriend, useAcceptFriendRequest, useCancelFriendRequest, useRejectFriendRequest } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import ConfirmModal from '@/components/common/modals/ConfirmModal';
 import { useToastStore } from '@/store/zustand/toast-store';
+import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
+import ExpandableText from '@/components/common/ExpandableText';
+import SharePostBottomSheet from '@/components/social/SharePostBottomSheet';
+import { SocialFeedService } from '@/services/social/social-feed-service';
+import { useQueryClient } from 'react-query';
 
 interface SocialFeedCardProps {
   post: SocialPost;
@@ -35,6 +43,7 @@ interface SocialFeedCardProps {
   onComment?: (postCode: string) => void;
   onShare?: (postCode: string) => void;
   onRepost?: (postCode: string) => void;
+  onRepostConfirm?: (postCode: string, privacy: PrivacyPostType) => void;
   onPostClick?: (postCode: string) => void;
   onSendFriendRequest?: (userId: number) => void;
   onUnfriend?: (userId: number) => void;
@@ -52,6 +61,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   onComment,
   onShare,
   onRepost,
+  onRepostConfirm,
   onPostClick,
   onSendFriendRequest,
   onUnfriend,
@@ -66,16 +76,40 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const createTranslationMutation = useCreateTranslationChat();
   const { user } = useAuthStore.getState();
   const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
-  const toLanguageId = useMemo(() => selectedLanguageSocialChat?.id || selectedLanguageTo?.id || 2, [selectedLanguageSocialChat, selectedLanguageTo]);
+  const { data: availableLangs } = useTranslationLanguages();
+  const toLanguageId = useMemo(() => {
+    const prefer = selectedLanguageSocialChat?.id || selectedLanguageTo?.id;
+    if (prefer) return prefer;
+    const langs = availableLangs || [];
+    const nav = (typeof navigator !== 'undefined' ? navigator.language : '') || '';
+    const navBase = nav.split('-')[0]?.toLowerCase() || '';
+    let pick = langs.find(l => (l.code || '').toLowerCase() === navBase);
+    if (!pick) pick = langs.find(l => /^en/i.test(l.code || ''));
+    if (!pick) pick = langs.find(l => /^vi/i.test(l.code || ''));
+    return pick?.id || langs[0]?.id;
+  }, [selectedLanguageSocialChat?.id, selectedLanguageTo?.id, availableLangs]);
+  const displayPost = post.isRepost && post.originalPost ? post.originalPost : post;
+  const isRepost = post.isRepost && post.originalPost;
+  const isRepostWithDeletedOriginal = post.isRepost && !post.originalPost || post?.isRepost && post?.originalPost?.status === 190;
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState(true);
   const [isPostOptionsOpen, setIsPostOptionsOpen] = useState(false);
-
+  const [showPrivacySheet, setShowPrivacySheet] = useState(false);
+  const [selectedPrivacy, setSelectedPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
+  // Always render original content at the top
+  const contentText = useMemo(() => (displayPost?.content || ''), [displayPost?.content]);
+  // If translation equals original (after trim), don't show duplicated block
+  const sameAsOriginal = useMemo(
+    () => (translatedText ?? '').trim() === (displayPost?.content || '').trim(),
+    [translatedText, displayPost?.content]
+  );
   const showToast = useToastStore((state) => state.showToast);
 
+  const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
+  const [removed, setRemoved] = useState(false);
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
-    type: "send" | "cancel" | "unfriend" | "reject" | "accept" | null;
+    type: "send" | "cancel" | "unfriend" | "reject" | "accept" | "unrepost" | null;
     friendRequestId?: number;
     friendName?: string;
   }>({
@@ -88,6 +122,31 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const acceptFriendRequestMutation = useAcceptFriendRequest(showToast);
   const cancelFriendRequestMutation = useCancelFriendRequest(showToast);
   const rejectFriendRequestMutation = useRejectFriendRequest(showToast);
+  const queryClient = useQueryClient();
+
+  const refreshCardDetail = async () => {
+    try {
+      const originalCode = (post.isRepost && post.originalPost ? post.originalPost.code : post.code) || post.code;
+      if (!originalCode) return;
+      const fresh = await SocialFeedService.getPostByCode(originalCode);
+      // Patch store so other cards reflect changes
+      const store = useSocialFeedStore.getState();
+      store.applyRealtimePatch(originalCode, {
+        isFriend: (fresh as any)?.isFriend,
+        friendRequest: (fresh as any)?.friendRequest,
+      } as any);
+      // Sync detail cache for consistency if opened elsewhere
+      queryClient.setQueryData(['feedDetail', originalCode], fresh);
+
+      // Update this card via onPostUpdate to avoid waiting for parent re-render
+      const patch = { isFriend: (fresh as any)?.isFriend, friendRequest: (fresh as any)?.friendRequest } as any;
+      if (post.isRepost && post.originalPost) {
+        onPostUpdate?.({ ...post, originalPost: { ...post.originalPost, ...patch } });
+      } else {
+        onPostUpdate?.({ ...post, ...patch });
+      }
+    } catch {}
+  };
 
   const handlePostClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -111,11 +170,16 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
         return <GlobalIcon className="w-4 h-4 text-gray-500" />;
     }
   };
-  const displayPost = post.isRepost && post.originalPost ? post.originalPost : post;
-  const isRepost = post.isRepost && post.originalPost;
-  const isRepostWithDeletedOriginal = post.isRepost && !post.originalPost || post?.isRepost && post?.originalPost?.status === 190;
   const history = useHistory();
   const { user: currentUser } = useAuthStore();
+  const meId = currentUser?.id || user?.id;
+  const isRepostByMeCard = !!post?.isRepost && post?.user?.id === meId;
+  const isRepostedByMe = Boolean(post?.isRepostedByCurrentUser) || isRepostByMeCard;
+  // Consider posts with missing original or status 190 as error/unavailable
+  const isErrorPost = Boolean(displayPost?.status === 190) || Boolean(isRepostWithDeletedOriginal);
+
+  const authorId = post?.user?.id;
+  const isOwnPost = user?.id === authorId;
 
   const handleUserProfileClick = (e: React.MouseEvent, userId: number) => {
     e.stopPropagation();
@@ -151,19 +215,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const handleSendFriendRequest = async (userId: number) => {
     try {
       await sendFriendRequestMutation.mutateAsync(userId);
-      const updatedPost = {
-        ...post,
-        user: {
-          ...post.user,
-          friendRequest: {
-            id: Date.now(),
-            status: 'pending',
-            fromUserId: user?.id,
-            toUserId: userId
-          }
-        }
-      };
-      onPostUpdate?.(updatedPost);
+      await refreshCardDetail();
     } catch (error) {
       console.error('Failed to send friend request:', error);
     }
@@ -172,15 +224,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const handleUnfriend = async (userId: number) => {
     try {
       await unfriendMutation.mutateAsync({ friendUserId: userId });
-      const updatedPost = {
-        ...post,
-        user: {
-          ...post.user,
-          isFriend: null,
-          friendRequest: null
-        }
-      };
-      onPostUpdate?.(updatedPost);
+      await refreshCardDetail();
     } catch (error) {
       console.error('Failed to unfriend:', error);
     }
@@ -189,15 +233,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const handleAcceptFriendRequest = async (requestId: number) => {
     try {
       await acceptFriendRequestMutation.mutateAsync(requestId);
-      const updatedPost = {
-        ...post,
-        user: {
-          ...post.user,
-          isFriend: true,
-          friendRequest: null
-        }
-      };
-      onPostUpdate?.(updatedPost);
+      await refreshCardDetail();
     } catch (error) {
       console.error('Failed to accept friend request:', error);
     }
@@ -206,14 +242,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const handleCancelFriendRequest = async (requestId: number) => {
     try {
       await cancelFriendRequestMutation.mutateAsync(requestId);
-      const updatedPost = {
-        ...post,
-        user: {
-          ...post.user,
-          friendRequest: null
-        }
-      };
-      onPostUpdate?.(updatedPost);
+      await refreshCardDetail();
     } catch (error) {
       console.error('Failed to cancel friend request:', error);
     }
@@ -222,25 +251,24 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const handleRejectFriendRequest = async (requestId: number) => {
     try {
       await rejectFriendRequestMutation.mutateAsync(requestId);
-      const updatedPost = {
-        ...post,
-        user: {
-          ...post.user,
-          friendRequest: null
-        }
-      };
-      onPostUpdate?.(updatedPost);
+      await refreshCardDetail();
     } catch (error) {
       console.error('Failed to reject friend request:', error);
     }
   };
+  if (removed) return null;
   return (
     <div
       className={`bg-white border-b border-netural-50 cursor-pointer hover:bg-gray-50 transition-colors ${className}`}
       onClick={handlePostClick}
       ref={containerRefCallback ? containerRefCallback : undefined}
     >
-      {/* Reposter header */}
+      {post?.isPin && isOwnPost && (
+        <div className="flex items-center gap-1.5 px-4 pt-3 text-netural-200">
+          <TbPin className="w-4 h-4" />
+          <span className="text-sm font-medium">{t('Pinned')}</span>
+        </div>
+      )}
       <div className="flex justify-between p-4 pb-2">
         <div className="flex items-center gap-3">
           <img
@@ -288,13 +316,12 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
 
       {/* {isRepost && post.captionRepost && (
         <div className="px-4 pb-2">
-          <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+          <div className="">
             {post.captionRepost}
           </div>
         </div>
       )} */}
 
-      {/* Original post content (or regular post content if not a repost) */}
       {post?.isRepost ? (
         <div
           className="mx-4 mb-4 border border-gray-200 rounded-2xl overflow-hidden pb-4 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -347,12 +374,17 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             </>
           )}
           {!isRepostWithDeletedOriginal && (
-            <div className="px-4 py-3">
-              <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-                {parseHashtagsWithClick(displayPost?.content)}
-              </div>
+            <div className="px-4 py-3 relative">
+              <ExpandableText
+                className=""
+                contentClassName="text-gray-800 leading-relaxed"
+                clampClassName="line-clamp-2"
+                resetKey={contentText}
+              >
+                {parseHashtagsWithClick(contentText)}
+              </ExpandableText>
               <div className="mt-2">
-                {displayPost?.content && showOriginal ? (
+                {contentText && showOriginal ? (
                   <ActionButton
                     variant="ghost"
                     size="none"
@@ -361,19 +393,19 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                     onClick={async (e) => {
                       e.stopPropagation();
                       try {
-                        const res = await createTranslationMutation.mutateAsync({ toLanguageId: user?.language?.id as number, originalText: displayPost?.content || '' });
+                        const res = await createTranslationMutation.mutateAsync({ toLanguageId, originalText: displayPost?.content || '' });
                         const text = (res as any)?.data?.translated_text || (res as any)?.data?.translatedText || '';
                         setTranslatedText(text);
                         setShowOriginal(false);
                       } catch { }
                     }}
-                    disabled={!displayPost?.content}
+                    disabled={!displayPost?.content || !toLanguageId}
                   >
                     <div className="flex items-center gap-1">
                       <LogoIcon className="w-5 h-5" /> {t('Translate')}
                     </div>
                   </ActionButton>
-                ) : displayPost?.content && !showOriginal ? (
+                ) : contentText && !showOriginal ? (
                   <ActionButton
                     variant="ghost"
                     size="none"
@@ -381,17 +413,17 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                     onClick={(e) => { e.stopPropagation(); setShowOriginal(true); }}
                   >
                     <div className="flex items-center gap-1">
-                      <LogoIcon className="w-5 h-5" /> {t('See original')}
+                      <LogoIcon className="w-5 h-5" /> {t('Hide translation')}
                     </div>
                   </ActionButton>
                 ) : null}
-                {!showOriginal && translatedText && (
+                {!showOriginal && translatedText && !sameAsOriginal && (
                   <div className="mt-2 border-l-3 border-gray-200 pl-3 text-sm text-netural-300 whitespace-pre-wrap">
                     {translatedText}
                   </div>
                 )}
               </div>
-              {displayPost?.hashtags && displayPost?.hashtags.length > 0 && (
+              {/* {displayPost?.hashtags && displayPost?.hashtags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {displayPost?.hashtags.map((hashtag) => (
                     <span key={hashtag.id}>
@@ -399,7 +431,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                     </span>
                   ))}
                 </div>
-              )}
+              )} */}
             </div>
           )}
           {!isRepostWithDeletedOriginal && displayPost?.media && displayPost?.media.length > 0 && (
@@ -417,11 +449,18 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
         </div>
       ) : (
         <div className="">
-          <div className="text-gray-800 leading-relaxed whitespace-pre-wrap px-4">
-            {parseHashtagsWithClick(displayPost?.content)}
+          <div className="px-4 relative">
+            <ExpandableText
+              className=""
+              contentClassName="text-gray-800 leading-relaxed"
+              clampClassName="line-clamp-2"
+              resetKey={contentText}
+            >
+              {parseHashtagsWithClick(contentText)}
+            </ExpandableText>
           </div>
           <div className="mt-2 px-4">
-            {displayPost?.content && showOriginal ? (
+            {contentText && showOriginal ? (
               <ActionButton
                 spinnerPosition="right"
                 variant="ghost"
@@ -431,19 +470,19 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                 onClick={async (e) => {
                   e.stopPropagation();
                   try {
-                    const res = await createTranslationMutation.mutateAsync({ toLanguageId: user?.language?.id as number, originalText: displayPost?.content || '' });
+                    const res = await createTranslationMutation.mutateAsync({ toLanguageId, originalText: contentText || '' });
                     const text = (res as any)?.data?.translated_text || (res as any)?.data?.translatedText || '';
                     setTranslatedText(text);
                     setShowOriginal(false);
                   } catch { }
                 }}
-                disabled={!displayPost?.content}
+                disabled={!contentText || !toLanguageId}
               >
                 <div className="flex items-center gap-1">
                   <LogoIcon className="w-5 h-5" /> {t('Translate')}
                 </div>
               </ActionButton>
-            ) : displayPost?.content && !showOriginal ? (
+            ) : contentText && !showOriginal ? (
               <ActionButton
                 variant="ghost"
                 size="none"
@@ -451,11 +490,11 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                 onClick={(e) => { e.stopPropagation(); setShowOriginal(true); }}
               >
                 <div className="flex items-center gap-1">
-                  <LogoIcon className="w-5 h-5" /> {t('See original')}
+                  <LogoIcon className="w-5 h-5" /> {t('Hide translation')}
                 </div>
               </ActionButton>
             ) : null}
-            {!showOriginal && translatedText && (
+            {!showOriginal && translatedText && !sameAsOriginal && (
               <div className="mt-2 border-l-3 border-gray-200 pl-3 text-sm text-netural-300 whitespace-pre-wrap">
                 {translatedText}
               </div>
@@ -504,19 +543,30 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             inactiveColor="text-netural-900"
           />
 
-          <AnimatedActionButton
-            icon={<RetryIcon />}
-            count={post.repostCount}
-            isActive={false}
-            onClick={() => onRepost?.(post.code)}
-            inactiveColor="text-netural-900"
-          />
+          {!isRepostByMeCard && !post.isRepost && (
+            <AnimatedActionButton
+              icon={<RetryIcon />}
+              activeIcon={<UnretryIcon />}
+              count={post.repostCount}
+              isActive={isRepostedByMe}
+              onClick={() => {
+                if (isRepostedByMe) {
+                  setConfirmState({ open: true, type: "unrepost" });
+                } else {
+                  setShowPrivacySheet(true);
+                }
+              }}
+              activeColor="text-netural-900"
+              inactiveColor="text-netural-900"
+              disabled={isErrorPost}
+            />
+          )}
 
           <AnimatedActionButton
             icon={<SendIcon />}
             count={post.shareCount}
             isActive={false}
-            onClick={() => onShare?.(post.code)}
+            onClick={() => setIsShareSheetOpen(true)}
             inactiveColor="text-netural-900"
           />
         </div>
@@ -542,7 +592,6 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
         )}
       </PostActionsProvider>
 
-      {/* Confirmation Modal */}
       <ConfirmModal
         isOpen={confirmState.open}
         onClose={closeConfirmModal}
@@ -553,7 +602,8 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
               confirmState.type === "unfriend" ? t("You will no longer see their updates or share yours with them") :
                 confirmState.type === "reject" ? t('Reject friend request from {{name}}?', { name: confirmState.friendName }) :
                   confirmState.type === "accept" ? t('Accept friend request from {{name}}?', { name: confirmState.friendName }) :
-                    ""
+                    confirmState.type === "unrepost" ? t('Remove your repost of this post?') :
+                      ""
         }
         confirmText={
           confirmState.type === "send" ? t("Yes, send") :
@@ -561,7 +611,8 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
               confirmState.type === "unfriend" ? t("Yes, unfriend") :
                 confirmState.type === "reject" ? t("Yes, reject") :
                   confirmState.type === "accept" ? t("Yes, accept") :
-                    t("Yes")
+                    confirmState.type === "unrepost" ? t("Yes, remove") :
+                      t("Yes")
         }
         cancelText={t("Cancel")}
         onConfirm={async () => {
@@ -575,9 +626,55 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             await handleCancelFriendRequest(confirmState.friendRequestId);
           } else if (confirmState.type === "reject" && confirmState.friendRequestId) {
             await handleRejectFriendRequest(confirmState.friendRequestId);
+          } else if (confirmState.type === "unrepost") {
+            // Optimistic unrepost
+            const store = useSocialFeedStore.getState();
+            const originalCode = displayPost?.code || post.code;
+
+            // If this card is my repost, remove only this repost card
+            if (isRepostByMeCard) {
+              setRemoved(true);
+              store.removePostFromFeeds(post.code);
+            }
+
+            // Update original's state: mark as not reposted by me and decrement count
+            if (originalCode) {
+              const feeds = store.cachedFeeds || ({} as any);
+              let currentCount: number | undefined;
+              for (const key of Object.keys(feeds)) {
+                const found = feeds[key]?.posts?.find((p: any) => p?.code === originalCode);
+                if (found) { currentCount = found.repostCount; break; }
+              }
+              store.applyRealtimePatch(originalCode, {
+                isRepostedByCurrentUser: false,
+                repostCount: Math.max(0, (currentCount ?? 1) - 1)
+              } as any);
+            }
+
+            // Trigger API toggle (BE handles unrepost)
+            onRepostConfirm?.(originalCode, post.privacy);
           }
           closeConfirmModal();
         }}
+      />
+
+      {/* Privacy Bottom Sheet for Repost */}
+      <PrivacyBottomSheet
+        isOpen={showPrivacySheet}
+        closeModal={() => setShowPrivacySheet(false)}
+        selectedPrivacy={selectedPrivacy}
+        onSelectPrivacy={(privacy) => {
+          setSelectedPrivacy(privacy);
+          onRepostConfirm?.(post.code, privacy);
+          setShowPrivacySheet(false);
+        }}
+      />
+
+      {/* Share Bottom Sheet */}
+      <SharePostBottomSheet
+        isOpen={isShareSheetOpen}
+        onClose={() => setIsShareSheetOpen(false)}
+        postCode={post.code}
       />
     </div>
   );

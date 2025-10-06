@@ -40,7 +40,7 @@ export const usePostLike = () => {
           updatePostReaction(fresh.code, fresh.isLike, fresh.reactionCount);
         } catch (error) {
         } finally {
-          queryClient.invalidateQueries('socialFeed');
+          // queryClient.invalidateQueries('socialFeed');
           queryClient.invalidateQueries(['feedDetail', data.postCode]);
         }
       }

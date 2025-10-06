@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoEyeOffOutline, IoFlagOutline, IoLinkOutline, IoNotificationsOutline, IoPersonRemoveOutline, IoPersonAddOutline, IoPencilOutline, IoStarOutline, IoTrashOutline } from 'react-icons/io5';
+import { TbPin, TbPinnedOff } from 'react-icons/tb';
 import { handleCopyToClipboard } from '@/components/common/HandleCoppy';
 import { useAuthStore } from '@/store/zustand/auth-store';
 
@@ -57,34 +58,35 @@ export const usePostOptions = ({
             }
 
             items.push({
-                key: 'pin-to-profile',
-                label: t('Pin to profile'),
-                icon: <IoStarOutline className="w-5 h-5" />,
+                key: post?.isPin ? 'unpin-post' : 'pin-post',
+                label: post?.isPin ? t('Unpin post') : t('Pin post'),
+                icon: post?.isPin ? <TbPinnedOff className="w-5 h-5" /> : <TbPin className="w-5 h-5" />,
                 tone: 'default' as const,
                 onClick: () => onPinToProfile?.(),
             });
-        } else {
-            // Options for other users' posts
-            items.push({
-                key: 'notify',
-                label: t('Notify me'),
-                icon: <IoNotificationsOutline className="w-5 h-5" />,
-                tone: 'default' as const,
-                onClick: () => {
-                    console.log('Notify me clicked');
-                },
-            });
+        } 
+        // else {
+        //     // Options for other users' posts
+        //     items.push({
+        //         key: 'notify',
+        //         label: t('Notify me'),
+        //         icon: <IoNotificationsOutline className="w-5 h-5" />,
+        //         tone: 'default' as const,
+        //         onClick: () => {
+        //             console.log('Notify me clicked');
+        //         },
+        //     });
 
-            items.push({
-                key: 'not-interested',
-                label: t('Not interested'),
-                icon: <IoEyeOffOutline className="w-5 h-5" />,
-                tone: 'default' as const,
-                onClick: () => {
-                    console.log('Not interested clicked');
-                },
-            });
-        }
+        //     items.push({
+        //         key: 'not-interested',
+        //         label: t('Not interested'),
+        //         icon: <IoEyeOffOutline className="w-5 h-5" />,
+        //         tone: 'default' as const,
+        //         onClick: () => {
+        //             console.log('Not interested clicked');
+        //         },
+        //     });
+        // }
 
         if (!isOwnPost && authorId) {
             if (!post?.isFriend) {
@@ -140,18 +142,19 @@ export const usePostOptions = ({
                 tone: 'danger' as const,
                 onClick: () => onDeletePost?.(),
             });
-        } else {
-            // Report option for other users' posts
-            items.push({
-                key: 'report',
-                label: t('Report'),
-                icon: <IoFlagOutline className="w-5 h-5" />,
-                tone: 'danger' as const,
-                onClick: () => {
-                    console.log('Report clicked');
-                },
-            });
         }
+        //  else {
+        //     // Report option for other users' posts
+        //     items.push({
+        //         key: 'report',
+        //         label: t('Report'),
+        //         icon: <IoFlagOutline className="w-5 h-5" />,
+        //         tone: 'danger' as const,
+        //         onClick: () => {
+        //             console.log('Report clicked');
+        //         },
+        //     });
+        // }
 
         return items;
     }, [post, user, t, onSendFriendRequest, onUnfriend, onCancelFriendRequest, onAcceptFriendRequest, onRejectFriendRequest]);
@@ -185,35 +188,36 @@ export const usePostOptions = ({
             }
 
             standardActions.push({
-                key: 'pin-to-profile',
-                label: t('Pin to profile'),
-                icon: <IoStarOutline className="w-5 h-5" />,
+                key: post?.isPin ? 'unpin-post' : 'pin-post',
+                label: post?.isPin ? t('Unpin post') : t('Pin post'),
+                icon: post?.isPin ? <TbPinnedOff className="w-5 h-5" /> : <TbPin className="w-5 h-5" />,
                 tone: 'default' as const,
                 onClick: () => onPinToProfile?.(),
             });
-        } else {
-            // Options for other users' posts
-            standardActions.push(
-                {
-                    key: 'notify',
-                    label: t('Notify me'),
-                    icon: <IoNotificationsOutline className="w-5 h-5" />,
-                    tone: 'default' as const,
-                    onClick: () => {
-                        console.log('Notify me clicked');
-                    },
-                },
-                {
-                    key: 'not-interested',
-                    label: t('Not interested'),
-                    icon: <IoEyeOffOutline className="w-5 h-5" />,
-                    tone: 'default' as const,
-                    onClick: () => {
-                        console.log('Not interested clicked');
-                    },
-                }
-            );
-        }
+        } 
+        // else {
+        //     // Options for other users' posts
+        //     standardActions.push(
+        //         {
+        //             key: 'notify',
+        //             label: t('Notify me'),
+        //             icon: <IoNotificationsOutline className="w-5 h-5" />,
+        //             tone: 'default' as const,
+        //             onClick: () => {
+        //                 console.log('Notify me clicked');
+        //             },
+        //         },
+        //         {
+        //             key: 'not-interested',
+        //             label: t('Not interested'),
+        //             icon: <IoEyeOffOutline className="w-5 h-5" />,
+        //             tone: 'default' as const,
+        //             onClick: () => {
+        //                 console.log('Not interested clicked');
+        //             },
+        //         }
+        //     );
+        // }
 
         // Friend actions
         if (!isOwnPost && authorId) {
@@ -273,18 +277,19 @@ export const usePostOptions = ({
                 tone: 'danger' as const,
                 onClick: () => onDeletePost?.(),
             });
-        } else {
-            // Report option for other users' posts
-            dangerActions.push({
-                key: 'report',
-                label: t('Report'),
-                icon: <IoFlagOutline className="w-5 h-5" />,
-                tone: 'danger' as const,
-                onClick: () => {
-                    console.log('Report clicked');
-                },
-            });
-        }
+        } 
+        // else {
+        //     // Report option for other users' posts
+        //     dangerActions.push({
+        //         key: 'report',
+        //         label: t('Report'),
+        //         icon: <IoFlagOutline className="w-5 h-5" />,
+        //         tone: 'danger' as const,
+        //         onClick: () => {
+        //             console.log('Report clicked');
+        //         },
+        //     });
+        // }
 
         const groups = [];
         if (standardActions.length > 0) {

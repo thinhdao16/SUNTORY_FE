@@ -6,6 +6,10 @@ const config: CapacitorConfig = {
   appId: 'com.wayjet.app',
   appName: 'WayJet',
   webDir: 'dist',
+  // server: {
+  //   cleartext: true,
+  //   url:"http://192.168.1.94:5173"
+  // },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
@@ -35,9 +39,9 @@ const config: CapacitorConfig = {
       androidGalleryMode: true
     },
     LocalNotifications: {
-      smallIcon: 'ic_stat_notify',    
-      iconColor: '#0A6EBD',          
-      sound: 'default'               
+      smallIcon: 'ic_stat_notify',
+      iconColor: '#0A6EBD',
+      sound: 'default'
     },
     ScreenOrientation: {
       orientation: 'portrait'
@@ -48,6 +52,13 @@ const config: CapacitorConfig = {
     allowMixedContent: true,
     captureInput: true,
     webContentsDebuggingEnabled: true,
+  },
+  ios: {
+    contentInset: "automatic",
+    scrollEnabled: true,
+    allowsLinkPreview: false,
+    preferredContentMode: "mobile",
+    limitsNavigationsToAppBoundDomains: false,
   }
 };
 

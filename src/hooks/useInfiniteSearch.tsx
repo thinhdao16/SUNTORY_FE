@@ -3,6 +3,7 @@ import { SearchService } from '@/services/social/search-service';
 import { SocialFeedService } from '@/services/social/social-feed-service';
 import { SearchUser } from '@/services/social/search-service';
 import { useSearchResultsStore, generateSearchKey, SearchTab, SearchResultsTabState } from '@/store/zustand/search-results-store';
+import { FeedType } from '@/constants/socialChat';
 
 interface UseInfiniteSearchOptions {
     searchQuery: string;
@@ -63,7 +64,7 @@ export const useInfiniteSearch = ({
                     setCurrentPage(key, (local?.currentPage ?? 0) + 1);
                     break;
 
-                case 'posts':
+                case 'latest':
                     const postsResponse = await SearchService.searchPosts(
                         q, 
                         (local?.currentPage ?? 0), 
@@ -81,13 +82,13 @@ export const useInfiniteSearch = ({
                     setCurrentPage(key, (local?.currentPage ?? 0) + 1);
                     break;
 
-                case 'latest':
+                case 'posts':
                     {
                         const isHashtag = q.startsWith('#');
                         const feedResponse = await SocialFeedService.getFeedWithLastPostCode(
                             local?.lastPostCode,
                             pageSize,
-                            30,
+                            isHashtag ? FeedType.Hashtag : FeedType.Everyone,
                             isHashtag ? q.substring(1) : undefined,
                             !isHashtag ? q : undefined
                         );

@@ -20,6 +20,7 @@ import BackIcon from "@/icons/logo/back-default.svg?react";
 import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
 import { PrivacyPostType } from '@/types/privacy';
 import { usePostRepost } from '@/pages/Social/Feed/hooks/usePostRepost';
+import { SocialFeedService } from '@/services/social/social-feed-service';
 import { useSendFriendRequest, useUnfriend, useCancelFriendRequest, useAcceptFriendRequest, useRejectFriendRequest } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { useDeleteComment } from '../hooks/useDeleteComment';
 import { useUpdateComment } from '../hooks/useUpdateComment';
@@ -34,6 +35,9 @@ import CommentsList from './components/CommentsList';
 import PostOptionsBottomSheet from '@/components/social/PostOptionsBottomSheet';
 import { usePostOptions } from '@/hooks/usePostOptions';
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
+import SharePostBottomSheet from '@/components/social/SharePostBottomSheet';
+import { useQueryClient } from 'react-query';
+import { useSearchResultsStore } from '@/store/zustand/search-results-store';
 
 const FeedDetail: React.FC = () => {
     const { t } = useTranslation();
@@ -53,7 +57,7 @@ const FeedDetail: React.FC = () => {
 
     const [confirmState, setConfirmState] = useState<{
         open: boolean;
-        type: "send" | "cancel" | "unfriend" | "reject" | null;
+        type: "send" | "cancel" | "unfriend" | "reject" | "unrepost" | null;
         friendRequestId?: number;
         friendName?: string;
     }>({
@@ -69,6 +73,7 @@ const FeedDetail: React.FC = () => {
     const commentLikeMutation = useCommentLike();
     const deviceInfo = useDeviceInfo();
     const { post, isLoadingPost, data: fetchedPost, refetch: refetchPost } = useFeedDetail(postCode, true);
+    const queryClient = useQueryClient();
     const {
         data: commentsData,
         isLoading: isLoadingComments,
@@ -102,6 +107,7 @@ const FeedDetail: React.FC = () => {
     const [isRepostSheetOpen, setIsRepostSheetOpen] = useState(false);
     const [repostPrivacy, setRepostPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
     const [isCommentOptionsOpen, setIsCommentOptionsOpen] = useState(false);
+    const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
     const [selectedComment, setSelectedComment] = useState<any>(null);
     const showToast = useToastStore((state) => state.showToast);
     const openPostOptions = () => setIsPostOptionsOpen(true);
@@ -155,6 +161,18 @@ const FeedDetail: React.FC = () => {
     const repostCaption = displayPost?.captionRepost;
     const postToDisplay = isRepost ? originalPost : displayPost;
 
+    // Refresh detail from server and update store/cache
+    const refreshDetail = async () => {
+        try {
+            const code = postToDisplay?.code || displayPost?.code;
+            if (!code) return;
+            const fresh = await SocialFeedService.getPostByCode(code);
+            setCurrentPost(fresh as any);
+            queryClient.setQueryData(['feedDetail', code], fresh);
+            queryClient.invalidateQueries(['feedDetail', code]);
+        } catch {}
+    };
+
     const handleSendComment = async () => {
         if (!commentText.trim() || !postCode) return;
 
@@ -200,8 +218,27 @@ const FeedDetail: React.FC = () => {
         if (!postCode) return;
         setRepostPrivacy(privacy);
         setIsRepostSheetOpen(false);
-        postRepostMutation.mutate({ postCode, caption: 'Repost', privacy: Number(privacy) });
-        void refetchPost();
+        // Optimistic toggle to 'reposted'
+        const prevCount = displayPost?.repostCount ?? 0;
+        const patched = {
+            ...displayPost,
+            isRepostedByCurrentUser: true as any,
+            repostCount: prevCount + 1,
+        };
+        if (displayPost) setCurrentPost(patched as any);
+        postRepostMutation.mutate(
+            { postCode, caption: 'Repost', privacy: Number(privacy) },
+            {
+                onError: () => {
+                    // rollback
+                    if (displayPost) setCurrentPost({
+                        ...displayPost,
+                        isRepostedByCurrentUser: Boolean(displayPost?.isRepostedByCurrentUser) || false,
+                        repostCount: prevCount,
+                    } as any);
+                },
+            }
+        );
     };
 
     const openConfirmModal = (type: "send" | "cancel" | "unfriend" | "reject", friendRequestId?: number, friendName?: string) => {
@@ -421,7 +458,7 @@ const FeedDetail: React.FC = () => {
     const handleSendFriendRequest = async (userId: number) => {
         try {
             await sendFriendRequestMutation.mutateAsync(userId);
-            void refetchPost();
+            void refreshDetail();
         } catch (error) {
             console.error('Failed to send friend request:', error);
         }
@@ -430,7 +467,7 @@ const FeedDetail: React.FC = () => {
     const handleUnfriend = async (userId: number) => {
         try {
             await unfriendMutation.mutateAsync({ friendUserId: userId });
-            void refetchPost();
+            void refreshDetail();
         } catch (error) {
             console.error('Failed to unfriend:', error);
         }
@@ -439,7 +476,7 @@ const FeedDetail: React.FC = () => {
     const handleCancelFriendRequestAction = async (requestId: number) => {
         try {
             await cancelFriendRequestMutation.mutateAsync(requestId);
-            void refetchPost();
+            void refreshDetail();
         } catch (error) {
             console.error('Failed to cancel friend request:', error);
         }
@@ -448,7 +485,7 @@ const FeedDetail: React.FC = () => {
     const handleAcceptFriendRequestAction = async (requestId: number) => {
         try {
             await acceptFriendRequestMutation.mutateAsync(requestId);
-            void refetchPost();
+            void refreshDetail();
         } catch (error) {
             console.error('Failed to accept friend request:', error);
         }
@@ -457,7 +494,7 @@ const FeedDetail: React.FC = () => {
     const handleRejectFriendRequestAction = async (requestId: number) => {
         try {
             await rejectFriendRequestMutation.mutateAsync(requestId);
-            void refetchPost();
+            void refreshDetail();
         } catch (error) {
             console.error('Failed to reject friend request:', error);
         }
@@ -565,8 +602,16 @@ const FeedDetail: React.FC = () => {
                     displayPost={displayPost}
                     onLike={handleLikePost}
                     onComment={() => inputRef.current?.focus()}
-                    onRepost={() => setIsRepostSheetOpen(true)}
-                    onShare={handleCopyLink}
+                    onRepost={() => {
+                        const isMyRepost = !!displayPost?.isRepost && (displayPost?.user?.id === user?.id);
+                        const isRepostedByMe = Boolean(displayPost?.isRepostedByCurrentUser) || isMyRepost;
+                        if (isRepostedByMe) {
+                            setConfirmState({ open: true, type: "unrepost" });
+                        } else {
+                            setIsRepostSheetOpen(true);
+                        }
+                    }}
+                    onShare={() => setIsShareSheetOpen(true)}
                     postLikeMutation={postLikeMutation}
                 />
 
@@ -615,7 +660,7 @@ const FeedDetail: React.FC = () => {
                 onAcceptFriendRequest={handleAcceptFriendRequestAction}
                 onRejectFriendRequest={handleRejectFriendRequestAction}
                 onSuccess={() => {
-                    void refetchPost();
+                    void refreshDetail();
                 }}
                 navigateBackOnDelete={true}
             >
@@ -639,6 +684,13 @@ const FeedDetail: React.FC = () => {
                 onSelectPrivacy={handleSelectRepostPrivacy}
             />
 
+            {/* Share Bottom Sheet */}
+            <SharePostBottomSheet
+                isOpen={isShareSheetOpen}
+                onClose={() => setIsShareSheetOpen(false)}
+                postCode={displayPost.code}
+            />
+
             <PostOptionsBottomSheet
                 isOpen={isCommentOptionsOpen}
                 onClose={closeCommentOptions}
@@ -653,21 +705,23 @@ const FeedDetail: React.FC = () => {
                         confirmState.type === "cancel" ? t("You can always send another request later!") :
                             confirmState.type === "unfriend" ? t("You will no longer see their updates or share yours with them") :
                                 confirmState.type === "reject" ? t('Reject friend request from {{name}}?', { name: confirmState.friendName }) :
-                                    ""
+                                    confirmState.type === "unrepost" ? t('Remove your repost of this post?') :
+                                        ""
                 }
                 confirmText={
                     confirmState.type === "send" ? t("Yes, send") :
                         confirmState.type === "cancel" ? t("Yes, cancel") :
                             confirmState.type === "unfriend" ? t("Yes, unfriend") :
                                 confirmState.type === "reject" ? t("Yes, reject") :
-                                    t("Yes")
+                                    confirmState.type === "unrepost" ? t("Yes, remove") :
+                                        t("Yes")
                 }
                 cancelText={t("Cancel")}
                 onConfirm={async () => {
                     if (confirmState.type === "send" && authorId) {
                         try {
                             await sendFriendRequestMutation.mutateAsync(authorId);
-                            void refetchPost();
+                            void refreshDetail();
                         } catch (error) {
                             console.error('Failed to send friend request:', error);
                         }
@@ -676,7 +730,7 @@ const FeedDetail: React.FC = () => {
                         try {
                             await cancelFriendRequestMutation.mutateAsync(confirmState.friendRequestId);
                             console.log("first")
-                            void refetchPost();
+                            void refreshDetail();
                         } catch (error) {
                             console.error('Failed to cancel friend request:', error);
                         }
@@ -684,7 +738,7 @@ const FeedDetail: React.FC = () => {
                     if (confirmState.type === "unfriend" && authorId) {
                         try {
                             await unfriendMutation.mutateAsync({ friendUserId: authorId });
-                            void refetchPost();
+                            void refreshDetail();
                         } catch (error) {
                             console.error('Failed to unfriend:', error);
                         }
@@ -692,9 +746,61 @@ const FeedDetail: React.FC = () => {
                     if (confirmState.type === "reject" && confirmState.friendRequestId) {
                         try {
                             await rejectFriendRequestMutation.mutateAsync(confirmState.friendRequestId);
-                            void refetchPost();
+                            void refreshDetail();
                         } catch (error) {
                             console.error('Failed to reject friend request:', error);
+                        }
+                    }
+                    if (confirmState.type === "unrepost") {
+                        try {
+                            const originalCode = postToDisplay?.code || displayPost?.code;
+                            if (originalCode) {
+                                await postRepostMutation.mutateAsync({ postCode: originalCode, caption: 'Repost', privacy: Number(repostPrivacy) });
+                                const store = useSocialFeedStore.getState();
+                                const isMyRepost = !!displayPost?.isRepost && (displayPost?.user?.id === user?.id);
+                                if (isMyRepost && displayPost?.code) {
+                                    store.removePostFromFeeds(displayPost.code);
+                                }
+                                const feeds = store.cachedFeeds || {} as any;
+                                let currentCount: number | undefined;
+                                for (const key of Object.keys(feeds)) {
+                                    const found = feeds[key]?.posts?.find((p: any) => p?.code === originalCode);
+                                    if (found) { currentCount = found.repostCount; break; }
+                                }
+                                store.applyRealtimePatch(originalCode, {
+                                    isRepostedByCurrentUser: false,
+                                    repostCount: Math.max(0, (currentCount ?? 1) - 1)
+                                } as any);
+                                // Update local detail state optimistically
+                                if (displayPost) {
+                                    setCurrentPost({
+                                        ...displayPost,
+                                        isRepostedByCurrentUser: false as any,
+                                        repostCount: Math.max(0, (displayPost?.repostCount ?? 1) - 1),
+                                    } as any);
+                                }
+                                const searchStore = useSearchResultsStore.getState();
+                                const cached = searchStore.cached || {} as Record<string, any>;
+                                for (const key of Object.keys(cached)) {
+                                    const tabState = cached[key];
+                                    if (!tabState) continue;
+                                    let posts = Array.isArray(tabState.posts) ? tabState.posts : [];
+                                    if (isMyRepost && displayPost?.code) {
+                                        posts = posts.filter((p: any) => p?.code !== displayPost.code);
+                                    }
+                                    posts = posts.map((p: any) => p?.code === originalCode
+                                        ? { ...p, isRepostedByCurrentUser: false, repostCount: Math.max(0, (p?.repostCount ?? 1) - 1) }
+                                        : p);
+                                    searchStore.setResults(key, { posts });
+                                }
+                                // if (history.length > 1) {
+                                //     history.goBack();
+                                // } else {
+                                //     history.replace('/social-feed');
+                                // }
+                            }
+                        } catch (error) {
+                            console.error('Failed to unrepost:', error);
                         }
                     }
                     setConfirmState({ open: false, type: null });

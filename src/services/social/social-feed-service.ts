@@ -8,6 +8,14 @@ export interface FeedQueryParams {
     pageSize: number;
 }
 
+export interface SharePostPayload {
+    postCode: string;
+    type: number[]; // e.g., [10,20] for User+Group, [30] for external/social share
+    otherUserIds?: number[];
+    chatCodes?: string[];
+    messageShare?: string;
+}
+
 export interface CreatePostRequest {
     content: string;
     mediaFilenames?: string[];
@@ -212,14 +220,16 @@ export class SocialFeedService {
         return this.reactToPost(postCode, 1, true);
     }
 
-    static async repostPost(originalPostCode: string, captionRepost: string, privacy: number): Promise<void> {
+    static async repostPost(originalPostCode: string, captionRepost: string, privacy: number): Promise<SocialPost> {
         const payload = {
             originalPostCode,
             captionRepost,
             privacy,
         };
         
-        await httpClient.post('/api/v1/social/post/repost', payload);
+        const response = await httpClient.post('/api/v1/social/post/repost', payload);
+        // Some APIs wrap payload under data, others return object directly
+        return response?.data?.data ?? response?.data;
     }
 
     static async reactToComment(commentCode: string, reactionTypeId: number | null = null, isRemove: boolean = false): Promise<void> {
@@ -292,5 +302,15 @@ export class SocialFeedService {
         await httpClient.post('/api/v1/social/hashtag/interest', {
             hashtagText
         });
+    }
+
+    static async sharePost(payload: SharePostPayload): Promise<any> {
+        const response = await httpClient.post('/api/v1/social/post/share', payload);
+        return response?.data?.data ?? response?.data;
+    }
+
+    static async pinPost(postCode: string): Promise<SocialPost> {
+        const response = await httpClient.post('/api/v1/social/post/pin', { postCode });
+        return response?.data?.data ?? response?.data;
     }
 }

@@ -134,21 +134,20 @@ export default function SocialChatRecent() {
 
         const eventType = systemObj.Event;
         const eventValue = SystemMessageType[eventType as keyof typeof SystemMessageType];
-
-        switch (eventType) {
-          case "NOTIFY_GROUP_CHAT_CREATED": {
+        switch (eventValue) {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_CREATED: {
             systemPreview = `${actorName} ${t("has created the group!")}`;
             break;
           }
 
-          case "NOTIFY_GROUP_CHAT_KICKED": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_KICKED: {
             const kickedUser = systemObj.Users?.[0];
             const kickedName = kickedUser?.Id === currentUserId ? t("You") : kickedUser?.FullName || t("User");
             systemPreview = `${actorName} ${t("has removed")} ${kickedName}`;
             break;
           }
 
-          case "NOTIFY_GROUP_CHAT_ADD_MEMBER": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_ADD_MEMBER: {
             if (systemObj.Users && systemObj.Users.length > 0) {
               const names = systemObj.Users.map((u: any) =>
                 u.Id === currentUserId ? t("You") : u.FullName || u.UserName || "User"
@@ -165,30 +164,50 @@ export default function SocialChatRecent() {
             }
             break;
           }
-          case "NOTIFY_GROUP_CHAT_USER_LEAVE_GROUP": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_USER_LEAVE_GROUP: {
             systemPreview = `${actorName} ${t("has left the group")}`;
             break;
           }
-          case "NOTIFY_GROUP_CHAT_ADMIN_RENAME_GROUP": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_ADMIN_RENAME_GROUP: {
             systemPreview = `${actorName} ${t("has renamed the group")}`;
             break;
           }
-          case "NOTIFY_GROUP_CHAT_ADMIN_CHANGE_AVATAR_GROUP": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_ADMIN_CHANGE_AVATAR_GROUP: {
             systemPreview = `${actorName} ${t("has changed the group avatar")}`;
             break;
           }
-          case "NOTIFY_GROUP_CHAT_ADMIN_LEAVE_GROUP": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_ADMIN_LEAVE_GROUP: {
             systemPreview = `${actorName} ${t("has left the group as admin")}`;
             break;
           }
-          case "NOTIFY_GROUP_CHAT_CHANGE_ADMIN": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_CHANGE_ADMIN: {
             const newAdmin = systemObj.Users?.[0];
             const newAdminName = newAdmin?.Id === currentUserId ? t("You") : newAdmin?.FullName || t("User");
             systemPreview = `${actorName} ${t("has appointed")} ${newAdminName} ${t("as admin")}`;
             break;
           }
-          case "NOTIFY_FRIENDLY_ACCEPTED": {
+          case SystemMessageType.NOTIFY_FRIENDLY_ACCEPTED: {
             systemPreview = `${t("You")} ${t("and")} ${room?.title} ${t("are now friends")}`;
+            break;
+          }
+          case SystemMessageType.NOTIFY_GROUP_CHAT_SHARED: {
+            // Show concise attachments summary similar to Facebook
+            const isImage = (a: any) => a?.fileType === 10 || /\.(jpg|jpeg|png|gif|webp|heic|bmp)$/i.test(a?.fileName || a?.fileUrl || "");
+            const imgCount = attachments.filter(isImage).length;
+            const fileCount = attachments.length - imgCount;
+            if (attachments.length <= 0) {
+              systemPreview = `${actorName} ${t("has shared an attachment")}`;
+            } else if (imgCount > 0 && fileCount === 0) {
+              systemPreview = imgCount === 1
+                ? `${actorName} ${t("has shared a photo")}`
+                : `${actorName} ${t("has shared")} ${imgCount} ${t("photos")}`;
+            } else if (fileCount > 0 && imgCount === 0) {
+              systemPreview = fileCount === 1
+                ? `${actorName} ${t("has shared a file")}`
+                : `${actorName} ${t("has shared")} ${fileCount} ${t("files")}`;
+            } else {
+              systemPreview = `${actorName} ${t("has shared")} ${attachments.length} ${t("attachments")}`;
+            }
             break;
           }
           default:

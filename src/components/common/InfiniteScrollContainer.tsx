@@ -7,6 +7,7 @@ interface InfiniteScrollContainerProps {
     isLoading: boolean;
     threshold?: number;
     className?: string;
+    showEndIndicator?: boolean;
 }
 
 const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
@@ -15,7 +16,8 @@ const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
     hasMore,
     isLoading,
     threshold = 200,
-    className = ""
+    className = "",
+    showEndIndicator = true,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const loadingRef = useRef(false);
@@ -57,7 +59,6 @@ const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
         >
             {children}
             
-            {/* Loading indicator */}
             {isLoading && (
                 <div className="flex justify-center items-center py-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
@@ -65,8 +66,7 @@ const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
                 </div>
             )}
             
-            {/* End of results indicator */}
-            {!hasMore && !isLoading && (
+            {showEndIndicator && !hasMore && !isLoading && (
                 <div className="text-center py-4 text-gray-500 text-sm">
                     No more results
                 </div>

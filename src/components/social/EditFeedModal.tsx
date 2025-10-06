@@ -272,7 +272,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                         <>
                             <div className="flex items-center space-x-3">
                                 <img
-                                    src={user?.avatar || avatarFallback}
+                                    src={user?.avatarLink || avatarFallback}
                                     alt={user?.name || 'User Avatar'}
                                     className="w-[40px] h-[40px] rounded-2xl object-cover"
                                     onError={(e) => {

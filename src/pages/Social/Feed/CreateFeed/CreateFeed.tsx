@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
@@ -17,6 +17,7 @@ import CloseIcon from "@/icons/logo/close-default.svg?react"
 import CamIcon from "@/icons/logo/chat/cam.svg?react"
 import ImageIcon from "@/icons/logo/chat/image.svg?react"
 import { parseHashtags } from '@/utils/hashtagHighlight';
+import ConfirmModal from '@/components/common/modals/ConfirmModal';
 
 const CreateFeed: React.FC = () => {
     const { t } = useTranslation();
@@ -69,6 +70,47 @@ const CreateFeed: React.FC = () => {
 
     useAutoResizeTextarea(textareaRef, postText);
 
+    const hasUnsavedChanges = useMemo(() => {
+        return (postText && postText.trim().length > 0) || images.length > 0 || !!audioBlob;
+    }, [postText, images.length, audioBlob]);
+
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+    const unblockRef = useRef<null | (() => void)>(null);
+    const nextLocationRef = useRef<any>(null);
+
+    // Warn on browser/tab close or refresh
+    useEffect(() => {
+        const handler = (e: BeforeUnloadEvent) => {
+            if (!hasUnsavedChanges) return;
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [hasUnsavedChanges]);
+
+    // Block in-app route changes when there are unsaved changes
+    useEffect(() => {
+        // Clear previous block
+        if (unblockRef.current) {
+            unblockRef.current();
+            unblockRef.current = null;
+        }
+        if (hasUnsavedChanges) {
+            unblockRef.current = history.block((location: any, action: any) => {
+                setShowLeaveConfirm(true);
+                nextLocationRef.current = { location, action };
+                return false; // cancel navigation
+            });
+        }
+        return () => {
+            if (unblockRef.current) {
+                unblockRef.current();
+                unblockRef.current = null;
+            }
+        };
+    }, [hasUnsavedChanges, history]);
+
     React.useEffect(() => {
         const urlParams = new URLSearchParams(location.search);
         const privacy = urlParams.get('privacy');
@@ -101,9 +143,12 @@ const CreateFeed: React.FC = () => {
     const selectedPrivacyOption = privacyOptions.find(option => option.id === selectedPrivacy);
 
     const handleClose = () => {
-        history.goBack();
+        if (hasUnsavedChanges) {
+            setShowLeaveConfirm(true);
+        } else {
+            history.goBack();
+        }
     };
-
     const handlePost = async () => {
         if (!postText.trim() && images.length === 0 && !audioBlob) {
             return;
@@ -164,7 +209,7 @@ const CreateFeed: React.FC = () => {
             <div className="flex-1 p-4 space-y-4 overflow-y-auto pb-20">
                 <div className="flex items-center space-x-3">
                     <img
-                        src={user?.avatar || avatarFallback}
+                        src={user?.avatarLink || avatarFallback}
                         alt={user?.name || 'User Avatar'}
                         className="w-[40px] h-[40px] rounded-2xl object-cover"
                         onError={(e) => {
@@ -290,9 +335,9 @@ const CreateFeed: React.FC = () => {
                     <div className="flex flex-col items-end space-y-2">
                         {(isUploading || audioUploadMutation.isLoading) && (
                             <div className="text-sm text-blue-600 font-medium">
-                                {audioUploadMutation.isLoading && t("Uploading audio...")}
-                                {isUploading && !isAudioUploading && t("Uploading images...")}
-                                {isUploading && isAudioUploading && t("Uploading files...")}
+                                {audioUploadMutation.isLoading && t("Uploading...")}
+                                {isUploading && !isAudioUploading && t("Uploading...")}
+                                {isUploading && isAudioUploading && t("Uploading...")}
                             </div>
                         )}
                         {!isRecording && (
@@ -320,6 +365,44 @@ const CreateFeed: React.FC = () => {
                     closeModal={() => setIsPrivacyModalOpen(false)}
                     selectedPrivacy={selectedPrivacy}
                     onSelectPrivacy={setSelectedPrivacy}
+                />
+                <ConfirmModal
+                    isOpen={showLeaveConfirm}
+                    title={t('Leaving?')}
+                    message={t('Your post will not be saved. Are you sure?')}
+                    confirmText={t('Yes, leave')}
+                    cancelText={t('Cancel')}
+                    onConfirm={() => {
+                        setShowLeaveConfirm(false);
+                        // Optional: clear draft state before leaving
+                        setPostText('');
+                        clearImages();
+                        clearAudio();
+                        // Unblock and proceed to intended navigation
+                        if (unblockRef.current) {
+                            unblockRef.current();
+                            unblockRef.current = null;
+                        }
+                        const next = nextLocationRef.current;
+                        nextLocationRef.current = null;
+                        if (next) {
+                            const { location, action } = next;
+                            const path = `${location.pathname || ''}${location.search || ''}${location.hash || ''}`;
+                            if (action === 'POP') {
+                                history.goBack();
+                            } else if (action === 'REPLACE') {
+                                history.replace(path);
+                            } else {
+                                history.push(path);
+                            }
+                        } else {
+                            history.goBack();
+                        }
+                    }}
+                    onClose={() => {
+                        setShowLeaveConfirm(false);
+                        nextLocationRef.current = null;
+                    }}
                 />
             </div>
         </div>

@@ -6,6 +6,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, EffectCoverflow } from 'swiper/modules';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { saveImage } from '@/utils/save-image';
+import DownloadIcon from "@/icons/logo/download-white.png"
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
@@ -452,7 +453,7 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                <span className="text-white font-medium ml-2">
+                                                                <span className="text-white font-medium ml-2 max-w-40 truncate">
                                                                     {userInfo.name}
                                                                 </span>
                                                             </div>
@@ -492,10 +493,8 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
                                                                     disabled={isDownloading}
                                                                     className={`rounded-full h-8 w-8 aspect-square  bg-[#FFFFFF33] flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
                                                                 >
-                                                                    <IoDownloadOutline className="text-lg text-white" />
+                                                                    <img src={DownloadIcon} alt="" />
                                                                 </button>
-
-
                                                                 <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-sm rounded-lg py-2 min-w-[200px] z-50">
                                                                     {isDownloading && (
                                                                         <div className="px-4 py-2 text-white text-sm">
