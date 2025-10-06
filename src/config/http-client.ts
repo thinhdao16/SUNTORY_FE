@@ -71,7 +71,9 @@ httpClient.interceptors.request.use(
         const token = localStorage.getItem("token");
         const onLoginRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/login');
         const isAuthEndpoint = /\/api\/v1\/auth\//i.test(config?.url || "");
-        if (onLoginRoute || isAuthEndpoint) {
+        const isLogoutEndpoint = /\/api\/v1\/auth\/logout/i.test(config?.url || "");
+
+        if (onLoginRoute || (isAuthEndpoint && !isLogoutEndpoint)) {
             delete config.headers["Authorization"];
         } else if (token) {
             config.headers["Authorization"] = `Bearer ${token}`;

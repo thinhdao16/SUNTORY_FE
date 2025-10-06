@@ -308,4 +308,9 @@ export class SocialFeedService {
         const response = await httpClient.post('/api/v1/social/post/share', payload);
         return response?.data?.data ?? response?.data;
     }
+
+    static async pinPost(postCode: string): Promise<SocialPost> {
+        const response = await httpClient.post('/api/v1/social/post/pin', { postCode });
+        return response?.data?.data ?? response?.data;
+    }
 }

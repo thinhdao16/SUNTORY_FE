@@ -58,7 +58,7 @@ const PostActions: React.FC<PostActionsProps> = ({
                     inactiveColor="text-gray-600"
                 />
                 
-                {!isRepostByMeCard && (
+                {!isRepostByMeCard && !displayPost.isRepost && (
                     <AnimatedActionButton
                         icon={<RetryIcon />}
                         activeIcon={<UnretryIcon />}

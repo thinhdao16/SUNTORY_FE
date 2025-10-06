@@ -17,6 +17,7 @@ import RetryIcon from "@/icons/logo/social-feed/retry.svg?react";
 import UnretryIcon from "@/icons/logo/social-feed/unretry.svg?react";
 import SendIcon from "@/icons/logo/social-feed/send.svg?react";
 import { MdMoreHoriz } from 'react-icons/md';
+import { TbPin } from "react-icons/tb";
 import { useCreateTranslationChat, useTranslationLanguages } from '@/pages/Translate/hooks/useTranslationLanguages';
 import useLanguageStore from '@/store/zustand/language-store';
 import ActionButton from '@/components/loading/ActionButton';
@@ -177,6 +178,9 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   // Consider posts with missing original or status 190 as error/unavailable
   const isErrorPost = Boolean(displayPost?.status === 190) || Boolean(isRepostWithDeletedOriginal);
 
+  const authorId = post?.user?.id;
+  const isOwnPost = user?.id === authorId;
+
   const handleUserProfileClick = (e: React.MouseEvent, userId: number) => {
     e.stopPropagation();
     if (currentUser?.id === userId) {
@@ -259,6 +263,12 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
       onClick={handlePostClick}
       ref={containerRefCallback ? containerRefCallback : undefined}
     >
+      {post?.isPin && isOwnPost && (
+        <div className="flex items-center gap-1.5 px-4 pt-3 text-netural-200">
+          <TbPin className="w-4 h-4" />
+          <span className="text-sm font-medium">{t('Pinned')}</span>
+        </div>
+      )}
       <div className="flex justify-between p-4 pb-2">
         <div className="flex items-center gap-3">
           <img
@@ -533,7 +543,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             inactiveColor="text-netural-900"
           />
 
-          {!isRepostByMeCard && (
+          {!isRepostByMeCard && !post.isRepost && (
             <AnimatedActionButton
               icon={<RetryIcon />}
               activeIcon={<UnretryIcon />}
