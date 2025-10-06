@@ -2,14 +2,17 @@ import ENV from "@/config/env";
 import { initializeApp } from "firebase/app";
 import type { Messaging } from "firebase/messaging";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { Capacitor } from '@capacitor/core';
 
 function isLan192(): boolean {
   if (typeof window === "undefined") return false;
-  const host = window.location.hostname;       
+  const host = window.location.hostname;
   return /^192\.168(?:\.\d{1,3}){2}$/.test(host);
 }
 
-const DISABLE_FCM = isLan192();
+// Disable FCM on native platforms (iOS/Android) since Service Worker is not supported
+const isNativePlatform = Capacitor.isNativePlatform();
+const DISABLE_FCM = isLan192() || isNativePlatform;
 
 const firebaseConfig = {
   apiKey: ENV.FIREBASE_API_KEY,

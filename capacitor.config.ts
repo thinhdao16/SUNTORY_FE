@@ -39,9 +39,9 @@ const config: CapacitorConfig = {
       androidGalleryMode: true
     },
     LocalNotifications: {
-      smallIcon: 'ic_stat_notify',    
-      iconColor: '#0A6EBD',          
-      sound: 'default'               
+      smallIcon: 'ic_stat_notify',
+      iconColor: '#0A6EBD',
+      sound: 'default'
     },
     ScreenOrientation: {
       orientation: 'portrait'
@@ -52,6 +52,13 @@ const config: CapacitorConfig = {
     allowMixedContent: true,
     captureInput: true,
     webContentsDebuggingEnabled: true,
+  },
+  ios: {
+    contentInset: "automatic",
+    scrollEnabled: true,
+    allowsLinkPreview: false,
+    preferredContentMode: "mobile",
+    limitsNavigationsToAppBoundDomains: false,
   }
 };
 
