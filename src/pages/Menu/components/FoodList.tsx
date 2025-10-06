@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { IonPage, IonContent, IonHeader, IonToolbar, IonButton, IonIcon, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent, IonButtons, IonTitle, IonFooter } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { arrowBack } from 'ionicons/icons';
+import { arrowBack, key } from 'ionicons/icons';
 import { FoodModel } from '@/services/menu/menu-types';
 import NoDishImageIcon from '@/icons/logo/menu/no-dish-image.svg?react';
 import { getMenuFoodList } from '@/services/menu/menu-service';
@@ -12,6 +12,9 @@ import {
     handleTouchMove as handleTouchMoveUtil,
     handleTouchEnd as handleTouchEndUtil,
 } from '@/utils/translate-utils';
+import { useMenuSignalR } from '@/hooks/useMenuSignalR';
+import { useMenuTranslationStore } from '@/store/zustand/menuTranslationStore';
+import { useAuthStore } from '@/store/zustand/auth-store';
 
 interface LocationState {
     menuId?: number;
@@ -34,11 +37,46 @@ const FoodList: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showOverlay, setShowOverlay] = useState(false);
     const [translateY, setTranslateY] = useState(0);
+    const [showEmptyState, setShowEmptyState] = useState(false);
     const startYRef = useRef<number | null>(null);
     const startTimeRef = useRef<number | null>(null);
     const screenHeightRef = useRef(window.innerHeight);
     const velocityThreshold = 0.4;
     const [bottomBarHeight, setBottomBarHeight] = useState(80);
+    const user = useAuthStore((state) => state.user);
+    const { foodSuccess, foodFailed } = useMenuTranslationStore();
+
+    useMenuSignalR(menuId?.toString() || "", user?.id?.toString() || "");
+    
+    // Force loading for 45 seconds before showing content
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setLoading(false);
+        }, 45000); // 45 seconds
+
+        return () => clearTimeout(timeout);
+    }, []);
+
+    // Timeout 45 seconds to show empty state
+    useEffect(() => {
+        if (!loading && foods.length === 0) {
+            const timeout = setTimeout(() => {
+                setShowEmptyState(true);
+            }, 1000); // 1 second after loading stops
+
+            return () => clearTimeout(timeout);
+        } else if (foods.length > 0) {
+            setShowEmptyState(false);
+        }
+    }, [loading, foods.length]);
+
+    useEffect(() => {
+        if (menuId) {
+            loadFoods(menuId, 0, pageSize, false);
+        }
+    }, [foodSuccess, foodFailed]);
+
+
     const loadFoods = async (
         historyId: number,
         currentPage: number,
@@ -85,8 +123,11 @@ const FoodList: React.FC = () => {
             if (!isLoadMore) {
             }
         } finally {
-            setLoading(false);
-            setLoadingMore(false);
+            // Only set loading to false for load more, not for initial load
+            if (isLoadMore) {
+                setLoadingMore(false);
+            }
+            // Initial loading will be controlled by the 45-second timeout
         }
     };
 
@@ -95,9 +136,8 @@ const FoodList: React.FC = () => {
         setPage(0);
         if (menuId) {
             loadFoods(menuId, 0, pageSize, false);
-        } else {
-            setLoading(false);
         }
+        // Don't set loading to false here, let the 45-second timeout handle it
     }, [menuId]);
 
     useEffect(() => {
@@ -294,7 +334,7 @@ const FoodList: React.FC = () => {
                         </div>
                     )}
 
-                    {!loading && foods.length === 0 && !error && (
+                    {!loading && foods.length === 0 && !error && showEmptyState && (
                         <div className="flex flex-col items-center justify-start pt-6 pb-28 px-6 text-center">
                             <div className="mb-6">
                                 <NoDishImageIcon className="w-40 h-40" />

@@ -34,11 +34,6 @@ const MenuAnalyzing: React.FC = () => {
     const [isActiveInterpretingNutritionalData, setIsActiveInterpretingNutritionalData] = useState(false);
     const [isCompletedInterpretingNutritionalData, setIsCompletedInterpretingNutritionalData] = useState(false);
 
-    // State cho Step 3: Generating Dish Images
-    const [generatingDishImagesProgress, setGeneratingDishImagesProgress] = useState(0);
-    const [isActiveGeneratingDishImages, setIsActiveGeneratingDishImages] = useState(false);
-    const [isCompletedGeneratingDishImages, setIsCompletedGeneratingDishImages] = useState(false);
-
     // Ref để quản lý interval trong analyzeMenu
     const analyzeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     // Refs để quản lý timeout hoàn tất step 2 và 3 sau 2s
@@ -54,7 +49,7 @@ const MenuAnalyzing: React.FC = () => {
         return new File([u8arr], filename, { type: mime });
     };
 
-    useMenuSignalR(user?.id?.toString() || "", key || "");
+    // useMenuSignalR(user?.id?.toString() || "", key || "");
 
     const analyzeMenu = async () => {
         try {
@@ -62,6 +57,7 @@ const MenuAnalyzing: React.FC = () => {
             const file = base64ToFile(base64Img, "gallery.png");
             formData.append("file", file);
             const result = await menuAnalyzing(formData);
+            console.log(result);
             setMenuId(result.data.id);
             setKey(result.data.key);
             if (result?.data != null) {
@@ -70,17 +66,14 @@ const MenuAnalyzing: React.FC = () => {
                 setIsActiveAnalyzingMenuContent(false);
                 setIsCompletedAnalyzingMenuContent(true);
             }
-            else {
-                setIsCompletedInterpretingNutritionalData(true);
-                setIsCompletedGeneratingDishImages(true);
-                setAnalyzingMenuContentProgress(100);
-                setInterpretingNutritionalDataProgress(100);
-                setGeneratingDishImagesProgress(100);
-
-                setTimeout(() => {
-                    history.push('/food-list');
-                }, 1500);
-            }
+            // else {
+            //     setIsCompletedInterpretingNutritionalData(true);
+            //     setAnalyzingMenuContentProgress(100);
+            //     setInterpretingNutritionalDataProgress(100);
+            //     setTimeout(() => {
+            //         history.push('/food-list');
+            //     }, 1500);
+            // }
 
         } catch (error) {
             setIsActiveAnalyzingMenuContent(false);
@@ -117,10 +110,6 @@ const MenuAnalyzing: React.FC = () => {
                 clearTimeout(step2TimeoutRef.current);
                 step2TimeoutRef.current = null;
             }
-            if (step3TimeoutRef.current) {
-                clearTimeout(step3TimeoutRef.current);
-                step3TimeoutRef.current = null;
-            }
         };
     }, [setFoodSuccess]);
 
@@ -128,53 +117,27 @@ const MenuAnalyzing: React.FC = () => {
     // Effect cho Step 2: Interpreting Nutritional Data
     useEffect(() => {
         if (isCompletedAnalyzingMenuContent) {
-            {
-                setIsActiveInterpretingNutritionalData(true);
+            setIsActiveInterpretingNutritionalData(true);
 
-                const interval = setInterval(() => {
-                    setInterpretingNutritionalDataProgress(prev => {
-                        const newProgress = Math.min(prev + 4, 100);
-                        if (newProgress >= 100) {
-                            clearInterval(interval);
-                            setIsActiveInterpretingNutritionalData(false);
-                            setIsCompletedInterpretingNutritionalData(true);
-                        }
-                        return newProgress;
-                    });
-                }, 120);
-                return () => clearInterval(interval);
-            }
+            const interval = setInterval(() => {
+                setInterpretingNutritionalDataProgress(prev => {
+                    const newProgress = Math.min(prev + 3, 100);
+                    if (newProgress >= 100) {
+                        clearInterval(interval);
+                        setIsActiveInterpretingNutritionalData(false);
+                        setIsCompletedInterpretingNutritionalData(true);
+                        // Chuyển trang sau khi step 2 hoàn thành
+                        setTimeout(() => {
+                            history.push('/food-list', { menuId: menuId });
+                        }, 1000);
+                    }
+                    return newProgress;
+                });
+            }, 120);
+            
+            return () => clearInterval(interval);
         }
-    }, [isCompletedAnalyzingMenuContent]);
-
-    // Effect cho Step 3: Generating Dish Images
-    const navigatedRef = useRef(false);
-    useEffect(() => {
-        if (isCompletedAnalyzingMenuContent) {
-            // set generating dish images progress
-            setIsActiveGeneratingDishImages(true);
-            //calculate progress
-            const currentProgress = (foodSuccess / totalFood) * 100;
-            setGeneratingDishImagesProgress(
-                Math.min(Number(currentProgress.toFixed(4)), 99.9)
-            );
-
-            if (
-                foodSuccess > totalFood
-            ) {
-                // make sure progress is 100%
-                setGeneratingDishImagesProgress(100);
-                setIsActiveGeneratingDishImages(false);
-                setIsCompletedGeneratingDishImages(true);
-                setTimeout(() => {
-                    navigatedRef.current = true;
-                    history.push('/food-list', { menuId: menuId });
-                    useMenuTranslationStore.getState().setIsConnected(false);
-                }, 1500);
-            }
-        }
-
-    }, [foodSuccess]);
+    }, [isCompletedAnalyzingMenuContent, menuId, history]);
 
     return (
         <IonPage>
@@ -243,32 +206,6 @@ const MenuAnalyzing: React.FC = () => {
                                     <div className="absolute right-0 top-4 mt-1">
                                         <span className="text-sm font-semibold text-green-600">
                                             {interpretingNutritionalDataProgress}%
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Step 3: Generating Dish Images */}
-                        <div className="mb-8">
-                            <div className="flex items-center mb-3">
-                                <h3 className={`text-base text-black`}>
-                                    {t('Generating Dish Images')}
-                                </h3>
-                            </div>
-                            <div className="relative">
-                                <div className="w-full bg-gray-200 rounded-full" style={{ height: '12px', borderRadius: '16px' }}>
-                                    <div
-                                        className={`h-3 rounded-full transition-all duration-300 ${isActiveGeneratingDishImages ? 'bg-green-500' :
-                                            isCompletedGeneratingDishImages ? 'bg-green-500' : 'bg-gray-200'
-                                            }`}
-                                        style={{ width: `${generatingDishImagesProgress}%`, height: '12px', borderRadius: '16px' }}
-                                    />
-                                </div>
-                                {isActiveGeneratingDishImages && (
-                                    <div className="absolute right-0 top-4 mt-1">
-                                        <span className="text-sm font-semibold text-green-600">
-                                            {generatingDishImagesProgress}%
                                         </span>
                                     </div>
                                 )}
