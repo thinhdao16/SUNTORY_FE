@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useHistory } from "react-router-dom";
 import { useChatStore } from "@/store/zustand/chat-store";
-import { TopicType } from "@/constants/topicType";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,8 +16,15 @@ import ProfileIcon from "@/icons/logo/footer/profile.svg?react";
 import ProfileActiveIcon from "@/icons/logo/footer/profile_active.svg?react";
 import TranslationIcon from "@/icons/logo/footer/translation.svg?react";
 import TranslationActiveIcon from "@/icons/logo/footer/translation_active.svg?react";
+import NotificationIcon from "@/icons/logo/footer/notification.svg?react";
+import NotificationIcon2 from "@/icons/logo/footer/notification-2.svg?react";
+import NotificationActiveIcon from "@/icons/logo/footer/notification_active.svg?react";
+import NotificationActiveIcon2 from "@/icons/logo/footer/notification_active-2.svg?react";
 import { useKeyboardResize } from "@/hooks/useKeyboardResize";
 import { useSignalRStreamStore } from "@/store/zustand/signalr-stream-store";
+import { useModalContext } from "@/contexts/ModalContext";
+import { useNotificationStore } from "@/store/zustand/notify-store";
+import { getUnreadNotificationCountsApi } from "@/services/social/social-notification";
 
 
 interface TabItem {
@@ -38,6 +44,24 @@ const BottomTabBar: React.FC = () => {
     const [keyboardOpen, setKeyboardOpen] = useState(false);
     const { keyboardResizeScreen } = useKeyboardResize();
     const { triggerRefresh } = useRefresh();
+    const { hideBottomTabBar } = useModalContext();
+    const notifications = useNotificationStore((state) => state.notifications);
+    const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+    // Auto refetch unread notification count every 30 seconds
+    useEffect(() => {
+        const fetchUnreadCount = async () => {
+            try {
+                const count = await getUnreadNotificationCountsApi();
+                setUnreadNotificationCount(count);
+            } catch (error) {
+                console.error('Error fetching unread notification count:', error);
+            }
+        };
+        fetchUnreadCount();
+        const interval = setInterval(fetchUnreadCount, 30000);
+        return () => clearInterval(interval);
+    }, [notifications]);
 
     const tabs: TabItem[] = [
         {
@@ -79,6 +103,14 @@ const BottomTabBar: React.FC = () => {
             iconActive: TranslationActiveIcon,
             path: "/translate",
             activePath: (pathname: string) => pathname.startsWith("/translate"),
+            classNameIcon: "",
+        },
+        {
+            label: t("Notification"),
+            icon: unreadNotificationCount > 0 ? NotificationIcon2 : NotificationIcon,
+            iconActive: unreadNotificationCount > 0 ? NotificationActiveIcon2 : NotificationActiveIcon,
+            path: "/notification-list",
+            activePath: (pathname: string) => pathname.startsWith("/notification-list"),
             classNameIcon: "",
         },
         {
@@ -180,7 +212,7 @@ const BottomTabBar: React.FC = () => {
 
     return (
         <AnimatePresence>
-            {!keyboardOpen && !keyboardResizeScreen && (
+            {!keyboardOpen && !keyboardResizeScreen && !hideBottomTabBar && (
                 <motion.div
                     key="bottom-tab-bar"
                     initial={{ y: 80, opacity: 0 }}
