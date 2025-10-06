@@ -10,7 +10,7 @@ import { useScrollRestoration } from '../hooks/useScrollRestoration';
 import { useAuthStore } from '@/store/zustand/auth-store';
 import { usePostLike } from '@/pages/Social/Feed/hooks/usePostLike';
 import { usePostRepost } from '../hooks/usePostRepost';
-import { TabNavigation, HashtagInput, PostsList, LoadingStates } from './components';
+import { TabNavigation, HashtagInput, PostsList, LoadingStates, FriendSuggestions } from './components';
 import PullToRefresh from '@/components/common/PullToRefresh';
 import { useIonToast, IonContent } from '@ionic/react';
 import { useRefreshCallback } from '@/contexts/RefreshContext';
@@ -56,6 +56,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   }, [activeTab, privacy]);
   const [selectedHashtag, setSelectedHashtag] = useState<string>(specificHashtag || '');
   const [recentHashtags, setRecentHashtags] = useState<string[]>([]);
+  const [showFriendSuggestions, setShowFriendSuggestions] = useState(true);
   // Repost privacy handled inside SocialFeedCard via embedded PrivacyBottomSheet
 
   const getTabsConfig = React.useCallback(() => {
@@ -536,6 +537,14 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
             onRepostConfirm={handleRepostConfirm}
             onPostClick={handlePostClick}
             onVisiblePostsChange={handleVisiblePostsChange}
+            interstitial={showFriendSuggestions && posts.length > 5 ? (
+              <FriendSuggestions
+                title={t('Suggested for you')}
+                pageSize={8}
+                onDismiss={() => setShowFriendSuggestions(false)}
+              />
+            ) : undefined}
+            interstitialAfter={4}
           />
         </PullToRefresh>
 

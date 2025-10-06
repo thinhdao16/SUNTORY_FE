@@ -15,9 +15,12 @@ interface PostsListProps {
   onRepostConfirm?: (postCode: string, privacy: PrivacyPostType) => void;
   onPostClick: (postCode: string) => void;
   onVisiblePostsChange?: (postCodes: string[]) => void;
+  // Optional: render an interstitial component (e.g., friend suggestions) once in the list
+  interstitial?: React.ReactNode;
+  interstitialAfter?: number; // insert after this index (0-based). Example: 4 -> after 5th post
 }
 
-export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
+export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({ 
   posts,
   hasNextPage,
   isFetchingNextPage,
@@ -28,7 +31,9 @@ export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
   onShare,
   onRepostConfirm,
   onPostClick,
-  onVisiblePostsChange
+  onVisiblePostsChange,
+  interstitial,
+  interstitialAfter = 4
 }, ref) => {
   const lastPostElementRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -157,6 +162,10 @@ export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
               onPostClick={onPostClick}
               containerRefCallback={(node) => setItemRef(post.code, node)}
             />
+            {/* Interstitial suggestion block appears once after specified index */}
+            {interstitial && index === interstitialAfter && (
+              <div className="my-3">{interstitial}</div>
+            )}
           </div>
         );
       })}

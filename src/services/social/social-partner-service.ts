@@ -69,7 +69,7 @@ export const acceptFriendRequest = async (friendRequestId: number) => {
 export const rejectFriendRequest = async (friendRequestId: number) => {
   const res = await httpClient.post("/api/v1/friendship/reject-request", { friendRequestId });
   return res.data.data;
-}
+};
 export const unfriend = async (friendUserId: number) => {
   const res = await httpClient.post("/api/v1/friendship/unfriend", { friendUserId });
   return res.data.data;
@@ -83,4 +83,18 @@ export const getListSentRequests = async (page: number, pageSize: number) => {
     },
   });
   return res.data.data.data;
+};
+
+// Recommended friends (for suggestions in feed)
+export const getFriendshipRecommended = async (
+  page: number = 0,
+  pageSize: number = 10
+) => {
+  const res = await httpClient.get("/api/v1/friendship/recommended", {
+    params: {
+      PageNumber: page,
+      PageSize: pageSize,
+    },
+  });
+  return res.data.data?.data ?? res.data.data;
 };

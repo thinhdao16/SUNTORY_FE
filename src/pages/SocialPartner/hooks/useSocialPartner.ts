@@ -9,7 +9,8 @@ import {
     sendFriendRequest,
     unfriend,
 } from "@/services/social/social-partner-service";
-import { useInfiniteQuery, useMutation, useQueryClient } from "react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "react-query";
+import { getFriendshipRecommended } from "@/services/social/social-partner-service";
 
 export const useSearchFriendshipUsers = (keyword: string, pageSize = 10) => {
     return useInfiniteQuery(
@@ -26,6 +27,18 @@ export const useSearchFriendshipUsers = (keyword: string, pageSize = 10) => {
                 return allPages.length;
             },
             enabled: !!keyword,
+        }
+    );
+};
+
+// Recommended users for friend suggestions in feed
+export const useFriendshipRecommended = (pageSize = 10) => {
+    return useQuery(
+        ["friendshipRecommended", pageSize],
+        () => getFriendshipRecommended(0, pageSize),
+        {
+            staleTime: 5 * 60 * 1000,
+            refetchOnWindowFocus: false,
         }
     );
 };
