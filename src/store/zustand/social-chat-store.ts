@@ -75,6 +75,14 @@ interface SocialChatState {
     getTotalNotificationCount: () => number;
     resetNotificationCounts: () => void;
 
+    friendRequestOptimistic: Record<number, { item: any; expiresAt: number | null }>;
+    setFriendRequestOptimistic: (item: any, ttlSec?: number) => void;
+    removeFriendRequestOptimistic: (id: number) => void;
+    clearFriendRequestOptimistic: () => void;
+    hasFriendRequestOptimistic: (id: number) => boolean;
+    getFriendRequestOptimisticList: () => any[];
+    pruneExpiredFriendRequestOptimistic: () => void;
+
 }
 const toTs = (d?: string | null) => (d ? new Date(d).getTime() : 0);
 const pickLocalOnly = (r: RoomChatInfo | undefined) => r ? ({
@@ -695,6 +703,54 @@ export const useSocialChatStore = create<SocialChatState>()(
                     unreadRoomsCount: 0,
                     pendingFriendRequestsCount: 0,
                 };
+            }),
+
+        friendRequestOptimistic: {},
+
+        setFriendRequestOptimistic: (item, ttlSec = 120) =>
+            set((state) => {
+                const expiresAt = ttlSec > 0 ? Date.now() + ttlSec * 1000 : null;
+                const id = item?.id;
+                if (typeof id === 'number') {
+                    state.friendRequestOptimistic[id] = { item, expiresAt };
+                }
+            }),
+
+        removeFriendRequestOptimistic: (id) =>
+            set((state) => {
+                if (state.friendRequestOptimistic[id]) delete state.friendRequestOptimistic[id];
+            }),
+
+        clearFriendRequestOptimistic: () =>
+            set((state) => {
+                state.friendRequestOptimistic = {};
+            }),
+
+        hasFriendRequestOptimistic: (id) => {
+            const st = get();
+            const entry = st.friendRequestOptimistic[id];
+            if (!entry) return false;
+            if (entry.expiresAt && entry.expiresAt <= Date.now()) return false;
+            return true;
+        },
+
+        getFriendRequestOptimisticList: () => {
+            const st = get();
+            const now = Date.now();
+            return Object.values(st.friendRequestOptimistic)
+                .filter((e) => !e.expiresAt || e.expiresAt > now)
+                .map((e) => e.item);
+        },
+
+        pruneExpiredFriendRequestOptimistic: () =>
+            set((state) => {
+                const now = Date.now();
+                for (const id of Object.keys(state.friendRequestOptimistic)) {
+                    const entry = state.friendRequestOptimistic[+id];
+                    if (entry?.expiresAt && entry.expiresAt <= now) {
+                        delete state.friendRequestOptimistic[+id];
+                    }
+                }
             }),
     }))
 );
