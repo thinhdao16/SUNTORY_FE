@@ -54,6 +54,15 @@ export const getFriendshipReceivedRequests = async (page: number, pageSize: numb
   });
   return res.data.data.data;
 };
+export const getFriendshipReceivedRequestsv2 = async (page: number, pageSize: number) => {
+  const res = await httpClient.get("/api/v1/friendship/received-requests", {
+    params: {
+      PageNumber: page,
+      PageSize: pageSize,
+    },
+  });
+  return res.data.data;
+};
 export const sendFriendRequest = async (toUserId: number) => {
   const res = await httpClient.post("/api/v1/friendship/send-request", { toUserId, inviteMessage: "" });
   return res.data.data;

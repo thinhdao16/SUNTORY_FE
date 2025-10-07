@@ -48,21 +48,6 @@ const BottomTabBar: React.FC = () => {
     const notifications = useNotificationStore((state) => state.notifications);
     const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
-    // Auto refetch unread notification count every 30 seconds
-    useEffect(() => {
-        const fetchUnreadCount = async () => {
-            try {
-                const count = await getUnreadNotificationCountsApi();
-                setUnreadNotificationCount(count);
-            } catch (error) {
-                console.error('Error fetching unread notification count:', error);
-            }
-        };
-        fetchUnreadCount();
-        const interval = setInterval(fetchUnreadCount, 30000);
-        return () => clearInterval(interval);
-    }, [notifications]);
-
     const tabs: TabItem[] = [
         {
             label: t("Messages"),

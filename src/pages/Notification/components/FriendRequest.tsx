@@ -12,9 +12,7 @@ import { useToastStore } from '@/store/zustand/toast-store';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
-import { useSocialSignalRListChatRoom } from '@/hooks/useSocialSignalRListChatRoom';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
-import { useNotificationCounts } from '@/pages/SocialChat/hooks/useSocialChat';
 
 interface FriendRequestItem {
     id: number;
@@ -33,13 +31,12 @@ interface FriendRequestItem {
     };
 }
 
-const FriendRequest = () => {
+const FriendRequest = (activeTab?: any) => {
     const { t } = useTranslation();
     const history = useHistory();
-    const lastNotificationTime = useNotificationStore((state) => state.lastNotificationTime);
-    const lastActionTime = useNotificationStore((state) => state.lastActionTime);
-    const showToast = useToastStore((state) => state.showToast);
+
     const [displayedRequests, setDisplayedRequests] = useState<FriendRequestItem[]>([]);
+    const [draftRequests, setDraftRequests] = useState<FriendRequestItem[]>([]);
     const [showAll, setShowAll] = useState(false);
     const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
     const { notificationCounts } = useSocialChatStore();
@@ -53,32 +50,18 @@ const FriendRequest = () => {
     // Enable real-time SignalR connection
     useSocialSignalR(deviceInfo.deviceId ?? "", {
         roomId: "",
-        refetchRoomData: () => { void refetch(); },
+        refetchRoomData: () => { },
         autoConnect: true,
         enableDebugLogs: false,
     });
-
-    // Enable real-time notification counts
-    useNotificationCounts({
-        enabled: true,
-        refetchInterval: 30000
-    });
-
-    // Enable real-time friend request updates
-    useSocialSignalRListChatRoom(deviceInfo.deviceId ?? '', {
-        roomIds: [], // Empty for friend requests
-        autoConnect: true,
-        enableDebugLogs: false,
-        refetchUserChatRooms: () => { void refetch(); }
-    });
-
     // Use data from React Query instead of local API calls
     const requests = data?.pages.flat() ?? [];
 
     useEffect(() => {
         const currentCount = notificationCounts.pendingFriendRequestsCount;
         const previousCount = prevFriendRequestCount.current;
-        if (previousCount !== currentCount && previousCount !== undefined) {
+        // Only refetch when count increases (new friend request)
+        if (previousCount !== currentCount && previousCount !== undefined && currentCount > previousCount) {
             refetch();
         }
         prevFriendRequestCount.current = currentCount;
@@ -89,9 +72,10 @@ const FriendRequest = () => {
         if (showAll) {
             setDisplayedRequests(requests);
         } else {
-            setDisplayedRequests(requests.slice(0, 6)); // Show first 6 requests
+            setDisplayedRequests([...displayedRequests, ...requests.slice(0, 6)]);
         }
-    }, [requests, showAll]);
+        refetch();
+    }, [showAll, activeTab, data]);
 
     const formatTimestamp = (createDate: string): string => {
         const now = new Date();
@@ -127,37 +111,25 @@ const FriendRequest = () => {
 
     const handleAccept = async (requestId: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (processingIds.has(requestId)) return;
-
-        setProcessingIds(prev => new Set(prev).add(requestId));
+        const draftRequest = displayedRequests.filter((request: FriendRequestItem) => request.id == requestId)[0];
+        draftRequest.inviteStatus = 20;
+        setDisplayedRequests([...displayedRequests.map((request: FriendRequestItem) => request.id != requestId ? request : draftRequest)]);
         try {
             await acceptFriendRequest(requestId);
         } catch (error) {
             console.error('Error accepting friend request:', error);
-        } finally {
-            setProcessingIds(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(requestId);
-                return newSet;
-            });
         }
     };
 
     const handleDecline = async (requestId: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (processingIds.has(requestId)) return;
-
-        setProcessingIds(prev => new Set(prev).add(requestId));
+        const draftRequest = displayedRequests.filter((request: FriendRequestItem) => request.id == requestId)[0];
+        draftRequest.inviteStatus = 30;
+        setDisplayedRequests([...displayedRequests.map((request: FriendRequestItem) => request.id != requestId ? request : draftRequest)]);
         try {
             await rejectFriendRequest(requestId);
         } catch (error) {
             console.error('Error rejecting friend request:', error);
-        } finally {
-            setProcessingIds(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(requestId);
-                return newSet;
-            });
         }
     };
 
@@ -214,19 +186,19 @@ const FriendRequest = () => {
                 <div className="flex-1 min-w-0">
                     <p className="text-[14px] text-black">
                         <span className="font-semibold">{fullName}</span>{' '}
-                        {request.inviteStatus === 10 && (
+                        {request.inviteStatus == 10 && (
                             <span className="text-black">{t('has sent you a friend request')}</span>
                         )}
                     </p>
                     {
-                        request.inviteStatus === 20 && (
+                        request.inviteStatus == 20 && (
                             <p className="text-[12px] text-gray-500 mt-1">
                                 {getStatusText(request.inviteStatus)}
                             </p>
                         )
                     }
                     {
-                        request.inviteStatus === 30 && (
+                        request.inviteStatus == 30 && (
                             <p className="text-[12px] text-gray-500 mt-1">
                                 {getStatusText(request.inviteStatus)}
                             </p>
@@ -236,7 +208,7 @@ const FriendRequest = () => {
                         {formatTimestamp(request.createDate)}
                     </p>
 
-                    {request.inviteStatus === 10 && (
+                    {request.inviteStatus == 10 && (
                         <div className="flex items-center gap-2 mt-4">
                             <button
                                 className={`px-6 py-2 bg-blue-600 text-white text-m font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-35`}
@@ -266,7 +238,7 @@ const FriendRequest = () => {
                     renderSkeleton()
                 ) : (
                     <>
-                        {requests.length > 0 ? (
+                        {displayedRequests.length > 0 ? (
                             <div className="bg-white">
                                 {displayedRequests.map(renderRequestItem)}
                             </div>
@@ -313,4 +285,3 @@ const FriendRequest = () => {
 };
 
 export default FriendRequest;
-

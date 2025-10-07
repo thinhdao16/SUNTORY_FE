@@ -9,7 +9,6 @@ import FriendRequest from "./components/FriendRequest";
 import { useNotificationStore } from "@/store/zustand/notify-store";
 
 function Notification() {
-    const { t } = useTranslation();
     const history = useHistory();
     const lastActionTime = useNotificationStore((state) => state.lastActionTime);
     const [activeTab, setActiveTab] = useState<'notifications' | 'friend-requests'>('notifications');
