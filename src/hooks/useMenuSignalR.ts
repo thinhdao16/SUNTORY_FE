@@ -5,20 +5,24 @@ import { useMenuTranslationStore } from "@/store/zustand/menuTranslationStore";
 
 export function useMenuSignalR(menuId: string, userId: string) {
     const connectionRef = useRef<signalR.HubConnection | null>(null);
-    const { setIsConnected, setFoodSuccess, foodSuccess, setFoodFailed, foodFailed } = useMenuTranslationStore();
+    const { setIsConnected, setFoodSuccess, foodSuccess, setFoodFailed, foodFailed, setFoodImageSuccess, foodImageSuccess } = useMenuTranslationStore();
     const isConnectingRef = useRef(false);
 
     // Tách logic xử lý message ra thành callback riêng
     const handleReceive = useCallback((msg: any) => {
-        if (msg?.success === true) {
+        if (msg?.success === true && msg?.isText === true) {
             setFoodSuccess(foodSuccess + 1);
             console.log("🍽️ FoodSuccess count: ", foodSuccess, "→", foodSuccess + 1);
         }
-        else {
+        if (msg?.success === false && msg?.isText === true) {
             setFoodFailed(foodFailed + 1);
             console.log("🍽️ FoodFailed count: ", foodFailed, "→", foodFailed + 1);
         }
-    }, [setFoodSuccess, setFoodFailed]);
+        if (msg?.success === true && msg?.isImage === true) {
+            setFoodImageSuccess(foodImageSuccess + 1);
+            console.log("🍽️ FoodImageSuccess count: ", foodImageSuccess, "→", foodImageSuccess + 1);
+        }
+    }, [setFoodSuccess, setFoodFailed, setFoodImageSuccess]);
 
     // Tách logic kết nối ra thành callback riêng
     const startConnection = useCallback(async () => {

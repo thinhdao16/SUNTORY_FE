@@ -35,7 +35,6 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) onClose();
     };
-    console.log("ingredients: ", food.ingredients);
 
     const SHEET_MAX_VH = 85; 
     const HEADER_PX = 56; 
