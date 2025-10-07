@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { IonPage, IonContent, IonHeader, IonToolbar, IonButton, IonIcon, IonSkeletonText, IonInfiniteScroll, IonInfiniteScrollContent, IonButtons, IonTitle, IonFooter } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { arrowBack } from 'ionicons/icons';
+import { arrowBack, key } from 'ionicons/icons';
 import { FoodModel } from '@/services/menu/menu-types';
 import NoDishImageIcon from '@/icons/logo/menu/no-dish-image.svg?react';
 import { getMenuFoodList } from '@/services/menu/menu-service';
@@ -12,6 +12,9 @@ import {
     handleTouchMove as handleTouchMoveUtil,
     handleTouchEnd as handleTouchEndUtil,
 } from '@/utils/translate-utils';
+import { useMenuSignalR } from '@/hooks/useMenuSignalR';
+import { useMenuTranslationStore } from '@/store/zustand/menuTranslationStore';
+import { useAuthStore } from '@/store/zustand/auth-store';
 
 interface LocationState {
     menuId?: number;
@@ -34,11 +37,101 @@ const FoodList: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showOverlay, setShowOverlay] = useState(false);
     const [translateY, setTranslateY] = useState(0);
+    const [showEmptyState, setShowEmptyState] = useState(false);
     const startYRef = useRef<number | null>(null);
     const startTimeRef = useRef<number | null>(null);
     const screenHeightRef = useRef(window.innerHeight);
     const velocityThreshold = 0.4;
     const [bottomBarHeight, setBottomBarHeight] = useState(80);
+    const [imageLoadingStates, setImageLoadingStates] = useState<{ [key: string]: boolean }>({});
+    const prevSignalValues = useRef({ foodSuccess: 0, foodFailed: 0, foodImageSuccess: 0 });
+    const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const user = useAuthStore((state) => state.user);
+    const { foodSuccess, foodFailed, foodImageSuccess, setFoodImageSuccess, setFoodSuccess, setFoodFailed } = useMenuTranslationStore();
+
+    useMenuSignalR(menuId?.toString() || "", user?.id?.toString() || "");
+
+    // Force loading for 40 seconds before showing content
+    // Initial load - if no data, show loading for 40s
+    useEffect(() => {
+        // Reset food success when start a new analyzing
+        setFoodSuccess(0);
+        setFoodFailed(0);
+        setFoodImageSuccess(0);
+
+        if (menuId) {
+            setLoading(true);
+            loadFoods(menuId, 0, pageSize, false);
+
+            // If no foods initially, keep loading for 40s
+            loadingTimeoutRef.current = setTimeout(() => {
+                setLoading(false);
+            }, 40000); // 40 seconds
+
+            return () => {
+                if (loadingTimeoutRef.current) {
+                    clearTimeout(loadingTimeoutRef.current);
+                    loadingTimeoutRef.current = null;
+                }
+            };
+        }
+    }, [menuId]);
+
+    // Clear loading timeout when we have foods
+    useEffect(() => {
+        if (foods.length > 0) {
+            // Clear the 40s timeout since we have data
+            if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+                loadingTimeoutRef.current = null;
+            }
+            setLoading(false);
+        }
+    }, [foods.length]);
+
+
+    // Show empty state after loading stops and no foods
+    useEffect(() => {
+        if (!loading && foods.length === 0) {
+            const timeout = setTimeout(() => {
+                setShowEmptyState(true);
+            }, 1000); // 1 second after loading stops
+
+            return () => clearTimeout(timeout);
+        } else if (foods.length > 0) {
+            setShowEmptyState(false);
+        }
+    }, [loading, foods.length]);
+
+    // Reload when foodSuccess, foodFailed, or foodImageSuccess changes
+    useEffect(() => {
+        const currentValues = { foodSuccess, foodFailed, foodImageSuccess };
+        const prevValues = prevSignalValues.current;
+        
+        // Check if any value actually increased (not just changed)
+        const hasIncrease = currentValues.foodSuccess > prevValues.foodSuccess ||
+                           currentValues.foodFailed > prevValues.foodFailed ||
+                           currentValues.foodImageSuccess > prevValues.foodImageSuccess;
+        
+        // Only reload if there's an actual increase AND we don't have foods yet
+        if (menuId && hasIncrease && foods.length === 0) {
+            // Clear the 40s timeout since we're reloading
+            if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+                loadingTimeoutRef.current = null;
+            }
+
+            // Reset foods and page when reloading
+            setFoods([]);
+            setPage(0);
+            setLoading(true);
+            loadFoods(menuId, 0, pageSize, false);
+        }
+        
+        // Update previous values
+        prevSignalValues.current = currentValues;
+    }, [foodSuccess, foodFailed, foodImageSuccess, menuId, foods.length]);
+
     const loadFoods = async (
         historyId: number,
         currentPage: number,
@@ -60,10 +153,29 @@ const FoodList: React.FC = () => {
                     setFoods(prevFoods => {
                         const existingIds = new Set(prevFoods.map(food => food.id));
                         const newFoods = data.filter((food: FoodModel) => !existingIds.has(food.id));
+
+                        // Set loading state for new images
+                        const newImageStates: { [key: string]: boolean } = {};
+                        newFoods.forEach((food: FoodModel) => {
+                            newImageStates[food.imageUrl] = true; // Start with loading state
+                        });
+                        setImageLoadingStates(prev => ({
+                            ...prev,
+                            ...newImageStates
+                        }));
+
                         return [...prevFoods, ...newFoods];
                     });
                 } else {
                     setFoods(data);
+                    // Set initial loading state for all images
+                    const initialImageStates: { [key: string]: boolean } = {};
+                    data.forEach((food: FoodModel) => {
+                        initialImageStates[food.imageUrl] = true; // Start with loading state
+                    });
+                    setImageLoadingStates(initialImageStates);
+                    // If we have data, stop loading immediately
+                    setLoading(false);
                 }
 
                 const calculatedMaxPages = Math.ceil(totalRecs / pageSize);
@@ -85,20 +197,14 @@ const FoodList: React.FC = () => {
             if (!isLoadMore) {
             }
         } finally {
-            setLoading(false);
-            setLoadingMore(false);
+            // Only set loading to false for load more, not for initial load
+            if (isLoadMore) {
+                setLoadingMore(false);
+            }
+            // Initial loading will be controlled by the 45-second timeout
         }
     };
 
-    useEffect(() => {
-        setFoods([]);
-        setPage(0);
-        if (menuId) {
-            loadFoods(menuId, 0, pageSize, false);
-        } else {
-            setLoading(false);
-        }
-    }, [menuId]);
 
     useEffect(() => {
         const updateBottomBarHeight = () => {
@@ -214,14 +320,31 @@ const FoodList: React.FC = () => {
         >
             {/* Image Container */}
             <div className="aspect-square relative overflow-hidden bg-gray-100 rounded-2xl">
-                <img
-                    src={food.imageUrl}
-                    alt={food.name}
-                    className="w-full h-full object-cover rounded-2xl"
-                    onError={(e) => {
-                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNDcuNSA5MEwyMDcuNSAxMDBWMTMwSDkyLjVWMTAwTDE0Ny41IDkwWiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K';
-                    }}
-                />
+                {imageLoadingStates[food.imageUrl] ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                        <IonSkeletonText animated={true} style={{ width: '100%', height: '100%' }} />
+                    </div>
+                ) : (
+                    <img
+                        src={food.imageUrl}
+                        alt={food.name}
+                        className="w-full h-full object-cover rounded-2xl"
+                        onLoad={() => {
+                            // Tắt loading ngay khi ảnh load xong
+                            setImageLoadingStates(prev => ({
+                                ...prev,
+                                [food.imageUrl]: false
+                            }));
+                        }}
+                        onError={(e) => {
+                            // Nếu ảnh lỗi, giữ loading state (skeleton)
+                            setImageLoadingStates(prev => ({
+                                ...prev,
+                                [food.imageUrl]: true
+                            }));
+                        }}
+                    />
+                )}
             </div>
 
             {/* Content Container */}
@@ -294,7 +417,7 @@ const FoodList: React.FC = () => {
                         </div>
                     )}
 
-                    {!loading && foods.length === 0 && !error && (
+                    {!loading && foods.length === 0 && !error && showEmptyState && (
                         <div className="flex flex-col items-center justify-start pt-6 pb-28 px-6 text-center">
                             <div className="mb-6">
                                 <NoDishImageIcon className="w-40 h-40" />

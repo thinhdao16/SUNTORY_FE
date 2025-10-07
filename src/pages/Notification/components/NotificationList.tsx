@@ -12,7 +12,6 @@ import { useHistory } from 'react-router-dom';
 import { useNotificationStore } from '@/store/zustand/notify-store';
 
 const NotificationList = () => {
-    const { t } = useTranslation();
     const history = useHistory();
     const { setHideBottomTabBar } = useModalContext();
     const lastNotificationTime = useNotificationStore((state) => state.lastNotificationTime);
@@ -53,9 +52,6 @@ const NotificationList = () => {
             setTranslateY
         );
     };
-    // Phân chia notifications thành New và Older
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     const handleLoadMoreNotifications = async () => {
         if (!loadingMore) {
@@ -291,7 +287,7 @@ const NotificationList = () => {
             className={`flex items-center px-4 py-4 border-b border-gray-200 min-h-[78px] ${!notification.isRead ? 'bg-[#EDF1FC]' : 'bg-white'
                 }`}
             onClick={() => {
-                history.push(handleNavigate(notification.type, notification.userId, notification?.postCode || ''));
+                history.push(handleNavigate(notification.type, notification.actorId, notification?.postCode || ''));
                 setIsOpen(true);
                 setNotificationIds([notification.id]);
             }}
