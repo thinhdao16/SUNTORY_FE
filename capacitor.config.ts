@@ -11,6 +11,9 @@ const config: CapacitorConfig = {
   //   url:"http://192.168.1.94:5173"
   // },
   plugins: {
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"],
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,

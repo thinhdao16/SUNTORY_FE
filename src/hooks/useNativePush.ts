@@ -15,11 +15,14 @@ const ANDROID_CHANNEL_ID = "messages_v2";
 export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
 
   useEffect(() => {
+    console.log("🔥 Using native push notifications - platform", Capacitor.isNativePlatform());
 
     if (!Capacitor.isNativePlatform()) return;
 
     (async () => {
       if (Capacitor.getPlatform() === "ios") {
+        console.log("native push notifications", Capacitor.isNativePlatform());
+
         try {
           await (PushNotifications as any).setPresentationOptions?.({
             alert: true,
@@ -30,6 +33,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
       }
 
       const pushPerm = await PushNotifications.requestPermissions();
+      console.log("Push permissions", pushPerm);
       if (pushPerm.receive === "granted") {
         await PushNotifications.register();
       } else {
@@ -37,6 +41,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
       }
 
       const localPerm = await LocalNotifications.requestPermissions();
+      console.log("Local permissions", localPerm);
       if (localPerm.display !== "granted") {
         console.warn("LocalNotifications permission not granted");
       }
@@ -65,6 +70,8 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
     let actHandle: PluginListenerHandle | undefined;
 
     (async () => {
+      console.log("🔥 Using native push notifications - event");
+
       regHandle = await PushNotifications.addListener("registration", async (token: Token) => {
         console.log("✅ Registered token:", token.value);
         await saveFcmToken(token.value);
@@ -78,7 +85,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
       recvHandle = await PushNotifications.addListener(
         "pushNotificationReceived",
         async (n: PushNotificationSchema) => {
-       
+          console.log("✅ Received push notification:", n);
 
           try {
             await LocalNotifications.schedule({
@@ -116,3 +123,4 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
     };
   }, [mutate]);
 }
+

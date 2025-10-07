@@ -8,6 +8,7 @@ export function useFcmOrNativePush(mutate?: (data: { fcmToken: string }) => void
     if (platform === "web") {
         useFcmToken(mutate);
     } else {
+        console.log("🔥 Using native push notifications", platform);
         useNativePush(mutate);
     }
 }
