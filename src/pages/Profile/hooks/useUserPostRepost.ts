@@ -39,6 +39,27 @@ export const useUserPostRepost = ({ tabType, targetUserId }: UseUserPostRepostPa
             queryClient.setQueryData(['feedDetail', originalCode], fresh);
             queryClient.invalidateQueries(['feedDetail', originalCode]);
           }
+          // Optimistically add created repost to Profile Reposts tab cache(s)
+          try {
+            const ownerId = created?.userId;
+            const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+            matching.forEach(([qk, old]) => {
+              if (!old?.pages?.length || !Array.isArray(qk)) return;
+              const tabTypeQ = qk[1];
+              const targetUserIdQ = qk[2];
+              const isRepostsTab = tabTypeQ === ProfileTabType.Reposts;
+              const isOwnerProfile = !targetUserIdQ || Number(targetUserIdQ) === Number(ownerId);
+              if (!isRepostsTab || !isOwnerProfile) return;
+              try {
+                const firstPage = old.pages[0];
+                const list = Array.isArray(firstPage?.data?.data) ? firstPage.data.data : [];
+                const deduped = list.filter((p: any) => p?.code !== created?.code);
+                const updatedFirst = { ...firstPage, data: { ...firstPage?.data, data: [created, ...deduped] } };
+                const newData = { ...old, pages: [updatedFirst, ...old.pages.slice(1)] };
+                queryClient.setQueryData(qk as any, newData);
+              } catch {}
+            });
+          } catch {}
           // Optionally append created repost to feeds for visibility (dedupe handled in store)
           Object.keys(store.cachedFeeds || {}).forEach((fk) => { const f = store.cachedFeeds[fk as any]; if (f) store.appendFeedPosts([created], fk); });
           if (created?.code) queryClient.setQueryData(['feedDetail', created.code], created);

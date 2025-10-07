@@ -54,7 +54,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 }) => {
     const [showAll, setShowAll] = useState(false);
     const [lightboxOpen, setLightboxOpen] = useState(false);
-    const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+    const [lightboxItems, setLightboxItems] = useState<Array<{ url: string; type: 'image' | 'video'; s3Key?: string; fileName?: string }>>([]);
     const [lightboxIndex, setLightboxIndex] = useState(0);
 
     const mediaFiles = chatAttachments.filter((file: any) => {
@@ -84,7 +84,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
     const handleImageClick = (idx: number) => {
         const allImages = photoAlbumPhotos.map((p: { src: string }) => p.src);
-        setLightboxImages(allImages);
+        const allItems = photoAlbumPhotos.map((p: any) => ({
+            url: p.src,
+            type: (p.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
+            s3Key: p?.attachment?.s3Key,
+            fileName: p?.attachment?.fileName,
+        }));
+        setLightboxItems(allItems);
         setLightboxIndex(idx);
         setLightboxOpen(true);
         onImageClick(idx, allImages);
@@ -372,7 +378,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
             <ImageLightbox
                 open={lightboxOpen}
-                images={lightboxImages}
+                images={lightboxItems}
                 initialIndex={lightboxIndex}
                 onClose={() => setLightboxOpen(false)}
                 options={{

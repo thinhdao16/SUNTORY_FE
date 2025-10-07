@@ -11,6 +11,17 @@ export interface SearchFriendshipUserParams {
   PageNumber: number;
   PageSize: number;
 }
+export interface PaginatedResponse<T> {
+  pageNumber: number;
+  pageSize: number;
+  firstPage: number;
+  lastPage: number;
+  totalPages: number;
+  totalRecords: number;
+  nextPage: boolean;
+  previousPage: boolean;
+  data: T[];
+}
 export const createFriendshipByCodeRequest = async (payload: CreateFriendshipByCodePayload) => {
   const res = await httpClient.post("/api/v1/friendship/send-request-by-code", payload);
   return res.data.data;
@@ -85,7 +96,6 @@ export const getListSentRequests = async (page: number, pageSize: number) => {
   return res.data.data.data;
 };
 
-// Recommended friends (for suggestions in feed)
 export const getFriendshipRecommended = async (
   page: number = 0,
   pageSize: number = 10
@@ -96,5 +106,20 @@ export const getFriendshipRecommended = async (
       PageSize: pageSize,
     },
   });
-  return res.data.data?.data ?? res.data.data;
+  const payload = res?.data?.data;
+  return Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+};
+
+// Paginated variant to support infinite scrolling
+export const getFriendshipRecommendedPaged = async (
+  page: number = 0,
+  pageSize: number = 10
+): Promise<PaginatedResponse<any>> => {
+  const res = await httpClient.get("/api/v1/friendship/recommended", {
+    params: {
+      PageNumber: page,
+      PageSize: pageSize,
+    },
+  });
+  return res.data.data as PaginatedResponse<any>;
 };

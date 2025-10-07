@@ -57,10 +57,15 @@ export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
     });
 
     if (hasChange && onVisiblePostsChange) {
-      const visibleCodes = posts
+      const visibleCodesSet = new Set<string>();
+      posts
         .filter((post) => visibilityMapRef.current.get(post.code))
-        .map((post) => post.code);
-      onVisiblePostsChange(visibleCodes);
+        .forEach((post) => {
+          visibleCodesSet.add(post.code);
+          const originalCode = (post as any)?.originalPost?.code as string | undefined;
+          if (originalCode) visibleCodesSet.add(originalCode);
+        });
+      onVisiblePostsChange(Array.from(visibleCodesSet));
     }
   }, [onVisiblePostsChange, posts]);
 

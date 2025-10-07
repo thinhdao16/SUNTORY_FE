@@ -3,6 +3,7 @@ import { SocialFeedService } from '@/services/social/social-feed-service';
 import { useToastStore } from '@/store/zustand/toast-store';
 import { useTranslation } from 'react-i18next';
 import { ProfileTabType } from './useUserPosts';
+import { useSearchResultsStore } from '@/store/zustand/search-results-store';
 
 interface UseUserPostLikeParams {
   tabType: ProfileTabType;
@@ -68,13 +69,21 @@ export const useUserPostLike = ({ tabType, targetUserId }: UseUserPostLikeParams
         if (context?.previousData) {
           queryClient.setQueryData(['userPosts', tabType, targetUserId], context.previousData);
         }
+        // Also rollback optimistic change in Search store if any
+        try { useSearchResultsStore.getState().optimisticUpdatePostReaction(variables.postCode); } catch {}
       },
-      onSuccess: () => {
+      onSuccess: async ({ postCode }) => {
         // queryClient.invalidateQueries(['userPosts']);
         // queryClient.invalidateQueries(['socialFeed']);
         // queryClient.invalidateQueries(['social-posts']);
         // queryClient.invalidateQueries(['social-feed']);
-        
+        try {
+          const fresh = await SocialFeedService.getPostByCode(postCode);
+          // Keep feedDetail fresh for any detail views
+          queryClient.setQueryData(['feedDetail', postCode], fresh);
+          // Update search store too so Search screen reflects immediately
+          try { useSearchResultsStore.getState().updatePostReaction(fresh.code, fresh.isLike, fresh.reactionCount); } catch {}
+        } catch {}
       },
       onSettled: () => {
         // queryClient.invalidateQueries(['userPosts', tabType, targetUserId]);

@@ -46,6 +46,7 @@ export const PostActionsProvider: React.FC<PostActionsProviderProps> = ({
     const pinPostMutation = usePinPost();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [showPinConfirm, setShowPinConfirm] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Check if there's already a pinned post
     const checkForPinnedPost = (): boolean => {
@@ -89,16 +90,7 @@ export const PostActionsProvider: React.FC<PostActionsProviderProps> = ({
             setIsEditModalOpen(true);
         },
         onDeletePost: () => {
-            deletePostMutation.mutate(post?.code, {
-                onSuccess: () => {
-                    if (navigateBackOnDelete) {
-                        // Use setTimeout to ensure UI updates complete before navigation
-                        setTimeout(() => {
-                            history.goBack();
-                        }, 100);
-                    }
-                }
-            });
+            setShowDeleteConfirm(true);
         },
         onPinToProfile: handlePinPost
     });
@@ -134,6 +126,28 @@ export const PostActionsProvider: React.FC<PostActionsProviderProps> = ({
                 onConfirm={() => {
                     pinPostMutation.mutate(post?.code);
                     setShowPinConfirm(false);
+                }}
+            />
+
+            <ConfirmModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                title={t('Delete post?')}
+                message={t('This action cannot be undone.')}
+                confirmText={t('Delete')}
+                cancelText={t('Cancel')}
+                onConfirm={() => {
+                    deletePostMutation.mutate(post?.code, {
+                        onSuccess: () => {
+                            setShowDeleteConfirm(false);
+                            if (navigateBackOnDelete) {
+                                setTimeout(() => { history.goBack(); }, 100);
+                            }
+                        },
+                        onError: () => {
+                            setShowDeleteConfirm(false);
+                        }
+                    });
                 }}
             />
         </>

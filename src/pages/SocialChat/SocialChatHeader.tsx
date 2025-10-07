@@ -60,7 +60,7 @@ const SocialChatHeader = ({ leftIcon, rightIcon, inputOnFocus, goTo, setSearch, 
                                     }}
                                     className="flex items-center justify-between w-full px-3 py-2 text-sm font-semibold text-netural-500 border-b-[0.5px] border-netural-50 transition"
                                 >
-                                    {t("Add Partner")}
+                                    {t("Add Friend")}
                                     <PartnerIcon />
                                 </button>
                                 <button

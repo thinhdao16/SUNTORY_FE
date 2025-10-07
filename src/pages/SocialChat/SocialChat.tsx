@@ -71,12 +71,7 @@ function ChatSocial() {
                 onClick={() => history.push('/social-chat/list-request')}
                 className={` p-2 w-full flex  justify-center items-center gap-2 font-semibold rounded-full text-sm transition-colors duration-200 ${type === 'list-request' ? 'bg-white shadow' : ''}`}
               >
-                {t("Friend request")}
-                {notificationCounts.pendingFriendRequestsCount > 0 && (
-                  <button className={` ${type === "list-request" ? 'bg-error-500' : 'bg-error-500'} flex items-center justify-center min-w-[16px] min-h-[16px] aspect-square p-1 rounded-full text-white text-[8.53px]`}>
-                    {notificationCounts.pendingFriendRequestsCount > 99 ? '99+' : notificationCounts.pendingFriendRequestsCount}
-                  </button>
-                )}
+                {t("Suggestions")}
               </motion.button>
             </div>
 

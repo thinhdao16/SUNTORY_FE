@@ -246,10 +246,11 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
   const visualMediaFiles = mediaFiles.filter(item =>
     item.fileType.startsWith('image/') || item.fileType.startsWith('video/')
   );
-
   const mediaItems = visualMediaFiles.map(item => ({
     url: item.urlFile,
-    type: item.fileType.startsWith('video/') ? 'video' : 'image' as 'video' | 'image'
+    type: item.fileType.startsWith('video/') ? 'video' : 'image' as 'video' | 'image',
+    s3Key: item?.s3Key,
+    fileName: item?.fileName,
   }));
   return (
     <div className={`${className}`}>
@@ -295,7 +296,7 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
                       maxHeight="60vh"
                       objectFit="cover"
                       controls={false}
-                      muted={true}
+                      muted={videoMuted[item.id] !== false}
                       autoPlay={true}
                     />
 

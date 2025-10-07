@@ -74,7 +74,7 @@ function Notification() {
                 {/* Tab Content */}
                 <div className="flex-1 overflow-hidden">
                     {activeTab === 'notifications' && <NotificationList key={refreshKey}/>}
-                    {activeTab === 'friend-requests' && <FriendRequest key={refreshKey}/>}
+                    {activeTab === 'friend-requests' && <FriendRequest key={refreshKey} activeTab = {activeTab}/>}
                 </div>
             </div>
         </PageContainer>

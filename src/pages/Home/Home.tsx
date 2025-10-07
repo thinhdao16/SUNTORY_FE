@@ -7,6 +7,7 @@ import AppImage from '@/components/common/AppImage';
 import medicalSupportSvg from "@/icons/logo/home/medical_support.png";
 import documentTranslationSvg from "@/icons/logo/home/document_translation.png";
 import menuTranslation from "@/icons/logo/home/menu_translation.png";
+import translation from "@/icons/logo/home/translation.png";
 import foodDiscoverySvg from "@/icons/logo/home/food_discovery.png";
 import { useLanguageSwitcher } from './hooks/useLanguageSwitcher';
 
@@ -82,6 +83,22 @@ function Home() {
       title: t("Food Label Interpretation"),
       desc: t("Scan food labels for instant ingredient breakdowns"),
       topic: TopicType.FoodDiscovery,
+    },
+    {
+      image: (
+        <AppImage
+          src={translation}
+          alt="Translation"
+          className="w-full h-full object-contain"
+          wrapperClassName="w-[80px] h-[80px] rounded-2xl overflow-hidden bg-gray-100"
+          effect="blur"
+          hardHeight={80}
+
+        />
+      ),
+      title: t("Translation"),
+      desc: t("Translate any text instantly with detailed AI translation explanations."),
+      topic: TopicType.Translatrion,
     },
   ];
 

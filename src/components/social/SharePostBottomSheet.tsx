@@ -292,6 +292,17 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
             store.applyRealtimePatch(postCode, { shareCount: nextCount } as any);
             queryClient.setQueryData(['feedDetail', postCode], (old: any) => ({ ...(old || {}), shareCount: nextCount }));
 
+            // Also sync shareCount for the original post if this is a repost card
+            try {
+                const fresh = await SocialFeedService.getPostByCode(postCode);
+                const originalCode = (fresh as any)?.originalPost?.code as string | undefined;
+                const originalShare = (fresh as any)?.originalPost?.shareCount ?? (fresh as any)?.shareCount;
+                if (originalCode && typeof originalShare === 'number') {
+                    store.applyRealtimePatch(originalCode, { shareCount: originalShare } as any);
+                    queryClient.setQueryData(['feedDetail', originalCode], (old: any) => ({ ...(old || {}), shareCount: originalShare }));
+                }
+            } catch {}
+
             showToast(t('Shared successfully'), 2000, 'success');
             setSelectedUserIds(new Set());
             setSelectedGroupCodes(new Set());
@@ -301,7 +312,6 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
             const msg = e?.response?.data?.message || t('Failed to share');
             showToast(msg, 3000, 'error');
         } finally {
-            setSending(false);
         }
     };
 

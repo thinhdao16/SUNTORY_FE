@@ -22,17 +22,33 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 import { NotificationList } from "./components/notify/NotificationList";
 import { RefreshProvider } from "@/contexts/RefreshContext";
 import { ModalProvider } from "@/contexts/ModalContext";
+import { useQueryClient } from "react-query";
 
 setupIonicReact();
 initGoogleAuth();
 
 const App: React.FC = () => {
   useAppInit();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     StatusBar.setOverlaysWebView({ overlay: true });
     StatusBar.setStyle({ style: Style.Light });
   }, []);
+
+  // Global: after hashtag interest success, refresh related caches
+  useEffect(() => {
+    const handler = (e: Event) => {
+      try {
+        // Refresh interests list
+        queryClient.invalidateQueries(["hashtagInterests"]);
+        // Refresh any userPosts queries (TabType=10 and others)
+        queryClient.invalidateQueries(["userPosts"]);
+      } catch {}
+    };
+    window.addEventListener("hashtag-interest-success", handler as EventListener);
+    return () => window.removeEventListener("hashtag-interest-success", handler as EventListener);
+  }, [queryClient]);
   return (
     <GoogleOAuthProvider clientId={GOOGLE_WEB_CLIENT_ID}>
       <RefreshProvider>

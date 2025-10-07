@@ -36,6 +36,9 @@ interface SearchResultsStore {
   // reaction updates across all cached posts
   updatePostReaction: (postCode: string, isLiked: boolean, reactionCount: number) => void;
   optimisticUpdatePostReaction: (postCode: string) => void;
+  // realtime helpers
+  removePost: (postCode: string) => void;
+  applyPostPatch: (postCode: string, patch: Partial<any>) => void;
 }
 
 const defaultState = (): SearchResultsTabState => ({
@@ -146,6 +149,32 @@ export const useSearchResultsStore = create<SearchResultsStore>((set, get) => ({
       updated[key] = {
         ...value,
         posts: (value.posts || []).map(p => p.code === postCode ? { ...p, isLike: !p.isLike, reactionCount: p.isLike ? p.reactionCount - 1 : p.reactionCount + 1 } : p)
+      };
+    }
+    set({ cached: updated });
+  },
+
+  // Remove a post by code from all cached tabs/queries
+  removePost: (postCode) => {
+    const state = get();
+    const updated: Record<string, SearchResultsTabState> = {};
+    for (const [key, value] of Object.entries(state.cached)) {
+      updated[key] = {
+        ...value,
+        posts: (value.posts || []).filter(p => p.code !== postCode)
+      };
+    }
+    set({ cached: updated });
+  },
+
+  // Apply a shallow patch to a post by code across all cached tabs/queries
+  applyPostPatch: (postCode, patch) => {
+    const state = get();
+    const updated: Record<string, SearchResultsTabState> = {};
+    for (const [key, value] of Object.entries(state.cached)) {
+      updated[key] = {
+        ...value,
+        posts: (value.posts || []).map(p => p.code === postCode ? { ...p, ...patch } : p)
       };
     }
     set({ cached: updated });

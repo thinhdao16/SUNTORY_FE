@@ -14,6 +14,7 @@ import { TabNavigation, HashtagInput, PostsList, LoadingStates, FriendSuggestion
 import PullToRefresh from '@/components/common/PullToRefresh';
 import { useIonToast, IonContent } from '@ionic/react';
 import { useRefreshCallback } from '@/contexts/RefreshContext';
+import { ProfileTabType } from '@/pages/Profile/hooks/useUserPosts';
 import { usePostSignalR } from '@/hooks/usePostSignalR';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 
@@ -83,11 +84,10 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
           return data.data.data.map((hashtag: HashtagInterest) => hashtag.hashtagNormalized).slice(0, 5);
         }
       },
-      staleTime: 10 * 60 * 1000,
-      cacheTime: 30 * 60 * 1000,
+
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
-      refetchOnMount: false,
+      refetchOnMount: true,
     }
   );
 
@@ -108,6 +108,49 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
       setRecentHashtags(hashtagInterestsData);
     }
   }, [hashtagInterestsData]);
+
+  // Update recent hashtag tabs immediately after a successful interest track
+  useEffect(() => {
+    const onHashtagInterest = (e: Event) => {
+      try {
+        const ce = e as CustomEvent<string>;
+        const raw = (ce?.detail || '').toString();
+        const normalized = raw.startsWith('#') ? raw.substring(1) : raw;
+        if (!normalized) return;
+        setRecentHashtags((prev) => {
+          const exists = prev.some((h) => (h || '').toLowerCase() === normalized.toLowerCase());
+          if (exists) return prev;
+          return [normalized, ...prev].slice(0, 10);
+        });
+      } catch {}
+    };
+    window.addEventListener('hashtag-interest', onHashtagInterest as EventListener);
+    return () => window.removeEventListener('hashtag-interest', onHashtagInterest as EventListener);
+  }, []);
+
+  // After server confirms interest success: refresh interests and user posts (TabType=10)
+  useEffect(() => {
+    const onHashtagInterestSuccess = (e: Event) => {
+      try {
+        const ce = e as CustomEvent<string>;
+        const raw = (ce?.detail || '').toString();
+        const normalized = raw.startsWith('#') ? raw.substring(1) : raw;
+        if (normalized) {
+          setRecentHashtags((prev) => {
+            const exists = prev.some((h) => (h || '').toLowerCase() === normalized.toLowerCase());
+            if (exists) return prev;
+            return [normalized, ...prev].slice(0, 10);
+          });
+        }
+        // Refetch hashtag interests list
+        queryClient.invalidateQueries(['hashtagInterests']);
+        // Refetch any user posts queries with TabType=10 (Posts)
+        queryClient.invalidateQueries(['userPosts', ProfileTabType.Posts]);
+      } catch {}
+    };
+    window.addEventListener('hashtag-interest-success', onHashtagInterestSuccess as EventListener);
+    return () => window.removeEventListener('hashtag-interest-success', onHashtagInterestSuccess as EventListener);
+  }, [queryClient]);
 
   useEffect(() => {
     if (initialActiveTab) {
@@ -197,7 +240,6 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     staleTime: 5 * 60 * 1000, 
     cacheTime: 30 * 60 * 1000, 
   });
-
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     
@@ -490,7 +532,8 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     <IonContent 
       className={`${className} no-scrollbar`}
       style={{ 
-        height: 'calc(100vh - 110px)'
+        height: 'calc(100vh - 110px)',
+        paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))'
       }}
       scrollY={true}
       ref={contentRef}
@@ -541,7 +584,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
               <FriendSuggestions
                 title={t('Suggested for you')}
                 pageSize={8}
-                onDismiss={() => setShowFriendSuggestions(false)}
+                // onDismiss={() => setShowFriendSuggestions(false)}
               />
             ) : undefined}
             interstitialAfter={4}

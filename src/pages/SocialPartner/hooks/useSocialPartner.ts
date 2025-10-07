@@ -10,7 +10,7 @@ import {
     unfriend,
 } from "@/services/social/social-partner-service";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "react-query";
-import { getFriendshipRecommended } from "@/services/social/social-partner-service";
+import { getFriendshipRecommended, getFriendshipRecommendedPaged } from "@/services/social/social-partner-service";
 import { useNotificationStore } from "@/store/zustand/notify-store";
 
 export const useSearchFriendshipUsers = (keyword: string, pageSize = 10) => {
@@ -38,6 +38,21 @@ export const useFriendshipRecommended = (pageSize = 10) => {
         ["friendshipRecommended", pageSize],
         () => getFriendshipRecommended(0, pageSize),
         {
+            staleTime: 5 * 60 * 1000,
+            refetchOnWindowFocus: false,
+        }
+    );
+};
+
+// Infinite recommendations for suggestions page
+export const useFriendshipRecommendedInfinite = (pageSize = 20) => {
+    return useInfiniteQuery(
+        ["friendshipRecommendedInfinite", pageSize],
+        ({ pageParam = 0 }) => getFriendshipRecommendedPaged(0, pageSize),
+        {
+            // Backend returns only "page 0" with new randomized recommendations.
+            // Always allow fetching another "page"; dedup is handled client-side.
+            getNextPageParam: (_lastPage, allPages) => allPages.length,
             staleTime: 5 * 60 * 1000,
             refetchOnWindowFocus: false,
         }

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from 'react-query';
 import { SocialFeedService } from '@/services/social/social-feed-service';
 import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
 import { useIonToast } from '@ionic/react';
+import { useSearchResultsStore } from '@/store/zustand/search-results-store';
 
 export const usePostLike = () => {
   const { optimisticUpdatePostReaction, updatePostReaction } = useSocialFeedStore();
@@ -20,11 +21,13 @@ export const usePostLike = () => {
     {
       onMutate: async ({ postCode }) => {
         optimisticUpdatePostReaction(postCode);
+        try { useSearchResultsStore.getState().optimisticUpdatePostReaction(postCode); } catch {}
         return { postCode };
       },
       onError: (err, variables, context) => {
         if (context?.postCode) {
           optimisticUpdatePostReaction(context.postCode);
+          try { useSearchResultsStore.getState().optimisticUpdatePostReaction(context.postCode); } catch {}
         }
         
         present({
@@ -38,6 +41,7 @@ export const usePostLike = () => {
         try {
           const fresh = await SocialFeedService.getPostByCode(data.postCode);
           updatePostReaction(fresh.code, fresh.isLike, fresh.reactionCount);
+          try { useSearchResultsStore.getState().updatePostReaction(fresh.code, fresh.isLike, fresh.reactionCount); } catch {}
         } catch (error) {
         } finally {
           // queryClient.invalidateQueries('socialFeed');

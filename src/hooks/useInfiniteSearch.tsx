@@ -19,7 +19,6 @@ export const useInfiniteSearch = ({
     const tab = (activeTab as SearchTab) || 'all';
     const key = generateSearchKey(tab, searchQuery);
 
-    // Subscribe only to the current tab+query slice to avoid unnecessary rerenders
     const tabState = useSearchResultsStore(useCallback((s) => s.cached[key] as SearchResultsTabState | undefined, [key]));
     const ensureKey = useSearchResultsStore(s => s.ensureKey);
     const replaceUsers = useSearchResultsStore(s => s.replaceUsers);
@@ -100,8 +99,6 @@ export const useInfiniteSearch = ({
                     } else {
                         appendPosts(key, newPosts);
                     }
-                    
-                    // Update lastPostCode for next load
                     if (newPosts.length > 0) {
                         setLastPostCode(key, newPosts[newPosts.length - 1].code);
                     }
@@ -111,25 +108,30 @@ export const useInfiniteSearch = ({
 
                 case 'all':
                 default:
-                    // Load both users and posts
-                    const [allUsersResponse, allPostsResponse] = await Promise.all([
-                        SearchService.searchUsers(q, (local?.currentPage ?? 0), Math.floor(pageSize / 2)),
-                        SearchService.searchPosts(q, (local?.currentPage ?? 0), Math.floor(pageSize / 2))
-                    ]);
-                    
-                    newUsers = allUsersResponse.data.data || [];
-                    newPosts = allPostsResponse.data.data || [];
-                    
-                    if ((local?.currentPage ?? 0) === 0) {
-                        replaceUsers(key, newUsers);
-                        replacePosts(key, newPosts);
-                    } else {
-                        appendUsers(key, newUsers);
-                        appendPosts(key, newPosts);
+                    // Load both users and posts. Prioritize showing full posts page size.
+                    {
+                        const usersPageSize = Math.max(1, Math.floor(pageSize / 2)); // e.g. 10 when pageSize=20
+                        const postsPageSize = pageSize; // show full page of posts
+                        const [allUsersResponse, allPostsResponse] = await Promise.all([
+                            SearchService.searchUsers(q, (local?.currentPage ?? 0), usersPageSize),
+                            SearchService.searchPosts(q, (local?.currentPage ?? 0), postsPageSize)
+                        ]);
+
+                        newUsers = allUsersResponse.data.data || [];
+                        newPosts = allPostsResponse.data.data || [];
+
+                        if ((local?.currentPage ?? 0) === 0) {
+                            replaceUsers(key, newUsers);
+                            replacePosts(key, newPosts);
+                        } else {
+                            appendUsers(key, newUsers);
+                            appendPosts(key, newPosts);
+                        }
+
+                        // hasMore if either list still has more pages
+                        setHasMore(key, (newPosts.length === postsPageSize) || (newUsers.length === usersPageSize));
+                        setCurrentPage(key, (local?.currentPage ?? 0) + 1);
                     }
-                    
-                    setHasMore(key, newUsers.length + newPosts.length === pageSize);
-                    setCurrentPage(key, (local?.currentPage ?? 0) + 1);
                     break;
             }
         } catch (err) {
@@ -140,12 +142,10 @@ export const useInfiniteSearch = ({
         }
     }, [searchQuery, tab, pageSize, tabState?.isLoading, tabState?.hasMore, tabState?.currentPage, tabState?.lastPostCode, key]);
 
-    // Ensure store entry exists for this key
     useEffect(() => {
         ensureKey(key);
     }, [key, ensureKey]);
 
-    // Load initial data for this key if empty
     useEffect(() => {
         const q = searchQuery.trim();
         if (!q) return;
@@ -165,7 +165,6 @@ export const useInfiniteSearch = ({
         error: tabState?.error || null,
         loadMoreData,
         resetData: () => {
-            // clear only this key
             replaceUsers(key, []);
             replacePosts(key, []);
             setCurrentPage(key, 0);

@@ -304,7 +304,8 @@ export default function SocialChatRecent() {
       ref={contentRef}
       className={`no-scrollbar `}
       style={{
-        height: 'calc(100vh - 100px)'
+        height: 'calc(100vh - 100px)',
+        paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))'
       }}
       scrollY={true}
     >
@@ -321,7 +322,7 @@ export default function SocialChatRecent() {
         )}
         <div
           ref={scrollRef}
-          className={`   px-4 pt-4 `}
+          className={`px-4 pt-4 pb-28`}
         >
           <PullToRefresh onRefresh={handleRefresh}>
             <div className="">

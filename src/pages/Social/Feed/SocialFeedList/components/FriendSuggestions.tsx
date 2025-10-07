@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFriendshipRecommended, useSendFriendRequest, useCancelFriendRequest, useAcceptFriendRequest, useRejectFriendRequest } from '@/pages/SocialPartner/hooks/useSocialPartner';
+import { useFriendshipRecommendedInfinite, useSendFriendRequest } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { useToastStore } from '@/store/zustand/toast-store';
+import FriendCardSkeleton from '@/components/skeletons/FriendCardSkeleton';
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
 
 interface FriendSuggestionsProps {
     title?: string;
@@ -18,19 +20,91 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
 }) => {
     const { t } = useTranslation();
     const showToast = useToastStore((s) => s.showToast);
-    const { data: users = [], isLoading, refetch } = useFriendshipRecommended(pageSize);
+    const {
+        data,
+        isLoading,
+        fetchNextPage,
+        isFetchingNextPage,
+        refetch,
+    } = useFriendshipRecommendedInfinite(pageSize);
 
     const sendRequest = useSendFriendRequest(showToast, () => { void refetch(); });
-    const cancelRequest = useCancelFriendRequest(showToast, () => { void refetch(); });
-    const acceptRequest = useAcceptFriendRequest(showToast, () => { void refetch(); });
-    const rejectRequest = useRejectFriendRequest(showToast, () => { void refetch(); });
 
-    if (isLoading || !users || users.length === 0) return null;
+    // Horizontal scroll container + sentinel
+    const listRef = useRef<HTMLDivElement>(null);
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    // Local states
+    const [dismissed, setDismissed] = useState<Set<number>>(new Set());
+    const [sentLocal, setSentLocal] = useState<Set<number>>(new Set());
+    // Persist users across refetch
+    const [userMap, setUserMap] = useState<Map<number, any>>(new Map());
+    useEffect(() => {
+        if (!data?.pages) return;
+        setUserMap((prev) => {
+            const next = new Map(prev);
+            for (const p of data.pages) {
+                for (const u of (p?.data ?? [])) {
+                    const id = u?.id as number | undefined;
+                    if (typeof id === 'number') {
+                        const existing = next.get(id);
+                        next.set(id, { ...existing, ...u });
+                    }
+                }
+            }
+            return next;
+        });
+    }, [data?.pages]);
+    const users: any[] = useMemo(() => Array.from(userMap.values()), [userMap]);
+    const visibleUsers = useMemo(() => users.filter((u: any) => !dismissed.has(u?.id)), [users, dismissed]);
+
+    const handleDismissCard = (id: number) => {
+        setDismissed((prev) => new Set([...prev, id]));
+        // If not enough width to scroll, fetch more
+        setTimeout(() => {
+            const el = listRef.current;
+            if (!el) return;
+            const needMore = (el.scrollWidth - el.clientWidth) <= 80;
+            if (!isFetchingNextPage && needMore) {
+                fetchNextPage();
+            }
+        }, 0);
+    };
+
+    // Horizontal scroll to load more
+    useEffect(() => {
+        const el = listRef.current;
+        if (!el) return;
+        const onScroll = () => {
+            if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 80 && !isFetchingNextPage) {
+                fetchNextPage();
+            }
+        };
+        el.addEventListener('scroll', onScroll);
+        return () => el.removeEventListener('scroll', onScroll);
+    }, [isFetchingNextPage, fetchNextPage]);
+
+    // IntersectionObserver sentinel at end (horizontal)
+    useEffect(() => {
+        const root = listRef.current;
+        const target = sentinelRef.current;
+        if (!root || !target) return;
+        const obs = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                if (entry.isIntersecting && !isFetchingNextPage) {
+                    fetchNextPage();
+                }
+            },
+            { root, threshold: 0.1 }
+        );
+        obs.observe(target);
+        return () => obs.disconnect();
+    }, [isFetchingNextPage, fetchNextPage]);
 
     return (
-        <div className={`bg-white rounded-2xl border border-neutral-100 shadow-sm ${className}`}>
+        <div className={`bg-white ${className}`}>
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                <h3 className="text-sm font-semibold text-gray-900">
+                <h3 className="font-medium text-gray-900">
                     {title || t('Suggested for you')}
                 </h3>
                 {onDismiss && (
@@ -43,56 +117,56 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                     </button>
                 )}
             </div>
-
             <div className="px-3 pb-4">
-                <div className="flex gap-3 overflow-x-auto no-scrollbar">
-                    {users.map((user: any) => {
-                        const reqId = user?.friendRequest?.id ?? user?.friendRequestId;
+                <div ref={listRef} className="flex gap-3 overflow-x-auto no-scrollbar">
+                    {visibleUsers.map((user: any) => {
+                        const isSent = !!user?.isRequestSender;
+                        const isSentUI = isSent || sentLocal.has(user?.id);
+                        const isFriend = !!user?.isFriend;
                         return (
-                            <div key={user?.id} className="min-w-[180px] max-w-[180px] bg-white border border-neutral-100 rounded-xl p-3">
+                            <div key={user?.id} className="relative min-w-[180px] max-w-[180px] bg-white border border-netural-50 rounded-xl px-2 pb-2 pt-8">
+                                {/* per-card dismiss */}
+                                <button
+                                    aria-label="Dismiss card"
+                                    className="absolute right-2 top-2 text-netural-300 hover:text-gray-600 text-3xl"
+                                    onClick={() => handleDismissCard(user?.id)}
+                                >
+                                    ×
+                                </button>
                                 <div className="flex flex-col items-center text-center">
+
                                     <img
-                                        src={user?.avatar || '/favicon.png'}
-                                        alt={user?.fullName || 'User'}
-                                        className="w-20 h-20 rounded-full object-cover mb-2"
+                                        src={user?.avatar || avatarFallback}
+                                        alt={user?.name || 'User Avatar'}
+                                        className="w-34 h-34 rounded-4xl object-cover"
+                                        onError={(e) => {
+                                            e.currentTarget.src = avatarFallback;
+                                        }}
                                     />
-                                    <div className="text-sm font-medium text-gray-900 line-clamp-1">{user?.fullName}</div>
-                                    <div className="text-xs text-gray-500 mt-0.5">{t('Suggested for you')}</div>
+                                    <div className=" text-gray-900 font-medium line-clamp-1">{user?.fullName}</div>
+                                    <div className="text-sm text-netural-300 mt-0.5">{t('Suggested for you')}</div>
 
                                     <div className="mt-3 w-full">
-                                        {!user?.isFriend && (
-                                            user?.isRequestSender ? (
-                                                <button
-                                                    className="w-full text-sm border border-gray-300 rounded-lg py-1.5 hover:bg-gray-50"
-                                                    onClick={() => reqId && cancelRequest.mutate(reqId)}
-                                                >
-                                                    {t('Request sent')}
+                                        {!isFriend && (
+                                            isSentUI ? (
+                                                <button className="w-full border border-netural-100  font-semibold py-2.5 rounded-2xl" disabled>
+                                                    {t('Sent')}
                                                 </button>
-                                            ) : !user?.friendRequest ? (
+                                            ) : (
                                                 <button
-                                                    className="w-full text-sm bg-blue-600 text-white rounded-lg py-1.5 hover:bg-blue-700"
-                                                    onClick={() => user?.id && sendRequest.mutate(user.id)}
+                                                    className="w-full text-white bg-main rounded-2xl py-2.5 font-semibold"
+                                                    onClick={() => {
+                                                        if (user?.id) {
+                                                            setSentLocal((prev) => new Set([...prev, user.id]));
+                                                            sendRequest.mutate(user.id);
+                                                        }
+                                                    }}
                                                 >
                                                     {t('Add friend')}
                                                 </button>
-                                            ) : (
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        className="flex-1 text-sm bg-blue-600 text-white rounded-lg py-1.5 hover:bg-blue-700"
-                                                        onClick={() => reqId && acceptRequest.mutate(reqId)}
-                                                    >
-                                                        {t('Accept')}
-                                                    </button>
-                                                    <button
-                                                        className="flex-1 text-sm border border-gray-300 rounded-lg py-1.5 hover:bg-gray-50"
-                                                        onClick={() => reqId && rejectRequest.mutate(reqId)}
-                                                    >
-                                                        {t('Reject')}
-                                                    </button>
-                                                </div>
                                             )
                                         )}
-                                        {user?.isFriend && (
+                                        {isFriend && (
                                             <div className="text-xs text-green-600 font-medium py-1.5">{t('Friends')}</div>
                                         )}
                                     </div>
@@ -100,7 +174,17 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                             </div>
                         );
                     })}
+                    {isFetchingNextPage && (
+                        <>
+                            {Array.from({ length: Math.max(2, Math.min(4, pageSize)) }).map((_, i) => (
+                                <FriendCardSkeleton key={`np-s-${i}`} />
+                            ))}
+                        </>
+                    )}
+                    {/* Horizontal sentinel */}
+                    <div ref={sentinelRef} className="w-2" />
                 </div>
+
             </div>
         </div>
     );

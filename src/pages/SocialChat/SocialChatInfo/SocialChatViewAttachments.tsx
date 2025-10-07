@@ -25,7 +25,7 @@ const SocialChatViewAttachments: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
-  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [previewItems, setPreviewItems] = useState<Array<{ url: string; type: 'image' | 'video'; s3Key?: string; fileName?: string }>>([]);
   const [modalUserInfo, setModalUserInfo] = useState<{ name: string, avatar?: string } | undefined>();
 
   const {
@@ -64,71 +64,48 @@ const SocialChatViewAttachments: React.FC = () => {
       .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
   }, [data, activeFilter]);
 
-  // Store all image files for reference
-  const allImageFiles = React.useMemo(() => {
+  // Store all visual files (images + videos) for reference
+  const allVisualFiles = React.useMemo(() => {
     return data?.pages.flatMap((page: any) => {
       if (!page?.data?.data) return [];
       return page.data.data.filter((file: any) => {
-        const fileExt = file.fileName?.toLowerCase().split('.').pop() || '';
-        return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
+        const ext = file.fileName?.toLowerCase().split('.').pop() || '';
+        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+        const isVideo = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'm4v'].includes(ext);
+        return isImage || isVideo;
       });
     }) || [];
   }, [data]);
 
   useEffect(() => {
     if (previewImage) {
-      const urls = allImageFiles.map((file: any) => file.fileUrl);
-      setPreviewImages(urls);
-      setPreviewIndex(urls.indexOf(previewImage));
+      const items = allVisualFiles.map((file: any) => ({
+        url: file.fileUrl,
+        type: ((['mp4', 'webm', 'mov', 'avi', 'mkv', 'm4v'].includes((file.fileName?.toLowerCase().split('.').pop() || ''))) ? 'video' : 'image') as 'image' | 'video',
+        s3Key: file.s3Key,
+        fileName: file.fileName,
+      }));
+      setPreviewItems(items);
+      setPreviewIndex(items.findIndex((it) => it.url === previewImage));
 
-      const currentImageFile = allImageFiles.find((file: any) => file.fileUrl === previewImage);
+      const currentFile = allVisualFiles.find((file: any) => file.fileUrl === previewImage);
       setModalUserInfo({
-        name: currentImageFile?.createUser?.fullName || "Unknown User",
-        avatar: currentImageFile?.createUser?.avatarLink || avatarFallback
+        name: currentFile?.createUser?.fullName || "Unknown User",
+        avatar: currentFile?.createUser?.avatarLink || avatarFallback
       });
     }
-  }, [previewImage, allImageFiles]);
+  }, [previewImage, allVisualFiles]);
 
   const handleImageChange = (newIndex: number) => {
-    if (allImageFiles[newIndex]) {
-      const currentImageFile = allImageFiles[newIndex];
+    if (allVisualFiles[newIndex]) {
+      const currentFile = allVisualFiles[newIndex];
       setModalUserInfo({
-        name: currentImageFile?.createUser?.fullName || "Unknown User",
-        avatar: currentImageFile?.createUser?.avatar || avatarFallback
+        name: currentFile?.createUser?.fullName || "Unknown User",
+        avatar: currentFile?.createUser?.avatar || currentFile?.createUser?.avatarLink || avatarFallback
       });
     }
   };
-  const handleDownload = async (imageUrl: string) => {
-    try {
-      if (Capacitor.isNativePlatform()) {
-        const response = await fetch(imageUrl);
-        const blob = await response.blob();
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-
-        const fileName = `image_${Date.now()}.jpg`;
-        await Filesystem.writeFile({
-          path: fileName,
-          data: base64.split(',')[1],
-          directory: Directory.Documents
-        });
-
-        console.log('Image saved successfully');
-      } else {
-        const link = document.createElement('a');
-        link.href = imageUrl;
-        link.download = `image_${Date.now()}.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    } catch (error) {
-      console.error('Download failed:', error);
-    }
-  };
+  // Download handled inside ImageLightbox via s3Key when available
 
   const handleInfiniteScroll = (e: CustomEvent<void>) => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -326,11 +303,10 @@ const SocialChatViewAttachments: React.FC = () => {
       {previewImage && (
         <ImageLightbox
           open={!!previewImage}
-          images={previewImages}
+          images={previewItems}
           initialIndex={previewIndex}
           onClose={() => setPreviewImage(null)}
           userInfo={modalUserInfo}
-          onDownload={handleDownload}
           onSlideChange={handleImageChange}
         />
       )}

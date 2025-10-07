@@ -97,14 +97,14 @@ const BottomTabBar: React.FC = () => {
         //     className: "",
         //     classNameIcon: "",
         // },
-        {
-            label: t("Translate"),
-            icon: TranslationIcon,
-            iconActive: TranslationActiveIcon,
-            path: "/translate",
-            activePath: (pathname: string) => pathname.startsWith("/translate"),
-            classNameIcon: "",
-        },
+        // {
+        //     label: t("Translate"),
+        //     icon: TranslationIcon,
+        //     iconActive: TranslationActiveIcon,
+        //     path: "/translate",
+        //     activePath: (pathname: string) => pathname.startsWith("/translate"),
+        //     classNameIcon: "",
+        // },
         {
             label: t("Notification"),
             icon: unreadNotificationCount > 0 ? NotificationIcon2 : NotificationIcon,

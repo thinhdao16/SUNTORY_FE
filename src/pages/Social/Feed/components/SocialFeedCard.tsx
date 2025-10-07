@@ -36,6 +36,8 @@ import ExpandableText from '@/components/common/ExpandableText';
 import SharePostBottomSheet from '@/components/social/SharePostBottomSheet';
 import { SocialFeedService } from '@/services/social/social-feed-service';
 import { useQueryClient } from 'react-query';
+import { usePostSignalR } from '@/hooks/usePostSignalR';
+import useDeviceInfo from '@/hooks/useDeviceInfo';
 
 interface SocialFeedCardProps {
   post: SocialPost;
@@ -103,7 +105,68 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
     () => (translatedText ?? '').trim() === (displayPost?.content || '').trim(),
     [translatedText, displayPost?.content]
   );
+
   const showToast = useToastStore((state) => state.showToast);
+
+  // Auto SignalR subscribe when card is visible
+  const deviceInfo = useDeviceInfo();
+  const { joinPostUpdates, leavePostUpdates } = usePostSignalR(deviceInfo.deviceId ?? '', {
+    autoConnect: true,
+    enableDebugLogs: false,
+  });
+  const cardRef = React.useRef<HTMLDivElement | null>(null);
+  const joinedRef = React.useRef<boolean>(false);
+  const joinDelayRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setCardRef = React.useCallback((node: HTMLDivElement | null) => {
+    cardRef.current = node;
+    if (containerRefCallback) containerRefCallback(node);
+  }, [containerRefCallback]);
+
+  React.useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    // Join both the repost code and the original post code (if any)
+    const targetCodes = Array.from(
+      new Set(
+        [post?.code, (post?.originalPost as any)?.code, (isRepost && displayPost?.code !== post?.code) ? displayPost?.code : undefined]
+          .filter(Boolean)
+      )
+    ) as string[];
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        if (!joinedRef.current) {
+          if (joinDelayRef.current) clearTimeout(joinDelayRef.current);
+          joinDelayRef.current = setTimeout(async () => {
+            try {
+              let anyJoined = false;
+              for (const c of targetCodes) {
+                const joined = await joinPostUpdates(c);
+                if (joined !== false) anyJoined = true;
+              }
+              if (anyJoined) joinedRef.current = true;
+            } catch { }
+          }, 500);
+        }
+      } else {
+        if (joinDelayRef.current) { clearTimeout(joinDelayRef.current); joinDelayRef.current = null; }
+        if (joinedRef.current) {
+          targetCodes.forEach((c) => { leavePostUpdates(c).catch(() => { }); });
+          joinedRef.current = false;
+        }
+      }
+    }, { threshold: 0.5 });
+
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (joinDelayRef.current) { clearTimeout(joinDelayRef.current); joinDelayRef.current = null; }
+      if (joinedRef.current) {
+        targetCodes.forEach((c) => { leavePostUpdates(c).catch(() => { }); });
+        joinedRef.current = false;
+      }
+    };
+  }, [post.code, isRepost, displayPost?.code, joinPostUpdates, leavePostUpdates]);
 
   const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
   const [removed, setRemoved] = useState(false);
@@ -145,7 +208,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
       } else {
         onPostUpdate?.({ ...post, ...patch });
       }
-    } catch {}
+    } catch { }
   };
 
   const handlePostClick = (e: React.MouseEvent) => {
@@ -177,7 +240,6 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const isRepostedByMe = Boolean(post?.isRepostedByCurrentUser) || isRepostByMeCard;
   // Consider posts with missing original or status 190 as error/unavailable
   const isErrorPost = Boolean(displayPost?.status === 190) || Boolean(isRepostWithDeletedOriginal);
-
   const authorId = post?.user?.id;
   const isOwnPost = user?.id === authorId;
 
@@ -261,7 +323,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
     <div
       className={`bg-white border-b border-netural-50 cursor-pointer hover:bg-gray-50 transition-colors ${className}`}
       onClick={handlePostClick}
-      ref={containerRefCallback ? containerRefCallback : undefined}
+      ref={setCardRef}
     >
       {post?.isPin && isOwnPost && (
         <div className="flex items-center gap-1.5 px-4 pt-3 text-netural-200">
@@ -381,7 +443,9 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                 clampClassName="line-clamp-2"
                 resetKey={contentText}
               >
-                {parseHashtagsWithClick(contentText)}
+                {parseHashtagsWithClick(contentText, (tag) => {
+                  history.push(`/social-feed/search-result/all?q=${encodeURIComponent(tag)}`);
+                })}
               </ExpandableText>
               <div className="mt-2">
                 {contentText && showOriginal ? (
@@ -456,7 +520,9 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
               clampClassName="line-clamp-2"
               resetKey={contentText}
             >
-              {parseHashtagsWithClick(contentText)}
+              {parseHashtagsWithClick(contentText, (tag) => {
+                history.push(`/social-feed/search-result/all?q=${encodeURIComponent(tag)}`);
+              })}
             </ExpandableText>
           </div>
           <div className="mt-2 px-4">
@@ -561,14 +627,16 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
               disabled={isErrorPost}
             />
           )}
+          {post?.privacy !== PrivacyPostType.Private && (
+            <AnimatedActionButton
+              icon={<SendIcon />}
+              count={post.shareCount}
+              isActive={false}
+              onClick={() => setIsShareSheetOpen(true)}
+              inactiveColor="text-netural-900"
+            />
+          )}
 
-          <AnimatedActionButton
-            icon={<SendIcon />}
-            count={post.shareCount}
-            isActive={false}
-            onClick={() => setIsShareSheetOpen(true)}
-            inactiveColor="text-netural-900"
-          />
         </div>
       </div>
 
@@ -678,4 +746,4 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
       />
     </div>
   );
-};
+}

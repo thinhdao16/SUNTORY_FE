@@ -7,7 +7,7 @@ import style from '../Home.module.css';
 interface Feature {
     image: React.ReactElement;
     title: string;
-    desc: string;              
+    desc: string;
     topic: TopicType;
 }
 
@@ -18,10 +18,15 @@ interface FeatureGridProps {
 export const FeatureGrid: React.FC<FeatureGridProps> = ({ features }) => {
     const history = useHistory();
     const handleFeatureClick = (topic: TopicType) => {
-        if (topic === TopicType.MenuTranslation) {
-            history.push(`/menu-translation`, { actionFrom: '/home' });
-        } else {
-            history.push(`/chat/${topic}`, { actionFrom: '/home' });
+        switch (topic) {
+            case TopicType.MenuTranslation:
+                history.push(`/menu-translation`, { actionFrom: '/home' });
+                return;
+            case TopicType.Translatrion:
+                history.push(`/translate`, { actionFrom: '/home' });
+                return;
+            default:
+                history.push(`/chat/${topic}`, { actionFrom: '/home' });
         }
     };
 
@@ -32,7 +37,6 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({ features }) => {
                     key={feature.title}
                     className={`bg-white rounded-3xl p-3 flex items-center gap-4 w-full cursor-pointer transition-shadow ${style.customShadow}`}
                     onClick={() => handleFeatureClick(feature.topic)}
-                    
                 >
                     {feature.image}
 

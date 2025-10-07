@@ -31,9 +31,9 @@ const PostHeader: React.FC<PostHeaderProps> = ({
                         <span className="flex items-center">
                             <span 
                                 className="max-w-[250px] truncate inline-block cursor-pointer hover:text-blue-600 transition-colors"
-                                onClick={() => onUserProfileClick?.(displayPost.user.id)}
+                                onClick={() => onUserProfileClick?.(displayPost?.user?.id)}
                             >
-                                {displayPost.user.fullName}
+                                {displayPost?.user?.fullName}
                             </span>
                             <span>'s Post</span>
                         </span>

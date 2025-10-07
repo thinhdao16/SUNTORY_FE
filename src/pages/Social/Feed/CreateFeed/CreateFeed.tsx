@@ -153,6 +153,10 @@ const CreateFeed: React.FC = () => {
         if (!postText.trim() && images.length === 0 && !audioBlob) {
             return;
         }
+        // Do not allow posting while any media is still uploading
+        if (isUploading || audioUploadMutation.isLoading || images.some((item: any) => item?.isUploading)) {
+            return;
+        }
 
         setIsUploading(true);
 
@@ -184,10 +188,15 @@ const CreateFeed: React.FC = () => {
                 hashtags: hashtags.length > 0 ? hashtags : undefined,
                 privacy: Number(selectedPrivacy)
             });
-            history.goBack();
+            // Unblock route guard and clear draft BEFORE navigating to avoid 'Leaving?' popup
+            if (unblockRef.current) {
+                unblockRef.current();
+                unblockRef.current = null;
+            }
             setPostText('');
             clearImages();
             clearAudio();
+            history.goBack();
 
         } catch (error) {
             console.error('Failed to create post:', error);
@@ -196,7 +205,7 @@ const CreateFeed: React.FC = () => {
         }
     };
     return (
-        <div className="h-screen bg-white flex flex-col">
+        <div className="h-[100dvh] bg-white flex flex-col overflow-hidden">
             <div className="flex items-center justify-start p-4 border-b border-netural-50 gap-6 flex-shrink-0">
                 <button
                     onClick={handleClose}
@@ -206,7 +215,7 @@ const CreateFeed: React.FC = () => {
                 <h1 className="text-lg font-semibold text-gray-900">{t("New post")}</h1>
             </div>
 
-            <div className="flex-1 p-4 space-y-4 overflow-y-auto pb-20">
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto pb-[calc(96px+env(safe-area-inset-bottom,0px))]">
                 <div className="flex items-center space-x-3">
                     <img
                         src={user?.avatarLink || avatarFallback}
@@ -283,7 +292,7 @@ const CreateFeed: React.FC = () => {
                 )}
             </div>
 
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-netural-50 p-4">
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-netural-50 p-4 z-50">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         {
@@ -343,7 +352,7 @@ const CreateFeed: React.FC = () => {
                         {!isRecording && (
                             <ActionButton
                                 onClick={handlePost}
-                                disabled={!postText.trim() && images.length === 0 && !audioBlob}
+                                disabled={(!postText.trim() && images.length === 0 && !audioBlob) || isUploading || audioUploadMutation.isLoading}
                                 loading={createPostMutation.isLoading || isUploading || audioUploadMutation.isLoading}
                                 className="px-3 py-2 text-sm bg-main flex items-center justify-center gap-2 text-white rounded-2xl font-medium hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                             >

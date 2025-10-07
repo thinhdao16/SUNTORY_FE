@@ -86,7 +86,7 @@ export const SharedPostBubble: React.FC<SharedPostBubbleProps> = ({ data, isUser
             className="w-full text-left"
             onClick={() => {
               const targetCode = isRepost ? sharedPost?.originalPost?.code : sharedPost?.code;
-              if (targetCode) history.push(`/social-feed/f/${targetCode}`);
+              if (targetCode) history.push(`/social-feed/f/${sharedPost?.code}`);
             }}
             disabled={!sharedPost}
           >
@@ -148,13 +148,13 @@ export const SharedPostBubble: React.FC<SharedPostBubbleProps> = ({ data, isUser
                             {parseHashtagsWithClick(displayPost?.content || '')}
                       </div>
                     )}
-                    {Array.isArray(displayPost?.hashtags) && displayPost.hashtags.length > 0 && (
+                    {/* {Array.isArray(displayPost?.hashtags) && displayPost.hashtags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-2 text-blue-600 text-sm">
                         {displayPost.hashtags.slice(0, 5).map((h: any) => (
                           <span key={h.id}>#{h.tag || h.hashtagTag}</span>
                         ))}
                       </div>
-                    )}
+                    )} */}
                     {Array.isArray(displayPost?.media) && displayPost.media.length > 0 && (
                       <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                         <MediaDisplay

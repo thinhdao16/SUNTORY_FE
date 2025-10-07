@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
@@ -11,6 +11,10 @@ import { parseHashtagsWithClick } from '@/utils/hashtagHighlight';
 import { formatTimeFromNow } from '@/utils/formatTime';
 import AnimatedActionButton from '@/components/common/AnimatedActionButton';
 import { useAuthStore } from '@/store/zustand/auth-store';
+import { useCreateTranslationChat, useTranslationLanguages } from '@/pages/Translate/hooks/useTranslationLanguages';
+import useLanguageStore from '@/store/zustand/language-store';
+import ActionButton from '@/components/loading/ActionButton';
+import LogoIcon from "@/icons/logo/logo-rounded-full.svg?react";
 
 interface CommentsListProps {
     organizedComments: any[];
@@ -38,6 +42,38 @@ const CommentsList: React.FC<CommentsListProps> = ({
     const { t } = useTranslation();
     const history = useHistory();
     const { user: currentUser } = useAuthStore();
+    const createTranslationMutation = useCreateTranslationChat();
+    const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
+    const { data: availableLangs } = useTranslationLanguages();
+    const toLanguageId = useMemo(() => {
+        const prefer = selectedLanguageSocialChat?.id || selectedLanguageTo?.id;
+        if (prefer) return prefer;
+        const langs = availableLangs || [];
+        const nav = (typeof navigator !== 'undefined' ? navigator.language : '') || '';
+        const navBase = nav.split('-')[0]?.toLowerCase() || '';
+        let pick = langs.find(l => (l.code || '').toLowerCase() === navBase);
+        if (!pick) pick = langs.find(l => /^en/i.test(l.code || ''));
+        if (!pick) pick = langs.find(l => /^vi/i.test(l.code || ''));
+        return pick?.id || langs[0]?.id;
+    }, [selectedLanguageSocialChat?.id, selectedLanguageTo?.id, availableLangs]);
+
+    const [translatedTextMap, setTranslatedTextMap] = useState<Record<number, string | null>>({});
+    const [showOriginalMap, setShowOriginalMap] = useState<Record<number, boolean>>({});
+    const [pendingId, setPendingId] = useState<number | null>(null);
+
+    const translateAndShow = async (id: number, original: string) => {
+        if (!original || !toLanguageId) return;
+        setPendingId(id);
+        try {
+            const res = await createTranslationMutation.mutateAsync({ toLanguageId, originalText: original });
+            const text = (res as any)?.data?.translated_text || (res as any)?.data?.translatedText || '';
+            setTranslatedTextMap(prev => ({ ...prev, [id]: text }));
+            setShowOriginalMap(prev => ({ ...prev, [id]: false }));
+        } catch {
+        } finally {
+            setPendingId(curr => (curr === id ? null : curr));
+        }
+    };
 
     const handleUserProfileClick = (e: React.MouseEvent, userId: number) => {
         e.stopPropagation();
@@ -91,162 +127,245 @@ const CommentsList: React.FC<CommentsListProps> = ({
     }
     return (
         <div className="bg-white">
-            {organizedComments.map((comment: any) => (
-                <div key={comment.id}>
-                    <div className={`flex gap-3 p-4 border-b border-gray-50 transition-colors ${replyingTo === comment.id ? 'bg-blue-50 border-l-4 border-l-blue-500' :
-                        editingComment?.id === comment.id ? 'bg-green-50 border-l-4 border-l-green-500' : ''
-                        }`}>
-                        <img
-                            src={comment?.user?.avatarUrl || avatarFallback}
-                            alt={comment?.user?.fullName}
-                            className="w-9 h-9 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).src = avatarFallback;
-                            }}
-                            onClick={(e) => handleUserProfileClick(e, comment.user.id)}
-                        />
-                        <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1 mb-1">
-                                    <span 
-                                        className="font-semibold text-sm cursor-pointer hover:underline max-w-[200px] truncate"
-                                        onClick={(e) => handleUserProfileClick(e, comment?.user?.id)}
-                                    >
-                                        {comment?.user?.fullName}
-                                    </span>
-                                    <GoDotFill className="w-2 h-2 text-netural-100 " />
-                                    <span className="text-netural-100 text-sm">{formatTimeAgo(comment?.createDate)}</span>
-                                </div>
-                                <button
-                                    className="text-gray-400 hover:text-gray-600 "
-                                    onClick={() => onCommentOptions(comment)}
-                                    aria-label="Comment options"
-                                >
-                                    <MdMoreHoriz className='text-xl' />
-                                </button>
-                            </div>
-
-                            <div className="text-gray-800 text-sm leading-relaxed">
-                                {parseHashtagsWithClick(comment?.content)}
-                            </div>
-                            <div className="flex items-center justify-between mt-2">
-                                <div className="flex items-center gap-4">
-                                    <AnimatedActionButton
-                                        icon={<ReactHeartIcon />}
-                                        activeIcon={<ReactHeartRedIcon />}
-                                        count={comment?.reactionCount || 0}
-                                        isActive={comment?.isLike || false}
-                                        onClick={() => onLikeComment(comment?.code, comment?.isLike || false)}
-                                        disabled={commentLikeMutation.isLoading}
-                                        activeColor="text-red-500"
-                                        inactiveColor="text-gray-600"
-                                        activeNumberColor="text-black"
-                                        inactiveNumberColor="text-black"
-                                        size="none"
-                                    />
+            {organizedComments.map((comment: any) => {
+                return (
+                    <div key={comment.id}>
+                        <div className={`flex gap-3 p-4 border-b border-gray-50 transition-colors ${replyingTo === comment.id ? 'bg-blue-50 border-l-4 border-l-blue-500' :
+                            editingComment?.id === comment.id ? 'bg-green-50 border-l-4 border-l-green-500' : ''
+                            }`}>
+                            <img
+                                src={comment?.user?.avatarUrl || avatarFallback}
+                                alt={comment?.user?.fullName}
+                                className="w-9 h-9 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).src = avatarFallback;
+                                }}
+                                onClick={(e) => handleUserProfileClick(e, comment.user.id)}
+                            />
+                            <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1 mb-1">
+                                        <span
+                                            className="font-semibold text-sm cursor-pointer hover:underline max-w-[200px] truncate"
+                                            onClick={(e) => handleUserProfileClick(e, comment?.user?.id)}
+                                        >
+                                            {comment?.user?.fullName}
+                                        </span>
+                                        <GoDotFill className="w-2 h-2 text-netural-100 " />
+                                        <span className="text-netural-100 text-sm">{formatTimeAgo(comment?.createDate)}</span>
+                                    </div>
                                     <button
-                                        className=""
-                                        onClick={() => onReplyClick(comment.id, comment.user.fullName)}
+                                        className="text-gray-400 hover:text-gray-600 "
+                                        onClick={() => onCommentOptions(comment)}
+                                        aria-label="Comment options"
                                     >
-                                        <CommentsIcon className="w-6 h-6" />
+                                        <MdMoreHoriz className='text-xl' />
                                     </button>
                                 </div>
 
+                                <div className="text-gray-800 text-sm leading-relaxed">
+                                    {parseHashtagsWithClick(comment?.content)}
+                                </div>
+                                <div className="mt-1">
+                                    {comment?.content && (showOriginalMap[comment.id] ?? true) ? (
+                                        <ActionButton
+                                            variant="ghost"
+                                            size="none"
+                                            className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                                            loading={pendingId === comment.id && createTranslationMutation.isLoading}
+                                            onClick={() => translateAndShow(comment.id, comment.content)}
+                                            disabled={!toLanguageId}
+                                        >
+                                            <div className="flex items-center gap-1">
+                                                {t('Translate')}
+                                            </div>
+                                        </ActionButton>
+                                    ) : comment?.content && !(showOriginalMap[comment.id] ?? true) ? (
+                                        <ActionButton
+                                            variant="ghost"
+                                            size="none"
+                                            className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                                            onClick={() => setShowOriginalMap(prev => ({ ...prev, [comment.id]: true }))}
+                                        >
+                                            <div className="flex items-center gap-1">
+                                                {t('See original')}
+                                            </div>
+                                        </ActionButton>
+                                    ) : null}
+                                    {!(showOriginalMap[comment.id] ?? true)
+                                        && (translatedTextMap[comment.id] ?? '').trim()
+                                        && (translatedTextMap[comment.id]?.trim() !== (comment?.content || '').trim()) && (
+                                            <div className="mt-2 border-l-3 border-gray-200 pl-3 text-sm text-netural-300 whitespace-pre-wrap">
+                                                {translatedTextMap[comment.id]}
+                                            </div>
+                                        )}
+                                </div>
+                                <div className="flex items-center justify-between mt-2">
+                                    <div className="flex items-center gap-4">
+                                        <AnimatedActionButton
+                                            icon={<ReactHeartIcon />}
+                                            activeIcon={<ReactHeartRedIcon />}
+                                            count={comment?.reactionCount || 0}
+                                            isActive={comment?.isLike || false}
+                                            onClick={() => onLikeComment(comment?.code, comment?.isLike || false)}
+                                            disabled={commentLikeMutation.isLoading}
+                                            activeColor="text-red-500"
+                                            inactiveColor="text-gray-600"
+                                            activeNumberColor="text-black"
+                                            inactiveNumberColor="text-black"
+                                            size="none"
+                                        />
+                                        <AnimatedActionButton
+                                            icon={<CommentsIcon />}
+                                            activeIcon={<CommentsIcon />}
+                                            count={comment?.replies.length || 0}
+                                            isActive={comment?.isLike || false}
+                                            onClick={() => onReplyClick(comment.id, comment.user.fullName)}
+                                            disabled={commentLikeMutation.isLoading}
+                                            activeColor="text-red-500"
+                                            inactiveColor="text-gray-600"
+                                            activeNumberColor="text-black"
+                                            inactiveNumberColor="text-black"
+                                            size="none"
+                                        />
+                                        {/* <button
+                                            className=""
+                                            onClick={() => onReplyClick(comment.id, comment.user.fullName)}
+                                        >
+                                            <CommentsIcon className="w-6 h-6" />
+                                        </button> */}
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Replies */}
-                    {comment?.replies && comment?.replies.length > 0 && (
-                        <div className=" ">
-                            {comment?.replies
-                                .sort((a: any, b: any) => new Date(a.createDate).getTime() - new Date(b.createDate).getTime())
-                                .map((reply: any) => (
-                                    <div key={reply.id} className={`flex gap-3 p-4 pl-12 border-b border-gray-50 bg-gray-25 transition-colors ${replyingTo === reply.id ? 'bg-blue-50 border-l-4 border-l-blue-500' :
-                                        editingComment?.id === reply.id ? 'bg-green-50 border-l-4 border-l-green-500' : ''
-                                        }`}>
-                                        <img
-                                            src={reply.user.avatarUrl || avatarFallback}
-                                            alt={reply.user.fullName}
-                                            className="w-7 h-7 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = avatarFallback;
-                                            }}
-                                            onClick={(e) => handleUserProfileClick(e, reply.user.id)}
-                                        />
-                                        <div className="flex-1">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-1 mb-1">
-                                                    <span 
-                                                        className="font-semibold text-sm cursor-pointer hover:underline max-w-[200px] truncate"
-                                                        onClick={(e) => handleUserProfileClick(e, reply.user.id)}
-                                                    >
-                                                        {reply.user.fullName}
-                                                    </span>
-                                                    <GoDotFill className="w-2 h-2 text-netural-100 " />
-                                                    <span className="text-netural-100 text-sm">{formatTimeAgo(reply.createDate)}</span>
-                                                </div>
-                                                <button
-                                                    className="text-gray-400 hover:text-gray-600 "
-                                                    onClick={() => onCommentOptions(reply)}
-                                                    aria-label="Reply options"
-                                                >
-                                                    <MdMoreHoriz className='text-xl' />
-                                                </button>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span 
-                                                    className='font-semibold text-main text-sm max-w-[150px] truncate cursor-pointer hover:underline'
-                                                    onClick={(e) => {
-                                                        const targetUserId = reply.replyCommentId ? 
-                                                            organizedComments.find(c => c.id === reply.replyCommentId)?.user?.id || reply.user.id 
-                                                            : reply.user.id;
-                                                        handleUserProfileClick(e, targetUserId);
+                        {/* Replies */}
+                        {comment?.replies && comment?.replies.length > 0 && (
+                            <div className=" ">
+                                {comment?.replies
+                                    .sort((a: any, b: any) => new Date(a.createDate).getTime() - new Date(b.createDate).getTime())
+                                    .map((reply: any) => {
+                                        return (
+                                            <div key={reply.id} className={`flex gap-3 p-4 pl-12 border-b border-gray-50 bg-gray-25 transition-colors ${replyingTo === reply.id ? 'bg-blue-50 border-l-4 border-l-blue-500' :
+                                                editingComment?.id === reply.id ? 'bg-green-50 border-l-4 border-l-green-500' : ''
+                                                }`}>
+                                                <img
+                                                    src={reply.user.avatarUrl || avatarFallback}
+                                                    alt={reply.user.fullName}
+                                                    className="w-7 h-7 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = avatarFallback;
                                                     }}
-                                                >
-                                                    {reply.replyCommentId ? findOriginalCommentAuthor(reply.replyCommentId) || reply.user.fullName : reply.user.fullName}
-                                                </span>
-                                                <div className="text-gray-800 text-sm leading-relaxed">
-                                                    {parseHashtagsWithClick(reply.content)}
+                                                    onClick={(e) => handleUserProfileClick(e, reply.user.id)}
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1 mb-1">
+                                                            <span
+                                                                className="font-semibold text-sm cursor-pointer hover:underline max-w-[200px] truncate"
+                                                                onClick={(e) => handleUserProfileClick(e, reply.user.id)}
+                                                            >
+                                                                {reply.user.fullName}
+                                                            </span>
+                                                            <GoDotFill className="w-2 h-2 text-netural-100 " />
+                                                            <span className="text-netural-100 text-sm">{formatTimeAgo(reply.createDate)}</span>
+                                                        </div>
+                                                        <button
+                                                            className="text-gray-400 hover:text-gray-600 "
+                                                            onClick={() => onCommentOptions(reply)}
+                                                            aria-label="Reply options"
+                                                        >
+                                                            <MdMoreHoriz className='text-xl' />
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span
+                                                            className='font-semibold text-main text-sm max-w-[150px] truncate cursor-pointer hover:underline'
+                                                            onClick={(e) => {
+                                                                const targetUserId = reply.replyCommentId ?
+                                                                    organizedComments.find(c => c.id === reply.replyCommentId)?.user?.id || reply.user.id
+                                                                    : reply.user.id;
+                                                                handleUserProfileClick(e, targetUserId);
+                                                            }}
+                                                        >
+                                                            {reply.replyCommentId ? findOriginalCommentAuthor(reply.replyCommentId) || reply.user.fullName : reply.user.fullName}
+                                                        </span>
+                                                        <div className="text-gray-800 text-sm leading-relaxed">
+                                                            {parseHashtagsWithClick(reply.content)}
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-1">
+                                                        {reply?.content && (showOriginalMap[reply.id] ?? true) ? (
+                                                            <ActionButton
+                                                                variant="ghost"
+                                                                size="none"
+                                                                className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                                                                loading={pendingId === reply.id && createTranslationMutation.isLoading}
+                                                                onClick={() => translateAndShow(reply.id, reply.content)}
+                                                                disabled={!toLanguageId}
+                                                            >
+                                                                {t('Translate')}
+                                                            </ActionButton>
+                                                        ) : reply?.content && !(showOriginalMap[reply.id] ?? true) ? (
+                                                            <ActionButton
+                                                                variant="ghost"
+                                                                size="none"
+                                                                className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                                                                onClick={() => setShowOriginalMap(prev => ({ ...prev, [reply.id]: true }))}
+                                                            >
+                                                                <div className="flex items-center gap-1">
+                                                                    {t('See original')}
+                                                                </div>
+                                                            </ActionButton>
+                                                        ) : null}
+                                                        {!(showOriginalMap[reply.id] ?? true)
+                                                            && (translatedTextMap[reply.id] ?? '').trim()
+                                                            && (translatedTextMap[reply.id]?.trim() !== (reply?.content || '').trim()) && (
+                                                                <div className="mt-2 border-l-3 border-gray-200 pl-3 text-sm text-netural-300 whitespace-pre-wrap">
+                                                                    {translatedTextMap[reply.id]}
+                                                                </div>
+                                                            )}
+                                                    </div>
+                                                    <div className="flex items-center justify-between mt-2">
+                                                        <div className="flex items-center gap-4">
+                                                            <AnimatedActionButton
+                                                                icon={<ReactHeartIcon />}
+                                                                activeIcon={<ReactHeartRedIcon />}
+                                                                count={reply.reactionCount || 0}
+                                                                isActive={reply.isLike || false}
+                                                                onClick={() => onLikeComment(reply.code, reply.isLike || false)}
+                                                                disabled={commentLikeMutation.isLoading}
+                                                                activeColor="text-red-500"
+                                                                inactiveColor="text-gray-600"
+                                                                activeNumberColor="text-black"
+                                                                inactiveNumberColor="text-black"
+                                                                size="none"
+                                                            />
+                                                            <ActionButton
+                                                                variant="ghost"
+                                                                size="none"
+                                                                className="flex items-center gap-2 text-blue-600 text-sm font-medium p-0 hover:bg-transparent"
+                                                                onClick={() => onReplyClick(reply.id, reply.user.fullName)}
+                                                            >
+                                                                <div className="flex items-center gap-1">
+                                                                    <CommentsIcon className="w-6 h-6" />
+                                                                </div>
+                                                            </ActionButton>
+                                                        </div>
+
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center justify-between mt-2">
-                                                <div className="flex items-center gap-4">
-                                                    <AnimatedActionButton
-                                                        icon={<ReactHeartIcon />}
-                                                        activeIcon={<ReactHeartRedIcon />}
-                                                        count={reply.reactionCount || 0}
-                                                        isActive={reply.isLike || false}
-                                                        onClick={() => onLikeComment(reply.code, reply.isLike || false)}
-                                                        disabled={commentLikeMutation.isLoading}
-                                                        activeColor="text-red-500"
-                                                        inactiveColor="text-gray-600"
-                                                        activeNumberColor="text-black"
-                                                        inactiveNumberColor="text-black"
-                                                        size="none"
-                                                    />
-                                                    <button
-                                                        className=""
-                                                        onClick={() => onReplyClick(reply.id, reply.user.fullName)}
-                                                    >
-                                                        <CommentsIcon className="w-6 h-6" />
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    className="text-gray-400 hover:text-gray-600 "
-                                                    onClick={() => onCommentOptions(reply)}
-                                                    aria-label="Reply options"
-                                                >
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                        </div>
-                    )}
-                </div>
-            ))}
+                                        );
+                                    })}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
         </div>
+
     );
 };
 

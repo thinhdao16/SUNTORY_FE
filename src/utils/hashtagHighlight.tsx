@@ -42,17 +42,13 @@ export const parseHashtagsWithClick = (
   const parts = text.split(hashtagRegex);
   
   const handleHashtagClick = async (hashtag: string) => {
-    console.log(hashtag);
+    // Navigate immediately
+    onHashtagClick?.(hashtag);
+    // Then track interest and notify listeners on success
     try {
-      // Track hashtag interest in backend
       await SocialFeedService.trackHashtagInterest(hashtag);
-      // Call the optional callback
-      onHashtagClick?.(hashtag);
-    } catch (error) {
-      console.error('Failed to track hashtag interest:', error);
-      // Still call the callback even if tracking fails
-      onHashtagClick?.(hashtag);
-    }
+      window.dispatchEvent(new CustomEvent('hashtag-interest-success', { detail: hashtag }));
+    } catch {}
   };
   
   return parts.map((part, index) => {
@@ -61,7 +57,7 @@ export const parseHashtagsWithClick = (
         <span 
           key={index} 
           className="text-blue-500 font-medium cursor-pointer hover:underline hover:text-blue-600 transition-colors"
-          onClick={() => handleHashtagClick(part)}
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); void handleHashtagClick(part); }}
         >
           {part}
         </span>

@@ -136,7 +136,7 @@ const SocialPartnerAdd = () => {
                                         <FiArrowLeft />
                                     </button>
                                     <h1 className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
-                                        {t("Add Partner")}
+                                        {t("Add Friend")}
                                     </h1>
                                     <div className="w-5" />
                                 </div>

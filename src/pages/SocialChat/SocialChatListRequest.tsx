@@ -112,7 +112,6 @@ function SocialChatListRequest() {
         const currentCount = notificationCounts.pendingFriendRequestsCount;
         const previousCount = prevFriendRequestCount.current;
         if (previousCount !== currentCount && previousCount !== undefined) {
-            console.log(`Friend request count changed: ${previousCount} -> ${currentCount}, refetching...`);
             refetch();
         }
         prevFriendRequestCount.current = currentCount;
@@ -124,7 +123,8 @@ function SocialChatListRequest() {
                 className={`overflow-y-auto px-4 pt-4 pb-28 ${isNative
                     ? "max-h-[85vh]"
                     : "max-h-[75vh] lg:max-h-[75vh] xl:max-h-[85vh]"
-                    }`}
+                }`}
+                style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}
             >
                 {isLoading ? (
                     <p className="text-center text-gray-400">{t("Loading requests...")}</p>
@@ -144,7 +144,6 @@ function SocialChatListRequest() {
                                 <img
                                     src={user?.fromUser?.avatar || avatarFallback}
                                     alt={user?.fromUser?.name || 'User Avatar'}
-                                    className="w-[50px] h-[50px] rounded-2xl object-cover"
                                     onError={(e) => {
                                         e.currentTarget.src = avatarFallback;
                                     }}
@@ -170,15 +169,8 @@ function SocialChatListRequest() {
                         </div>
                     ))
                 )}
-
-                {isFetchingNextPage && (
-                    <p className="text-center text-gray-400 text-sm mt-4">
-                        Đang tải thêm...
-                    </p>
-                )}
             </div>
         </div>
     );
 }
-
 export default SocialChatListRequest;

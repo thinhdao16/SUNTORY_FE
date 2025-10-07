@@ -33,12 +33,10 @@ interface FriendRequestItem {
     };
 }
 
-const FriendRequest = () => {
+const FriendRequest = ( activeTab?: any) => {
     const { t } = useTranslation();
     const history = useHistory();
-    const lastNotificationTime = useNotificationStore((state) => state.lastNotificationTime);
-    const lastActionTime = useNotificationStore((state) => state.lastActionTime);
-    const showToast = useToastStore((state) => state.showToast);
+    
     const [displayedRequests, setDisplayedRequests] = useState<FriendRequestItem[]>([]);
     const [showAll, setShowAll] = useState(false);
     const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
@@ -47,34 +45,20 @@ const FriendRequest = () => {
         data,
         refetch
     } = useFriendshipReceivedRequests(20);
+
     const prevFriendRequestCount = useRef(notificationCounts.pendingFriendRequestsCount);
     const deviceInfo = useDeviceInfo();
 
     // Enable real-time SignalR connection
     useSocialSignalR(deviceInfo.deviceId ?? "", {
         roomId: "",
-        refetchRoomData: () => { void refetch(); },
+        refetchRoomData: () => { },
         autoConnect: true,
         enableDebugLogs: false,
-    });
-
-    // Enable real-time notification counts
-    useNotificationCounts({
-        enabled: true,
-        refetchInterval: 30000
-    });
-
-    // Enable real-time friend request updates
-    useSocialSignalRListChatRoom(deviceInfo.deviceId ?? '', {
-        roomIds: [], // Empty for friend requests
-        autoConnect: true,
-        enableDebugLogs: false,
-        refetchUserChatRooms: () => { void refetch(); }
     });
 
     // Use data from React Query instead of local API calls
     const requests = data?.pages.flat() ?? [];
-
     useEffect(() => {
         const currentCount = notificationCounts.pendingFriendRequestsCount;
         const previousCount = prevFriendRequestCount.current;
@@ -89,10 +73,10 @@ const FriendRequest = () => {
         if (showAll) {
             setDisplayedRequests(requests);
         } else {
-            setDisplayedRequests(requests.slice(0, 6)); // Show first 6 requests
+            setDisplayedRequests(requests.slice(0, 6));
         }
-    }, [requests, showAll]);
-
+        refetch()
+    }, [ showAll,activeTab, data ]);
     const formatTimestamp = (createDate: string): string => {
         const now = new Date();
         let timestamp: Date;
