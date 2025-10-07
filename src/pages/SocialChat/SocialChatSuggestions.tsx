@@ -4,12 +4,12 @@ import avatarFallback from '@/icons/logo/social-chat/avt-rounded.svg';
 import { useToastStore } from '@/store/zustand/toast-store';
 import { useFriendshipRecommendedInfinite, useSendFriendRequest } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import UserRowSkeleton from '@/components/skeletons/UserRowSkeleton';
+import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 
 const SocialChatSuggestions: React.FC = () => {
     const { t } = useTranslation();
     const showToast = useToastStore((s) => s.showToast);
 
-    // Page size 20 to match provided sample
     const {
         data,
         isLoading,
@@ -19,13 +19,17 @@ const SocialChatSuggestions: React.FC = () => {
     } = useFriendshipRecommendedInfinite(20);
 
     const sendRequest = useSendFriendRequest(showToast, () => { void refetch(); });
+    const {
+        hasFriendRequestOutgoing,
+        setFriendRequestOutgoing,
+        pruneExpiredFriendRequestOutgoing,
+    } = useSocialChatStore();
 
     const listRef = useRef<HTMLDivElement>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
     const [dismissed, setDismissed] = useState<Set<number>>(new Set());
     const [sentLocal, setSentLocal] = useState<Set<number>>(new Set());
     const lastAutoFetchRef = useRef<number>(0);
-    // Persist union of users across refetches so items don't disappear
     const [userMap, setUserMap] = useState<Map<number, any>>(new Map());
     useEffect(() => {
         if (!data?.pages) return;
@@ -48,7 +52,6 @@ const SocialChatSuggestions: React.FC = () => {
 
     const handleDismiss = (id: number) => {
         setDismissed((prev) => new Set([...prev, id]));
-        // After dismiss, if list becomes short, auto-fetch more immediately
         setTimeout(() => {
             const el = listRef.current;
             if (!el) return;
@@ -59,7 +62,6 @@ const SocialChatSuggestions: React.FC = () => {
         }, 0);
     };
 
-    // Infinite scroll: load more when reaching near bottom
     useEffect(() => {
         const el = listRef.current;
         if (!el) return;
@@ -72,7 +74,6 @@ const SocialChatSuggestions: React.FC = () => {
         return () => el.removeEventListener('scroll', onScroll);
     }, [isFetchingNextPage, fetchNextPage]);
 
-    // IntersectionObserver sentinel at bottom of the list
     useEffect(() => {
         const root = listRef.current;
         const target = sentinelRef.current;
@@ -90,12 +91,18 @@ const SocialChatSuggestions: React.FC = () => {
         return () => obs.disconnect();
     }, [isFetchingNextPage, fetchNextPage]);
 
-    // Auto-fetch when content is too short to scroll (e.g., after many removes)
+    useEffect(() => {
+        const id = setInterval(() => {
+            pruneExpiredFriendRequestOutgoing();
+        }, 60000);
+        return () => clearInterval(id);
+    }, [pruneExpiredFriendRequestOutgoing]);
+
     useEffect(() => {
         const el = listRef.current;
         if (!el) return;
         const now = Date.now();
-        const needMore = (el.scrollHeight - el.clientHeight) <= 100; // not enough content
+        const needMore = (el.scrollHeight - el.clientHeight) <= 100; 
         if (!isLoading && !isFetchingNextPage && needMore && now - lastAutoFetchRef.current > 800) {
             lastAutoFetchRef.current = now;
             fetchNextPage();
@@ -119,7 +126,8 @@ const SocialChatSuggestions: React.FC = () => {
                 )}
                 {visibleUsers.map((user: any) => {
                     const isSent = !!user?.isRequestSender;
-                    const isSentUI = isSent || sentLocal.has(user?.id);
+                    const isSentStore = hasFriendRequestOutgoing(user?.id);
+                    const isSentUI = isSent || isSentStore || sentLocal.has(user?.id);
                     const isFriend = !!user?.isFriend;
                     const subtitle = user?.mutualFriendsCount
                         ? `${user.mutualFriendsCount} ${t('mutual friends')}`
@@ -158,6 +166,7 @@ const SocialChatSuggestions: React.FC = () => {
                                                     onClick={() => {
                                                         if (user?.id) {
                                                             setSentLocal((prev) => new Set([...prev, user.id]));
+                                                            setFriendRequestOutgoing(user.id, 'sent', 86400);
                                                             sendRequest.mutate(user.id);
                                                         }
                                                     }}

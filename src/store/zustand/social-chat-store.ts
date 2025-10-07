@@ -83,6 +83,15 @@ interface SocialChatState {
     getFriendRequestOptimisticList: () => any[];
     pruneExpiredFriendRequestOptimistic: () => void;
 
+    // Outgoing friend requests keyed by target userId
+    friendRequestOutgoing: Record<number, { status: 'sent' | 'cancelled' | 'accepted'; expiresAt: number | null }>;
+    setFriendRequestOutgoing: (userId: number, status: 'sent' | 'cancelled' | 'accepted', ttlSec?: number) => void;
+    removeFriendRequestOutgoing: (userId: number) => void;
+    clearFriendRequestOutgoing: () => void;
+    hasFriendRequestOutgoing: (userId: number) => boolean;
+    getFriendRequestOutgoingStatus: (userId: number) => 'sent' | 'cancelled' | 'accepted' | null;
+    pruneExpiredFriendRequestOutgoing: () => void;
+
 }
 const toTs = (d?: string | null) => (d ? new Date(d).getTime() : 0);
 const pickLocalOnly = (r: RoomChatInfo | undefined) => r ? ({
@@ -752,5 +761,49 @@ export const useSocialChatStore = create<SocialChatState>()(
                     }
                 }
             }),
-    }))
+
+        // ---------- Outgoing Friend Requests (by target userId) ----------
+        friendRequestOutgoing: {},
+
+        setFriendRequestOutgoing: (userId, status, ttlSec = 180) =>
+            set((state) => {
+                const expiresAt = ttlSec > 0 ? Date.now() + ttlSec * 1000 : null;
+                state.friendRequestOutgoing[userId] = { status, expiresAt };
+            }),
+
+        removeFriendRequestOutgoing: (userId) =>
+            set((state) => {
+                if (state.friendRequestOutgoing[userId]) delete state.friendRequestOutgoing[userId];
+            }),
+
+        clearFriendRequestOutgoing: () =>
+            set((state) => {
+                state.friendRequestOutgoing = {};
+            }),
+
+        hasFriendRequestOutgoing: (userId) => {
+            const st = get();
+            const e = st.friendRequestOutgoing[userId];
+            if (!e) return false;
+            if (e.expiresAt && e.expiresAt <= Date.now()) return false;
+            return e.status === 'sent';
+        },
+
+        getFriendRequestOutgoingStatus: (userId) => {
+            const st = get();
+            const e = st.friendRequestOutgoing[userId];
+            if (!e) return null;
+            if (e.expiresAt && e.expiresAt <= Date.now()) return null;
+            return e.status;
+        },
+
+        pruneExpiredFriendRequestOutgoing: () =>
+            set((state) => {
+                const now = Date.now();
+                for (const id of Object.keys(state.friendRequestOutgoing)) {
+                    const e = state.friendRequestOutgoing[+id];
+                    if (e?.expiresAt && e.expiresAt <= now) delete state.friendRequestOutgoing[+id];
+                }
+            }),
+        }))
 );

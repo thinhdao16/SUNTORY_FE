@@ -4,6 +4,7 @@ import { useFriendshipRecommendedInfinite, useSendFriendRequest } from '@/pages/
 import { useToastStore } from '@/store/zustand/toast-store';
 import FriendCardSkeleton from '@/components/skeletons/FriendCardSkeleton';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
+import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 
 interface FriendSuggestionsProps {
     title?: string;
@@ -29,6 +30,11 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
     } = useFriendshipRecommendedInfinite(pageSize);
 
     const sendRequest = useSendFriendRequest(showToast, () => { void refetch(); });
+    const {
+        hasFriendRequestOutgoing,
+        setFriendRequestOutgoing,
+        pruneExpiredFriendRequestOutgoing,
+    } = useSocialChatStore();
 
     // Horizontal scroll container + sentinel
     const listRef = useRef<HTMLDivElement>(null);
@@ -101,6 +107,13 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
         return () => obs.disconnect();
     }, [isFetchingNextPage, fetchNextPage]);
 
+    useEffect(() => {
+        const id = setInterval(() => {
+            pruneExpiredFriendRequestOutgoing();
+        }, 60000);
+        return () => clearInterval(id);
+    }, [pruneExpiredFriendRequestOutgoing]);
+
     return (
         <div className={`bg-white ${className}`}>
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
@@ -121,7 +134,8 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                 <div ref={listRef} className="flex gap-3 overflow-x-auto no-scrollbar">
                     {visibleUsers.map((user: any) => {
                         const isSent = !!user?.isRequestSender;
-                        const isSentUI = isSent || sentLocal.has(user?.id);
+                        const isSentStore = hasFriendRequestOutgoing(user?.id);
+                        const isSentUI = isSent || isSentStore || sentLocal.has(user?.id);
                         const isFriend = !!user?.isFriend;
                         return (
                             <div key={user?.id} className="relative min-w-[180px] max-w-[180px] bg-white border border-netural-50 rounded-xl px-2 pb-2 pt-8">
@@ -158,6 +172,7 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                                                     onClick={() => {
                                                         if (user?.id) {
                                                             setSentLocal((prev) => new Set([...prev, user.id]));
+                                                            setFriendRequestOutgoing(user.id, 'sent', 86400);
                                                             sendRequest.mutate(user.id);
                                                         }
                                                     }}

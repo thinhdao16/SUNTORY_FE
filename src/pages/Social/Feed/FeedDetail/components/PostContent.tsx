@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
@@ -18,6 +18,7 @@ import { GoDotFill } from 'react-icons/go';
 import { useAuthStore } from '@/store/zustand/auth-store';
 import { PrivacyPostType } from '@/types/privacy';
 import ExpandableText from '@/components/common/ExpandableText';
+import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 
 interface PostContentProps {
     displayPost: any;
@@ -48,6 +49,19 @@ const PostContent: React.FC<PostContentProps> = ({
     const createTranslationMutation = useCreateTranslationChat();
     const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
     const toLanguageId = useMemo(() => selectedLanguageSocialChat?.id || selectedLanguageTo?.id || 2, [selectedLanguageSocialChat, selectedLanguageTo]);
+
+    const {
+        hasFriendRequestOutgoing,
+        setFriendRequestOutgoing,
+        pruneExpiredFriendRequestOutgoing,
+    } = useSocialChatStore();
+
+    useEffect(() => {
+        const id = setInterval(() => {
+            pruneExpiredFriendRequestOutgoing();
+        }, 60000);
+        return () => clearInterval(id);
+    }, [pruneExpiredFriendRequestOutgoing]);
 
     const isRepostWithDeletedOriginal = isRepost && (!originalPost || originalPost?.status === 190);
     const [translatedText, setTranslatedText] = React.useState<string | null>(null);
@@ -116,15 +130,25 @@ const PostContent: React.FC<PostContentProps> = ({
                                         </div>
                             </div>
                         </div>
-                        {!isOwnPost && displayPost?.isFriend === false && displayPost?.friendRequest === null && (
-                            <button
-                                className="flex items-center gap-1 text-sm font-semibold text-netural-500"
-                                onClick={onSendFriendRequest}
-                                disabled={sendFriendRequestMutation.isLoading}
-                            >
-                                <AddFriendIcon />
-                                {t('Add Friend')}
-                            </button>
+                        {!isOwnPost && displayPost?.isFriend === false && (
+                            hasFriendRequestOutgoing(displayPost?.user?.id) || displayPost?.friendRequest !== null ? (
+                                <button className="flex items-center gap-1 text-sm font-semibold text-netural-300" disabled>
+                                    {t('Sent')}
+                                </button>
+                            ) : (
+                                <button
+                                    className="flex items-center gap-1 text-sm font-semibold text-netural-500"
+                                    onClick={() => {
+                                        const uid = displayPost?.user?.id;
+                                        if (uid) setFriendRequestOutgoing(uid, 'sent', 86400);
+                                        onSendFriendRequest();
+                                    }}
+                                    disabled={sendFriendRequestMutation.isLoading}
+                                >
+                                    <AddFriendIcon />
+                                    {t('Add Friend')}
+                                </button>
+                            )
                         )}
                     </div>
 
@@ -288,15 +312,25 @@ const PostContent: React.FC<PostContentProps> = ({
                             </div>
                         </div>
                     </div>
-                    {!isOwnPost && postToDisplay?.isFriend === false && postToDisplay?.friendRequest === null && (
-                        <button
-                            className="flex items-center gap-1 text-sm font-semibold text-netural-500"
-                            onClick={onSendFriendRequest}
-                            disabled={sendFriendRequestMutation.isLoading}
-                        >
-                            <AddFriendIcon />
-                            {t('Add Friend')}
-                        </button>
+                    {!isOwnPost && postToDisplay?.isFriend === false && (
+                        hasFriendRequestOutgoing(displayPost?.user?.id) || postToDisplay?.friendRequest !== null ? (
+                            <button className="flex items-center gap-1 text-sm font-semibold text-netural-300" disabled>
+                                {t('Sent')}
+                            </button>
+                        ) : (
+                            <button
+                                className="flex items-center gap-1 text-sm font-semibold text-netural-500"
+                                onClick={() => {
+                                    const uid = displayPost?.user?.id;
+                                    if (uid) setFriendRequestOutgoing(uid, 'sent', 86400);
+                                    onSendFriendRequest();
+                                }}
+                                disabled={sendFriendRequestMutation.isLoading}
+                            >
+                                <AddFriendIcon />
+                                {t('Add Friend')}
+                            </button>
+                        )
                     )}
                 </div>
             )}
