@@ -32,17 +32,20 @@ interface NotificationState {
     notifications: Notification[];
     lastNotificationTime: number;
     lastActionTime: number;
+    isUnReadNotification: boolean;
     addNotification: (n: Omit<Notification, "createdAt">) => void;
     markAsRead: (id: string) => void;
     clearAll: () => void;
     clearOne: (id: string) => void;
     triggerRefresh: () => void;
+    setIsUnReadNotification: (isUnReadNotification: boolean) => void;
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
     notifications: [],
     lastNotificationTime: 0,
     lastActionTime: 0,
+    isUnReadNotification: false,
     addNotification: (n) =>
         set((state) => ({
             notifications: [
@@ -54,6 +57,7 @@ export const useNotificationStore = create<NotificationState>((set) => ({
                 ...state.notifications,
             ],
             lastNotificationTime: Date.now(),
+            isUnReadNotification: true,
         })),
     triggerRefresh: () =>
         set(() => ({
@@ -70,4 +74,5 @@ export const useNotificationStore = create<NotificationState>((set) => ({
         set((state) => ({
             notifications: state.notifications.filter((item) => item.id !== id),
         })),
+    setIsUnReadNotification: (isUnReadNotification) => set({ isUnReadNotification }),
 }));

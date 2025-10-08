@@ -31,10 +31,10 @@ interface FriendRequestItem {
     };
 }
 
-const FriendRequest = ( activeTab?: any) => {
+const FriendRequest = (activeTab?: any) => {
     const { t } = useTranslation();
     const history = useHistory();
-    
+
     const [displayedRequests, setDisplayedRequests] = useState<FriendRequestItem[]>([]);
     const [draftRequests, setDraftRequests] = useState<FriendRequestItem[]>([]);
     const [showAll, setShowAll] = useState(false);
@@ -170,7 +170,7 @@ const FriendRequest = ( activeTab?: any) => {
         return (
             <div
                 key={request.id}
-                className="flex items-center px-6 py-4 border-b border-gray-100"
+                className="flex items-center px-4 py-4 border-b border-gray-100 w-full"
                 onClick={() => {
                     history.push(`/profile/${request.fromUser?.id}`);
                 }}
@@ -183,7 +183,7 @@ const FriendRequest = ( activeTab?: any) => {
                     />
                 </div>
 
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex flex-col">
                     <p className="text-[14px] text-black">
                         <span className="font-semibold">{fullName}</span>{' '}
                         {request.inviteStatus == 10 && (
@@ -204,9 +204,24 @@ const FriendRequest = ( activeTab?: any) => {
                             </p>
                         )
                     }
-                    <p className="text-xs text-gray-500 mt-1">
-                        {formatTimestamp(request.createDate)}
-                    </p>
+                    <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs text-gray-500">
+                            {formatTimestamp(request.createDate)}
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                className="p-1 hover:bg-gray-100 rounded-full"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Handle ellipsis click
+                                }}
+                            >
+                                <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
 
                     {request.inviteStatus == 10 && (
                         <div className="flex items-center gap-2 mt-4">
@@ -232,24 +247,42 @@ const FriendRequest = ( activeTab?: any) => {
     };
 
     return (
-        <IonContent className="h-220" style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
-            <div className="bg-white pb-6 w-full">
+        <IonContent 
+            className="h-full" 
+            style={{ 
+                '--background': 'white', 
+                '--ion-background-color': 'white',
+                height: '100%',
+                maxHeight: 'calc(100vh - 140px)', // Trừ đi space cho header, tabs và bottom sheet
+                minHeight: '250px'
+            } as any}
+        >
+            <div 
+                className="bg-white pb-6 w-full h-full overflow-y-auto" 
+                style={{ 
+                    paddingBottom: '120px', // Tăng padding để tránh modal
+                    maxHeight: 'calc(100vh - 160px)', // Giảm maxHeight để tránh overlap
+                    minHeight: '200px'
+                }}
+            >
                 {!data ? (
-                    renderSkeleton()
+                    <div className="h-full flex items-center justify-center">
+                        {renderSkeleton()}
+                    </div>
                 ) : (
-                    <>
+                    <div className="h-full flex flex-col">
                         {displayedRequests.length > 0 ? (
-                            <div className="bg-white">
+                            <div className="bg-white flex-1 w-full overflow-x-hidden">
                                 {displayedRequests.map(renderRequestItem)}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-12">
+                            <div className="flex flex-col items-center justify-center py-12 bg-[#EDF1FC] flex-1">
                                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
                                 </div>
-                                <p className="text-gray-500 text-sm">No friend requests</p>
+                                <p className="text-black text-sm">No new friend requests</p>
                             </div>
                         )}
 
@@ -277,7 +310,7 @@ const FriendRequest = ( activeTab?: any) => {
                                 />
                             </IonInfiniteScroll>
                         )}
-                    </>
+                    </div>
                 )}
             </div>
         </IonContent>

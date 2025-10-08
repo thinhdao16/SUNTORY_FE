@@ -45,7 +45,7 @@ const NotificationBottomModal: React.FC<NotificationBottomModalProps> = ({
         if (e.target === e.currentTarget) onClose();
     };
 
-    const SHEET_MAX_VH = isFromHeader == false ? 24 : 16;
+    const SHEET_MAX_VH = isFromHeader == false ? 24 : 14;
     const HEADER_PX = 56;
 
     // Notify parent about modal state changes
@@ -87,12 +87,20 @@ const NotificationBottomModal: React.FC<NotificationBottomModalProps> = ({
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className={`fixed inset-0 z-[9999] h-full flex justify-center items-end ${showOverlay ? 'bg-black/50' : 'bg-transparent'}`}
+                    className={`fixed inset-0 z-[9999] h-screen flex justify-center items-end ${showOverlay ? 'bg-black/50' : 'bg-transparent'}`}
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -10, opacity: 0 }}
                     transition={{ duration: 0.2 }}
                     onClick={handleOverlayClick}
+                    style={{
+                        position: 'fixed',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        top: 0,
+                        zIndex: 9999
+                    }}
                 >
                     <div
                         className="w-full shadow-lg bg-[#EBECEE] overflow-hidden rounded-t-4xl"
@@ -103,6 +111,11 @@ const NotificationBottomModal: React.FC<NotificationBottomModalProps> = ({
                             transition: 'transform 0.08s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                             willChange: 'transform',
                             maxHeight: `${SHEET_MAX_VH}vh`,
+                            minHeight: '120px',
+                            position: 'relative',
+                            bottom: 0,
+                            left: 0,
+                            right: 0
                         }}
                         onClick={(e) => e.stopPropagation()}
                         onTouchStart={handleTouchStart}

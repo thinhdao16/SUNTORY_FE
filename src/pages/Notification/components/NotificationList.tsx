@@ -10,6 +10,7 @@ import { handleTouchStart as handleTouchStartUtil, handleTouchMove as handleTouc
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useNotificationStore } from '@/store/zustand/notify-store';
+import { readNotificationApi, ReadNotificationParams } from "@/services/social/social-notification";
 
 const NotificationList = () => {
     const history = useHistory();
@@ -52,7 +53,15 @@ const NotificationList = () => {
             setTranslateY
         );
     };
-
+    const handleMarkAsRead = async (id: number) => {
+        const payload: ReadNotificationParams = {
+            ids: [id],
+        };
+        await readNotificationApi(payload);
+        setAllNotifications(allNotifications.map((notif: Notification) => notif.id === id ? { ...notif, isRead: true } : notif));
+        setNewNotifications(newNotifications.map((notif: Notification) => notif.id === id ? { ...notif, isRead: true } : notif));
+        setOlderNotifications(olderNotifications.map((notif: Notification) => notif.id === id ? { ...notif, isRead: true } : notif));
+    };
     const handleLoadMoreNotifications = async () => {
         if (!loadingMore) {
             const nextPage = page + 1;
@@ -154,7 +163,7 @@ const NotificationList = () => {
             const maxTotal = 8;
             const newCount = newNotifs.length; // Hiển thị tất cả new
             const olderCount = Math.max(0, maxTotal - newCount); // Lấy phần còn lại từ older
-            
+
             setNewNotifications(newNotifs.slice(0, maxTotal)); // Nếu new > 8 thì chỉ lấy 8
             setOlderNotifications(olderNotifs.slice(0, olderCount));
         } else {
@@ -288,6 +297,7 @@ const NotificationList = () => {
                 }`}
             onClick={() => {
                 history.push(handleNavigate(notification.type, notification.actorId, notification?.postCode || ''));
+                handleMarkAsRead(notification.id);
                 setIsOpen(true);
                 setNotificationIds([notification.id]);
             }}
@@ -351,7 +361,7 @@ const NotificationList = () => {
                                                 setIsFromHeader(true);
                                                 setIsOpen(true);
                                                 setNotificationIds(newNotifications.filter(notif => !notif.isRead).map(notif => notif.id));
-                                            }}/>
+                                            }} />
                                         </div>
                                         {newNotifications.map(renderNotificationItem)}
                                     </div>
@@ -369,13 +379,8 @@ const NotificationList = () => {
 
                                 {/* Empty State */}
                                 {newNotifications.length === 0 && olderNotifications.length === 0 && !isLoading && (
-                                    <div className="flex flex-col items-center justify-center py-12">
-                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5-5-5h5v-5a7.5 7.5 0 00-15 0v5h5l-5 5-5-5h5v-5a7.5 7.5 0 0115 0v5z" />
-                                            </svg>
-                                        </div>
-                                        <p className="text-gray-500 text-sm">No notifications yet</p>
+                                    <div className="flex flex-col items-center justify-center py-2 bg-[#EDF1FC]">
+                                        <p className="text-black text-sm">No notifications</p>
                                     </div>
                                 )}
                             </>
