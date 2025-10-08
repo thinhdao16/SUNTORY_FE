@@ -18,6 +18,9 @@ import useDeviceInfo from '@/hooks/useDeviceInfo';
 import { PrivacyPostType } from '@/types/privacy';
 import { handleCopyToClipboard } from '@/components/common/HandleCoppy';
 import { useQueryClient } from 'react-query';
+import { useSendFriendRequest, useAcceptFriendRequest, useRejectFriendRequest, useCancelFriendRequest, useUnfriend } from '@/pages/SocialPartner/hooks/useSocialPartner';
+import { useToastStore } from '@/store/zustand/toast-store';
+import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
 
 interface SearchResultsProps {
     searchQuery: string;
@@ -61,6 +64,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     const postRepostMutation = usePostRepost();
     const deviceInfo = useDeviceInfo();
     const [presentToast] = useIonToast();
+    const showToast = useToastStore((s) => s.showToast);
+    
+    // Friend request mutations
+    const sendFriendRequestMutation = useSendFriendRequest(showToast, () => {});
+    const acceptFriendRequestMutation = useAcceptFriendRequest(showToast, () => {});
+    const rejectFriendRequestMutation = useRejectFriendRequest(showToast, () => {});
+    const cancelFriendRequestMutation = useCancelFriendRequest(showToast, () => {});
+    const unfriendMutation = useUnfriend(showToast, () => {});
     
     const [localPosts, setLocalPosts] = useState<SocialPost[]>([]);
 
@@ -84,15 +95,30 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         enableDebugLogs: false,
         onPostCreated: (data) => {
             console.log('New post created via SignalR:', data);
-            // presentToast({
-            //     message: t('New post added to feed'),
-            //     duration: 2000,
-            //     position: 'top',
-            //     color: 'success'
-            // });
         },
         onPostUpdated: (data) => {
             console.log('Post updated via SignalR:', data);
+            // Update local posts if this update affects any posts in search results
+            const postCode = data.postCode || data.originalPostCode || data?.post?.code;
+            if (postCode) {
+                setLocalPosts(prev => {
+                    const updated = prev.map(post => {
+                        if (post.code === postCode) {
+                            return {
+                                ...post,
+                                isFriend: data.isFriend !== undefined ? data.isFriend : post.isFriend,
+                                friendRequest: data.friendRequest !== undefined ? data.friendRequest : post.friendRequest,
+                                reactionCount: data.reactionCount !== undefined ? data.reactionCount : post.reactionCount,
+                                commentCount: data.commentCount !== undefined ? data.commentCount : post.commentCount,
+                                repostCount: data.repostCount !== undefined ? data.repostCount : post.repostCount,
+                                shareCount: data.shareCount !== undefined ? data.shareCount : post.shareCount,
+                            } as SocialPost;
+                        }
+                        return post;
+                    });
+                    return updated;
+                });
+            }
         },
         onCommentAdded: (data) => {
             console.log('Comment added via SignalR:', data);
@@ -140,7 +166,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     isRepostedByCurrentUser: repostedFlag,
                     viewCount: post.viewCount || 0,
                     isBookmarked: post.isBookmarked || false,
-                    bookmarkCount: post.bookmarkCount || 0
+                    bookmarkCount: post.bookmarkCount || 0,
+                    shareCount: post.shareCount || 0,
+                    isFriend: post.isFriend || false,
+                    friendRequest: post.friendRequest || null
                 } as any;
             } else {
                 return {
@@ -183,7 +212,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     bookmarkCount: 0,
                     isLike: false,
                     originalPost: null,
-                    isFriend: false
+                    isFriend: post.isFriend || false,
+                    friendRequest: post.friendRequest || null
                 } as any;
             }
         });
@@ -192,6 +222,82 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     useEffect(() => {
         setLocalPosts(transformedPosts);
     }, [transformedPosts]);
+
+    // Listen to feed store changes to sync friend status updates from main feed
+    useEffect(() => {
+        const store = useSocialFeedStore.getState();
+        const unsubscribe = useSocialFeedStore.subscribe((state) => {
+            // Check if any posts in search results need to be updated based on feed store changes
+            setLocalPosts(prev => {
+                let hasChanges = false;
+                const updated = prev.map(post => {
+                    // Find this post in any cached feed to get latest friend status
+                    let latestFriendStatus = null;
+                    let latestFriendRequest = null;
+                    
+                    Object.values(state.cachedFeeds || {}).forEach(feed => {
+                        const foundPost = feed?.posts?.find((p: any) => p?.code === post.code);
+                        if (foundPost) {
+                            latestFriendStatus = foundPost.isFriend;
+                            latestFriendRequest = foundPost.friendRequest;
+                        }
+                    });
+                    
+                    // Also check current post detail
+                    if (state.currentPost?.code === post.code) {
+                        latestFriendStatus = state.currentPost.isFriend;
+                        latestFriendRequest = state.currentPost.friendRequest;
+                    }
+                    
+                    // Update if we found newer friend status
+                    if (latestFriendStatus !== null && 
+                        (latestFriendStatus !== post.isFriend || 
+                         JSON.stringify(latestFriendRequest) !== JSON.stringify(post.friendRequest))) {
+                        hasChanges = true;
+                        return {
+                            ...post,
+                            isFriend: latestFriendStatus,
+                            friendRequest: latestFriendRequest
+                        } as SocialPost;
+                    }
+                    
+                    return post;
+                });
+                
+                return hasChanges ? updated : prev;
+            });
+        });
+        
+        return unsubscribe;
+    }, []);
+
+    // Also listen to query cache changes for feed details to sync friend status
+    useEffect(() => {
+        const interval = setInterval(() => {
+            // Check if any posts in search have been updated in query cache
+            setLocalPosts(prev => {
+                let hasChanges = false;
+                const updated = prev.map(post => {
+                    const cachedDetail: any = queryClient.getQueryData(['feedDetail', post.code]);
+                    if (cachedDetail && 
+                        (cachedDetail.isFriend !== post.isFriend || 
+                         JSON.stringify(cachedDetail.friendRequest) !== JSON.stringify(post.friendRequest))) {
+                        hasChanges = true;
+                        return {
+                            ...post,
+                            isFriend: cachedDetail.isFriend,
+                            friendRequest: cachedDetail.friendRequest
+                        } as SocialPost;
+                    }
+                    return post;
+                });
+                
+                return hasChanges ? updated : prev;
+            });
+        }, 1000); // Check every second
+        
+        return () => clearInterval(interval);
+    }, [queryClient]);
 
     // Determine if there is any result for the current tab to avoid showing
     // both the empty-state and the container's "No more results" indicator
@@ -325,6 +431,74 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         );
     }, [localPosts, postRepostMutation, presentToast, t]);
 
+    // Function to refresh post details after friend actions
+    const refreshPostDetail = useCallback(async (postCode: string) => {
+        try {
+            const fresh = await SocialFeedService.getPostByCode(postCode);
+            const store = useSocialFeedStore.getState();
+            store.applyRealtimePatch(postCode, {
+                isFriend: (fresh as any)?.isFriend,
+                friendRequest: (fresh as any)?.friendRequest,
+            } as any);
+            queryClient.setQueryData(['feedDetail', postCode], fresh);
+            
+            // Update local posts state
+            setLocalPosts(prev => prev.map(p => 
+                p.code === postCode 
+                    ? { ...p, isFriend: (fresh as any)?.isFriend, friendRequest: (fresh as any)?.friendRequest }
+                    : p
+            ));
+        } catch (error) {
+            console.error('Failed to refresh post detail:', error);
+        }
+    }, [queryClient]);
+
+    // Friend request handlers
+    const handleSendFriendRequest = useCallback(async (userId: number, postCode?: string) => {
+        try {
+            await sendFriendRequestMutation.mutateAsync(userId);
+            if (postCode) await refreshPostDetail(postCode);
+        } catch (error) {
+            console.error('Failed to send friend request:', error);
+        }
+    }, [sendFriendRequestMutation, refreshPostDetail]);
+
+    const handleAcceptFriendRequest = useCallback(async (requestId: number, postCode?: string) => {
+        try {
+            await acceptFriendRequestMutation.mutateAsync(requestId);
+            if (postCode) await refreshPostDetail(postCode);
+        } catch (error) {
+            console.error('Failed to accept friend request:', error);
+        }
+    }, [acceptFriendRequestMutation, refreshPostDetail]);
+
+    const handleRejectFriendRequest = useCallback(async (requestId: number, postCode?: string) => {
+        try {
+            await rejectFriendRequestMutation.mutateAsync(requestId);
+            if (postCode) await refreshPostDetail(postCode);
+        } catch (error) {
+            console.error('Failed to reject friend request:', error);
+        }
+    }, [rejectFriendRequestMutation, refreshPostDetail]);
+
+    const handleCancelFriendRequest = useCallback(async (requestId: number, postCode?: string) => {
+        try {
+            await cancelFriendRequestMutation.mutateAsync(requestId);
+            if (postCode) await refreshPostDetail(postCode);
+        } catch (error) {
+            console.error('Failed to cancel friend request:', error);
+        }
+    }, [cancelFriendRequestMutation, refreshPostDetail]);
+
+    const handleUnfriend = useCallback(async (userId: number, postCode?: string) => {
+        try {
+            await unfriendMutation.mutateAsync({ friendUserId: userId });
+            if (postCode) await refreshPostDetail(postCode);
+        } catch (error) {
+            console.error('Failed to unfriend:', error);
+        }
+    }, [unfriendMutation, refreshPostDetail]);
+
     useEffect(() => {
         if (searchQuery && activeTab) {
             handleTabSearch(activeTab, searchQuery);
@@ -374,6 +548,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 onComment={() => handleComment(post.code)}
                 onShare={() => handleShare(post.code)}
                 onRepostConfirm={(code, privacy) => handleRepostConfirm(code, privacy)}
+                onSendFriendRequest={(userId) => handleSendFriendRequest(userId, post.code)}
+                onAcceptFriendRequest={(requestId) => handleAcceptFriendRequest(requestId, post.code)}
+                onRejectFriendRequest={(requestId) => handleRejectFriendRequest(requestId, post.code)}
+                onCancelFriendRequest={(requestId) => handleCancelFriendRequest(requestId, post.code)}
+                onUnfriend={(userId) => handleUnfriend(userId, post.code)}
+                onPostUpdate={(updatedPost) => {
+                    setLocalPosts(prev => prev.map(p => p.code === post.code ? updatedPost : p));
+                }}
             />
         </div>
     );

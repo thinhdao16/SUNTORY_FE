@@ -30,7 +30,7 @@ const PostHeader: React.FC<PostHeaderProps> = ({
                     {isOwnPost ? t('Your Post') : (
                         <span className="flex items-center">
                             <span 
-                                className="max-w-[250px] truncate inline-block cursor-pointer hover:text-blue-600 transition-colors"
+                                className="max-w-[200px] truncate inline-block cursor-pointer hover:text-blue-600 transition-colors"
                                 onClick={() => onUserProfileClick?.(displayPost?.user?.id)}
                             >
                                 {displayPost?.user?.fullName}

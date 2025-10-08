@@ -27,13 +27,13 @@ function Notification() {
                 <IonHeader className="ion-no-border border-b border-gray-200 flex-shrink-0" style={{ '--background': 'white', justifyContent: 'center'} as any}>
                     <IonToolbar style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
                         <IonButtons slot="start">
-                            <IonButton
+                            {/* <IonButton
                                 fill="clear"
                                 onClick={() => history.goBack()}
                                 className="pl-4"
                             >
                                 <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
-                            </IonButton>
+                            </IonButton> */}
                         </IonButtons>
                         <IonTitle className="text-center font-bold" style={{ fontSize: '15px', textColor: 'black' }}>
                             {t('Notification')}
@@ -73,7 +73,7 @@ function Notification() {
                 {/* Tab Content */}
                 <div className="flex-1 overflow-hidden">
                     {activeTab === 'notifications' && <NotificationList key={refreshKey}/>}
-                    {activeTab === 'friend-requests' && <FriendRequest key={refreshKey} activeTab = {activeTab}/>}
+                    {activeTab === 'friend-requests' && <FriendRequest key={refreshKey} />}
                 </div>
             </div>
         </PageContainer>

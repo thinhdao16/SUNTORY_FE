@@ -32,7 +32,6 @@ export const usePostOptions = ({
 }: UsePostOptionsProps) => {
     const { t } = useTranslation();
     const { user } = useAuthStore();
-console.log(post)
     const actionItems = useMemo(() => {
         const items = [];
         const authorId = post?.user?.id;

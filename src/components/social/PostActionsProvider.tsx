@@ -82,9 +82,9 @@ export const PostActionsProvider: React.FC<PostActionsProviderProps> = ({
         post,
         onSendFriendRequest: onSendFriendRequest ? () => onSendFriendRequest(post?.user?.id) : undefined,
         onUnfriend: onUnfriend ? () => onUnfriend(post?.user?.id) : undefined,
-        onCancelFriendRequest,
-        onAcceptFriendRequest,
-        onRejectFriendRequest,
+        onCancelFriendRequest: onCancelFriendRequest ? (requestId, friendName) => onCancelFriendRequest(requestId) : undefined,
+        onAcceptFriendRequest: onAcceptFriendRequest ? (requestId) => onAcceptFriendRequest(requestId) : undefined,
+        onRejectFriendRequest: onRejectFriendRequest ? (requestId, friendName) => onRejectFriendRequest(requestId) : undefined,
         currentUser: user?.id === post?.user?.id,
         onEditPost: () => {
             setIsEditModalOpen(true);

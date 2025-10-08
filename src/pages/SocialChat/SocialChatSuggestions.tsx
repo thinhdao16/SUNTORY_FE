@@ -5,10 +5,12 @@ import { useToastStore } from '@/store/zustand/toast-store';
 import { useFriendshipRecommendedInfinite, useSendFriendRequest } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import UserRowSkeleton from '@/components/skeletons/UserRowSkeleton';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
+import { useHistory } from 'react-router-dom';
 
 const SocialChatSuggestions: React.FC = () => {
     const { t } = useTranslation();
     const showToast = useToastStore((s) => s.showToast);
+    const history = useHistory();
 
     const {
         data,
@@ -137,6 +139,9 @@ const SocialChatSuggestions: React.FC = () => {
                         <div
                             key={user?.id}
                             className="py-3 flex items-center  bg-white  hover:bg-gray-50 border-b border-neutral-100"
+                            onClick={() => {
+                                if (user?.id) history.push(`/profile/${user.id}/posts`);
+                            }}
                         >
                             <div className="flex items-center min-w-0 w-full">
                                 <img
@@ -163,7 +168,8 @@ const SocialChatSuggestions: React.FC = () => {
                                             ) : (
                                                 <button
                                                     className="flex-1 px-4 py-2 text-sm rounded-xl bg-main  text-white hover:bg-blue-700"
-                                                    onClick={() => {
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         if (user?.id) {
                                                             setSentLocal((prev) => new Set([...prev, user.id]));
                                                             setFriendRequestOutgoing(user.id, 'sent', 86400);
@@ -182,7 +188,7 @@ const SocialChatSuggestions: React.FC = () => {
                                         )}
                                         <button
                                             className="flex-1 px-4 py-2 text-sm rounded-xl  bg-netural-50"
-                                            onClick={() => handleDismiss(user?.id)}
+                                            onClick={(e) => { e.stopPropagation(); handleDismiss(user?.id); }}
                                         >
                                             {t('Remove')}
                                         </button>

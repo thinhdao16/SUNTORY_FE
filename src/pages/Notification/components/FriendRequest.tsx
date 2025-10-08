@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IonContent, IonInfiniteScroll, IonInfiniteScrollContent, IonSkeletonText } from '@ionic/react';
-import avatarFallback from '@/icons/logo/social-chat/avt-rounded-full.svg';
+import avatarFallback from '@/icons/logo/social-chat/avt-rounded.svg';
 import {
     acceptFriendRequest,
     rejectFriendRequest
@@ -274,7 +274,7 @@ const FriendRequest: React.FC = () => {
 
     return (
         <IonContent className="h-220" style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
-            <div className="bg-white pb-6 w-full">
+            <div className="bg-white pb-20 w-full">
                 {!data ? (
                     renderSkeleton()
                 ) : (

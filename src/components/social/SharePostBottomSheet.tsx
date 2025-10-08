@@ -278,26 +278,25 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
             }
 
             const store = useSocialFeedStore.getState();
-            let prevCount: number = 0;
-            const feeds = store.cachedFeeds || ({} as any);
-            for (const key of Object.keys(feeds)) {
-                const found = feeds[key]?.posts?.find((p: any) => p?.code === postCode);
-                if (found && typeof found.shareCount === 'number') { prevCount = found.shareCount; break; }
-            }
-            if (!prevCount) {
-                const cachedDetail: any = queryClient.getQueryData(['feedDetail', postCode]);
-                if (cachedDetail && typeof cachedDetail.shareCount === 'number') prevCount = cachedDetail.shareCount;
+
+            // Prefer exact counts from server; avoid optimistic +1 to prevent double increment flicker
+            let appliedForPost = false;
+            if (typeof serverShareCount === 'number') {
+                store.applyRealtimePatch(postCode, { shareCount: serverShareCount } as any);
+                queryClient.setQueryData(['feedDetail', postCode], (old: any) => ({ ...(old || {}), shareCount: serverShareCount }));
+                appliedForPost = true;
             }
 
-            const nextCount = typeof serverShareCount === 'number' ? serverShareCount : (prevCount + 1);
-            store.applyRealtimePatch(postCode, { shareCount: nextCount } as any);
-            queryClient.setQueryData(['feedDetail', postCode], (old: any) => ({ ...(old || {}), shareCount: nextCount }));
-
-            // Also sync shareCount for the original post if this is a repost card
+            // Fetch fresh detail to ensure consistent counts for both post and original
             try {
                 const fresh = await SocialFeedService.getPostByCode(postCode);
+                const postShare = (fresh as any)?.shareCount;
+                if (!appliedForPost && typeof postShare === 'number') {
+                    store.applyRealtimePatch(postCode, { shareCount: postShare } as any);
+                    queryClient.setQueryData(['feedDetail', postCode], (old: any) => ({ ...(old || {}), shareCount: postShare }));
+                }
                 const originalCode = (fresh as any)?.originalPost?.code as string | undefined;
-                const originalShare = (fresh as any)?.originalPost?.shareCount ?? (fresh as any)?.shareCount;
+                const originalShare = (fresh as any)?.originalPost?.shareCount;
                 if (originalCode && typeof originalShare === 'number') {
                     store.applyRealtimePatch(originalCode, { shareCount: originalShare } as any);
                     queryClient.setQueryData(['feedDetail', originalCode], (old: any) => ({ ...(old || {}), shareCount: originalShare }));

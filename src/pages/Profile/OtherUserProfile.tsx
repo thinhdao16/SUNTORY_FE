@@ -365,7 +365,7 @@ const OtherUserProfile: React.FC = () => {
                     <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
                         <IonButtons slot="start" className="pl-4">
                             <BackIcon onClick={() => history.goBack()} />
-                            <span className="font-semibold ml-4" style={{ fontSize: '15px' }}>
+                            <span className="font-semibold ml-4 max-w-[250px] truncate  " style={{ fontSize: '15px' }}>
                                 {userInfo?.name}
                             </span>
                         </IonButtons>

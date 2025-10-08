@@ -38,6 +38,7 @@ import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import SharePostBottomSheet from '@/components/social/SharePostBottomSheet';
 import { useQueryClient } from 'react-query';
 import { useSearchResultsStore } from '@/store/zustand/search-results-store';
+import { FiEdit } from 'react-icons/fi';
 
 const FeedDetail: React.FC = () => {
     const { t } = useTranslation();
@@ -403,7 +404,7 @@ const FeedDetail: React.FC = () => {
             items.push({
                 key: 'edit-comment',
                 label: t('Edit comment'),
-                icon: <IoPersonAddOutline className="w-5 h-5" />,
+                icon: <FiEdit className="w-5 h-5" />,
                 tone: 'default' as const,
                 onClick: () => handleEditComment(selectedComment),
             });

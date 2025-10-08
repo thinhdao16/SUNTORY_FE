@@ -320,7 +320,7 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
           })()}
         </div>
       ) : visualMediaFiles.length > 1 ? (
-        <div className={multiWrapperClassName ?? "flex gap-3 px-4 overflow-x-auto scrollbar-thin "}>
+        <div className={multiWrapperClassName ?? "flex gap-3 px-4 overflow-x-auto "}>
           {(() => {
             const maxHeight = Math.max(...visualMediaFiles.map(item => item.height || 0));
             const containerHeight = Math.min(Math.max(maxHeight / 4, 200), 280);

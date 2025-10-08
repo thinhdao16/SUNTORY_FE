@@ -642,11 +642,11 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
 
       <PostActionsProvider
         post={post}
-        onSendFriendRequest={(userId) => openConfirmModal("send")}
-        onUnfriend={(userId) => openConfirmModal("unfriend")}
-        onAcceptFriendRequest={(requestId) => openConfirmModal("accept", requestId, post.user.fullName)}
-        onCancelFriendRequest={(requestId) => openConfirmModal("cancel", requestId, post.user.fullName)}
-        onRejectFriendRequest={(requestId) => openConfirmModal("reject", requestId, post.user.fullName)}
+        onSendFriendRequest={onSendFriendRequest ? (userId) => openConfirmModal("send") : (userId) => openConfirmModal("send")}
+        onUnfriend={onUnfriend ? (userId) => openConfirmModal("unfriend") : (userId) => openConfirmModal("unfriend")}
+        onAcceptFriendRequest={onAcceptFriendRequest ? (requestId) => openConfirmModal("accept", requestId, post.user.fullName) : (requestId) => openConfirmModal("accept", requestId, post.user.fullName)}
+        onCancelFriendRequest={onCancelFriendRequest ? (requestId) => openConfirmModal("cancel", requestId, post.user.fullName) : (requestId) => openConfirmModal("cancel", requestId, post.user.fullName)}
+        onRejectFriendRequest={onRejectFriendRequest ? (requestId) => openConfirmModal("reject", requestId, post.user.fullName) : (requestId) => openConfirmModal("reject", requestId, post.user.fullName)}
       >
         {({ actionItems, EditModalComponent }) => (
           <>
@@ -685,15 +685,35 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
         cancelText={t("Cancel")}
         onConfirm={async () => {
           if (confirmState.type === "send") {
-            await handleSendFriendRequest(displayPost.user.id);
+            if (onSendFriendRequest) {
+              onSendFriendRequest(displayPost.user.id);
+            } else {
+              await handleSendFriendRequest(displayPost.user.id);
+            }
           } else if (confirmState.type === "unfriend") {
-            await handleUnfriend(displayPost.user.id);
+            if (onUnfriend) {
+              onUnfriend(displayPost.user.id);
+            } else {
+              await handleUnfriend(displayPost.user.id);
+            }
           } else if (confirmState.type === "accept" && confirmState.friendRequestId) {
-            await handleAcceptFriendRequest(confirmState.friendRequestId);
+            if (onAcceptFriendRequest) {
+              onAcceptFriendRequest(confirmState.friendRequestId);
+            } else {
+              await handleAcceptFriendRequest(confirmState.friendRequestId);
+            }
           } else if (confirmState.type === "cancel" && confirmState.friendRequestId) {
-            await handleCancelFriendRequest(confirmState.friendRequestId);
+            if (onCancelFriendRequest) {
+              onCancelFriendRequest(confirmState.friendRequestId, confirmState.friendName || '');
+            } else {
+              await handleCancelFriendRequest(confirmState.friendRequestId);
+            }
           } else if (confirmState.type === "reject" && confirmState.friendRequestId) {
-            await handleRejectFriendRequest(confirmState.friendRequestId);
+            if (onRejectFriendRequest) {
+              onRejectFriendRequest(confirmState.friendRequestId, confirmState.friendName || '');
+            } else {
+              await handleRejectFriendRequest(confirmState.friendRequestId);
+            }
           } else if (confirmState.type === "unrepost") {
             // Optimistic unrepost
             const store = useSocialFeedStore.getState();

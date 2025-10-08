@@ -280,18 +280,19 @@ const CommentsList: React.FC<CommentsListProps> = ({
                                                         </button>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <span
-                                                            className='font-semibold text-main text-sm max-w-[150px] truncate cursor-pointer hover:underline'
-                                                            onClick={(e) => {
-                                                                const targetUserId = reply.replyCommentId ?
-                                                                    organizedComments.find(c => c.id === reply.replyCommentId)?.user?.id || reply.user.id
-                                                                    : reply.user.id;
-                                                                handleUserProfileClick(e, targetUserId);
-                                                            }}
-                                                        >
-                                                            {reply.replyCommentId ? findOriginalCommentAuthor(reply.replyCommentId) || reply.user.fullName : reply.user.fullName}
-                                                        </span>
+
                                                         <div className="text-gray-800 text-sm leading-relaxed">
+                                                            <span
+                                                                className='font-semibold text-main text-sm max-w-[150px] truncate cursor-pointer hover:underline'
+                                                                onClick={(e) => {
+                                                                    const targetUserId = reply.replyCommentId ?
+                                                                        organizedComments.find(c => c.id === reply.replyCommentId)?.user?.id || reply.user.id
+                                                                        : reply.user.id;
+                                                                    handleUserProfileClick(e, targetUserId);
+                                                                }}
+                                                            >
+                                                                {reply.replyCommentId ? findOriginalCommentAuthor(reply.replyCommentId) || reply.user.fullName : reply.user.fullName}
+                                                            </span> {` `}
                                                             {parseHashtagsWithClick(reply.content)}
                                                         </div>
                                                     </div>

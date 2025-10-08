@@ -5,6 +5,7 @@ import { useToastStore } from '@/store/zustand/toast-store';
 import FriendCardSkeleton from '@/components/skeletons/FriendCardSkeleton';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
+import { useHistory } from 'react-router-dom';
 
 interface FriendSuggestionsProps {
     title?: string;
@@ -21,6 +22,7 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
 }) => {
     const { t } = useTranslation();
     const showToast = useToastStore((s) => s.showToast);
+    const history = useHistory();
     const {
         data,
         isLoading,
@@ -131,19 +133,23 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                 )}
             </div>
             <div className="px-3 pb-4">
-                <div ref={listRef} className="flex gap-3 overflow-x-auto no-scrollbar">
+                <div ref={listRef} className="flex gap-3 overflow-x-auto ">
                     {visibleUsers.map((user: any) => {
                         const isSent = !!user?.isRequestSender;
                         const isSentStore = hasFriendRequestOutgoing(user?.id);
                         const isSentUI = isSent || isSentStore || sentLocal.has(user?.id);
                         const isFriend = !!user?.isFriend;
                         return (
-                            <div key={user?.id} className="relative min-w-[180px] max-w-[180px] bg-white border border-netural-50 rounded-xl px-2 pb-2 pt-8">
+                            <div
+                                key={user?.id}
+                                className="relative min-w-[180px] max-w-[180px] bg-white border border-netural-50 rounded-xl px-2 pb-2 pt-8"
+                                onClick={() => { if (user?.id) history.push(`/profile/${user.id}/posts`); }}
+                            >
                                 {/* per-card dismiss */}
                                 <button
                                     aria-label="Dismiss card"
                                     className="absolute right-2 top-2 text-netural-300 hover:text-gray-600 text-3xl"
-                                    onClick={() => handleDismissCard(user?.id)}
+                                    onClick={(e) => { e.stopPropagation(); handleDismissCard(user?.id); }}
                                 >
                                     ×
                                 </button>
@@ -169,7 +175,8 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                                             ) : (
                                                 <button
                                                     className="w-full text-white bg-main rounded-2xl py-2.5 font-semibold"
-                                                    onClick={() => {
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         if (user?.id) {
                                                             setSentLocal((prev) => new Set([...prev, user.id]));
                                                             setFriendRequestOutgoing(user.id, 'sent', 86400);

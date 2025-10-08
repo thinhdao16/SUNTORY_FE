@@ -167,8 +167,8 @@ const MyProfile: React.FC = () => {
         <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
           <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
             <IonButtons slot="start" className="pl-4">
-              <BackIcon onClick={() => history.goBack()} />
-              <span className="font-bold  ml-4" style={{ fontSize: '15px', color: 'black' }}>
+              {/* <BackIcon onClick={() => history.goBack()} /> */}
+              <span className="font-bold  " style={{ fontSize: '15px', color: 'black' }}>
                 {t('My profile')}
               </span  >
             </IonButtons>
@@ -216,21 +216,16 @@ const MyProfile: React.FC = () => {
                     <div className="flex items-center space-x-1 mb-4" onClick={() => {
                       history.push('/friend-list');
                     }}>
-                      <p
-                        className="font-medium"
-                      >
+                      <p className="font-medium">
                         {userInfo?.friendNumber}
                       </p>
-                      <p
-                        className="mb-0 font-sans"
+                      <p className="mb-0 font-sans"
                       >
                         friends
                       </p>
                     </div>
                   </div>
-
                   <div className="relative ml-4">
-
                     <img
                       src={userInfo.avatarLink || avatarFallback}
                       alt={userInfo?.name || 'User Avatar'}
