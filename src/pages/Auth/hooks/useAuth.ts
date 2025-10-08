@@ -40,6 +40,7 @@ export const useLogin = (langCode: string) => {
             return login({
                 ...credentials,
                 firebaseToken: storedToken || undefined,
+                language: langCode,
             });
         },
         {

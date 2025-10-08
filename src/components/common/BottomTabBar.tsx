@@ -45,8 +45,16 @@ const BottomTabBar: React.FC = () => {
     const { keyboardResizeScreen } = useKeyboardResize();
     const { triggerRefresh } = useRefresh();
     const { hideBottomTabBar } = useModalContext();
-    const notifications = useNotificationStore((state) => state.notifications);
-    const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+    const { isUnReadNotification ,setIsUnReadNotification} = useNotificationStore();
+    const [isNewNotification, setIsNewNotification] = useState(isUnReadNotification);
+
+    useEffect(() => {
+        if (isUnReadNotification == true) {
+            setIsNewNotification(true);
+        }else{
+            setIsNewNotification(false);
+        }
+    }, [isUnReadNotification]);
 
     const tabs: TabItem[] = [
         {
@@ -92,8 +100,8 @@ const BottomTabBar: React.FC = () => {
         // },
         {
             label: t("Notification"),
-            icon: unreadNotificationCount > 0 ? NotificationIcon2 : NotificationIcon,
-            iconActive: unreadNotificationCount > 0 ? NotificationActiveIcon2 : NotificationActiveIcon,
+            icon: isNewNotification ? NotificationIcon2 : NotificationIcon,
+            iconActive: isNewNotification ? NotificationActiveIcon2 : NotificationActiveIcon,
             path: "/notification-list",
             activePath: (pathname: string) => pathname.startsWith("/notification-list"),
             classNameIcon: "",
@@ -141,6 +149,7 @@ const BottomTabBar: React.FC = () => {
             clearAll();
             history.push(tab.path);
             useChatStore.getState().setIsSending(false);
+            setIsUnReadNotification(false);
         }
     };
 

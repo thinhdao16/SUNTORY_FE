@@ -44,7 +44,6 @@ const FoodList: React.FC = () => {
     const velocityThreshold = 0.4;
     const [bottomBarHeight, setBottomBarHeight] = useState(80);
     const [imageLoadingStates, setImageLoadingStates] = useState<{ [key: string]: boolean }>({});
-    const prevSignalValues = useRef({ foodSuccess: 0, foodFailed: 0, foodImageSuccess: 0 });
     const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const user = useAuthStore((state) => state.user);
     const { foodSuccess, foodFailed, foodImageSuccess, setFoodImageSuccess, setFoodSuccess, setFoodFailed } = useMenuTranslationStore();
@@ -54,10 +53,6 @@ const FoodList: React.FC = () => {
     // Force loading for 40 seconds before showing content
     // Initial load - if no data, show loading for 40s
     useEffect(() => {
-        // Reset food success when start a new analyzing
-        setFoodSuccess(0);
-        setFoodFailed(0);
-        setFoodImageSuccess(0);
 
         if (menuId) {
             setLoading(true);
@@ -105,32 +100,13 @@ const FoodList: React.FC = () => {
 
     // Reload when foodSuccess, foodFailed, or foodImageSuccess changes
     useEffect(() => {
-        const currentValues = { foodSuccess, foodFailed, foodImageSuccess };
-        const prevValues = prevSignalValues.current;
-        
-        // Check if any value actually increased (not just changed)
-        const hasIncrease = currentValues.foodSuccess > prevValues.foodSuccess ||
-                           currentValues.foodFailed > prevValues.foodFailed ||
-                           currentValues.foodImageSuccess > prevValues.foodImageSuccess;
-        
-        // Only reload if there's an actual increase AND we don't have foods yet
-        if (menuId && hasIncrease && foods.length === 0) {
-            // Clear the 40s timeout since we're reloading
-            if (loadingTimeoutRef.current) {
-                clearTimeout(loadingTimeoutRef.current);
-                loadingTimeoutRef.current = null;
-            }
-
-            // Reset foods and page when reloading
+        if (menuId) {
             setFoods([]);
             setPage(0);
             setLoading(true);
             loadFoods(menuId, 0, pageSize, false);
         }
-        
-        // Update previous values
-        prevSignalValues.current = currentValues;
-    }, [foodSuccess, foodFailed, foodImageSuccess, menuId, foods.length]);
+    }, [foodSuccess, foodFailed, foodImageSuccess, menuId, setFoods, setPage, setLoading, pageSize]);
 
     const loadFoods = async (
         historyId: number,
@@ -229,10 +205,6 @@ const FoodList: React.FC = () => {
         };
     }, []);
 
-    const handleBack = () => {
-        history.goBack();
-    };
-
     const handleInfiniteScroll = async (event: CustomEvent<void>) => {
         if (!loadingMore && hasNextPage && page + 1 < maxPages) {
             const nextPage = page + 1;
@@ -320,30 +292,16 @@ const FoodList: React.FC = () => {
         >
             {/* Image Container */}
             <div className="aspect-square relative overflow-hidden bg-gray-100 rounded-2xl">
-                {imageLoadingStates[food.imageUrl] ? (
-                    <div className="w-full h-full flex items-center justify-center">
-                        <IonSkeletonText animated={true} style={{ width: '100%', height: '100%' }} />
-                    </div>
-                ) : (
+                {food?.imageUrl ? (
                     <img
                         src={food.imageUrl}
                         alt={food.name}
                         className="w-full h-full object-cover rounded-2xl"
-                        onLoad={() => {
-                            // Tắt loading ngay khi ảnh load xong
-                            setImageLoadingStates(prev => ({
-                                ...prev,
-                                [food.imageUrl]: false
-                            }));
-                        }}
-                        onError={(e) => {
-                            // Nếu ảnh lỗi, giữ loading state (skeleton)
-                            setImageLoadingStates(prev => ({
-                                ...prev,
-                                [food.imageUrl]: true
-                            }));
-                        }}
                     />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                        <IonSkeletonText animated={true} style={{ width: '100%', height: '100%' }} />
+                    </div>
                 )}
             </div>
 
