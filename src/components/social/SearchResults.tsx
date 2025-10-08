@@ -126,6 +126,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     const transformedPosts: SocialPost[] = useMemo(() => {
         return (posts || []).map((post: any, index: number) => {
             const isFeedPost = post.hasOwnProperty('reactionCount');
+            const repostedFlag = Boolean(post?.isRepostedByCurrentUser ?? post?.isUserReposted ?? post?.isRepostByMe ?? false);
             if (isFeedPost) {
                 return {
                     ...post,
@@ -136,11 +137,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     totalComments: post.commentCount || 0,
                     totalReposts: post.repostCount || 0,
                     userReaction: null,
-                    isRepostedByCurrentUser: false,
+                    isRepostedByCurrentUser: repostedFlag,
                     viewCount: post.viewCount || 0,
                     isBookmarked: post.isBookmarked || false,
                     bookmarkCount: post.bookmarkCount || 0
-                };
+                } as any;
             } else {
                 return {
                     id: Date.now() + index,
@@ -172,7 +173,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     totalComments: 0,
                     totalReposts: 0,
                     userReaction: null,
-                    isUserReposted: false,
+                    isRepostedByCurrentUser: repostedFlag,
                     reactionCount: 0,
                     commentCount: 0,
                     repostCount: 0,
@@ -183,7 +184,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     isLike: false,
                     originalPost: null,
                     isFriend: false
-                };
+                } as any;
             }
         });
     }, [posts]);

@@ -7,6 +7,8 @@ import {
     rejectFriendRequest
 } from '@/services/social/social-partner-service';
 import { useHistory } from 'react-router-dom';
+import { useNotificationStore } from '@/store/zustand/notify-store';
+import { useToastStore } from '@/store/zustand/toast-store';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
@@ -16,8 +18,8 @@ interface FriendRequestItem {
     id: number;
     fromUserId: number;
     toUserId: number;
-    status: number;
-    inviteStatus: number;
+    status: number; // 0: pending, 1: accepted, 2: rejected
+    inviteStatus: number; // 10: pending, 20: accepted, 30: rejected
     createDate: string;
     fromUser: {
         id: number;
@@ -29,19 +31,15 @@ interface FriendRequestItem {
     };
 }
 
-const FriendRequest: React.FC = () => {
+const FriendRequest = (activeTab?: any) => {
     const { t } = useTranslation();
     const history = useHistory();
 
     const [displayedRequests, setDisplayedRequests] = useState<FriendRequestItem[]>([]);
+    const [draftRequests, setDraftRequests] = useState<FriendRequestItem[]>([]);
     const [showAll, setShowAll] = useState(false);
-    const {
-        notificationCounts,
-        friendRequestOptimistic,
-        setFriendRequestOptimistic,
-        removeFriendRequestOptimistic,
-        pruneExpiredFriendRequestOptimistic,
-    } = useSocialChatStore();
+    const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
+    const { notificationCounts } = useSocialChatStore();
     const {
         data,
         refetch
@@ -50,46 +48,34 @@ const FriendRequest: React.FC = () => {
     const prevFriendRequestCount = useRef(notificationCounts.pendingFriendRequestsCount);
     const deviceInfo = useDeviceInfo();
 
+    // Enable real-time SignalR connection
     useSocialSignalR(deviceInfo.deviceId ?? "", {
         roomId: "",
         refetchRoomData: () => { },
         autoConnect: true,
         enableDebugLogs: false,
     });
+    // Use data from React Query instead of local API calls
     const requests = data?.pages.flat() ?? [];
     useEffect(() => {
         const currentCount = notificationCounts.pendingFriendRequestsCount;
         const previousCount = prevFriendRequestCount.current;
+        // Only refetch when count increases (new friend request)
         if (previousCount !== currentCount && previousCount !== undefined && currentCount > previousCount) {
             refetch();
         }
         prevFriendRequestCount.current = currentCount;
     }, [notificationCounts.pendingFriendRequestsCount, refetch]);
 
+    // Update displayed requests when showAll changes
     useEffect(() => {
-        const baseList = showAll ? requests : requests.slice(0, 6);
-        const now = Date.now();
-        const pinnedList: FriendRequestItem[] = Object.values(friendRequestOptimistic || {})
-            .filter((e: any) => !e.expiresAt || e.expiresAt > now)
-            .map((e: any) => e.item as FriendRequestItem);
-
-        setDisplayedRequests(() => {
-            const baseIds = new Set(baseList.map(r => r.id));
-            const pinnedMap = new Map(pinnedList.map(p => [p.id, p]));
-            const mergedBase = baseList.map(item => pinnedMap.get(item.id) ?? item);
-            const pinnedNotInBase = pinnedList.filter(p => !baseIds.has(p.id));
-            const combined = [...pinnedNotInBase, ...mergedBase];
-            return showAll ? combined : combined.slice(0, 6);
-        });
-    }, [data, showAll, friendRequestOptimistic]);
-
-    useEffect(() => {
-        const id = setInterval(() => {
-            pruneExpiredFriendRequestOptimistic();
-        }, 30000);
-        return () => clearInterval(id);
-    }, [pruneExpiredFriendRequestOptimistic]);
-
+        if (showAll) {
+            setDisplayedRequests(requests);
+        } else {
+            setDisplayedRequests([...displayedRequests, ...requests.slice(0, 6)]);
+        }
+        refetch();
+    }, [showAll, activeTab, data]);
 
     const formatTimestamp = (createDate: string): string => {
         const now = new Date();
@@ -125,57 +111,25 @@ const FriendRequest: React.FC = () => {
 
     const handleAccept = async (requestId: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        
-        setDisplayedRequests(prev => {
-            const found = prev.find(r => r.id === requestId);
-            if (found) {
-                const updated = { ...found, inviteStatus: 20 as number };
-                setFriendRequestOptimistic(updated, 180);
-                return prev.map(request => request.id === requestId ? updated : request);
-            }
-            return prev;
-        });
-        
+        const draftRequest = displayedRequests.filter((request: FriendRequestItem) => request.id == requestId)[0];
+        draftRequest.inviteStatus = 20;
+        setDisplayedRequests([...displayedRequests.map((request: FriendRequestItem) => request.id != requestId ? request : draftRequest)]);
         try {
             await acceptFriendRequest(requestId);
         } catch (error) {
             console.error('Error accepting friend request:', error);
-            removeFriendRequestOptimistic(requestId);
-            setDisplayedRequests(prev => 
-                prev.map(request => 
-                    request.id === requestId 
-                        ? { ...request, inviteStatus: 10 }
-                        : request
-                )
-            );
         }
     };
 
     const handleDecline = async (requestId: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        
-        setDisplayedRequests(prev => {
-            const found = prev.find(r => r.id === requestId);
-            if (found) {
-                const updated = { ...found, inviteStatus: 30 as number };
-                setFriendRequestOptimistic(updated, 180);
-                return prev.map(request => request.id === requestId ? updated : request);
-            }
-            return prev;
-        });
-        
+        const draftRequest = displayedRequests.filter((request: FriendRequestItem) => request.id == requestId)[0];
+        draftRequest.inviteStatus = 30;
+        setDisplayedRequests([...displayedRequests.map((request: FriendRequestItem) => request.id != requestId ? request : draftRequest)]);
         try {
             await rejectFriendRequest(requestId);
         } catch (error) {
             console.error('Error rejecting friend request:', error);
-            removeFriendRequestOptimistic(requestId);
-            setDisplayedRequests(prev => 
-                prev.map(request => 
-                    request.id === requestId 
-                        ? { ...request, inviteStatus: 10 }
-                        : request
-                )
-            );
         }
     };
 
@@ -188,6 +142,7 @@ const FriendRequest: React.FC = () => {
     };
 
     const handleInfiniteScroll = async (event: CustomEvent<void>) => {
+        // React Query handles infinite scroll automatically
         (event.target as HTMLIonInfiniteScrollElement).complete();
     };
 
@@ -210,6 +165,8 @@ const FriendRequest: React.FC = () => {
     const renderRequestItem = (request: FriendRequestItem) => {
         const fullName = request.fromUser?.fullName ||
             `${request.fromUser?.firstname || ''} ${request.fromUser?.lastname || ''}`.trim();
+        const isProcessing = processingIds.has(request.id);
+
         return (
             <div
                 key={request.id}
@@ -271,12 +228,14 @@ const FriendRequest: React.FC = () => {
                             <button
                                 className={`px-6 py-2 bg-blue-600 text-white text-m font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-35`}
                                 onClick={(e) => handleAccept(request.id, e)}
+                                disabled={isProcessing}
                             >
                                 {t('Accept')}
                             </button>
                             <button
                                 className={`px-6 py-2 bg-gray-200 text-gray-900 text-m font-semibold rounded-xl hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-35`}
                                 onClick={(e) => handleDecline(request.id, e)}
+                                disabled={isProcessing}
                             >
                                 {t('Decline')}
                             </button>
@@ -327,6 +286,7 @@ const FriendRequest: React.FC = () => {
                             </div>
                         )}
 
+                        {/* See All Button */}
                         {!showAll && requests.length > 6 && (
                             <div className="px-4 py-4 flex justify-center bg-white">
                                 <button
@@ -338,6 +298,7 @@ const FriendRequest: React.FC = () => {
                             </div>
                         )}
 
+                        {/* Infinite Scroll - React Query handles this automatically */}
                         {requests.length > 0 && showAll && (
                             <IonInfiniteScroll
                                 onIonInfinite={handleInfiniteScroll}

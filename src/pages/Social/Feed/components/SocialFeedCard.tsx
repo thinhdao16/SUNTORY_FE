@@ -717,6 +717,13 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                 isRepostedByCurrentUser: false,
                 repostCount: Math.max(0, (currentCount ?? 1) - 1)
               } as any);
+
+              // Notify parent (e.g., Profile lists) to update their query caches immediately
+              onPostUpdate?.({
+                code: originalCode,
+                isRepostedByCurrentUser: false,
+                repostCount: Math.max(0, (currentCount ?? 1) - 1)
+              } as any);
             }
 
             // Trigger API toggle (BE handles unrepost)

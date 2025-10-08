@@ -126,6 +126,7 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
     useEffect(() => {
         if (!isOpen) return;
         // initial open: reset lists then fetch with current input
+        setSending(false);
         setFriendItems([]);
         setFriendPage(0);
         setHasMoreFriends(true);
@@ -312,6 +313,7 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
             const msg = e?.response?.data?.message || t('Failed to share');
             showToast(msg, 3000, 'error');
         } finally {
+            setSending(false);
         }
     };
 

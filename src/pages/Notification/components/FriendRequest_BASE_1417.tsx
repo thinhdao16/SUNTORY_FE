@@ -7,6 +7,8 @@ import {
     rejectFriendRequest
 } from '@/services/social/social-partner-service';
 import { useHistory } from 'react-router-dom';
+import { useNotificationStore } from '@/store/zustand/notify-store';
+import { useToastStore } from '@/store/zustand/toast-store';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
@@ -16,8 +18,8 @@ interface FriendRequestItem {
     id: number;
     fromUserId: number;
     toUserId: number;
-    status: number;
-    inviteStatus: number;
+    status: number; // 0: pending, 1: accepted, 2: rejected
+    inviteStatus: number; // 10: pending, 20: accepted, 30: rejected
     createDate: string;
     fromUser: {
         id: number;
@@ -29,19 +31,15 @@ interface FriendRequestItem {
     };
 }
 
-const FriendRequest: React.FC = () => {
+const FriendRequest = ( activeTab?: any) => {
     const { t } = useTranslation();
     const history = useHistory();
-
+    
     const [displayedRequests, setDisplayedRequests] = useState<FriendRequestItem[]>([]);
+    const [draftRequests, setDraftRequests] = useState<FriendRequestItem[]>([]);
     const [showAll, setShowAll] = useState(false);
-    const {
-        notificationCounts,
-        friendRequestOptimistic,
-        setFriendRequestOptimistic,
-        removeFriendRequestOptimistic,
-        pruneExpiredFriendRequestOptimistic,
-    } = useSocialChatStore();
+    const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
+    const { notificationCounts } = useSocialChatStore();
     const {
         data,
         refetch
@@ -50,46 +48,34 @@ const FriendRequest: React.FC = () => {
     const prevFriendRequestCount = useRef(notificationCounts.pendingFriendRequestsCount);
     const deviceInfo = useDeviceInfo();
 
+    // Enable real-time SignalR connection
     useSocialSignalR(deviceInfo.deviceId ?? "", {
         roomId: "",
         refetchRoomData: () => { },
         autoConnect: true,
         enableDebugLogs: false,
     });
+    // Use data from React Query instead of local API calls
     const requests = data?.pages.flat() ?? [];
     useEffect(() => {
         const currentCount = notificationCounts.pendingFriendRequestsCount;
         const previousCount = prevFriendRequestCount.current;
+        // Only refetch when count increases (new friend request)
         if (previousCount !== currentCount && previousCount !== undefined && currentCount > previousCount) {
             refetch();
         }
         prevFriendRequestCount.current = currentCount;
     }, [notificationCounts.pendingFriendRequestsCount, refetch]);
 
+    // Update displayed requests when showAll changes
     useEffect(() => {
-        const baseList = showAll ? requests : requests.slice(0, 6);
-        const now = Date.now();
-        const pinnedList: FriendRequestItem[] = Object.values(friendRequestOptimistic || {})
-            .filter((e: any) => !e.expiresAt || e.expiresAt > now)
-            .map((e: any) => e.item as FriendRequestItem);
-
-        setDisplayedRequests(() => {
-            const baseIds = new Set(baseList.map(r => r.id));
-            const pinnedMap = new Map(pinnedList.map(p => [p.id, p]));
-            const mergedBase = baseList.map(item => pinnedMap.get(item.id) ?? item);
-            const pinnedNotInBase = pinnedList.filter(p => !baseIds.has(p.id));
-            const combined = [...pinnedNotInBase, ...mergedBase];
-            return showAll ? combined : combined.slice(0, 6);
-        });
-    }, [data, showAll, friendRequestOptimistic]);
-
-    useEffect(() => {
-        const id = setInterval(() => {
-            pruneExpiredFriendRequestOptimistic();
-        }, 30000);
-        return () => clearInterval(id);
-    }, [pruneExpiredFriendRequestOptimistic]);
-
+        if (showAll) {
+            setDisplayedRequests(requests);
+        } else {
+            setDisplayedRequests([...displayedRequests, ...requests.slice(0, 6)]);
+        }
+        refetch();
+    }, [showAll, activeTab, data]);
 
     const formatTimestamp = (createDate: string): string => {
         const now = new Date();
@@ -125,57 +111,25 @@ const FriendRequest: React.FC = () => {
 
     const handleAccept = async (requestId: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        
-        setDisplayedRequests(prev => {
-            const found = prev.find(r => r.id === requestId);
-            if (found) {
-                const updated = { ...found, inviteStatus: 20 as number };
-                setFriendRequestOptimistic(updated, 180);
-                return prev.map(request => request.id === requestId ? updated : request);
-            }
-            return prev;
-        });
-        
+        const draftRequest = displayedRequests.filter((request: FriendRequestItem) => request.id == requestId)[0];
+        draftRequest.inviteStatus = 20;
+        setDisplayedRequests([...displayedRequests.map((request: FriendRequestItem) => request.id != requestId ? request : draftRequest)]);
         try {
             await acceptFriendRequest(requestId);
         } catch (error) {
             console.error('Error accepting friend request:', error);
-            removeFriendRequestOptimistic(requestId);
-            setDisplayedRequests(prev => 
-                prev.map(request => 
-                    request.id === requestId 
-                        ? { ...request, inviteStatus: 10 }
-                        : request
-                )
-            );
         }
     };
 
     const handleDecline = async (requestId: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        
-        setDisplayedRequests(prev => {
-            const found = prev.find(r => r.id === requestId);
-            if (found) {
-                const updated = { ...found, inviteStatus: 30 as number };
-                setFriendRequestOptimistic(updated, 180);
-                return prev.map(request => request.id === requestId ? updated : request);
-            }
-            return prev;
-        });
-        
+        const draftRequest = displayedRequests.filter((request: FriendRequestItem) => request.id == requestId)[0];
+        draftRequest.inviteStatus = 30;
+        setDisplayedRequests([...displayedRequests.map((request: FriendRequestItem) => request.id != requestId ? request : draftRequest)]);
         try {
             await rejectFriendRequest(requestId);
         } catch (error) {
             console.error('Error rejecting friend request:', error);
-            removeFriendRequestOptimistic(requestId);
-            setDisplayedRequests(prev => 
-                prev.map(request => 
-                    request.id === requestId 
-                        ? { ...request, inviteStatus: 10 }
-                        : request
-                )
-            );
         }
     };
 
@@ -188,6 +142,7 @@ const FriendRequest: React.FC = () => {
     };
 
     const handleInfiniteScroll = async (event: CustomEvent<void>) => {
+        // React Query handles infinite scroll automatically
         (event.target as HTMLIonInfiniteScrollElement).complete();
     };
 
@@ -210,10 +165,12 @@ const FriendRequest: React.FC = () => {
     const renderRequestItem = (request: FriendRequestItem) => {
         const fullName = request.fromUser?.fullName ||
             `${request.fromUser?.firstname || ''} ${request.fromUser?.lastname || ''}`.trim();
+        const isProcessing = processingIds.has(request.id);
+
         return (
             <div
                 key={request.id}
-                className="flex items-center px-4 py-4 border-b border-gray-100 w-full"
+                className="flex items-center px-6 py-4 border-b border-gray-100"
                 onClick={() => {
                     history.push(`/profile/${request.fromUser?.id}`);
                 }}
@@ -226,7 +183,7 @@ const FriendRequest: React.FC = () => {
                     />
                 </div>
 
-                <div className="flex-1 min-w-0 flex flex-col">
+                <div className="flex-1 min-w-0">
                     <p className="text-[14px] text-black">
                         <span className="font-semibold">{fullName}</span>{' '}
                         {request.inviteStatus == 10 && (
@@ -247,36 +204,23 @@ const FriendRequest: React.FC = () => {
                             </p>
                         )
                     }
-                    <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-gray-500">
-                            {formatTimestamp(request.createDate)}
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                className="p-1 hover:bg-gray-100 rounded-full"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Handle ellipsis click
-                                }}
-                            >
-                                <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                        {formatTimestamp(request.createDate)}
+                    </p>
 
                     {request.inviteStatus == 10 && (
                         <div className="flex items-center gap-2 mt-4">
                             <button
                                 className={`px-6 py-2 bg-blue-600 text-white text-m font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-35`}
                                 onClick={(e) => handleAccept(request.id, e)}
+                                disabled={isProcessing}
                             >
                                 {t('Accept')}
                             </button>
                             <button
                                 className={`px-6 py-2 bg-gray-200 text-gray-900 text-m font-semibold rounded-xl hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-35`}
                                 onClick={(e) => handleDecline(request.id, e)}
+                                disabled={isProcessing}
                             >
                                 {t('Decline')}
                             </button>
@@ -288,45 +232,28 @@ const FriendRequest: React.FC = () => {
     };
 
     return (
-        <IonContent 
-            className="h-full" 
-            style={{ 
-                '--background': 'white', 
-                '--ion-background-color': 'white',
-                height: '100%',
-                maxHeight: 'calc(100vh - 140px)', // Trừ đi space cho header, tabs và bottom sheet
-                minHeight: '250px'
-            } as any}
-        >
-            <div 
-                className="bg-white pb-6 w-full h-full overflow-y-auto" 
-                style={{ 
-                    paddingBottom: '120px', // Tăng padding để tránh modal
-                    maxHeight: 'calc(100vh - 160px)', // Giảm maxHeight để tránh overlap
-                    minHeight: '200px'
-                }}
-            >
+        <IonContent className="h-220" style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
+            <div className="bg-white pb-6 w-full">
                 {!data ? (
-                    <div className="h-full flex items-center justify-center">
-                        {renderSkeleton()}
-                    </div>
+                    renderSkeleton()
                 ) : (
-                    <div className="h-full flex flex-col">
+                    <>
                         {displayedRequests.length > 0 ? (
-                            <div className="bg-white flex-1 w-full overflow-x-hidden">
+                            <div className="bg-white">
                                 {displayedRequests.map(renderRequestItem)}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-12 bg-[#EDF1FC] flex-1">
+                            <div className="flex flex-col items-center justify-center py-12">
                                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
                                 </div>
-                                <p className="text-black text-sm">No new friend requests</p>
+                                <p className="text-gray-500 text-sm">No friend requests</p>
                             </div>
                         )}
 
+                        {/* See All Button */}
                         {!showAll && requests.length > 6 && (
                             <div className="px-4 py-4 flex justify-center bg-white">
                                 <button
@@ -338,6 +265,7 @@ const FriendRequest: React.FC = () => {
                             </div>
                         )}
 
+                        {/* Infinite Scroll - React Query handles this automatically */}
                         {requests.length > 0 && showAll && (
                             <IonInfiniteScroll
                                 onIonInfinite={handleInfiniteScroll}
@@ -349,7 +277,7 @@ const FriendRequest: React.FC = () => {
                                 />
                             </IonInfiniteScroll>
                         )}
-                    </div>
+                    </>
                 )}
             </div>
         </IonContent>
