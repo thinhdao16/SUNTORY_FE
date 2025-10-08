@@ -1,14 +1,17 @@
 {
+    "appId": "com.wayjet.app",
+    "appName": "Wayjet",
+    "bundledWebRuntime" : false,
+    "npmClient": "npm",
+    "webDir": "dist",
     "plugins": {
         "Keyboard": {
             "resize": "body",
             "style": "DEFAULT",
             "resizeOnFullScreen": true
         },
-        "plugins": {
-            "PushNotifications": {
-                "presentationOptions": ["badge", "sound", "alert"]
-            }
+        "PushNotifications": {
+            "presentationOptions": ["badge", "sound", "alert"]
         }
     }
 }

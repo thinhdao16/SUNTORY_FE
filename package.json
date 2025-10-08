@@ -21,6 +21,7 @@
     "@capacitor-community/camera-preview": "^7.0.2",
     "@capacitor-community/media": "^8.0.1",
     "@capacitor-community/text-to-speech": "^6.0.0",
+    "@capacitor-firebase/messaging": "^7.3.1",
     "@capacitor/android": "^7.2.0",
     "@capacitor/app": "7.0.1",
     "@capacitor/app-launcher": "^7.0.2",

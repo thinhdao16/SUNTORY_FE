@@ -9,6 +9,7 @@ import {
 } from "@capacitor/push-notifications";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { saveFcmToken } from "@/utils/save-fcm-token";
+import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 
 const ANDROID_CHANNEL_ID = "messages_v2"; 
 
@@ -71,6 +72,9 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
 
     (async () => {
       console.log("🔥 Using native push notifications - event");
+
+      const { token } = await FirebaseMessaging.getToken();
+      console.log("🔥 Using native push notifications - token", token);
 
       regHandle = await PushNotifications.addListener("registration", async (token: Token) => {
         console.log("✅ Registered token:", token.value);
