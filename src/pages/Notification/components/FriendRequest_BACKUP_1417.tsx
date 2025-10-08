@@ -29,11 +29,8 @@ interface FriendRequestItem {
     };
 }
 
-<<<<<<< HEAD
-const FriendRequest = (activeTab?: any) => {
-=======
+
 const FriendRequest: React.FC = () => {
->>>>>>> thinh-feature/story-16092
     const { t } = useTranslation();
     const history = useHistory();
 
