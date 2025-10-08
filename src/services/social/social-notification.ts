@@ -8,6 +8,7 @@ export interface ListNotificationParams {
 
 export interface ReadNotificationParams {
     ids: number[];
+    isAll?: boolean;
 }
 
 export interface DeleteNotificationParams {

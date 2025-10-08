@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef, useTransition } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useState, useEffect, useRef } from 'react';
 import { IonContent, IonInfiniteScroll, IonInfiniteScrollContent, IonSkeletonText } from '@ionic/react';
 import avatarFallback from '@/icons/logo/social-chat/avt-rounded-full.svg';
 import WaveIcon from '@/icons/logo/social/wave-icon.svg?react';
@@ -12,7 +11,7 @@ import { useHistory } from 'react-router-dom';
 import { useNotificationStore } from '@/store/zustand/notify-store';
 import { readNotificationApi, ReadNotificationParams } from "@/services/social/social-notification";
 
-const NotificationList = () => {
+const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
     const history = useHistory();
     const { setHideBottomTabBar } = useModalContext();
     const lastNotificationTime = useNotificationStore((state) => state.lastNotificationTime);
@@ -56,21 +55,25 @@ const NotificationList = () => {
     const handleMarkAsRead = async (id: number) => {
         const payload: ReadNotificationParams = {
             ids: [id],
+            isAll: isReadAll
         };
         await readNotificationApi(payload);
         setAllNotifications(allNotifications.map((notif: Notification) => notif.id === id ? { ...notif, isRead: true } : notif));
         setNewNotifications(newNotifications.map((notif: Notification) => notif.id === id ? { ...notif, isRead: true } : notif));
         setOlderNotifications(olderNotifications.map((notif: Notification) => notif.id === id ? { ...notif, isRead: true } : notif));
     };
+
     const handleLoadMoreNotifications = async () => {
         if (!loadingMore) {
+            setShowAll(true);
+            if (allNotifications.length > 0) {
+                return;
+            }
+            
             const nextPage = page + 1;
-            setPageSize(pageSize + 10);
             setPage(nextPage);
             try {
                 await loadNotifications(nextPage, true);
-                // Chuyển sang mode hiển thị tất cả SAU KHI load xong
-                setShowAll(true);
             } catch (error) {
                 console.error('Error loading more notifications:', error);
             }
@@ -84,60 +87,93 @@ const NotificationList = () => {
             } else {
                 setIsLoading(true);
             }
-
+            
             const response = await listNotificationApi({ pageNumber: currentPage, pageSize });
-            const data = response.data || [];
-            const totalRecs = response.totalRecords || 0;
-            if (data.data.length > 0) {
-                if (isLoadMore) {
-                    setAllNotifications(prevNotifications => {
-                        const existingIds = new Set(prevNotifications.map(notif => notif.id));
-                        const newNotifications = data.data.filter((notif: Notification) => !existingIds.has(notif.id));
-                        return [...prevNotifications, ...newNotifications];
-                    });
-                } else {
-                    setAllNotifications(data.data);
-                }
+            const responseData = response.data || [];
+            const totalRecs = responseData.totalRecords || 0;
+            const notifications = responseData.data || [];
 
+            if (notifications.length > 0) {
                 const calculatedMaxPages = Math.ceil(totalRecs / pageSize);
                 setTotalRecords(totalRecs);
                 setMaxPages(calculatedMaxPages);
-
-                const currentTotalLoaded = isLoadMore
-                    ? allNotifications.length + data.length
-                    : data.length;
-
-                const hasMore = currentTotalLoaded < totalRecs;
-                setHasNextPage(hasMore);
+                if (isLoadMore) {
+                    setAllNotifications(prevNotifications => {
+                        const existingIds = new Set(prevNotifications.map(notif => notif.id));
+                        const newNotifications = notifications.filter((notif: Notification) => !existingIds.has(notif.id));
+                        const updatedNotifications = [...prevNotifications, ...newNotifications];
+                        
+                        const hasMore = updatedNotifications.length < totalRecs;
+                        setHasNextPage(hasMore);
+                        
+                        return updatedNotifications;
+                    });
+                } else {
+                    setAllNotifications(notifications);
+                    
+                    const hasMore = notifications.length < totalRecs;
+                    setHasNextPage(hasMore);
+                }
             } else {
                 if (!isLoadMore) {
                     setHasNextPage(false);
                 }
             }
         } catch (error) {
-            console.error('Error fetching notifications:', error);
             if (!isLoadMore) {
                 setAllNotifications([]);
             }
         } finally {
-            setIsLoading(false);
-            setLoadingMore(false);
+            if (isLoadMore) {
+                setLoadingMore(false);
+            }
         }
     };
 
     useEffect(() => {
         setAllNotifications([]);
         setPage(0);
+        setIsLoading(true);
         loadNotifications(0, false);
     }, [lastNotificationTime]);
 
-    // Cập nhật phân chia New/Older khi allNotifications thay đổi
+    useEffect(() => {
+        if (allNotifications.length > 0) {
+            setIsLoading(false);
+        }
+    }, [allNotifications.length]);
+
+    useEffect(() => {
+        if (!showAll || !hasNextPage || loadingMore) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                if (entry.isIntersecting) {
+                    handleInfiniteScroll({ target: { complete: () => {} } } as any);
+                }
+            },
+            {
+                threshold: 0.1,
+                rootMargin: '100px'
+            }
+        );
+
+        const lastElement = document.querySelector('.notification-item:last-child');
+        if (lastElement) {
+            observer.observe(lastElement);
+        }
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [showAll, hasNextPage, loadingMore, allNotifications.length]);
+
     useEffect(() => {
         const now = new Date();
-        const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000); // 6 tiếng trước
+        const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
 
         const newNotifs = allNotifications.filter((notif: Notification) => {
-            // Parse createDate giống như trong formatTimestamp
             let createDate: Date;
             if (notif.createDate.includes('Z') || notif.createDate.includes('+') || notif.createDate.includes('-', 10)) {
                 createDate = new Date(notif.createDate);
@@ -158,13 +194,12 @@ const NotificationList = () => {
             return createDate < twelveHoursAgo;
         });
 
-        // Giới hạn: tổng 8 notifications (ưu tiên hiển thị toàn bộ new trước, phần còn lại là older)
         if (!showAll) {
             const maxTotal = 8;
-            const newCount = newNotifs.length; // Hiển thị tất cả new
-            const olderCount = Math.max(0, maxTotal - newCount); // Lấy phần còn lại từ older
+            const newCount = newNotifs.length;
+            const olderCount = Math.max(0, maxTotal - newCount);
 
-            setNewNotifications(newNotifs.slice(0, maxTotal)); // Nếu new > 8 thì chỉ lấy 8
+            setNewNotifications(newNotifs.slice(0, maxTotal));
             setOlderNotifications(olderNotifs.slice(0, olderCount));
         } else {
             setNewNotifications(newNotifs);
@@ -172,23 +207,27 @@ const NotificationList = () => {
         }
     }, [allNotifications, showAll]);
 
+    useEffect(() => {
+        if (isReadAll) {
+            setAllNotifications(allNotifications.map((notif: Notification) => ({ ...notif, isRead: true })));
+            setNewNotifications(newNotifications.map((notif: Notification) => ({ ...notif, isRead: true })));
+            setOlderNotifications(olderNotifications.map((notif: Notification) => ({ ...notif, isRead: true })));
+        }
+    }, [isReadAll]);
+
     const formatTimestamp = (createDate: string): string => {
         const now = new Date();
 
-        // Nếu createDate không có timezone info (Z hoặc +XX:XX), coi như là UTC
         let timestamp: Date;
         if (createDate.includes('Z') || createDate.includes('+') || createDate.includes('-', 10)) {
-            // Có timezone info, parse bình thường
             timestamp = new Date(createDate);
         } else {
-            // Không có timezone info, thêm 'Z' để parse như UTC
             timestamp = new Date(createDate + 'Z');
         }
 
         const diffInMs = now.getTime() - timestamp.getTime();
         const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
 
-        // Nếu là ngày trong tương lai hoặc vừa mới, hiển thị "Now"
         if (diffInMinutes < 0) return 'Now';
         if (diffInMinutes < 1) return 'Now';
         if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
@@ -209,7 +248,6 @@ const NotificationList = () => {
         return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ago`;
     };
 
-    console.log("allNotifications", allNotifications);
     const getActionText = (type: number): string => {
         switch (type) {
             case 10: return 'created a new post';
@@ -251,7 +289,8 @@ const NotificationList = () => {
     }
 
     const handleInfiniteScroll = async (event: CustomEvent<void>) => {
-        if (!loadingMore && hasNextPage && page + 1 < maxPages) {
+        
+        if (!loadingMore && hasNextPage) {
             const nextPage = page + 1;
             setPage(nextPage);
 
@@ -261,12 +300,7 @@ const NotificationList = () => {
             } catch (error) {
                 setHasNextPage(false);
             }
-        } else {
-            if (allNotifications.length >= totalRecords) {
-                setHasNextPage(false);
-            }
         }
-
         (event.target as HTMLIonInfiniteScrollElement).complete();
     };
 
@@ -293,18 +327,18 @@ const NotificationList = () => {
         </div>
     );
 
-    const renderNotificationItem = (notification: Notification) => (
-        <div
-            key={notification.id}
-            className={`flex items-center px-4 py-4 border-b border-gray-200 min-h-[78px] ${!notification.isRead ? 'bg-[#EDF1FC]' : 'bg-white'
-                }`}
-            onClick={() => {
-                history.push(handleNavigate(notification.type, notification.actorId, notification?.postCode || ''));
-                handleMarkAsRead(notification.id);
-                setIsOpen(true);
-                setNotificationIds([notification.id]);
-            }}
-        >
+            const renderNotificationItem = (notification: Notification) => (
+                <div
+                    key={notification.id}
+                    className={`notification-item flex items-center px-4 py-4 border-b border-gray-200 min-h-[78px] ${!notification.isRead ? 'bg-[#EDF1FC]' : 'bg-white'
+                        }`}
+                    onClick={() => {
+                        history.push(handleNavigate(notification.type, notification.actorId, notification?.postCode || ''));
+                        handleMarkAsRead(notification.id);
+                        setIsOpen(true);
+                        setNotificationIds([notification.id]);
+                    }}
+                >
             <div className="flex-shrink-0 mr-3">
                 <img
                     className="w-14 h-14 rounded-2xl"
@@ -341,7 +375,7 @@ const NotificationList = () => {
     );
 
     return (
-        <IonContent className="h-full" style={{ '--background': 'white', '--ion-background-color': 'white', '--padding-start': '0', '--padding-end': '0', '--padding-top': '0', '--padding-bottom': '0' } as any}>
+        <IonContent className="h-[92%]" style={{ '--background': 'white', '--ion-background-color': 'white', '--padding-start': '0', '--padding-end': '0', '--padding-top': '0', '--padding-bottom': '0' } as any}>
             <div className="bg-white pb-24 w-full">
                 {isLoading ? (
                     renderSkeleton()
@@ -359,12 +393,6 @@ const NotificationList = () => {
                                     <div className="bg-white">
                                         <div className="px-4 py-3 bg-white border-b border-gray-200 flex items-center justify-between">
                                             <h3 className="text-[14px] font-semibold text-black">{t('New')}</h3>
-                                            <WaveIcon className="w-5 h-5 text-gray-400" onClick={(e) => {
-                                                e.stopPropagation();
-                                                setIsFromHeader(true);
-                                                setIsOpen(true);
-                                                setNotificationIds(newNotifications.filter(notif => !notif.isRead).map(notif => notif.id));
-                                            }} />
                                         </div>
                                         {newNotifications.map(renderNotificationItem)}
                                     </div>
@@ -450,7 +478,7 @@ const NotificationList = () => {
                 handleTouchMove={handleTouchMove}
                 handleTouchEnd={handleTouchEnd}
                 onModalStateChange={(modalOpen) => {
-                    setHideBottomTabBar(modalOpen);
+                    setHideBottomTabBar(modalOpen || false);
                 }}
                 isFromHeader={isFromHeader}
             />
