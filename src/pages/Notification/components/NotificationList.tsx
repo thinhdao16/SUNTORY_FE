@@ -209,6 +209,7 @@ const NotificationList = () => {
         return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ago`;
     };
 
+    console.log("allNotifications", allNotifications);
     const getActionText = (type: number): string => {
         switch (type) {
             case 10: return 'created a new post';
@@ -235,6 +236,8 @@ const NotificationList = () => {
             case 20: return `/social-feed/f/${code}`;
             case 30: return `/social-feed/f/${code}`;
             case 40: return `/social-feed/f/${code}`;
+            case 45: return `/social-feed/f/${code}`;
+            case 47: return `/social-feed/f/${code}`;
             case 50: return `/social-feed/f/${code}`;
             case 60: return `/social-feed/f/${code}`;
             case 70: return `/social-feed/f/${code}`;
@@ -355,7 +358,7 @@ const NotificationList = () => {
                                 {newNotifications.length > 0 && (
                                     <div className="bg-white">
                                         <div className="px-4 py-3 bg-white border-b border-gray-200 flex items-center justify-between">
-                                            <h3 className="text-[14px] font-semibold text-black">New</h3>
+                                            <h3 className="text-[14px] font-semibold text-black">{t('New')}</h3>
                                             <WaveIcon className="w-5 h-5 text-gray-400" onClick={(e) => {
                                                 e.stopPropagation();
                                                 setIsFromHeader(true);
@@ -371,7 +374,7 @@ const NotificationList = () => {
                                 {olderNotifications.length > 0 && (
                                     <div className="bg-white">
                                         <div className="px-4 py-3 bg-white border-b border-gray-200">
-                                            <h3 className="text-[14px] font-semibold text-black">Older</h3>
+                                            <h3 className="text-[14px] font-semibold text-black">{t('Older')}</h3>
                                         </div>
                                         {olderNotifications.map(renderNotificationItem)}
                                     </div>
@@ -380,7 +383,7 @@ const NotificationList = () => {
                                 {/* Empty State */}
                                 {newNotifications.length === 0 && olderNotifications.length === 0 && !isLoading && (
                                     <div className="flex flex-col items-center justify-center py-2 bg-[#EDF1FC]">
-                                        <p className="text-black text-sm">No notifications</p>
+                                        <p className="text-black text-sm">{t('No notifications')}</p>
                                     </div>
                                 )}
                             </>

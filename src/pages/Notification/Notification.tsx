@@ -36,7 +36,7 @@ function Notification() {
                             </IonButton>
                         </IonButtons>
                         <IonTitle className="text-center font-bold" style={{ fontSize: '15px', textColor: 'black' }}>
-                            {t('Notification')}
+                            {t('Notifications')}
                         </IonTitle>
                         <IonButtons slot="end">
                             <IonButton className="opacity-0 pointer-events-none pr-4" fill="clear" style={{ textColor: 'black', fontSize: '15px' }}>
@@ -73,7 +73,7 @@ function Notification() {
                 {/* Tab Content */}
                 <div className="flex-1 overflow-hidden">
                     {activeTab === 'notifications' && <NotificationList key={refreshKey}/>}
-                    {activeTab === 'friend-requests' && <FriendRequest key={refreshKey} activeTab = {activeTab}/>}
+                    {activeTab === 'friend-requests' && <FriendRequest key={refreshKey}/>}
                 </div>
             </div>
         </PageContainer>
