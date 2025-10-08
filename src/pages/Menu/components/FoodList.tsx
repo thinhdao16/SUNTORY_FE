@@ -54,10 +54,6 @@ const FoodList: React.FC = () => {
     // Force loading for 40 seconds before showing content
     // Initial load - if no data, show loading for 40s
     useEffect(() => {
-        // Reset food success when start a new analyzing
-        setFoodSuccess(0);
-        setFoodFailed(0);
-        setFoodImageSuccess(0);
 
         if (menuId) {
             setLoading(true);
@@ -229,10 +225,6 @@ const FoodList: React.FC = () => {
         };
     }, []);
 
-    const handleBack = () => {
-        history.goBack();
-    };
-
     const handleInfiniteScroll = async (event: CustomEvent<void>) => {
         if (!loadingMore && hasNextPage && page + 1 < maxPages) {
             const nextPage = page + 1;
@@ -320,30 +312,16 @@ const FoodList: React.FC = () => {
         >
             {/* Image Container */}
             <div className="aspect-square relative overflow-hidden bg-gray-100 rounded-2xl">
-                {imageLoadingStates[food.imageUrl] ? (
-                    <div className="w-full h-full flex items-center justify-center">
-                        <IonSkeletonText animated={true} style={{ width: '100%', height: '100%' }} />
-                    </div>
-                ) : (
+                {food?.imageUrl ? (
                     <img
                         src={food.imageUrl}
                         alt={food.name}
                         className="w-full h-full object-cover rounded-2xl"
-                        onLoad={() => {
-                            // Tắt loading ngay khi ảnh load xong
-                            setImageLoadingStates(prev => ({
-                                ...prev,
-                                [food.imageUrl]: false
-                            }));
-                        }}
-                        onError={(e) => {
-                            // Nếu ảnh lỗi, giữ loading state (skeleton)
-                            setImageLoadingStates(prev => ({
-                                ...prev,
-                                [food.imageUrl]: true
-                            }));
-                        }}
                     />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                        <IonSkeletonText animated={true} style={{ width: '100%', height: '100%' }} />
+                    </div>
                 )}
             </div>
 

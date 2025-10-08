@@ -57,7 +57,6 @@ const MenuAnalyzing: React.FC = () => {
             const file = base64ToFile(base64Img, "gallery.png");
             formData.append("file", file);
             const result = await menuAnalyzing(formData);
-            console.log(result);
             setMenuId(result.data.id);
             setKey(result.data.key);
             if (result?.data != null) {
@@ -66,14 +65,6 @@ const MenuAnalyzing: React.FC = () => {
                 setIsActiveAnalyzingMenuContent(false);
                 setIsCompletedAnalyzingMenuContent(true);
             }
-            // else {
-            //     setIsCompletedInterpretingNutritionalData(true);
-            //     setAnalyzingMenuContentProgress(100);
-            //     setInterpretingNutritionalDataProgress(100);
-            //     setTimeout(() => {
-            //         history.push('/food-list');
-            //     }, 1500);
-            // }
 
         } catch (error) {
             setIsActiveAnalyzingMenuContent(false);
@@ -134,7 +125,7 @@ const MenuAnalyzing: React.FC = () => {
                     return newProgress;
                 });
             }, 120);
-            
+
             return () => clearInterval(interval);
         }
     }, [isCompletedAnalyzingMenuContent, menuId, history]);

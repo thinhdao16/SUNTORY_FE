@@ -3,6 +3,7 @@ export interface LoginRequest {
     password: string;
     deviceId: string | null;
     firebaseToken?: string;
+    language?: string;
 }
 
 export interface LoginRequestWithDeviceId {
