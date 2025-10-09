@@ -37,10 +37,10 @@ const Login: React.FC = () => {
     } = useForm<LoginFormValues>();
 
     const onSubmit = async (data: LoginFormValues) => {
-        const { token } = await FirebaseMessaging.getToken();
+        // const { token } = await FirebaseMessaging?.getToken();
 
         loginMutate(
-            { email: data.emailOrPhone, password: data.password, deviceId: deviceInfo.deviceId, firebaseToken: token },
+            { email: data.emailOrPhone, password: data.password, deviceId: deviceInfo.deviceId, firebaseToken: "" },
         );
     };
 

@@ -36,11 +36,12 @@ export const requestForToken = async () => {
   }
 
   const permission = await Notification?.requestPermission?.();
+  console.log(permission)
   if (permission === "granted") {
     try {
       if (!messaging) return undefined;
       const token = await getToken(messaging, {
-        vapidKey: ENV.FIREBASE_VAPID_KEY,
+        vapidKey: ENV.FIREBASE_VAPID_KEY ,
       });
       return token;
     } catch (error) {

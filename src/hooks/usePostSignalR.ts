@@ -8,6 +8,7 @@ import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
 import { SocialPost } from '@/types/social-feed';
 import { SocialFeedService } from '@/services/social/social-feed-service';
 import { useSearchResultsStore } from '@/store/zustand/search-results-store';
+import { useProfilePostsStore } from '@/store/zustand/profile-posts-store';
 
 export interface UsePostSignalROptions {
     postId?: string;
@@ -223,6 +224,11 @@ export function usePostSignalR(
     const applyPatchToUserPostsCaches = useCallback((codes: string[], patch: Partial<SocialPost> | null) => {
         if (!patch || !codes.length) return;
         const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+        // Also patch the profile posts store so Profile lists update in real time
+        try {
+            const applyProfile = useProfilePostsStore.getState().applyPatch;
+            codes.forEach(code => applyProfile(code, patch));
+        } catch {}
         matching.forEach(([qk, old]) => {
             if (!old?.pages) return;
             try {
@@ -462,8 +468,17 @@ export function usePostSignalR(
             if (primary && joinedPostsRef.current.has(primary)) {
                 const patch = applyPatchSafe(codes, data);
                 applyPatchToQueryCache(codes, patch);
-                schedulePostRefresh(primary);
-                queryClient.invalidateQueries(['feedDetail', primary]);
+                // If this update looks like a reaction update, skip scheduling refresh.
+                const looksLikeReaction = (
+                    data?.reactionCount !== undefined ||
+                    data?.isLike !== undefined ||
+                    data?.post?.reactionCount !== undefined ||
+                    data?.post?.isLike !== undefined
+                );
+                if (!looksLikeReaction) {
+                    schedulePostRefresh(primary);
+                }
+                // Removed immediate invalidate to avoid double refetch
             }
             onPostUpdated?.(data);
         });
@@ -533,8 +548,7 @@ export function usePostSignalR(
             if (primary && joinedPostsRef.current.has(primary)) {
                 const patch = applyPatchSafe(codes, data);
                 applyPatchToQueryCache(codes, patch);
-                schedulePostRefresh(primary);
-                queryClient.invalidateQueries(['feedDetail', primary]);
+                // Do not schedule a detail refresh for like events; single source of truth is the mutation success.
             }
             onPostLiked?.(data);
         });
@@ -548,8 +562,7 @@ export function usePostSignalR(
             if (primary && joinedPostsRef.current.has(primary)) {
                 const patch = applyPatchSafe(codes, data);
                 applyPatchToQueryCache(codes, patch);
-                schedulePostRefresh(primary);
-                queryClient.invalidateQueries(['feedDetail', primary]);
+                // Do not schedule a detail refresh for unlike events; single source of truth is the mutation success.
             }
             onPostUnliked?.(data);
         });
@@ -646,10 +659,9 @@ export function usePostSignalR(
             // Optionally sync feedDetail cache when available (cheap)
             applyPatchToQueryCache(codes, patch);
 
-            // Only schedule network refresh and invalidate detail if user is actively viewing this post
+            // Only schedule network refresh if user is actively viewing this post (no immediate invalidate)
             if (primary && joinedPostsRef.current.has(primary)) {
                 schedulePostRefresh(primary);
-                queryClient.invalidateQueries(['feedDetail', primary]);
             }
             onPostUpdated?.(data);
         });

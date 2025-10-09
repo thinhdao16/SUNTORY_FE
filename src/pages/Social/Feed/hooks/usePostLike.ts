@@ -38,15 +38,8 @@ export const usePostLike = () => {
         });
       },
       onSuccess: async (data) => {
-        try {
-          const fresh = await SocialFeedService.getPostByCode(data.postCode);
-          updatePostReaction(fresh.code, fresh.isLike, fresh.reactionCount);
-          try { useSearchResultsStore.getState().updatePostReaction(fresh.code, fresh.isLike, fresh.reactionCount); } catch {}
-        } catch (error) {
-        } finally {
-          // queryClient.invalidateQueries('socialFeed');
-          queryClient.invalidateQueries(['feedDetail', data.postCode]);
-        }
+        // Do not fetch detail or invalidate; avoid duplicate calls.
+        // Optimistic UI is already applied. SignalR will deliver exact values.
       }
     }
   );

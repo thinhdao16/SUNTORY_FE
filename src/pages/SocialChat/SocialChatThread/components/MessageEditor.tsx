@@ -64,19 +64,19 @@ export const MessageEditor: React.FC<MessageEditorProps> = ({
                         onClick={onCancel}
                         className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
                     >
-                        Hủy
+                        {t("Cancel")}
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={editText.trim() === "" || editText === initialText}
                         className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                     >
-                        Lưu
+                        {t("Save")}
                     </button>
                 </div>
             </div>
             <div className="text-xs text-gray-500 mt-1 text-center">
-                Enter để lưu • Esc để hủy
+                {t("Enter for save • Esc for cancel")}
             </div>
         </div>
     );

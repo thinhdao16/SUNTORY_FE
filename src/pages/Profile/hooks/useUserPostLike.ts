@@ -4,6 +4,7 @@ import { useToastStore } from '@/store/zustand/toast-store';
 import { useTranslation } from 'react-i18next';
 import { ProfileTabType } from './useUserPosts';
 import { useSearchResultsStore } from '@/store/zustand/search-results-store';
+import { useProfilePostsStore } from '@/store/zustand/profile-posts-store';
 
 interface UseUserPostLikeParams {
   tabType: ProfileTabType;
@@ -25,64 +26,44 @@ export const useUserPostLike = ({ tabType, targetUserId }: UseUserPostLikeParams
       return { postCode, isLiked };
     },
     {
-      onMutate: async ({ postCode, isLiked }) => {
-        await queryClient.cancelQueries(['userPosts', tabType, targetUserId]);
-
-        const previousData = queryClient.getQueryData(['userPosts', tabType, targetUserId]);
-        queryClient.setQueryData(['userPosts', tabType, targetUserId], (old: any) => {
-          if (!old?.pages) return old;
-
-          const updatedPages = old.pages.map((page: any) => {
-            if (!page.data?.data) return page;
-            
-            const postIndex = page.data.data.findIndex((post: any) => post.code === postCode);
-            if (postIndex === -1) return page;
-            
-            const updatedPosts = [...page.data.data];
-            updatedPosts[postIndex] = {
-              ...updatedPosts[postIndex],
-              isLike: !isLiked,
-              reactionCount: isLiked 
-                ? Math.max(0, (updatedPosts[postIndex].reactionCount || 0) - 1)
-                : (updatedPosts[postIndex].reactionCount || 0) + 1
-            };
-            
-            return {
-              ...page,
-              data: {
-                ...page.data,
-                data: updatedPosts
-              }
-            };
-          });
-
-          return {
-            ...old,
-            pages: updatedPages
-          };
-        });
-
-        return { previousData };
+      onMutate: async ({ postCode }) => {
+        // Optimistic UI: toggle instantly in profile store only
+        try { useProfilePostsStore.getState().optimisticUpdatePostReaction(postCode); } catch {}
+        return {};
       },
-      onError: (err, variables, context) => {
-        // Rollback to previous data on error
-        if (context?.previousData) {
-          queryClient.setQueryData(['userPosts', tabType, targetUserId], context.previousData);
-        }
+      onError: (err, variables) => {
+        // Rollback store by toggling back
+        try { useProfilePostsStore.getState().optimisticUpdatePostReaction(variables.postCode); } catch {}
         // Also rollback optimistic change in Search store if any
         try { useSearchResultsStore.getState().optimisticUpdatePostReaction(variables.postCode); } catch {}
       },
       onSuccess: async ({ postCode }) => {
-        // queryClient.invalidateQueries(['userPosts']);
-        // queryClient.invalidateQueries(['socialFeed']);
-        // queryClient.invalidateQueries(['social-posts']);
-        // queryClient.invalidateQueries(['social-feed']);
+        // Fetch exact values once, then sync store and caches
         try {
           const fresh = await SocialFeedService.getPostByCode(postCode);
-          // Keep feedDetail fresh for any detail views
-          queryClient.setQueryData(['feedDetail', postCode], fresh);
-          // Update search store too so Search screen reflects immediately
-          try { useSearchResultsStore.getState().updatePostReaction(fresh.code, fresh.isLike, fresh.reactionCount); } catch {}
+          // Update profile posts store with exact values
+          try { useProfilePostsStore.getState().updatePostReaction(fresh.code, fresh.isLike, fresh.reactionCount); } catch {}
+          // Sync all userPosts caches (if other views are open)
+          const matches = queryClient.getQueriesData(['userPosts']);
+          matches.forEach(([key]) => {
+            queryClient.setQueryData(key as any, (old: any) => {
+              if (!old?.pages) return old;
+              const updatedPages = old.pages.map((page: any) => {
+                if (!page?.data?.data) return page;
+                const list = page.data.data as any[];
+                const idx = list.findIndex((p: any) => p.code === postCode);
+                if (idx === -1) return page;
+                const next = [...list];
+                next[idx] = {
+                  ...next[idx],
+                  isLike: fresh.isLike,
+                  reactionCount: fresh.reactionCount,
+                };
+                return { ...page, data: { ...page.data, data: next } };
+              });
+              return { ...old, pages: updatedPages };
+            });
+          });
         } catch {}
       },
       onSettled: () => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SocialFeedCard } from '@/pages/Social/Feed/components/SocialFeedCard';
 import { useUserPosts, ProfileTabType } from '../hooks/useUserPosts';
@@ -12,6 +12,10 @@ import { useHistory } from 'react-router-dom';
 import { PrivacyPostType } from '@/types/privacy';
 import { usePostSignalR } from '@/hooks/usePostSignalR';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
+import { useProfilePostsStore, generateProfileKey } from '@/store/zustand/profile-posts-store';
+
+// Use a stable empty array to avoid creating a new reference on every render
+const EMPTY_POSTS: any[] = [];
 
 interface UserPostsListProps {
     tabType: ProfileTabType;
@@ -36,8 +40,11 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
         refetch,
     } = useUserPosts(tabType, targetUserId, 20, { enabled: targetUserId === undefined || !!targetUserId }) as any;
 
-    // Flatten pages early so effects can depend on it safely
-    const allPosts = data?.pages?.flatMap((page: any) => page?.data?.data || []) || [];
+    // Render from profile posts store for smoother optimistic UI
+    const profileKey = useMemo(() => generateProfileKey(tabType, targetUserId), [tabType, targetUserId]);
+    // Cache the selector and avoid returning a new array. Fallback handled outside with a stable constant.
+    const selectPosts = useCallback((s: any) => s.cachedProfiles[profileKey]?.posts as any[] | undefined, [profileKey]);
+    const allPosts = useProfilePostsStore(selectPosts) ?? EMPTY_POSTS;
 
     const postLikeMutation = useUserPostLike({ tabType, targetUserId });
     const postRepostMutation = useUserPostRepost({ tabType, targetUserId });
@@ -128,6 +135,10 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
         }
     }, []);
 
+    // Keep a ref to posts so the observer callback stays stable and doesn't re-create on each like toggle
+    const postsRef = useRef<any[]>(EMPTY_POSTS);
+    useEffect(() => { postsRef.current = allPosts; }, [allPosts]);
+
     const handleVisibilityEntries = useCallback((entries: IntersectionObserverEntry[]) => {
         let changed = false;
         entries.forEach((entry) => {
@@ -143,16 +154,22 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
         });
         if (changed) {
             const visibleCodes: string[] = [];
-            allPosts.forEach((p: any) => {
+            const list = postsRef.current || EMPTY_POSTS;
+            for (let i = 0; i < list.length; i++) {
+                const p: any = list[i];
                 if (visibilityMapRef.current.get(p.code)) {
                     visibleCodes.push(p.code);
                     const original = p?.originalPost?.code as string | undefined;
                     if (original) visibleCodes.push(original);
                 }
+            }
+            const next = Array.from(new Set(visibleCodes)).slice(0, MAX_REALTIME_POSTS);
+            setVisiblePostCodes((prev) => {
+                if (prev.length === next.length && prev.every((c, i) => c === next[i])) return prev;
+                return next;
             });
-            setVisiblePostCodes(Array.from(new Set(visibleCodes)).slice(0, MAX_REALTIME_POSTS));
         }
-    }, [allPosts]);
+    }, []);
 
     useEffect(() => {
         const observer = new IntersectionObserver(handleVisibilityEntries, {
@@ -294,7 +311,7 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
     return (
         <div className="bg-white" ref={scrollRef} style={{ height: '100%' }}>
             {allPosts.map((post: any, index: number) => (
-                <div key={post.id || post.code} data-post-code={post.code} ref={(node) => setItemRef(post.code, node)}>
+                <div key={post.code} data-post-code={post.code} ref={(node) => setItemRef(post.code, node)}>
                     <SocialFeedCard
                         post={post}
                         onLike={handleLike}
@@ -305,7 +322,6 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
                         onPostUpdate={(updatedPost) => {
                             postUpdateMutation.mutate(updatedPost);
                         }}
-                        containerRefCallback={(node) => setItemRef(post.code, node)}
                     />
                 </div>
             ))}

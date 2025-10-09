@@ -60,10 +60,11 @@ export const SharedPostBubble: React.FC<SharedPostBubbleProps> = ({ data, isUser
   }, [data]);
 
   const postCode = parsed?.PostCode || parsed?.postCode;
-  const { post: sharedPost, isLoadingPost: loadingShared } = useFeedDetail(postCode, !!postCode);
+  const { post: sharedPost, isLoadingPost: loadingShared, postError } = useFeedDetail(postCode, !!postCode);
 
   const isRepost = !!(sharedPost?.isRepost && sharedPost?.originalPost);
   const displayPost: any = isRepost ? sharedPost?.originalPost : sharedPost;
+  const isUnavailable = !loadingShared && (!!postError || !sharedPost || sharedPost?.status === 190);
 
   return (
     <div
@@ -86,14 +87,26 @@ export const SharedPostBubble: React.FC<SharedPostBubbleProps> = ({ data, isUser
             className="w-full text-left"
             onClick={() => {
               const targetCode = isRepost ? sharedPost?.originalPost?.code : sharedPost?.code;
-              if (targetCode) history.push(`/social-feed/f/${sharedPost?.code}`);
+              if (targetCode) history.push(`/social-feed/f/${targetCode}`);
             }}
             disabled={!sharedPost}
           >
             <div className={`  bg-[#F0F0F099] p-3 ${parsed.MessageShare ? "rounded-b-2xl" : `${isUser ? "rounded-[16px_16px_4px_16px]" : "rounded-[4px_16px_16px_16px]"}`}`}
             >
-              {loadingShared || !sharedPost ? (
+              {loadingShared ? (
                 <SharedPostSkeleton />
+              ) : isUnavailable ? (
+                <div className="flex items-center gap-3 px-1 py-2">
+                  <div className="h-8 aspect-square rounded-full bg-gray-200 flex items-center justify-center">
+                    <LockIcon className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-600 mb-1">{t('Content not available')}</div>
+                    <div className="text-sm text-gray-500">
+                      {t('This content may have been removed by the owner or is no longer available.')}
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <div>
                   {isRepost && (

@@ -8,12 +8,11 @@ import useDeviceInfo from "@/hooks/useDeviceInfo";
 export const useAuthInfo = () => {
     const { token, setProfile } = useAuthStore.getState();
     const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
-    console.log("deviceInfo", deviceInfo);
     return useQuery(
-        "authInfo",
-        () => getInfoService(deviceInfo.deviceId || ''),
+        ["authInfo", deviceInfo],
+        () => getInfoService(deviceInfo?.deviceId || ''),
         {
-            enabled: !!token,
+            enabled: !!token || !deviceInfo,
             select: (res: any) => res.data,
             onSuccess: async (user: User) => {
                 setProfile?.(user);

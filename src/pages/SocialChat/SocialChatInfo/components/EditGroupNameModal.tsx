@@ -73,7 +73,7 @@ const EditGroupNameModal: React.FC<EditGroupNameModalProps> = ({
                                         className="text-gray-600 font-medium"
                                         onClick={onClose}
                                     >
-                                        Cancel
+                                        {t("Cancel")}
                                     </button>
                                     <button
                                         type="button"
@@ -81,7 +81,7 @@ const EditGroupNameModal: React.FC<EditGroupNameModalProps> = ({
                                         onClick={handleSave}
                                         disabled={!groupName.trim()}
                                     >
-                                        Save
+                                    {t("Save")}
                                     </button>
                                 </div>
                             </DialogPanel>

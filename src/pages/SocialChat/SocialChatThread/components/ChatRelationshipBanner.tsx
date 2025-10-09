@@ -86,7 +86,7 @@ const ChatRelationshipBanner: React.FC<Props> = ({
                         <div className="grid gap-3 w-full">
                             <p className="text-[13px] text-gray-700 flex items-center">
                                 <span className="font-semibold truncate max-w-[150px]">
-                                    {senderName || "Name"}
+                                    {senderName || t("Name")}
                                 </span>
                                 <span className="ml-1 flex-shrink-0">
                                     {t("has sent you a friend request")}

@@ -64,7 +64,7 @@ const ReplyBubble: React.FC<ReplyBubbleProps> = ({ msg, isUser, isRevoked }) => 
                                     : "  rounded-[16px_16px_16px_4px] mr-auto text-left"}`}
                         >
                             <div className="truncate text-[13px] text-netural-400">
-                                {msg.messageText || "(No content)"}
+                                {msg.messageText || t("(No content)")}
                             </div>
                         </div>
                     ) : (
