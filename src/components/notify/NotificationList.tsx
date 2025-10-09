@@ -112,12 +112,12 @@ export const NotificationList = () => {
         timersRef.current.set(id, timer);
     };
 
-    // Auto-dismiss notifications after 3.5 seconds (unless pinned)
+    // Auto-dismiss notifications after 3 seconds
     useEffect(() => {
-        notifications.forEach((notification) => {
-            // Only start timer if not already exists and not pinned
+        // Start timer cho tất cả notifications đang hiển thị (tối đa 3 cái)
+        visibleNotifications.forEach((notification) => {
             if (!timersRef.current.has(notification.id) && !pinnedNotifications.has(notification.id)) {
-                startTimer(notification.id);
+                startTimer(notification.id, 3000); // 3 giây
             }
         });
 
@@ -149,11 +149,16 @@ export const NotificationList = () => {
         prevReplyIdRef.current = replyOpenId;
     }, [replyOpenId]);
 
+
+    // Giới hạn hiển thị tối đa 3 notification cùng lúc
+    const maxVisibleNotifications = 3;
+    const visibleNotifications = notifications.slice(0, maxVisibleNotifications);
+
     return (
         <div className="fixed inset-x-0 top-0 z-[9999] flex justify-center pointer-events-none pt-4">
             <div className="pointer-events-auto flex flex-col gap-3 w-100 max-w-[110vw]">
                 <AnimatePresence>
-                    {notifications.map((n) => {
+                    {visibleNotifications.map((n) => {
                         const renderNotification = () => {
                             switch (n.type) {
                                 case "friend_request":

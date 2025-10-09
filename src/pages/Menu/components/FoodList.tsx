@@ -50,7 +50,7 @@ const FoodList: React.FC = () => {
 
     useMenuSignalR(menuId?.toString() || "", user?.id?.toString() || "");
 
-    // Force loading for 40 seconds before showing content
+    // Force loading for 60 seconds before showing content
     // Initial load - if no data, show loading for 40s
     useEffect(() => {
 
@@ -61,7 +61,7 @@ const FoodList: React.FC = () => {
             // If no foods initially, keep loading for 40s
             loadingTimeoutRef.current = setTimeout(() => {
                 setLoading(false);
-            }, 40000); // 40 seconds
+            }, 60000); // 60 seconds
 
             return () => {
                 if (loadingTimeoutRef.current) {
@@ -70,12 +70,15 @@ const FoodList: React.FC = () => {
                 }
             };
         }
+        else {
+            setLoading(false);
+        }
     }, [menuId]);
 
     // Clear loading timeout when we have foods
     useEffect(() => {
         if (foods.length > 0) {
-            // Clear the 40s timeout since we have data
+            // Clear the 60s timeout since we have data
             if (loadingTimeoutRef.current) {
                 clearTimeout(loadingTimeoutRef.current);
                 loadingTimeoutRef.current = null;
@@ -177,7 +180,7 @@ const FoodList: React.FC = () => {
             if (isLoadMore) {
                 setLoadingMore(false);
             }
-            // Initial loading will be controlled by the 45-second timeout
+            // Initial loading will be controlled by the 60-second timeout
         }
     };
 

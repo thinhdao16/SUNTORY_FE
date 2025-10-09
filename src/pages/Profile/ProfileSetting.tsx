@@ -138,7 +138,7 @@ const Profile: React.FC = () => {
                                     <IonIcon icon={chevronForwardOutline} className="text-netural-300 text-xl" />
                                 </button>
                                 <hr className="border-gray-100" />
-                                <button
+                                {/* <button
                                     type="button"
                                     className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-black hover:bg-gray-50 transition"
                                     onClick={() => history.push('/profile/help')}
@@ -149,7 +149,7 @@ const Profile: React.FC = () => {
                                     </div>
                                     <IonIcon icon={chevronForwardOutline} className="text-netural-300 text-xl" />
                                 </button>
-                                <hr className="border-gray-100" />
+                                <hr className="border-gray-100" /> */}
                                 <button
                                     type="button"
                                     className="w-full flex items-center justify-bet ween px-4 py-[15px] text-left text-[15px] text-red-500 hover:bg-red-50 transition"

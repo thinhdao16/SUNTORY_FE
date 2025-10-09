@@ -182,7 +182,7 @@ const FriendRequestSent: React.FC = () => {
                     <img
                         src={requestSent?.avatar || avatarFallback}
                         alt={requestSent.name}
-                        className="w-12 h-12 rounded-full object-cover"
+                        className="w-16 h-16 rounded-2xl object-cover"
                         onError={(e) => {
                             e.currentTarget.src = avatarFallback;
                         }}

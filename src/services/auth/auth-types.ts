@@ -3,7 +3,10 @@ export interface LoginRequest {
     password: string;
     deviceId: string | null;
     firebaseToken?: string;
-    language?: string;
+}
+
+export interface GetInfoRequest {
+    deviceId: string;
 }
 
 export interface LoginRequestWithDeviceId {
@@ -41,10 +44,6 @@ export interface LoginResponse {
         friendNumber: number;
         country: {
             id: number;
-            code: string;
-            name: string;
-        };
-        language: {
             code: string;
             name: string;
         };

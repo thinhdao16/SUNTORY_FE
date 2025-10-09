@@ -47,18 +47,34 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     lastActionTime: 0,
     isUnReadNotification: false,
     addNotification: (n) =>
-        set((state) => ({
-            notifications: [
-                {
-                    ...n,
-                    createdAt: Date.now(),
-                    data: n.data || {},
-                },
-                ...state.notifications,
-            ],
-            lastNotificationTime: Date.now(),
-            isUnReadNotification: true,
-        })),
+        set((state) => {
+            const now = Date.now();
+            
+            const uniqueKey = `${n.type}-${n.title}-${n.body}-${JSON.stringify(n.data || {})}`;
+            
+            const isDuplicate = state.notifications.some(notification => {
+                const existingKey = `${notification.type}-${notification.title}-${notification.body}-${JSON.stringify(notification.data || {})}`;
+                const timeDiff = now - notification.createdAt;
+                return existingKey === uniqueKey && timeDiff < 5000;
+            });
+            
+            if (isDuplicate) {
+                return state;
+            }
+            
+            return {
+                notifications: [
+                    {
+                        ...n,
+                        createdAt: now,
+                        data: n.data || {},
+                    },
+                    ...state.notifications,
+                ],
+                lastNotificationTime: now,
+                isUnReadNotification: true,
+            };
+        }),
     triggerRefresh: () =>
         set(() => ({
             lastActionTime: Date.now(),

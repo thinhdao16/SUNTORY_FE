@@ -27,7 +27,6 @@ const Register: React.FC = () => {
     const history = useHistory();
     const setUserAfterRegister = useAuthStore((s) => s.setUserAfterRegister);
     const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
-
     const {
         register,
         handleSubmit,
