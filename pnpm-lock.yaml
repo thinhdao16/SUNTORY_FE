@@ -17,6 +17,9 @@ importers:
       '@capacitor-community/text-to-speech':
         specifier: ^6.0.0
         version: 6.0.0(@capacitor/core@7.4.2)
+      '@capacitor-firebase/messaging':
+        specifier: ^7.3.1
+        version: 7.3.1(@capacitor/core@7.4.2)(firebase@12.1.0)
       '@capacitor/android':
         specifier: ^7.2.0
         version: 7.4.2(@capacitor/core@7.4.2)
@@ -889,6 +892,15 @@ packages:
     resolution: {integrity: sha512-aKQ+S8q0T3Kqr2PdJI4xLksN8FFOqJI7vlX9sqWrPXPBWa8DQUSSV9M8tvjUq6B9+63er/KSe42ZKMVrD5usKw==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
+
+  '@capacitor-firebase/messaging@7.3.1':
+    resolution: {integrity: sha512-LBc7zeOUNe96K+c8x+YE6AvWKLSrJPFy0ryQD82okZb540l8d6oT0LHJoN0PTHi+a91GFvnm+l3aEKS8l5+l/g==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+      firebase: ^11.2.0
+    peerDependenciesMeta:
+      firebase:
+        optional: true
 
   '@capacitor/android@7.4.2':
     resolution: {integrity: sha512-FZ7M9NwFkljR7EP5eXiE32mAIfZNcYw2CzRMCG3rQu0u0ZaIoeOeq5/oK4YcDnGpNmu8jpngKJqZ+9OiSQSwDg==}
@@ -7685,6 +7697,12 @@ snapshots:
   '@capacitor-community/text-to-speech@6.0.0(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
+
+  '@capacitor-firebase/messaging@7.3.1(@capacitor/core@7.4.2)(firebase@12.1.0)':
+    dependencies:
+      '@capacitor/core': 7.4.2
+    optionalDependencies:
+      firebase: 12.1.0
 
   '@capacitor/android@7.4.2(@capacitor/core@7.4.2)':
     dependencies:

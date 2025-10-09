@@ -13,6 +13,7 @@ import LogoIcon from "@/icons/logo/logo.svg?react";
 import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
 import CloseIcon from "@/icons/logo/close.svg?react";
 import { useTranslation } from "react-i18next";
+import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 
 interface LoginFormValues {
     emailOrPhone: string;
@@ -35,9 +36,11 @@ const Login: React.FC = () => {
         setValue,
     } = useForm<LoginFormValues>();
 
-    const onSubmit = (data: LoginFormValues) => {
+    const onSubmit = async (data: LoginFormValues) => {
+        const { token } = await FirebaseMessaging.getToken();
+
         loginMutate(
-            { email: data.emailOrPhone, password: data.password, deviceId: deviceInfo.deviceId },
+            { email: data.emailOrPhone, password: data.password, deviceId: deviceInfo.deviceId, firebaseToken: token },
         );
     };
 
