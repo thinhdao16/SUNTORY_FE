@@ -36,8 +36,6 @@ import ExpandableText from '@/components/common/ExpandableText';
 import SharePostBottomSheet from '@/components/social/SharePostBottomSheet';
 import { SocialFeedService } from '@/services/social/social-feed-service';
 import { useQueryClient } from 'react-query';
-import { usePostSignalR } from '@/hooks/usePostSignalR';
-import useDeviceInfo from '@/hooks/useDeviceInfo';
 
 interface SocialFeedCardProps {
   post: SocialPost;
@@ -108,65 +106,10 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
 
   const showToast = useToastStore((state) => state.showToast);
 
-  // Auto SignalR subscribe when card is visible
-  const deviceInfo = useDeviceInfo();
-  const { joinPostUpdates, leavePostUpdates } = usePostSignalR(deviceInfo.deviceId ?? '', {
-    autoConnect: true,
-    enableDebugLogs: false,
-  });
-  const cardRef = React.useRef<HTMLDivElement | null>(null);
-  const joinedRef = React.useRef<boolean>(false);
-  const joinDelayRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Parent lists manage SignalR joins; we only expose our DOM node via ref
   const setCardRef = React.useCallback((node: HTMLDivElement | null) => {
-    cardRef.current = node;
     if (containerRefCallback) containerRefCallback(node);
   }, [containerRefCallback]);
-
-  React.useEffect(() => {
-    const el = cardRef.current;
-    if (!el) return;
-    // Join both the repost code and the original post code (if any)
-    const targetCodes = Array.from(
-      new Set(
-        [post?.code, (post?.originalPost as any)?.code, (isRepost && displayPost?.code !== post?.code) ? displayPost?.code : undefined]
-          .filter(Boolean)
-      )
-    ) as string[];
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        if (!joinedRef.current) {
-          if (joinDelayRef.current) clearTimeout(joinDelayRef.current);
-          joinDelayRef.current = setTimeout(async () => {
-            try {
-              let anyJoined = false;
-              for (const c of targetCodes) {
-                const joined = await joinPostUpdates(c);
-                if (joined !== false) anyJoined = true;
-              }
-              if (anyJoined) joinedRef.current = true;
-            } catch { }
-          }, 500);
-        }
-      } else {
-        if (joinDelayRef.current) { clearTimeout(joinDelayRef.current); joinDelayRef.current = null; }
-        if (joinedRef.current) {
-          targetCodes.forEach((c) => { leavePostUpdates(c).catch(() => { }); });
-          joinedRef.current = false;
-        }
-      }
-    }, { threshold: 0.5 });
-
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      if (joinDelayRef.current) { clearTimeout(joinDelayRef.current); joinDelayRef.current = null; }
-      if (joinedRef.current) {
-        targetCodes.forEach((c) => { leavePostUpdates(c).catch(() => { }); });
-        joinedRef.current = false;
-      }
-    };
-  }, [post.code, isRepost, displayPost?.code, joinPostUpdates, leavePostUpdates]);
 
   const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
   const [removed, setRemoved] = useState(false);
@@ -341,6 +284,8 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
               (e.target as HTMLImageElement).src = avatarFallback;
             }}
             onClick={(e) => handleUserProfileClick(e, post?.isRepost ? post?.user?.id : displayPost?.user?.id)}
+            loading="lazy"
+            decoding="async"
           />
           <div className='grid gap-0'>
             <div className="flex items-center gap-2">
@@ -413,6 +358,8 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                     (e.target as HTMLImageElement).src = avatarFallback;
                   }}
                   onClick={(e) => handleUserProfileClick(e, displayPost.user.id)}
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="grid">
                   <div className="flex items-center gap-2">
@@ -636,7 +583,6 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
               inactiveColor="text-netural-900"
             />
           )}
-
         </div>
       </div>
 
@@ -673,6 +619,8 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                     confirmState.type === "unrepost" ? t('Remove your repost of this post?') :
                       ""
         }
+        confirmButtonClassName={(confirmState.type === 'send' || confirmState.type === 'accept') ? '!bg-main' : ''}
+
         confirmText={
           confirmState.type === "send" ? t("Yes, send") :
             confirmState.type === "cancel" ? t("Yes, cancel") :

@@ -404,6 +404,38 @@ export function usePostSignalR(
                                     store.applyRealtimePatch(originalPostCode, { repostCount: next } as any);
                                 }
                                 queryClient.invalidateQueries(['feedDetail', originalPostCode]);
+                                // Also patch all profile userPosts caches so lists reflect the increment immediately
+                                try {
+                                    const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+                                    matching.forEach(([qk, old]) => {
+                                        if (!old?.pages) return;
+                                        try {
+                                            let foundPrev: number | undefined;
+                                            // derive next value if not provided by payload
+                                            const nextRepost = typeof data.repostCount === 'number' && Number.isFinite(data.repostCount)
+                                                ? data.repostCount
+                                                : (() => {
+                                                    old.pages.forEach((page: any) => {
+                                                        if (!page?.data) return;
+                                                        const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                                                        list.forEach((p: any) => { if (p?.code === originalPostCode && foundPrev === undefined) foundPrev = p?.repostCount; });
+                                                    });
+                                                    return Math.max(0, (foundPrev ?? 0) + 1);
+                                                })();
+                                            const newData = {
+                                                ...old,
+                                                pages: old.pages.map((page: any) => {
+                                                    if (!page?.data) return page;
+                                                    const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                                                    if (!list.length) return page;
+                                                    const updated = list.map((p: any) => p?.code === originalPostCode ? { ...p, repostCount: nextRepost } : p);
+                                                    return { ...page, data: { ...page.data, data: updated } };
+                                                }),
+                                            };
+                                            queryClient.setQueryData(qk as any, newData);
+                                        } catch {}
+                                    });
+                                } catch {}
                             } catch {}
                         }
                     } else {
@@ -575,7 +607,38 @@ export function usePostSignalR(
             // Always keep Search and Profile caches in sync
             const patchForCaches = { ...data, postCode: primary };
             applyPatchToSearchCache(codes, patchForCaches);
-            applyPatchToUserPostsCaches(codes, buildPatchForSearch(patchForCaches));
+            const userPatch = buildPatchForSearch(patchForCaches);
+            applyPatchToUserPostsCaches(codes, userPatch);
+
+            // Fallback: if payload didn't include repostCount, increment by 1 in userPosts caches
+            if (primary && (userPatch === null || (userPatch && (userPatch as any).repostCount === undefined))) {
+                try {
+                    const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+                    matching.forEach(([qk, old]) => {
+                        if (!old?.pages) return;
+                        try {
+                            let prev: number | undefined;
+                            old.pages.forEach((page: any) => {
+                                if (!page?.data) return;
+                                const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                                list.forEach((p: any) => { if (p?.code === primary && prev === undefined) prev = p?.repostCount; });
+                            });
+                            const next = Math.max(0, (prev ?? 0) + 1);
+                            const newData = {
+                                ...old,
+                                pages: old.pages.map((page: any) => {
+                                    if (!page?.data) return page;
+                                    const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                                    if (!list.length) return page;
+                                    const updated = list.map((p: any) => p?.code === primary ? { ...p, repostCount: next } : p);
+                                    return { ...page, data: { ...page.data, data: updated } };
+                                }),
+                            };
+                            queryClient.setQueryData(qk as any, newData);
+                        } catch {}
+                    });
+                } catch {}
+            }
 
             // IMPORTANT: Update feed store across all cached feeds regardless of join state
             // so Everyone/Hashtag/Friends lists reflect repostCount increments consistently for all users.

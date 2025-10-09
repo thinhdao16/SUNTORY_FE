@@ -92,10 +92,21 @@ export const useSearchResultsStore = create<SearchResultsStore>((set, get) => ({
   appendPosts: (key, posts) => {
     const state = get();
     const prev = state.cached[key] || defaultState();
-    // filter duplicates by code
-    const existingCodes = new Set(prev.posts.map(p => p.code));
-    const filtered = posts.filter(p => !existingCodes.has(p.code));
-    set({ cached: { ...state.cached, [key]: { ...prev, posts: [...prev.posts, ...filtered] } } });
+    // Update existing posts with same code and append truly new ones
+    const incomingMap = new Map<string, any>(
+      (posts || []).map((p: any) => [p?.code, p])
+    );
+    const updatedExisting = (prev.posts || []).map((p: any) =>
+      incomingMap.has(p.code) ? { ...p, ...incomingMap.get(p.code) } : p
+    );
+    const existingCodes = new Set(updatedExisting.map((p: any) => p.code));
+    const newOnes = (posts || []).filter((p: any) => p && !existingCodes.has(p.code));
+    set({
+      cached: {
+        ...state.cached,
+        [key]: { ...prev, posts: [...updatedExisting, ...newOnes] }
+      }
+    });
   },
   setHasMore: (key, hasMore) => {
     const state = get();

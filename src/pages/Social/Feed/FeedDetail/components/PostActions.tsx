@@ -8,6 +8,7 @@ import SendIcon from "@/icons/logo/social-feed/send.svg?react";
 import ReactHeartRedIcon from "@/icons/logo/social-feed/react-heart-red.svg?react";
 import AnimatedActionButton from '@/components/common/AnimatedActionButton';
 import { useAuthStore } from '@/store/zustand/auth-store';
+import { PrivacyPostType } from '@/types/privacy';
 
 interface PostActionsProps {
     displayPost: any;
@@ -26,7 +27,6 @@ const PostActions: React.FC<PostActionsProps> = ({
     onShare,
     postLikeMutation
 }) => {
-    const { t } = useTranslation();
     const { user } = useAuthStore();
     const meId = user?.id;
     const isRepostByMeCard = !!displayPost?.isRepost && displayPost?.user?.id === meId;
@@ -70,7 +70,7 @@ const PostActions: React.FC<PostActionsProps> = ({
                         disabled={isErrorPost}
                     />
                 )}
-                
+                {displayPost?.privacy !== PrivacyPostType.Private && (
                 <AnimatedActionButton
                     icon={<SendIcon />}
                     count={displayPost?.shareCount || 0}
@@ -78,6 +78,7 @@ const PostActions: React.FC<PostActionsProps> = ({
                     onClick={onShare}
                     inactiveColor="text-gray-600"
                 />
+                )}
             </div>
         </div>
     );

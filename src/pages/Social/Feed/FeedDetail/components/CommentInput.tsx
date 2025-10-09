@@ -38,7 +38,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
         <div className="flex items-center gap-3">
             <div className="relative flex-1">
                 <img
-                    src={user?.avatar || avatarFallback}
+                    src={user?.avatarLink || avatarFallback}
                     alt={user?.name}
                     className="absolute left-1 top-1/2 transform -translate-y-1/2 w-7 h-7 rounded-lg object-cover z-10"
                     onError={(e) => {

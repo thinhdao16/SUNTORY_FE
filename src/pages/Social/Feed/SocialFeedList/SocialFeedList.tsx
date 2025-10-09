@@ -421,7 +421,6 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     if (selectedPost) {
       setCurrentPost(selectedPost);
     }
-    console.log(selectedPost)
     history.push(`/social-feed/f/${postCode}`);
   }, [posts, setCurrentPost, history]);
 

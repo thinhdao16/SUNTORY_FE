@@ -8,6 +8,7 @@ import { formatTimeFromNow } from '@/utils/formatTime';
 import { useSocialSignalRListChatRoom } from '@/hooks/useSocialSignalRListChatRoom';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
+import avatarGroupFallback from "@/icons/logo/social-chat/avt-gr-rounded.svg";
 import { ChatInfoType, KEYCHATFORMATNOTI } from '@/constants/socialChat';
 import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
@@ -341,10 +342,13 @@ export default function SocialChatRecent() {
                   >
                     <div className="flex items-center flex-1 min-w-0">
                       <img
-                        src={room?.avatarRoomChat || avatarFallback}
+                        src={room?.avatarRoomChat || (room?.type === ChatInfoType.Group ? avatarGroupFallback : avatarFallback)}
                         alt={room?.title}
                         className="w-[50px] h-[50px] rounded-2xl object-cover flex-none"
-                        onError={(e) => { e.currentTarget.src = avatarFallback; }}
+                        onError={(e) => {
+                          const fb = room?.type === ChatInfoType.Group ? avatarGroupFallback : avatarFallback;
+                          e.currentTarget.src = fb;
+                        }}
                       />
                       <div className="ml-3 min-w-0 flex-1 overflow-hidden">
                         <p className="text-base font-semibold truncate">{room.title}</p>

@@ -761,6 +761,7 @@ const FeedDetail: React.FC = () => {
                                     confirmState.type === "delete-comment" ? t("This action is permanent and can't be undone. Are you sure?") :
                                         ""
                 }
+                confirmButtonClassName={(confirmState.type === 'send' || confirmState.type === 'accept') ? '!bg-main' : ''}
                 confirmText={
                     confirmState.type === "send" ? t("Yes, send") :
                         confirmState.type === "cancel" ? t("Yes, cancel") :

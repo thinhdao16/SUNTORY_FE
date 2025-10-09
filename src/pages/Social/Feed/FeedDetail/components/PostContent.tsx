@@ -43,6 +43,7 @@ const PostContent: React.FC<PostContentProps> = ({
     sendFriendRequestMutation,
     onUserProfileClick
 }) => {
+    console.log(displayPost)
     const { user } = useAuthStore()
     const { t } = useTranslation();
     const history = useHistory();
@@ -122,12 +123,12 @@ const PostContent: React.FC<PostContentProps> = ({
                                     </div>
                                 </div>
                                 <div className="flex items-center text-netural-100 gap-1">
-                                            <span className="text-sm text-gray-500">{formatTimeFromNow(displayPost?.createDate || '', t)}</span>
-                                            <GoDotFill className="w-2 h-2" />
-                                            <span className='opacity-20'>
-                                                {getPrivacyIcon(displayPost?.privacy)}
-                                            </span>
-                                        </div>
+                                    <span className="text-sm text-gray-500">{formatTimeFromNow(displayPost?.createDate || '', t)}</span>
+                                    <GoDotFill className="w-2 h-2" />
+                                    <span className='opacity-20'>
+                                        {getPrivacyIcon(displayPost?.privacy)}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         {!isOwnPost && displayPost?.isFriend === false && (
@@ -267,13 +268,14 @@ const PostContent: React.FC<PostContentProps> = ({
                             </div>
                         )}
                         {!isRepostWithDeletedOriginal && postToDisplay?.media && postToDisplay.media.length > 0 && (
-                            <div data-media-display>
+                            <div data-media-display className='pb-4'>
                                 <MediaDisplay
                                     mediaFiles={postToDisplay.media}
                                     className="mt-3"
                                     lightboxUserName={postToDisplay.user.fullName}
-                                    lightboxUserAvatar={postToDisplay.user.avatarUrl}
-                                    classNameAudio='px-4'
+                                    lightboxUserAvatar={postToDisplay.user?.avatarUrl}
+                                    classNameAudio='px-4 '
+
                                 />
                             </div>
                         )}
@@ -286,21 +288,22 @@ const PostContent: React.FC<PostContentProps> = ({
                 <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-3">
                         <img
-                            src={displayPost.user.avatarUrl || avatarFallback}
-                            alt={displayPost.user.fullName}
+                            src={displayPost?.user?.avatarUrl || avatarFallback}
+                            alt={displayPost?.user?.fullName}
                             className="w-9 h-9 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => onUserProfileClick?.(displayPost.user.id)}
                             onError={(e) => {
                                 (e.target as HTMLImageElement).src = avatarFallback;
                             }}
                         />
+
                         <div className="grid gap-0">
                             <div className="flex items-center gap-2">
                                 <span
                                     className="font-semibold text-sm cursor-pointer hover:underline max-w-[200px] truncate"
                                     onClick={() => onUserProfileClick?.(displayPost.user.id)}
                                 >
-                                    {displayPost.user.fullName}
+                                    {displayPost?.user?.fullName}
                                 </span>
                             </div>
                             <div className="flex items-center text-netural-100 gap-1">

@@ -166,12 +166,12 @@ const MyProfile: React.FC = () => {
       <IonPage style={{ '--background': 'white', paddingBottom: '52px' } as any}>
         <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
           <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
-            <IonButtons slot="start" className="pl-4">
+            <IonTitle slot="" >
               {/* <BackIcon onClick={() => history.goBack()} /> */}
-              <span className="font-bold  " style={{ fontSize: '15px', color: 'black' }}>
+              <span className="font-bold pl-4 " style={{ fontSize: '15px', color: 'black' }}>
                 {t('My profile')}
               </span  >
-            </IonButtons>
+            </IonTitle>
             <IonButtons slot="end" onClick={() => history.push('/social-feed/create')}>
               <IonButton fill="clear" style={{ textColor: 'black', fontSize: '15px' }}>
                 <EditProfileIcon />

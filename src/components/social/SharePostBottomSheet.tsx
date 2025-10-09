@@ -9,9 +9,11 @@ import { SocialFeedService } from '@/services/social/social-feed-service';
 import { useToastStore } from '@/store/zustand/toast-store';
 import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
 import { useQueryClient } from 'react-query';
+import { useSearchResultsStore } from '@/store/zustand/search-results-store';
 import { getFriendshipFriends } from '@/services/social/social-partner-service';
 import { getUserChatRooms } from '@/services/social/social-chat-service';
 import SearchIcon from "@/icons/logo/social-chat/search.svg?react"
+import ActionButton from '@/components/loading/ActionButton';
 interface SharePostBottomSheetProps {
     isOpen: boolean;
     onClose: () => void;
@@ -70,7 +72,7 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
             const thisId = ++friendsReqIdRef.current;
             const q = (keyword !== undefined ? keyword : debouncedQuery) || undefined;
             const list: any[] = await getFriendshipFriends(page, PAGE_SIZE, q);
-            if (thisId !== friendsReqIdRef.current) return; // stale response
+            if (thisId !== friendsReqIdRef.current) return;
             const mapped = (list || [])
                 .map((it: any) => ({
                     userId: Number(it?.id) || 0,
@@ -100,7 +102,7 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
             const thisId = ++groupsReqIdRef.current;
             const q = (keyword !== undefined ? keyword : debouncedQuery) || undefined;
             const res: any[] = await getUserChatRooms({ PageNumber: page, PageSize: PAGE_SIZE, Keyword: q, Type: ChatInfoType.Group });
-            if (thisId !== groupsReqIdRef.current) return; // stale response
+            if (thisId !== groupsReqIdRef.current) return;
             const mapped = (res || [])
                 .map((room: any) => ({
                     chatCode: room?.code,
@@ -125,7 +127,6 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
 
     useEffect(() => {
         if (!isOpen) return;
-        // initial open: reset lists then fetch with current input
         setSending(false);
         setFriendItems([]);
         setFriendPage(0);
@@ -145,7 +146,6 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
         });
     }, [isOpen]);
 
-    // Debounced query refresh: keep previous items while fetching
     useEffect(() => {
         if (!isOpen) return;
         setHasMoreFriends(true);
@@ -278,28 +278,80 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
             }
 
             const store = useSocialFeedStore.getState();
+            const searchStore = useSearchResultsStore.getState();
 
-            // Prefer exact counts from server; avoid optimistic +1 to prevent double increment flicker
+            const findPrevShareCount = (): number | undefined => {
+                const d1: any = queryClient.getQueryData(['feedDetail', postCode]);
+                if (d1 && typeof d1.shareCount === 'number') return d1.shareCount;
+                try {
+                    const feeds = store.cachedFeeds || {};
+                    for (const key of Object.keys(feeds)) {
+                        const list = feeds[key]?.posts || [];
+                        for (const p of list) {
+                            if (p?.code === postCode) {
+                                if (typeof p?.shareCount === 'number') return p.shareCount;
+                            }
+                        }
+                    }
+                } catch {}
+                try {
+                    const cached = (searchStore as any)?.cached || {};
+                    for (const key of Object.keys(cached)) {
+                        const list = cached[key]?.posts || [];
+                        for (const p of list) {
+                            if (p?.code === postCode) {
+                                if (typeof p?.shareCount === 'number') return p.shareCount;
+                            }
+                        }
+                    }
+                } catch {}
+                return undefined;
+            };
+
+            const patchUserPostsCaches = (code: string, nextShare: number) => {
+                const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+                matching.forEach(([qk, old]) => {
+                    if (!old?.pages) return;
+                    try {
+                        const newData = {
+                            ...old,
+                            pages: old.pages.map((page: any) => {
+                                if (!page?.data) return page;
+                                const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                                if (!list.length) return page;
+                                const updated = list.map((p: any) => p?.code === code ? { ...p, shareCount: nextShare } : p);
+                                return { ...page, data: { ...page.data, data: updated } };
+                            }),
+                        };
+                        queryClient.setQueryData(qk as any, newData);
+                    } catch {}
+                });
+            };
+
             let appliedForPost = false;
             if (typeof serverShareCount === 'number') {
                 store.applyRealtimePatch(postCode, { shareCount: serverShareCount } as any);
+                searchStore.applyPostPatch(postCode, { shareCount: serverShareCount } as any);
                 queryClient.setQueryData(['feedDetail', postCode], (old: any) => ({ ...(old || {}), shareCount: serverShareCount }));
+                patchUserPostsCaches(postCode, serverShareCount);
                 appliedForPost = true;
+            } else {
+                const prev = findPrevShareCount();
+                const optimistic = Math.max(0, (prev ?? 0) + 1);
+                store.applyRealtimePatch(postCode, { shareCount: optimistic } as any);
+                searchStore.applyPostPatch(postCode, { shareCount: optimistic } as any);
+                queryClient.setQueryData(['feedDetail', postCode], (old: any) => ({ ...(old || {}), shareCount: optimistic }));
+                patchUserPostsCaches(postCode, optimistic);
             }
 
-            // Fetch fresh detail to ensure consistent counts for both post and original
             try {
                 const fresh = await SocialFeedService.getPostByCode(postCode);
                 const postShare = (fresh as any)?.shareCount;
-                if (!appliedForPost && typeof postShare === 'number') {
+                if (typeof postShare === 'number') {
                     store.applyRealtimePatch(postCode, { shareCount: postShare } as any);
+                    searchStore.applyPostPatch(postCode, { shareCount: postShare } as any);
                     queryClient.setQueryData(['feedDetail', postCode], (old: any) => ({ ...(old || {}), shareCount: postShare }));
-                }
-                const originalCode = (fresh as any)?.originalPost?.code as string | undefined;
-                const originalShare = (fresh as any)?.originalPost?.shareCount;
-                if (originalCode && typeof originalShare === 'number') {
-                    store.applyRealtimePatch(originalCode, { shareCount: originalShare } as any);
-                    queryClient.setQueryData(['feedDetail', originalCode], (old: any) => ({ ...(old || {}), shareCount: originalShare }));
+                    patchUserPostsCaches(postCode, postShare);
                 }
             } catch {}
 
@@ -433,8 +485,8 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
                         )}
                     </div>
                 </div>
-
-                {/* <div className="mb-4">
+{/* 
+                <div className="mb-4">
                     <div className="px-4 pb-2 font-semibold text-gray-900">{t('Share to')}</div>
                     <div className="px-4 flex overflow-x-auto lg:no-scrollbar">
                         <Tile
@@ -444,29 +496,29 @@ const SharePostBottomSheet: React.FC<SharePostBottomSheetProps> = ({ isOpen, onC
                             selected={false}
                             onClick={handleExternalShare}
                         />
-                      
                     </div>
                 </div> */}
 
                 {hasSelection && (
                     <div className="px-4 flex items-center gap-3 pt-3">
-                        <input
-                            className="flex-1 bg-gray-100 rounded-xl px-4 py-2 outline-none"
-                            placeholder={t('Enter message') as string}
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            onFocus={() => setInputFocused(true)}
-                            onBlur={() => setInputFocused(false)}
-                        />
-                        <button
-                            onClick={handleSend}
-                            disabled={sending}
-                            className={`px-4 py-2 rounded-2xl text-white font-semibold ${sending ? 'bg-gray-400' : 'bg-primary-500'}`}
-                        >
-                            {t('Send')}
-                        </button>
-                    </div>
-                )}
+                    <input
+                        className="flex-1 bg-gray-100 rounded-xl px-4 py-2 outline-none"
+                        placeholder={t('Enter message') as string}
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onFocus={() => setInputFocused(true)}
+                        onBlur={() => setInputFocused(false)}
+                    />
+                    <ActionButton
+                        onClick={handleSend}
+                        disabled={!hasSelection || sending}
+                        loading={sending}
+                        className="px-3 py-2 text-sm bg-main flex items-center justify-center gap-2 text-white rounded-2xl font-medium hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    >
+                        {sending ? t('Sending...') : t('Send')}
+                    </ActionButton>
+                </div>
+            )}
             </div>
         </BottomSheet>
     );

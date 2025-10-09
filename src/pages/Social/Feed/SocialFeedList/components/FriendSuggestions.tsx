@@ -169,12 +169,12 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                                     <div className="mt-3 w-full">
                                         {!isFriend && (
                                             isSentUI ? (
-                                                <button className="w-full border border-netural-100  font-semibold py-2.5 rounded-2xl" disabled>
+                                                <button className="w-full border border-netural-100  font-semibold py-2 rounded-2xl" disabled>
                                                     {t('Sent')}
                                                 </button>
                                             ) : (
                                                 <button
-                                                    className="w-full text-white bg-main rounded-2xl py-2.5 font-semibold"
+                                                    className="w-full text-white bg-main rounded-2xl py-2 font-semibold"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         if (user?.id) {

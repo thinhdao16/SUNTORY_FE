@@ -258,6 +258,9 @@ importers:
       '@capacitor/cli':
         specifier: ^7.2.0
         version: 7.4.2
+      '@eslint/js':
+        specifier: ^9.37.0
+        version: 9.37.0
       '@testing-library/dom':
         specifier: '>=7.21.4'
         version: 10.4.0
@@ -300,6 +303,9 @@ importers:
       eslint:
         specifier: ^9.20.1
         version: 9.31.0(jiti@2.4.2)
+      eslint-plugin-i18next:
+        specifier: ^6.1.3
+        version: 6.1.3
       eslint-plugin-react:
         specifier: ^7.32.2
         version: 7.37.5(eslint@9.31.0(jiti@2.4.2))
@@ -1340,6 +1346,10 @@ packages:
 
   '@eslint/js@9.31.0':
     resolution: {integrity: sha512-LOm5OVt7D4qiKCqoiPbA7LWmI+tbw1VbTUowBcUMgQSuM6poJufkFkYDcQpo5KfgD39TnNySV26QjOh7VFpSyw==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@eslint/js@9.37.0':
+    resolution: {integrity: sha512-jaS+NJ+hximswBG6pjNX0uEJZkrT0zwpVi3BA3vX22aFGjJjmgSTSmPpZCRKmoBL5VY/M6p0xsSJx7rk7sy5gg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@eslint/object-schema@2.1.6':
@@ -3758,6 +3768,10 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
+  eslint-plugin-i18next@6.1.3:
+    resolution: {integrity: sha512-z/h4oBRd9wI1ET60HqcLSU6XPeAh/EPOrBBTyCdkWeMoYrWAaUVA+DOQkWTiNIyCltG4NTmy62SQisVXxoXurw==}
+    engines: {node: '>=18.10.0'}
+
   eslint-plugin-react-hooks@5.2.0:
     resolution: {integrity: sha512-+f15FfK64YQwZdJNELETdn5ibXEUQmW1DZL6KXhNnc2heoy/sg9VJJeT7n8TlMWouzWqSWavFkIhHyIbIAEapg==}
     engines: {node: '>=10'}
@@ -5840,6 +5854,10 @@ packages:
 
   require-main-filename@2.0.0:
     resolution: {integrity: sha512-NKN5kMDylKuldxYLSUfrbo5Tuzh4hd+2E8NPPX02mZtn1VuREQToYe/ZdlJy+J3uCpfaiGF05e7B8W0iXbQHmg==}
+
+  requireindex@1.1.0:
+    resolution: {integrity: sha512-LBnkqsDE7BZKvqylbmn7lTIVdpx4K/QCduRATpO5R+wtPmky/a8pN1bO2D6wXppn1497AJF9mNjqAXr6bdl9jg==}
+    engines: {node: '>=0.10.5'}
 
   requires-port@1.0.0:
     resolution: {integrity: sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==}
@@ -8041,6 +8059,8 @@ snapshots:
       - supports-color
 
   '@eslint/js@9.31.0': {}
+
+  '@eslint/js@9.37.0': {}
 
   '@eslint/object-schema@2.1.6': {}
 
@@ -10875,6 +10895,11 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
+  eslint-plugin-i18next@6.1.3:
+    dependencies:
+      lodash: 4.17.21
+      requireindex: 1.1.0
+
   eslint-plugin-react-hooks@5.2.0(eslint@9.31.0(jiti@2.4.2)):
     dependencies:
       eslint: 9.31.0(jiti@2.4.2)
@@ -13405,6 +13430,8 @@ snapshots:
   require-directory@2.1.1: {}
 
   require-main-filename@2.0.0: {}
+
+  requireindex@1.1.0: {}
 
   requires-port@1.0.0: {}
 

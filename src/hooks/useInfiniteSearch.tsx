@@ -32,23 +32,24 @@ export const useInfiniteSearch = ({
     const setError = useSearchResultsStore(s => s.setError);
 
     const loadMoreData = useCallback(async () => {
-        const q = searchQuery.trim();
-        const local = tabState;
-        if (!q) return;
-        if (local?.isLoading || local?.hasMore === false) return;
+      const q = searchQuery.trim();
+      // Always read the latest tab state from the store to avoid stale closures
+      const local = useSearchResultsStore.getState().getResults(key) as SearchResultsTabState | undefined;
+      if (!q) return;
+      if (local?.isLoading || local?.hasMore === false) return;
 
-        setLoading(key, true);
-        setError(key, null);
+      setLoading(key, true);
+      setError(key, null);
 
         try {
             let newUsers: SearchUser[] = [];
-            let newPosts: any[] = [];
+          let newPosts: any[] = [];
 
             switch (tab) {
                 case 'people':
                     const usersResponse = await SearchService.searchUsers(
-                        q, 
-                        (local?.currentPage ?? 0), 
+                        q,
+                        (local?.currentPage ?? 0),
                         pageSize
                     );
                     newUsers = usersResponse.data.data || [];
@@ -65,8 +66,8 @@ export const useInfiniteSearch = ({
 
                 case 'latest':
                     const postsResponse = await SearchService.searchPosts(
-                        q, 
-                        (local?.currentPage ?? 0), 
+                        q,
+                        (local?.currentPage ?? 0),
                         pageSize
                     );
                     newPosts = postsResponse.data.data || [];
@@ -140,7 +141,7 @@ export const useInfiniteSearch = ({
         } finally {
             setLoading(key, false);
         }
-    }, [searchQuery, tab, pageSize, tabState?.isLoading, tabState?.hasMore, tabState?.currentPage, tabState?.lastPostCode, key]);
+    }, [searchQuery, tab, pageSize, key]);
 
     useEffect(() => {
         ensureKey(key);

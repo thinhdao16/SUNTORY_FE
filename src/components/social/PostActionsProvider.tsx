@@ -120,6 +120,7 @@ export const PostActionsProvider: React.FC<PostActionsProviderProps> = ({
                 isOpen={showPinConfirm}
                 onClose={() => setShowPinConfirm(false)}
                 title={t('Pin new post?')}
+                confirmButtonClassName='!bg-main'
                 message={t('You can only pin 1 post. Pinning this will replace the current pinned post.')}
                 confirmText={t('Pin new')}
                 cancelText={t('Cancel')}

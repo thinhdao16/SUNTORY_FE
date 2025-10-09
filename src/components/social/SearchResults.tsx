@@ -21,6 +21,7 @@ import { useQueryClient } from 'react-query';
 import { useSendFriendRequest, useAcceptFriendRequest, useRejectFriendRequest, useCancelFriendRequest, useUnfriend } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { useToastStore } from '@/store/zustand/toast-store';
 import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
+import { useSearchResultsStore } from '@/store/zustand/search-results-store';
 
 interface SearchResultsProps {
     searchQuery: string;
@@ -52,7 +53,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         posts,
         isLoading,
         hasMore,
-        loadMoreData
+        loadMoreData,
+        resetData
     } = useInfiniteSearch({
         searchQuery: effectiveQuery,
         activeTab,
@@ -74,6 +76,29 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     const unfriendMutation = useUnfriend(showToast, () => {});
     
     const [localPosts, setLocalPosts] = useState<SocialPost[]>([]);
+
+    // Fingerprint the posts to detect in-place data changes from the data source
+    // This helps re-compute transforms even when the array reference stays the same.
+    const postsFingerprint = useMemo(() => {
+        const arr: any[] = Array.isArray(posts) ? posts : [];
+        try {
+            return arr
+                .map((p: any) => [
+                    p?.code ?? "",
+                    p?.reactionCount ?? "",
+                    p?.commentCount ?? "",
+                    p?.repostCount ?? "",
+                    p?.shareCount ?? "",
+                    p?.isLike ?? "",
+                    (p?.isRepostedByCurrentUser ?? p?.isUserReposted ?? p?.isRepostByMe ?? ""),
+                    p?.isFriend ?? "",
+                    p?.updateDate ?? "",
+                ].join(":"))
+                .join("|");
+        } catch {
+            return String(arr.length);
+        }
+    }, [posts]);
 
     const tabs = useMemo(() => ([
         { key: 'all', label: t('All') },
@@ -112,12 +137,25 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                                 commentCount: data.commentCount !== undefined ? data.commentCount : post.commentCount,
                                 repostCount: data.repostCount !== undefined ? data.repostCount : post.repostCount,
                                 shareCount: data.shareCount !== undefined ? data.shareCount : post.shareCount,
+                                isLike: data.isLike !== undefined ? data.isLike : post.isLike,
                             } as SocialPost;
                         }
                         return post;
                     });
                     return updated;
                 });
+                try {
+                    useSearchResultsStore.getState().applyPostPatch(postCode, {
+                        isFriend: data.isFriend,
+                        friendRequest: data.friendRequest,
+                        reactionCount: data.reactionCount,
+                        commentCount: data.commentCount,
+                        repostCount: data.repostCount,
+                        shareCount: data.shareCount,
+                        isLike: data.isLike,
+                        isRepostedByCurrentUser: data.isRepostedByCurrentUser,
+                    });
+                } catch {}
             }
         },
         onCommentAdded: (data) => {
@@ -132,22 +170,119 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     });
 
     const MAX_REALTIME_POSTS = 10;
-    const JOIN_DELAY_MS = 2000;
-    const LEAVE_DELAY_MS = 1200;
+    const JOIN_DELAY_MS = 1200;
+    const LEAVE_DELAY_MS = 800;
     const [visiblePostCodes, setVisiblePostCodes] = useState<string[]>([]);
     const joinTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
     const leaveTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
     const joinedPostsRef = useRef<Set<string>>(new Set());
+    const containerElRef = useRef<HTMLDivElement | null>(null);
+    const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+    const itemObserverRef = useRef<IntersectionObserver | null>(null);
+    const visibilityMapRef = useRef<Map<string, boolean>>(new Map());
 
-    const handleVisiblePostsChange = useCallback((codes: string[]) => {
-        const next = codes.slice(0, MAX_REALTIME_POSTS);
-        setVisiblePostCodes((prev) => {
-            if (prev.length === next.length && prev.every((code, index) => code === next[index])) {
-                return prev;
-            }
-            return next;
-        });
+    const setItemRef = useCallback((code: string, node: HTMLDivElement | null) => {
+        const obs = itemObserverRef.current;
+        const prev = itemRefs.current.get(code);
+        if (prev && obs) obs.unobserve(prev);
+        if (node) {
+            itemRefs.current.set(code, node);
+            if (obs) obs.observe(node);
+        } else {
+            itemRefs.current.delete(code);
+            visibilityMapRef.current.delete(code);
+        }
     }, []);
+
+    const handleVisibilityEntries = useCallback((entries: IntersectionObserverEntry[]) => {
+        let changed = false;
+        entries.forEach((entry) => {
+            const el = entry.target as HTMLElement;
+            const code = el.dataset.postCode;
+            if (!code) return;
+            const isVisible = entry.isIntersecting && entry.intersectionRatio >= 0.55;
+            const prev = visibilityMapRef.current.get(code) || false;
+            if (prev !== isVisible) {
+                visibilityMapRef.current.set(code, isVisible);
+                changed = true;
+            }
+        });
+        if (changed) {
+            const codes: string[] = [];
+            localPosts.forEach((p: SocialPost) => {
+                if (visibilityMapRef.current.get(p.code)) {
+                    codes.push(p.code);
+                    const original = (p as any)?.originalPost?.code as string | undefined;
+                    if (original) codes.push(original);
+                }
+            });
+            const next = Array.from(new Set(codes)).slice(0, MAX_REALTIME_POSTS);
+            setVisiblePostCodes((prev) => {
+                if (prev.length === next.length && prev.every((c, i) => c === next[i])) return prev;
+                return next;
+            });
+        }
+    }, [localPosts]);
+
+    useEffect(() => {
+        if (!containerElRef.current) return;
+        const observer = new IntersectionObserver(handleVisibilityEntries, {
+            threshold: [0.1, 0.25, 0.5, 0.75, 0.9],
+            root: containerElRef.current,
+            rootMargin: '50px'
+        });
+        itemObserverRef.current = observer;
+        itemRefs.current.forEach((node) => { if (node) observer.observe(node); });
+        return () => observer.disconnect();
+    }, [handleVisibilityEntries]);
+
+    useEffect(() => {
+        const targetSet = new Set(visiblePostCodes);
+        // cancel pending joins for codes no longer visible
+        joinTimeoutsRef.current.forEach((timer, code) => {
+            if (!targetSet.has(code)) {
+                clearTimeout(timer);
+                joinTimeoutsRef.current.delete(code);
+            }
+        });
+        // schedule joins for visible codes
+        visiblePostCodes.forEach((code) => {
+            if (joinedPostsRef.current.has(code) || joinTimeoutsRef.current.has(code)) return;
+            const t = setTimeout(async () => {
+                try {
+                    const ok = await joinPostUpdates(code);
+                    if (ok !== false) joinedPostsRef.current.add(code);
+                } finally {
+                    joinTimeoutsRef.current.delete(code);
+                }
+            }, JOIN_DELAY_MS);
+            joinTimeoutsRef.current.set(code, t);
+        });
+        // schedule leaves for non-visible codes
+        joinedPostsRef.current.forEach((code) => {
+            if (targetSet.has(code) || leaveTimeoutsRef.current.has(code)) return;
+            const t = setTimeout(async () => {
+                try { await leavePostUpdates(code); } catch {}
+                finally {
+                    leaveTimeoutsRef.current.delete(code);
+                    joinedPostsRef.current.delete(code);
+                }
+            }, LEAVE_DELAY_MS);
+            leaveTimeoutsRef.current.set(code, t);
+        });
+        return () => { /* no-op */ };
+    }, [visiblePostCodes, joinPostUpdates, leavePostUpdates]);
+
+    useEffect(() => {
+        return () => {
+            joinTimeoutsRef.current.forEach((t) => clearTimeout(t));
+            leaveTimeoutsRef.current.forEach((t) => clearTimeout(t));
+            joinTimeoutsRef.current.clear();
+            leaveTimeoutsRef.current.clear();
+            joinedPostsRef.current.forEach((code) => { void leavePostUpdates(code); });
+            joinedPostsRef.current.clear();
+        };
+    }, [leavePostUpdates]);
 
     const transformedPosts: SocialPost[] = useMemo(() => {
         return (posts || []).map((post: any, index: number) => {
@@ -217,10 +352,19 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 } as any;
             }
         });
-    }, [posts]);
+    }, [posts, postsFingerprint]);
 
     useEffect(() => {
-        setLocalPosts(transformedPosts);
+        // Reconcile server-transformed posts into local state on every change.
+        // Server values always override local for overlapping fields.
+        setLocalPosts(prev => {
+            const prevMap = new Map(prev.map(p => [p.code, p]));
+            const merged: SocialPost[] = transformedPosts.map(next => {
+                const old = prevMap.get(next.code);
+                return old ? ({ ...old, ...next } as SocialPost) : next;
+            });
+            return merged;
+        });
     }, [transformedPosts]);
 
     // Listen to feed store changes to sync friend status updates from main feed
@@ -500,12 +644,16 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     }, [unfriendMutation, refreshPostDetail]);
 
     useEffect(() => {
-        if (searchQuery && activeTab) {
-            handleTabSearch(activeTab, searchQuery);
+        if (effectiveQuery && activeTab) {
+            handleTabSearch(activeTab, effectiveQuery);
         }
-    }, [activeTab, searchQuery]);
+    }, [activeTab, effectiveQuery]);
 
     const handleTabSearch = async (tab: string, query: string) => {
+        // Force refresh cached data for this key to avoid stale values
+        resetData();
+        await Promise.resolve();
+        await loadMoreData();
     };
 
     const renderUserItem = (user: SearchUser) => (
@@ -521,6 +669,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 onError={(e) => {
                     (e.target as HTMLImageElement).src = avatarFallback;
                 }}
+                loading="lazy"
+                decoding="async"
             />
             <div className="flex-1 text-left">
                 <div className="flex items-center gap-1">
@@ -540,7 +690,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     );
 
     const renderPostCard = (post: SocialPost) => (
-        <div key={post.code} className="border-b border-gray-100" data-post-code={post.code}>
+        <div key={post.code} className="border-b border-gray-100" data-post-code={post.code} ref={(node) => setItemRef(post.code, node)}>
             <SocialFeedCard
                 post={post}
                 onPostClick={() => onPostClick(post)}
@@ -554,7 +704,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 onCancelFriendRequest={(requestId) => handleCancelFriendRequest(requestId, post.code)}
                 onUnfriend={(userId) => handleUnfriend(userId, post.code)}
                 onPostUpdate={(updatedPost) => {
-                    setLocalPosts(prev => prev.map(p => p.code === post.code ? updatedPost : p));
+                    // Merge partial patches from child (e.g., unrepost sends only code/repostCount)
+                    setLocalPosts(prev => prev.map(p => {
+                        if (p.code === (updatedPost as any)?.code || p.code === post.code) {
+                            return { ...p, ...updatedPost } as any;
+                        }
+                        return p;
+                    }));
                 }}
             />
         </div>
@@ -598,7 +754,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     <div>
                         {localPosts.length > 0 ? (
                             <div className="divide-y divide-gray-100">
-                                {localPosts
+                                {[...localPosts]
                                     .sort((a: SocialPost, b: SocialPost) => new Date(b.createDate).getTime() - new Date(a.createDate).getTime())
                                     .map(renderPostCard)}
                             </div>
@@ -617,7 +773,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         {users.length > 0 && (
                             <div className="mb-2">
                                 <div className="flex items-center justify-between px-4 py-2 ">
-                                    <h3 className="font-semibold text-gray-900">People</h3>
+                                    <h3 className="font-semibold text-gray-900">{t("People")}</h3>
                                     <button
                                         onClick={() => handleTabChange('people')}
                                         className="text-main text-sm"
@@ -684,6 +840,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 isLoading={isLoading}
                 className="pb-32"
                 showEndIndicator={hasAnyResults}
+                containerRefCallback={(el) => { containerElRef.current = el; }}
             >
                 {renderContent()}
             </InfiniteScrollContainer>

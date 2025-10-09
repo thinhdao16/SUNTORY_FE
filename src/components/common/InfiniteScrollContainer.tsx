@@ -8,6 +8,7 @@ interface InfiniteScrollContainerProps {
     threshold?: number;
     className?: string;
     showEndIndicator?: boolean;
+    containerRefCallback?: (el: HTMLDivElement | null) => void;
 }
 
 const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
@@ -18,6 +19,7 @@ const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
     threshold = 200,
     className = "",
     showEndIndicator = true,
+    containerRefCallback,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const loadingRef = useRef(false);
@@ -49,8 +51,12 @@ const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
         if (!container) return;
 
         container.addEventListener('scroll', handleScroll);
-        return () => container.removeEventListener('scroll', handleScroll);
-    }, [handleScroll]);
+        if (containerRefCallback) containerRefCallback(container);
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+            if (containerRefCallback) containerRefCallback(null);
+        };
+    }, [handleScroll, containerRefCallback]);
 
     return (
         <div 

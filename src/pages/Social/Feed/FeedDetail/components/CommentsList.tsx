@@ -253,7 +253,7 @@ const CommentsList: React.FC<CommentsListProps> = ({
                                                 <img
                                                     src={reply.user.avatarUrl || avatarFallback}
                                                     alt={reply.user.fullName}
-                                                    className="w-7 h-7 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                                    className="w-7 h-7 rounded-xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
                                                     onError={(e) => {
                                                         (e.target as HTMLImageElement).src = avatarFallback;
                                                     }}

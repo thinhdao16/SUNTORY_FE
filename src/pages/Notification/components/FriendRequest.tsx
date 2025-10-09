@@ -251,20 +251,7 @@ const FriendRequest: React.FC = () => {
                         <p className="text-xs text-gray-500">
                             {formatTimestamp(request.createDate)}
                         </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                className="p-1 hover:bg-gray-100 rounded-full"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                }}
-                            >
-                                <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                </svg>
-                            </button>
-                        </div>
                     </div>
-
                     {request.inviteStatus == 10 && (
                         <div className="flex items-center gap-2 mt-4">
                             <button

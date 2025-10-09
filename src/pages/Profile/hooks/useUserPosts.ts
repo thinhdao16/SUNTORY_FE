@@ -39,24 +39,36 @@ const fetchUserPosts = async (params: UserPostsParams): Promise<UserPostsRespons
     return response.data;
 };
 
-export const useUserPosts = (tabType: ProfileTabType, targetUserId?: number, pageSize = 10) => {
-    return useInfiniteQuery(
-      ['userPosts', tabType, targetUserId],
-      ({ pageParam = 0 }) => fetchUserPosts({
-        tabType,
-        targetUserId,
-        pageNumber: pageParam,
-        pageSize,
-      }),
-      {
-        getNextPageParam: (lastPage: UserPostsResponse) => {
-          if (!lastPage) return undefined;
-          const current = lastPage.data.pageNumber ?? 1;
-          const total = lastPage.data.totalPages ?? (lastPage.data.lastPage ?? current);
-          return current < total ? current + 1 : undefined;
-        },
-        // keepPreviousData: true, // tùy chọn
-      }
-    );
-  };
+export const useUserPosts = (
+  tabType: ProfileTabType,
+  targetUserId?: number,
+  pageSize = 10,
+  options?: { enabled?: boolean }
+) => {
+  return useInfiniteQuery(
+    ['userPosts', tabType, targetUserId, pageSize],
+    ({ pageParam = 1 }) => fetchUserPosts({
+      tabType,
+      targetUserId,
+      pageNumber: pageParam,
+      pageSize,
+    }),
+    {
+      getNextPageParam: (lastPage: UserPostsResponse) => {
+        if (!lastPage) return undefined;
+        const current = lastPage?.data?.pageNumber ?? 1;
+        const total = lastPage?.data?.totalPages ?? (lastPage?.data?.lastPage ?? current);
+        return current < total ? current + 1 : undefined;
+      },
+      keepPreviousData: true,
+      staleTime: 60 * 1000,
+      cacheTime: 5 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      enabled: options?.enabled ?? true,
+      retry: false,
+    }
+  );
+};
   

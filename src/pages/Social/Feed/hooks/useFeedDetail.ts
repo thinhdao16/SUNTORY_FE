@@ -20,7 +20,7 @@ export const useFeedDetail = (postCode: string | null | undefined, enabled: bool
     },
     {
       enabled: enabled && !!postCode,
-      staleTime: 1000 * 60 * 5,
+      // staleTime: 1000 * 60 * 5,
       refetchOnWindowFocus: false,
       refetchOnMount: true,
       onSuccess: (data) => {

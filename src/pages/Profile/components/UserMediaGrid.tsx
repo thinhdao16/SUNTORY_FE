@@ -25,7 +25,7 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
     hasNextPage,
     isFetchingNextPage,
     refetch,
-  } = useUserPosts(ProfileTabType.Media, targetUserId) as any;
+  } = useUserPosts(ProfileTabType.Media, targetUserId, 20, { enabled: targetUserId === undefined || !!targetUserId }) as any;
 
   const postLikeMutation = useUserPostLike({ tabType: ProfileTabType.Media, targetUserId });
   const postUpdateMutation = useUserPostUpdate({ tabType: ProfileTabType.Media, targetUserId });
@@ -61,23 +61,46 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
         })
     );
 
+  const fetchingRef = useRef(false);
+  const ioRef = useRef<IntersectionObserver | null>(null);
+  const lastFetchAtRef = useRef(0);
+  const initialAutoLoadsRemainingRef = useRef(2);
+
   useEffect(() => {
     if (!sentinelRef.current) return;
 
+    if (ioRef.current) ioRef.current.disconnect();
+
     const observer = new IntersectionObserver(
-      (entries) => {
+      async (entries) => {
         const entry = entries[0];
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage && !isLoading) {
-          fetchNextPage();
+        if (!entry.isIntersecting) return;
+        if (!hasNextPage || isFetchingNextPage || isLoading || fetchingRef.current) return;
+
+        const now = Date.now();
+        if (now - lastFetchAtRef.current < 400) return;
+
+        const userHasScrolled = (window.scrollY || document.documentElement.scrollTop || 0) > 0;
+        const allowAutoLoad = initialAutoLoadsRemainingRef.current > 0;
+        if (!allowAutoLoad && !userHasScrolled) return;
+
+        fetchingRef.current = true;
+        lastFetchAtRef.current = now;
+        try {
+          await fetchNextPage();
+        } finally {
+          fetchingRef.current = false;
+          if (initialAutoLoadsRemainingRef.current > 0) initialAutoLoadsRemainingRef.current -= 1;
         }
       },
       {
-        threshold: 0,
-        rootMargin: '200px'
+        threshold: 0.01,
+        rootMargin: '100px'
       }
     );
 
     observer.observe(sentinelRef.current);
+    ioRef.current = observer;
     
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, isLoading, fetchNextPage, mediaItems.length]);

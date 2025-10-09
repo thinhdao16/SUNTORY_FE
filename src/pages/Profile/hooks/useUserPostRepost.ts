@@ -22,6 +22,47 @@ export const useUserPostRepost = ({ tabType, targetUserId }: UseUserPostRepostPa
       return created as SocialPost;
     },
     {
+      onMutate: async ({ postCode }) => {
+        try {
+          const originalCode = postCode;
+          // Find previous repostCount from any userPosts cache
+          let prevCount: number | undefined;
+          const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+          matching.forEach(([qk, old]) => {
+            if (!old?.pages) return;
+            old.pages.forEach((page: any) => {
+              const list = Array.isArray(page?.data?.data) ? page.data.data : [];
+              list.forEach((p: any) => {
+                if (p?.code === originalCode && prevCount === undefined) prevCount = p?.repostCount;
+              });
+            });
+          });
+
+          const optimistic = Math.max(0, (prevCount ?? 0) + 1);
+          // Patch userPosts caches optimistically
+          matching.forEach(([qk, old]) => {
+            if (!old?.pages) return;
+            try {
+              const newData = {
+                ...old,
+                pages: old.pages.map((page: any) => {
+                  if (!page?.data) return page;
+                  const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                  if (!list.length) return page;
+                  const updated = list.map((p: any) => p?.code === originalCode ? { ...p, repostCount: optimistic, isRepostedByCurrentUser: true } : p);
+                  return { ...page, data: { ...page.data, data: updated } };
+                }),
+              };
+              queryClient.setQueryData(qk as any, newData);
+            } catch {}
+          });
+
+          // Patch feed store + detail cache optimistically
+          const store = useSocialFeedStore.getState();
+          store.applyRealtimePatch(originalCode, { repostCount: optimistic, isRepostedByCurrentUser: true } as any);
+          queryClient.setQueryData(['feedDetail', originalCode], (old: any) => ({ ...(old || {}), repostCount: optimistic, isRepostedByCurrentUser: true }));
+        } catch {}
+      },
       onSuccess: async (created, variables) => {
         try {
           const store = useSocialFeedStore.getState();
@@ -38,6 +79,27 @@ export const useUserPostRepost = ({ tabType, targetUserId }: UseUserPostRepostPa
             store.applyRealtimePatch(originalCode, patch);
             queryClient.setQueryData(['feedDetail', originalCode], fresh);
             queryClient.invalidateQueries(['feedDetail', originalCode]);
+
+            // Also patch all profile userPosts caches so counts reflect immediately (Posts/Media/Likes/Reposts lists)
+            try {
+              const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+              matching.forEach(([qk, old]) => {
+                if (!old?.pages) return;
+                try {
+                  const newData = {
+                    ...old,
+                    pages: old.pages.map((page: any) => {
+                      if (!page?.data) return page;
+                      const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                      if (!list.length) return page;
+                      const updated = list.map((p: any) => p?.code === originalCode ? { ...p, ...patch } : p);
+                      return { ...page, data: { ...page.data, data: updated } };
+                    }),
+                  };
+                  queryClient.setQueryData(qk as any, newData);
+                } catch {}
+              });
+            } catch {}
           }
           // Optimistically add created repost to Profile Reposts tab cache(s)
           try {
