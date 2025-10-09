@@ -148,7 +148,7 @@ const NotificationBottomModal: React.FC<NotificationBottomModalProps> = ({
                                         onClick={() => handleMarkRead?.()}
                                         disabled={isSaving}
                                     >
-                                        <span className="text-black text-[15px] font-medium">{!isFromHeader ? 'Mark as read' : 'Mark all as read'}</span>
+                                        <span className="text-black text-[15px] font-medium">{!isFromHeader ? t('Mark as read') : t('Mark all as read')}</span>
                                         <IonIcon icon={checkmarkDone} className="w-5 h-5 text-black" />
                                     </button>
 
@@ -159,7 +159,7 @@ const NotificationBottomModal: React.FC<NotificationBottomModalProps> = ({
                                             onClick={() => setShowDeleteConfirm(true)}
                                             disabled={isSaving}
                                         >
-                                            <span className="text-black text-[15px] font-medium">Delete this notification</span>
+                                            <span className="text-red-500 text-[15px] font-medium">{t('Delete this notification')}</span>
                                             <IonIcon icon={trash} className="w-5 h-5 text-red-500" />
                                         </button>
                                     )}

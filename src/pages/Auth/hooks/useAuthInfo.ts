@@ -8,10 +8,10 @@ import useDeviceInfo from "@/hooks/useDeviceInfo";
 export const useAuthInfo = () => {
     const { token, setProfile } = useAuthStore.getState();
     const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
-
+    console.log("deviceInfo", deviceInfo);
     return useQuery(
         "authInfo",
-        () => getInfoService(),
+        () => getInfoService(deviceInfo.deviceId || ''),
         {
             enabled: !!token,
             select: (res: any) => res.data,

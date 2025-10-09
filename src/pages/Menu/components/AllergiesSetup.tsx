@@ -6,6 +6,7 @@ import { chevronBackOutline, paperPlaneOutline, close } from 'ionicons/icons';
 import { getInfo as getInfoService } from '@/services/auth/auth-service';
 import { useHealthMasterDataStore } from '@/store/zustand/health-master-data-store';
 import { useMenuTranslationStore } from '@/store/zustand/menuTranslationStore';
+import useDeviceInfo from '@/hooks/useDeviceInfo';
 
 interface AllergyItem {
     allergyId: number;
@@ -14,6 +15,7 @@ interface AllergyItem {
 
 const AllergiesSetup: React.FC = () => {
     const history = useHistory();
+    const deviceInfo = useDeviceInfo();
     const [inputValue, setInputValue] = useState('');
     const [isIconSendStyle, setIsIconSendStyle] = useState('black');
     const [savedAllergies, setSavedAllergies] = useState<AllergyItem[]>([]);
@@ -45,7 +47,7 @@ const AllergiesSetup: React.FC = () => {
             try {
                 const initialized = sessionStorage.getItem('mt_allergies_initialized') === '1';
                 if (!initialized && storeAllergies.length === 0 && storeSelectedAllergies.length === 0) {
-                    const res: any = await getInfoService();
+                    const res: any = await getInfoService(deviceInfo.deviceId || '');
                     console.log("res: ", res);
                     if (res.data.allergies != null) {
                         const fromProfile: AllergyItem[] = res.data.allergies.map((item: any) => ({

@@ -115,6 +115,7 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
                     setHasNextPage(hasMore);
                 }
             } else {
+                setIsLoading(false);
                 if (!isLoadMore) {
                     setHasNextPage(false);
                 }

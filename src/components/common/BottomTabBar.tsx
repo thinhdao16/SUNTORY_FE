@@ -99,7 +99,7 @@ const BottomTabBar: React.FC = () => {
         //     classNameIcon: "",
         // },
         {
-            label: t("Notification"),
+            label: t("Notifications"),
             icon: isNewNotification ? NotificationIcon2 : NotificationIcon,
             iconActive: isNewNotification ? NotificationActiveIcon2 : NotificationActiveIcon,
             path: "/notification-list",

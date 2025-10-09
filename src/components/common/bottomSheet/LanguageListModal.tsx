@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import { IonButton, IonIcon, IonSpinner } from "@ionic/react";
 import { checkmarkCircle, close, code } from "ionicons/icons";
 import { motion, AnimatePresence } from "framer-motion";
-import { updateAccountInformationV3 } from "@/services/auth/auth-service";
-import { UpdateAccountInformationV3Payload } from "@/services/auth/auth-types";
+import { updateDeviceLanguage } from "@/services/device/device-service";
 import { useAuthInfo } from "@/pages/Auth/hooks/useAuthInfo";
 import { getListLanguage } from "@/services/language/language-service";
 import { useTranslation } from "react-i18next";
 import { useToastStore } from "@/store/zustand/toast-store";
+import { UpdateDeviceLanguagePayload } from "@/services/device/device-type";
+import useDeviceInfo from "@/hooks/useDeviceInfo";
 
 interface LanguageListModalProps {
     isOpen: boolean;
@@ -41,7 +42,7 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
     const { showToast } = useToastStore();
     const SHEET_MAX_VH = 80;
     const HEADER_PX = 56;
-
+    const { deviceId } = useDeviceInfo();
     const [query, setQuery] = useState("");
     const [debouncedQuery, setDebouncedQuery] = useState("");
     const [languages, setLanguages] = useState<any[]>([]);
@@ -105,15 +106,11 @@ const LanguageListModal: React.FC<LanguageListModalProps> = ({
         try {
             const lang = languages.find((l) => (l?.code ?? l?.data?.code) === tempSelected);
             if (!lang) return;
-            const payload: UpdateAccountInformationV3Payload = {
+            const payload: UpdateDeviceLanguagePayload = {
                 languageId: lang?.id ?? lang?.data?.id,
-                countryId: null,
-                firstName: null,
-                lastName: null,
-                gender: null,
-                yearOfBirth: null,
+                deviceId: deviceId || '',
             };
-            await updateAccountInformationV3(payload);
+            await updateDeviceLanguage(payload);
             showToast(t("Language updated successfully!"), 2000, "success");
             onSelect(tempSelected);
             await handleUpdateUserLanguage(tempSelected);
