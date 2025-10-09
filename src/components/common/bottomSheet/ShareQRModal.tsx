@@ -206,8 +206,7 @@ const ShareQRModal: React.FC<ShareQRModalProps> = ({
         >
           <div className="flex items-center justify-between px-4 pt-4 pb-2">
             <h2 className="text-sm font-semibold text-center flex-grow text-gray-900">
-              Share QR Code
-            </h2>
+              {t("Share QR Code")}</h2>
             <button onClick={onClose} className="absolute right-4 top-4 text-gray-500">
               <FiX size={20} />
             </button>

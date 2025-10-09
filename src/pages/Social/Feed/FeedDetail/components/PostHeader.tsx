@@ -35,7 +35,7 @@ const PostHeader: React.FC<PostHeaderProps> = ({
                             >
                                 {displayPost?.user?.fullName}
                             </span>
-                            <span>'s Post</span>
+                            <span>{t("'s Post")}</span>
                         </span>
                     )}
                 </span>

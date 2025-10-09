@@ -221,8 +221,7 @@ const MyProfile: React.FC = () => {
                       </p>
                       <p className="mb-0 font-sans"
                       >
-                        friends
-                      </p>
+                        {t("friends")}</p>
                     </div>
                   </div>
                   <div className="relative ml-4">

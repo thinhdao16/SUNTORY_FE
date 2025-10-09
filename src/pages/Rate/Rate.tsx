@@ -153,8 +153,7 @@ function Rate() {
                   /> */}
                   <div className="mt-7">
                     <div className="pb-2 text-start darkk:text-white">
-                      AI-Generated Feedback
-                    </div>
+                      {t("AI-Generated Feedback")}</div>
                     <textarea
                       ref={textareaRef}
                       rows={1}

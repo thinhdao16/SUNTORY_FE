@@ -60,14 +60,14 @@ const StreamingMessageItem: React.FC<StreamingMessageItemProps> = ({ msg }) => {
                     {/* Show completion indicator */}
                     {msg.isComplete && (
                         <div className="text-xs text-gray-400 mt-1 px-1">
-                            ✓ Complete
+                           {t(" ✓ Complete")}
                         </div>
                     )}
 
                     {/* Show error if any */}
                     {msg.hasError && (
                         <div className="text-xs text-red-500 mt-1 px-1">
-                            ⚠ Error occurred
+                           {t(" ⚠ Error occurred")}
                         </div>
                     )}
                 </div>

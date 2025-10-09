@@ -173,13 +173,12 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
                                     />
                                     {firstName.length > 20 && (
                                         <p className="text-xs text-red-500 font-medium mt-1">
-                                            First name too long! Maximum 20 characters.
+                                            {t("First name too long! Maximum 20 characters.")}
                                         </p>
                                     )}
                                     {firstName.trim().length === 0 && (
                                         <p className="text-xs text-red-500 font-medium mt-1">
-                                            First name is required!
-                                        </p>
+                                            {t("First name is required!")}</p>
                                     )}
                                 </div>
 
@@ -198,14 +197,12 @@ const NameUpdateListModal: React.FC<NameUpdateListModalProps> = ({
                                         }`}
                                     />
                                     {lastName.length > 20 && (
-                                        <p className="text-xs text-red-500 font-medium mt-1">
-                                            Last name too long! Maximum 20 characters.
+                                        <p className="text-xs text-red-500 font-medium mt-1">{t("Last name too long! Maximum 20 characters.")}
                                         </p>
                                     )}
                                     {lastName.trim().length === 0 && (
                                         <p className="text-xs text-red-500 font-medium mt-1">
-                                            Last name is required!
-                                        </p>
+                                            {t("Last name is required!")}</p>
                                     )}
                                 </div>
                             </div>

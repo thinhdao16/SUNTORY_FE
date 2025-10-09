@@ -24,8 +24,7 @@ function MedicineInfo() {
             subtitle={t("List the medications you are taking regularly")}
         >
             <div>
-                children
-            </div>
+                {t("children")}</div>
         </HealthInformationStepLayout>
     )
 }

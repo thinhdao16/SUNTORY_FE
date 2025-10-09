@@ -682,7 +682,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 <div className="text-sm text-gray-500">
                     {user.username}
                     {user.postCount !== undefined && (
-                        <span className="ml-1">• {user.postCount} new posts</span>
+                        <span className="ml-1">• {user.postCount} {t("new posts")}</span>
                     )}
                 </div>
             </div>
@@ -778,8 +778,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                                         onClick={() => handleTabChange('people')}
                                         className="text-main text-sm"
                                     >
-                                        See all
-                                    </button>
+                                        {t("See all")}</button>
                                 </div>
                                 <div className="">
                                     {users.slice(0, 3).map(renderUserItem)}
@@ -789,13 +788,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         {localPosts.length > 0 && (
                             <div className="mb-2">
                                 <div className="flex items-center justify-between px-4 py-2">
-                                    <span className="font-semibold text-gray-900">Posts</span>
+                                    <span className="font-semibold text-gray-900">{t("Posts")}</span>
                                     <button
                                         onClick={() => handleTabChange('posts')}
                                         className="text-main text-sm"
                                     >
-                                        See All 
-                                    </button>
+                                        {t("See All")}</button>
                                 </div>
                                 <div>
                                     {localPosts.slice(0, 3).map(renderPostCard)}

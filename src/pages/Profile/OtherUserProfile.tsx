@@ -402,8 +402,7 @@ const OtherUserProfile: React.FC = () => {
                                             {userInfo?.friendNumber}
                                         </p>
                                         <p className="mb-0 font-sans">
-                                            friends
-                                        </p>
+                                            {t("friends")}</p>
                                     </div>
                                 </div>
 

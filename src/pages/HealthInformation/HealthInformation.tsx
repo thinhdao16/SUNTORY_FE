@@ -2,7 +2,7 @@
 
 function HealthInformation() {
     return (
-        <div>HealthInformation</div>
+        <div>{t("HealthInformation")}</div>
     )
 }
 

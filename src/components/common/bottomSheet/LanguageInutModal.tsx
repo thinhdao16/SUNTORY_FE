@@ -136,8 +136,7 @@ const LanguageSelectModal: React.FC<LanguageSelectModalProps> = ({
                         {!filterAndGroupLanguages.isSearching && filterAndGroupLanguages.suggested.length > 0 && (
                             <div className="mb-6">
                                 <span className="uppercase text-gray-500 font-medium my-4 block">
-                                    Suggested Languages
-                                </span>
+                                    {t("Suggested Languages")}</span>
                                 <div className="rounded-2xl bg-white overflow-hidden">
                                     {filterAndGroupLanguages.suggested.map((lang) => (
                                         <div
@@ -194,8 +193,8 @@ const LanguageSelectModal: React.FC<LanguageSelectModalProps> = ({
                             filterAndGroupLanguages.isSearching && (
                                 <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                                     <div className="text-4xl mb-2">🔍</div>
-                                    <span className="text-sm">No languages found</span>
-                                    <span className="text-xs">Try a different search term</span>
+                                    <span className="text-sm">{t("No languages found")}</span>
+                                    <span className="text-xs">{t("Try a different search term")}</span>
                                 </div>
                             )
                         )}

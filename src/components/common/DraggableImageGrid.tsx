@@ -259,15 +259,13 @@ export const DraggableImageGrid: React.FC<DraggableImageGridProps> = ({
                         {canScrollLeft && (
                             <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-blue-500/30 to-transparent z-10 pointer-events-none flex items-center justify-start pl-2">
                                 <div className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium shadow-lg animate-pulse">
-                                    ← Scroll
-                                </div>
+                                    {t("← Scroll")}</div>
                             </div>
                         )}
                         {canScrollRight && (
                             <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-blue-500/30 to-transparent z-10 pointer-events-none flex items-center justify-end pr-2">
                                 <div className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium shadow-lg animate-pulse">
-                                    Scroll →
-                                </div>
+                                    {t("Scroll →")}</div>
                             </div>
                         )}
                     </>
@@ -378,7 +376,7 @@ const DraggableStripItem: React.FC<{
                     <div className="absolute inset-0 bg-black/35 flex items-center justify-center pointer-events-none">
                         <div className="flex items-center gap-2 text-white text-xs">
                             <div className="w-5 h-5 border-2 border-white/80 border-t-transparent rounded-full animate-spin" />
-                            <span>Uploading…</span>
+                            <span>{t("Uploading…")}</span>
                         </div>
                     </div>
                 )}
@@ -386,8 +384,7 @@ const DraggableStripItem: React.FC<{
                 {uploadError && (
                     <div className="absolute inset-0 bg-red-500/15 flex items-center justify-center">
                         <div className="bg-red-500 text-white px-2 py-1 rounded text-xs shadow">
-                            Upload error
-                        </div>
+                            {t("Upload error")}</div>
                     </div>
                 )}
 
@@ -418,7 +415,7 @@ const DraggableStripItem: React.FC<{
                             >
                                 <div className="flex items-center gap-2">
                                     <MdDragIndicator className="w-4 h-4 text-white" />
-                                    <span className="text-xs text-white font-medium">Drag to reorder</span>
+                                    <span className="text-xs text-white font-medium">{t("Drag to reorder")}</span>
                                     <MdDragIndicator className="w-4 h-4 text-white" />
                                 </div>
                             </div>
@@ -451,7 +448,7 @@ const DraggableStripItem: React.FC<{
                         <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
                             <div className="flex items-center gap-1 px-3 py-1 bg-black/60 rounded-full">
                                 <MdDragIndicator className="w-3 h-3 text-white" />
-                                <span className="text-xs text-white font-medium">Drag</span>
+                                <span className="text-xs text-white font-medium">{t("Drag")}</span>
                                 <MdDragIndicator className="w-3 h-3 text-white" />
                             </div>
                         </div>
@@ -537,7 +534,7 @@ const StripItem: React.FC<{
                 <div className="absolute inset-0 bg-black/35 flex items-center justify-center pointer-events-none">
                     <div className="flex items-center gap-2 text-white text-xs">
                         <div className="w-5 h-5 border-2 border-white/80 border-t-transparent rounded-full animate-spin" />
-                        <span>Uploading…</span>
+                        <span>{t("Uploading…")}</span>
                     </div>
                 </div>
             )}
@@ -545,8 +542,7 @@ const StripItem: React.FC<{
             {uploadError && (
                 <div className="absolute inset-0 bg-red-500/15 flex items-center justify-center">
                     <div className="bg-red-500 text-white px-2 py-1 rounded text-xs shadow">
-                        Upload error
-                    </div>
+                        {t("Upload error")}</div>
                 </div>
             )}
 

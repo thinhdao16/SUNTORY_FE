@@ -113,7 +113,7 @@ const ChatStreamMessageItem: React.FC<{
                             >
                                 <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] xl:max-w-[350px] flex justify-between">
                                     <div className="prose prose-sm whitespace-break-spaces break-words text-[15px] font-semibold">
-                                        Tin nhắn thất bại, vui lòng thử lại.
+                                       {t(" Tin nhắn thất bại, vui lòng thử lại.")}
                                     </div>
                                     <RetryIcon
                                         className="cursor-pointer hover:scale-110 transition-transform"

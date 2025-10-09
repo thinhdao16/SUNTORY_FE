@@ -68,14 +68,13 @@ const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
             {isLoading && (
                 <div className="flex justify-center items-center py-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                    <span className="ml-2 text-gray-500">Loading more...</span>
+                    <span className="ml-2 text-gray-500">{t("Loading more...")}</span>
                 </div>
             )}
             
             {showEndIndicator && !hasMore && !isLoading && (
                 <div className="text-center py-4 text-gray-500 text-sm">
-                    No more results
-                </div>
+                    {t("No more results")}</div>
             )}
         </div>
     );

@@ -177,7 +177,7 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
                   target.style.display = 'flex';
                   target.style.alignItems = 'center';
                   target.style.justifyContent = 'center';
-                  target.innerHTML = '<span style="color: #6b7280;">Failed to load</span>';
+                  target.innerHTML = '<span style="color: #6b7280;">{t("Failed to load")}</span>';
                 }}
                 onLoad={() => {
                   console.log('Image loaded successfully:', item.urlFile || item.linkImage || item.url);

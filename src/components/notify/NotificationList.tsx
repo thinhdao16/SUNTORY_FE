@@ -180,7 +180,7 @@ export const NotificationList = () => {
                                                 <div className="flex-1 min-w-0">
                                                     <div className="mb-1">
                                                         <span className="text-sm text-gray-400">
-                                                            Friend request • {formatTimeAgo(new Date(n.createdAt))}
+                                                           {t("Friend request")} • {formatTimeAgo(new Date(n.createdAt))}
                                                         </span>
                                                     </div>
                                                     {!isExpanded && (
@@ -233,7 +233,7 @@ export const NotificationList = () => {
                                                         <div className="flex-1">
                                                             <p className="text-base">
                                                                 <span className="font-bold text-black">{(n as any)?.data?.from_user_name || "User"}</span>
-                                                                <span className="text-gray-600">: Hey my name is {(n as any)?.data?.from_user_name || "User"}. Nice to meet you</span>
+                                                                <span className="text-gray-600">:{t(" Hey my name is")} {(n as any)?.data?.from_user_name || "User"}. Nice to meet you</span>
                                                             </p>
                                                         </div>
                                                     </div>
@@ -247,8 +247,7 @@ export const NotificationList = () => {
                                                             }}
                                                             className="text-blue-500 text-sm font-semibold hover:text-blue-600 transition-colors"
                                                         >
-                                                            Accept
-                                                        </button>
+                                                            {t("Accept")}</button>
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
@@ -258,8 +257,7 @@ export const NotificationList = () => {
                                                             }}
                                                             className="text-red-500 text-sm font-semibold hover:text-red-600 transition-colors"
                                                         >
-                                                            Decline
-                                                        </button>
+                                                            {t("Decline")}</button>
                                                     </div>
                                                 </div>
                                             </motion.div>
@@ -314,7 +312,7 @@ export const NotificationList = () => {
                                                 <div className="flex-1 min-w-0">
                                                     <div className="mb-1">
                                                         <span className="text-sm text-gray-400">
-                                                            New message • {formatTimeAgo(new Date(n.createdAt))}
+                                                            {t("New message")} • {formatTimeAgo(new Date(n.createdAt))}
                                                         </span>
                                                     </div>
                                                     {!isChatExpanded && (
@@ -380,8 +378,7 @@ export const NotificationList = () => {
                                                             }}
                                                             className="text-blue-500 text-sm font-semibold hover:text-blue-600 transition-colors"
                                                         >
-                                                            Reply
-                                                        </button>
+                                                            {t("Reply")}</button>
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
@@ -394,8 +391,7 @@ export const NotificationList = () => {
                                                             }}
                                                             className="text-blue-500 text-sm font-semibold hover:text-gray-600 transition-colors"
                                                         >
-                                                            Mark as read
-                                                        </button>
+                                                            {t("Mark as read")}</button>
                                                     </div>
                                                     {/* Reply Input - only show when Reply is clicked */}
                                                     {replyOpenId === n.id && (
@@ -443,8 +439,7 @@ export const NotificationList = () => {
                                                                 className="px-3 py-2 rounded-xl text-sm text-white bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 aria-label="Send reply"
                                                             >
-                                                                Send
-                                                            </button>
+                                                                {t("Send")}</button>
                                                         </motion.div>
                                                     )}
                                                 </div>
@@ -619,7 +614,7 @@ export const NotificationList = () => {
                                                     </div>
                                                     <p className="text-base">
                                                         <span className="font-bold text-black">{(n.data.liker_name || "")} </span>
-                                                        <span className="text-black">liked your post</span>
+                                                        <span className="text-black">{t("liked your post")}</span>
                                                     </p>
                                                 </div>
                                             </div>
@@ -651,7 +646,7 @@ export const NotificationList = () => {
                                                     </div>
                                                     <p className="text-base">
                                                         <span className="font-bold text-black">{(n.data.commenter_name || "")} </span>
-                                                        <span className="text-black">commented on your post</span>
+                                                        <span className="text-black">{t("commented on your post")}</span>
                                                     </p>
                                                 </div>
                                             </div>
@@ -683,7 +678,7 @@ export const NotificationList = () => {
                                                     </div>
                                                     <p className="text-base">
                                                         <span className="font-bold text-black">{(n.data.reposter_name || "")} </span>
-                                                        <span className="text-black">reposted your post</span>
+                                                        <span className="text-black">{t("reposted your post")}</span>
                                                     </p>
                                                 </div>
                                             </div>
@@ -715,7 +710,7 @@ export const NotificationList = () => {
                                                     </div>
                                                     <p className="text-base">
                                                         <span className="font-bold text-black">{(n.data.liker_name || "")} </span>
-                                                        <span className="text-black">liked your comment</span>
+                                                        <span className="text-black">{t("liked your comment")}</span>
                                                     </p>
                                                 </div>
                                             </div>
@@ -743,7 +738,7 @@ export const NotificationList = () => {
                                                     </div>
                                                     <p className="text-base">
                                                         <span className="font-bold text-black">{(n.data.replyer_name || "")} </span>
-                                                        <span className="text-black">replied to your comment</span>
+                                                        <span className="text-black">{t("replied to your comment")}</span>
                                                     </p>
                                                 </div>
                                             </div>

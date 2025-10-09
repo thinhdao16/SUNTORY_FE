@@ -186,7 +186,7 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
                 <button onClick={handleBack} className="p-1">
                     <BackDefaultIcon />
                 </button>
-                <span className="font-semibold text-base ml-2">Thông tin đoạn chat</span>
+                <span className="font-semibold text-base ml-2">{t("Thông tin đoạn chat")}</span>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 pb-6">
@@ -231,7 +231,7 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
                                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
                                     <AddMemberIcon />
                                 </div>
-                                <span className="text-xs text-gray-600">Thêm</span>
+                                <span className="text-xs text-gray-600">{t("Thêm")}</span>
                             </button>
                         )}
 
@@ -252,12 +252,12 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
                 </div>
 
                 <div className="bg-white rounded-3xl mt-4 p-4">
-                    <h3 className="text-sm text-netural-300">Thông tin đoạn chat</h3>
+                    <h3 className="text-sm text-netural-300">{t("Thông tin đoạn chat")}</h3>
 
                     <button className="w-full flex items-center justify-between pt-4" onClick={() => history.push(`/social-chat/t/${roomId}/members`)}>
                         <div className="flex items-center gap-3">
                             <MdOutlineGroups className="text-gray-500 text-xl" />
-                            <span>Xem thành viên </span> ({roomData?.participants?.length || 0})
+                            <span>{t("Xem thành viên")}</span> ({roomData?.participants?.length || 0})
                         </div>
                         <NextGrayIcon className="text-gray-400" />
                     </button>
@@ -265,13 +265,13 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
 
                 <div className="bg-white rounded-3xl mt-4">
                     <div className="border-b border-gray-100">
-                        <h3 className="px-4 py-3 text-sm text-gray-500">Hành động khác</h3>
+                        <h3 className="px-4 py-3 text-sm text-gray-500">{t("Hành động khác")}</h3>
 
                         <button className="w-full flex flex-col px-4 py-3">
                             <div className="flex items-center justify-between" onClick={() => history.push(`/social-chat/t/${roomId}/view-attachments`)}>
                                 <div className="flex items-center gap-3">
                                     <MdOutlinePhotoLibrary className="text-gray-500 text-xl" />
-                                    <span>Xem phương tiện đã chia sẻ</span>
+                                    <span>{t("Xem phương tiện đã chia sẻ")}</span>
                                 </div>
                                 <NextGrayIcon className="text-gray-400" />
                             </div>
@@ -282,7 +282,7 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
                                         <div key={i} className="w-16 h-16 rounded-md overflow-hidden bg-gray-200 animate-pulse" />
                                     ))
                                 ) : mediaPreview.length === 0 ? (
-                                    <div className="text-sm text-left text-gray-500">Chưa có phương tiện được chia sẻ</div>
+                                    <div className="text-sm text-left text-gray-500">{t("Chưa có phương tiện được chia sẻ")}</div>
                                 ) : (
                                     <div className="grid grid-cols-5 gap-2">
                                         {mediaPreview.map((media: any) => (

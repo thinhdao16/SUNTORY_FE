@@ -597,7 +597,7 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
                                                                         <div className="px-4 py-2 text-white text-sm">
                                                                             <div className="flex items-center gap-2 mb-2">
                                                                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                                                <span>Đang tải... ({downloadProgress.current}/{downloadProgress.total})</span>
+                                                                                <span>{t("Đang tải...")} ({downloadProgress.current}/{downloadProgress.total})</span>
                                                                             </div>
                                                                             <div className="w-full bg-white/20 rounded-full h-1">
                                                                                 <div
