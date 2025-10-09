@@ -34,8 +34,8 @@ export const useLogin = (langCode: string) => {
     const history = useHistory();
 
     return useMutation(
-        async (credentials: { email: string; password: string; deviceId: string | null; }) => {
-            const storedToken = (await Preferences.get({ key: FCM_KEY })).value;
+        async (credentials: { email: string; password: string; deviceId: string | null; firebaseToken: string; }) => {
+            const storedToken = credentials.firebaseToken || (await Preferences.get({ key: FCM_KEY })).value;
             console.log(storedToken)
             return login({
                 ...credentials,

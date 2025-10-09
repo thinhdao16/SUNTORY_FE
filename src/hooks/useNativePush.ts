@@ -82,7 +82,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
 
       // Update device with new FCM token
       if (deviceInfo.deviceId) {
-        console.log("🔥 Using native push notifications - deviceId", deviceInfo.deviceId);
+        console.log("🔥 Using native push notifications save ", deviceInfo.deviceId, token);
         updateNewDevice.mutate({
           deviceId: deviceInfo.deviceId,
           firebaseToken: token,
@@ -95,6 +95,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
 
         // Update device with new FCM token
         if (deviceInfo.deviceId) {
+          console.log("🔥 Using native push notifications registered ", deviceInfo.deviceId, token);
           updateNewDevice.mutate({
             deviceId: deviceInfo.deviceId,
             firebaseToken: token.value,
@@ -114,19 +115,31 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
           console.log("✅ Received push notification:", n);
 
           try {
-            await LocalNotifications.schedule({
-              notifications: [{
-                id: Date.now() % 2147483647,
-                title: n.title || "WayJet",
-                body: n.body || "",
-                channelId: ANDROID_CHANNEL_ID,
-                  smallIcon: "ic_stat_name",     
-                  sound: "default",
-                  extra: n.data || {},
-                  schedule: { at: new Date(Date.now() + 50) },
-                },
-              ],
-            });
+            if (Capacitor.getPlatform() === "android") {
+              await LocalNotifications.schedule({
+                notifications: [{
+                    id: Date.now() % 2147483647,
+                    title: n.title || "WayJet",
+                    body: n.body || "",
+                    channelId: ANDROID_CHANNEL_ID,
+                    smallIcon: "ic_stat_name",     
+                    sound: "default",
+                    extra: n.data || {},
+                    schedule: { at: new Date(Date.now() + 50) },
+                  },
+                ],
+              });
+            } else if (Capacitor.getPlatform() === "ios") {
+              await LocalNotifications.schedule({
+               notifications: [{
+                 id: Date.now() % 2147483647,
+                 title: n.title || "WayJet",
+                 body: n.body || "",
+                 sound: "default",
+                 schedule: { at: new Date(Date.now() + 50) },
+               }],
+              });
+            }
           } catch (e) {
             console.warn("LocalNotifications.schedule error", e);
           }
