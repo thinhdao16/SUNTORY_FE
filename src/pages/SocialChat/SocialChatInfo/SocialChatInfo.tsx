@@ -18,6 +18,7 @@ import MuteIcon from "@/icons/logo/social-chat/mute.svg?react"
 import UnMuteIcon from "@/icons/logo/social-chat/unmute.svg?react"
 import AddMemberIcon from "@/icons/logo/social-chat/add-member.svg?react"
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
+import avatarGroupFallback from "@/icons/logo/social-chat/avt-gr-rounded.svg";
 
 import EditGroupNameModal from "./components/EditGroupNameModal";
 import ConfirmModal from "@/components/common/modals/ConfirmModal";
@@ -36,6 +37,7 @@ import { t } from "@/lib/globalT";
 import { useSocialSignalR } from "@/hooks/useSocialSignalR";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { useUserActivity } from "@/hooks/useUserActivity";
+import { ChatInfoType } from "@/constants/socialChat";
 
 interface SocialChatInfoProps { }
 
@@ -105,7 +107,9 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
         return imageFiles.slice(0, 4);
     }, [allAttachments]);
 
-    const displaySrc = avatarPreview || roomChatInfo?.avatarRoomChat?.trim() || avatarFallback;
+    const avatarUrl = (roomChatInfo?.avatarRoomChat || '').trim();
+    const isGroup = (roomChatInfo?.type === ChatInfoType.Group) || (roomData?.type === ChatInfoType.Group);
+    const displaySrc = avatarPreview || (avatarUrl || (isGroup ? avatarGroupFallback : avatarFallback));
 
     const handleBack = () => history.push(`/social-chat/t/${roomId}`);
 

@@ -9,7 +9,6 @@ import { Capacitor } from "@capacitor/core";
 import { useQueryClient } from "react-query";
 
 import { TopicType, TopicTypeLabel } from "@/constants/topicType";
-import { topicFallbackSuggestions } from "@/constants/topicFallbackSuggestions";
 import { t } from "@/lib/globalT";
 
 import useDeviceInfo from "@/hooks/useDeviceInfo";
@@ -298,13 +297,11 @@ const Chat: React.FC = () => {
             const arr = Array.isArray(src?.questionRecomment) ? src.questionRecomment : [];
             const cleaned = arr.filter((s: any) => typeof s === 'string' && s.trim());
             if (cleaned.length > 0) return cleaned.slice(0, 3) as string[];
-            const fallback = topicFallbackSuggestions[topicId] || [];
-            return fallback.slice(0, 3);
+            return [] as string[];
         } catch {
             return [] as string[];
         }
     }, [chatHistory, sessionIdString, type]);
-
     const prevCompletedCountRef = useRef(0);
     useEffect(() => {
         if (completedMessages.length > prevCompletedCountRef.current) {
@@ -319,13 +316,18 @@ const Chat: React.FC = () => {
         }
     }, [sessionIdString]);
 
+    const hasPendingAttachments = useMemo(() => {
+        return (pendingImages?.length ?? 0) > 0 || (pendingFiles?.length ?? 0) > 0 || uploadImageMutation.isLoading || imageLoading;
+    }, [pendingImages.length, pendingFiles.length, uploadImageMutation.isLoading, imageLoading]);
+
     const handleQuickSuggestionClick = useCallback((q: string) => {
         if (!q) return;
+        if (hasPendingAttachments) return;
         setMessageValue(q);
         try {
             (handleSendMessage as any)({ preventDefault() {}, stopPropagation() {} }, true, q);
         } catch {}
-    }, [handleSendMessage, setMessageValue]);
+    }, [handleSendMessage, setMessageValue, hasPendingAttachments]);
 
     const hasPendingMessages = useMemo(() => {
         return mergedMessages.some(msg =>
@@ -334,6 +336,8 @@ const Chat: React.FC = () => {
             msg.text === 'PENDING_MESSAGE'
         );
     }, [mergedMessages]);
+
+    
 
     const clearAllMessages = () => {
         useChatStore.getState().clearPendingMessages();
@@ -606,7 +610,7 @@ useEffect(() => { recalc(); }, [quickSuggestions.length]);
                                 scrollToBottom={scrollToBottomIfPinned}
                                 isLoadingMessages={isLoading || debouncedLoading}
                             />
-                            {!(isSending || hasPendingMessages || loadingStream.loading || activeStreamsCount > 0) && (isLoadingHistory || quickSuggestions.length > 0) && (
+                            {!(isSending || hasPendingMessages || loadingStream.loading || activeStreamsCount > 0 || hasPendingAttachments) && (isLoadingHistory || quickSuggestions.length > 0) && (
                                 <div className="mt-4">
                                     <div className="text-xs text-gray-400 mb-2">{t('Try saying...')}</div>
                                     {isLoadingHistory && quickSuggestions.length === 0 ? (
@@ -622,7 +626,7 @@ useEffect(() => { recalc(); }, [quickSuggestions.length]);
                                                     key={idx}
                                                     className="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 rounded-xl border border-gray-200 text-left "
                                                     onClick={() => handleQuickSuggestionClick(q)}
-                                                    disabled={isSending || hasPendingMessages}
+                                                    disabled={isSending || hasPendingMessages || hasPendingAttachments}
                                                 >
                                                     <span className="text-sm text-gray-800">{q}</span>
                                                     <NextDefaultIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />

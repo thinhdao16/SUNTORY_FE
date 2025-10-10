@@ -248,7 +248,7 @@ const SocialChatMembers: React.FC = () => {
                                                     </div>
                                                     <div>
                                                         <div className="font-medium flex items-end justify-start gap-1 ">
-                                                            <span> {member?.user?.fullName}</span>
+                                                            <span className='max-w-[200px] truncate'> {member?.user?.fullName}</span>
                                                             <span className='text-xs text-netural-200'>{member?.user?.id === user?.id ? t('(You)') : ''}</span>
                                                             {/* {actionLoading?.userId === member.userId && (
                                                                 <span className="ml-2">

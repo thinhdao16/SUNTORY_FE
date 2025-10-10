@@ -15,10 +15,9 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
     const response = await httpClient.post<LoginResponse>("/api/v1/auth/login", credentials);
     return response.data;
 };
-export const getInfo = async (deviceId: string) => {
-    const response = await httpClient.get<LoginResponse>("/api/v1/account/get-info", { 
-        params: { deviceId: deviceId} 
-    });
+export const getInfo = async (deviceId?: string) => {
+    const config = deviceId ? { params: {deviceId } } : undefined;
+    const response = await httpClient.get<LoginResponse>("/api/v1/account/get-info", config);
     return response.data;
 };
 export const registerSimple = async (data: RegisterRequest): Promise<RegisterResponse> => {

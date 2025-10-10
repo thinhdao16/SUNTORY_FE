@@ -201,9 +201,9 @@ const FriendList: React.FC = () => {
                     <h3 className="font-semibold text-gray-900 text-[17px] truncate" title={friend.name}>
                         {truncate(friend?.name, 18)}
                     </h3>
-                    <p className="text-[14px] text-gray-700 truncate" title={friend.code}>
+                    {/* <p className="text-[14px] text-gray-700 truncate" title={friend.code}>
                         {truncate(friend?.code, 15)}
-                    </p>
+                    </p> */}
                 </div>
             </div>
 

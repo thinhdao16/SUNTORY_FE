@@ -168,7 +168,7 @@ const MyProfile: React.FC = () => {
           <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
             <div className="w-full flex items-center justify-between px-4">
               <div></div>
-              <span className="font-bold pl-4 text-black" >
+              <span className="font-bold pl-4 text-black text-lg" >
                 {t('My profile')}
               </span  >
               <button  onClick={() => history.push('/social-feed/create')}>
@@ -204,13 +204,13 @@ const MyProfile: React.FC = () => {
                       <h1 className="text-[20px] font-bold text-gray-900 overflow-hidden max-w-[200px] truncate">{userInfo?.name}</h1>
                       <span className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`} style={{ width: 20, height: 20, borderRadius: 9999 }} ></span>
                     </div>
-                    <div className="flex items-center space-x-1 mb-2">
+                    {/* <div className="flex items-center space-x-1 mb-2">
                       <p
                         className="text-black overflow-hidden max-w-[110px] truncate text-[15px]">
                         @{userInfo?.code}
                       </p>
                       <CoppyIcon className="" onClick={() => { navigator.clipboard.writeText(userInfo.code || "") }} />
-                    </div>
+                    </div> */}
                     <div className="flex items-center space-x-1 mb-4" onClick={() => {
                       history.push('/friend-list');
                     }}>

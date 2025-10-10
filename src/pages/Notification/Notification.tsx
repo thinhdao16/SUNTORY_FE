@@ -65,14 +65,14 @@ function Notification() {
                                 <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
                             </IonButton> */}
                         </IonButtons>
-                        <IonTitle className="text-center font-bold" style={{ fontSize: '15px', textColor: 'black' }}>
-                            {t('Notifications')}
-                        </IonTitle>
-                        <IonButtons slot="end">
+                        <div className="text-lg font-semibold text-black text-center ">
+                        {t('Notifications')}
+                        </div>
+                        {/* <IonButtons slot="end">
                             <IonButton className="opacity-0 pointer-events-none pr-4" fill="clear" style={{ textColor: 'black', fontSize: '15px' }}>
                                 <IonIcon icon={arrowBack} />
                             </IonButton>
-                        </IonButtons>
+                        </IonButtons> */}
                     </IonToolbar>
                 </IonHeader>
 

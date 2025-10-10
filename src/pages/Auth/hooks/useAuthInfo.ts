@@ -7,16 +7,18 @@ import useDeviceInfo from "@/hooks/useDeviceInfo";
 
 export const useAuthInfo = () => {
     const { token, setProfile } = useAuthStore.getState();
-    const deviceInfo: { deviceId: string | null, language: string | null } = useDeviceInfo();
+    const deviceInfo = useDeviceInfo();
+    const deviceId = deviceInfo?.deviceId || null;
+    const enabled = Boolean(token) && Boolean(deviceId);
     return useQuery(
-        ["authInfo", deviceInfo],
-        () => getInfoService(deviceInfo?.deviceId || ''),
+        ["authInfo", deviceId],
+        () => getInfoService(deviceId as string),
         {
-            enabled: !!token || !deviceInfo,
+            enabled,
             select: (res: any) => res.data,
             onSuccess: async (user: User) => {
                 setProfile?.(user);
-                const currentDevice = user?.devices?.find((device: { deviceId: string | null }) => device.deviceId === deviceInfo.deviceId);
+                const currentDevice = user?.devices?.find((device: {deviceId: string | null }) => device.deviceId === deviceId);
                 if (currentDevice) {
                     if (!currentDevice.firebaseToken || currentDevice.firebaseToken.trim() === '') {
                         await useUpdateFcmToken();

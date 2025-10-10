@@ -233,21 +233,25 @@ export const useSocialFeedStore = create<SocialFeedStore>((set, get) => ({
     Object.keys(updatedFeeds).forEach(key => {
       updatedFeeds[key] = {
         ...updatedFeeds[key],
-        posts: updatedFeeds[key].posts.map((post: SocialPost) => 
-          post.code === postCode 
-            ? { ...post, isLike: !post.isLike, reactionCount: post.isLike ? post.reactionCount - 1 : post.reactionCount + 1 }
-            : post
-        )
+        posts: updatedFeeds[key].posts.map((post: SocialPost) => {
+          if (post.code !== postCode) return post;
+          const wasLiked = Boolean(post.isLike);
+          const prevCount = (post.reactionCount ?? 0);
+          const nextCount = wasLiked ? Math.max(0, prevCount - 1) : prevCount + 1;
+          return { ...post, isLike: !wasLiked, reactionCount: nextCount };
+        })
       };
     });
     
     set({
       cachedFeeds: updatedFeeds,
       currentPost: state.currentPost?.code === postCode 
-        ? { 
-            ...state.currentPost, 
-            isLike: !state.currentPost.isLike,
-            reactionCount: state.currentPost.isLike ? state.currentPost.reactionCount - 1 : state.currentPost.reactionCount + 1
+        ? {
+            ...state.currentPost,
+            isLike: !Boolean(state.currentPost.isLike),
+            reactionCount: Boolean(state.currentPost.isLike)
+              ? Math.max(0, (state.currentPost.reactionCount ?? 0) - 1)
+              : (state.currentPost.reactionCount ?? 0) + 1
           }
         : state.currentPost
     });

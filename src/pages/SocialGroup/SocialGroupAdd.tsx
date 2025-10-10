@@ -250,7 +250,7 @@ function SocialGroupAdd( { isProfile }: { isProfile?: boolean } ) {
                       e.currentTarget.src = avatarFallback;
                     }}
                   />
-                  <div className="">
+                  <div className=" max-w-[250px] truncate">
                     <span className=" font-medium">{user.fullName}</span>
                   </div>
                 </div>

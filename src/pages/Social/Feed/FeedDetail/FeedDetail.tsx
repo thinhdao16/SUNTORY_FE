@@ -705,11 +705,32 @@ const FeedDetail: React.FC = () => {
 
             <PostActionsProvider
                 post={displayPost}
-                onSendFriendRequest={handleSendFriendRequest}
-                onUnfriend={handleUnfriend}
-                onCancelFriendRequest={handleCancelFriendRequestAction}
-                onAcceptFriendRequest={handleAcceptFriendRequestAction}
-                onRejectFriendRequest={handleRejectFriendRequestAction}
+                onSendFriendRequest={(userId: number) => {
+                    // Open confirm instead of executing immediately
+                    if (confirmState.open) return;
+                    closePostOptions();
+                    openConfirmModal('send', undefined, displayPost?.user?.fullName, userId, displayPost?.user?.fullName);
+                }}
+                onUnfriend={(userId: number) => {
+                    if (confirmState.open) return;
+                    closePostOptions();
+                    openConfirmModal('unfriend', undefined, displayPost?.user?.fullName, userId, displayPost?.user?.fullName);
+                }}
+                onCancelFriendRequest={(requestId: number) => {
+                    if (confirmState.open) return;
+                    closePostOptions();
+                    openConfirmModal('cancel', requestId, displayPost?.user?.fullName, displayPost?.user?.id, displayPost?.user?.fullName);
+                }}
+                onAcceptFriendRequest={(requestId: number) => {
+                    if (confirmState.open) return;
+                    closePostOptions();
+                    openConfirmModal('accept', requestId, displayPost?.user?.fullName, displayPost?.user?.id, displayPost?.user?.fullName);
+                }}
+                onRejectFriendRequest={(requestId: number) => {
+                    if (confirmState.open) return;
+                    closePostOptions();
+                    openConfirmModal('reject', requestId, displayPost?.user?.fullName, displayPost?.user?.id, displayPost?.user?.fullName);
+                }}
                 onSuccess={() => {
                     void refreshDetail();
                 }}
@@ -749,6 +770,7 @@ const FeedDetail: React.FC = () => {
             />
 
             <ConfirmModal
+                key={`${confirmState.type || 'none'}-${confirmState.friendRequestId || confirmState.targetUserId || ''}`}
                 isOpen={confirmState.open}
                 title={confirmState.type === "delete-comment" ? t("Delete this comment?") : t("Are you sure?")}
                 message={
@@ -759,7 +781,7 @@ const FeedDetail: React.FC = () => {
                                 confirmState.type === "reject" ? t('Reject friend request from {{name}}?', { name: confirmState.friendName }) :
                                     confirmState.type === "unrepost" ? t('Remove your repost of this post?') :
                                     confirmState.type === "delete-comment" ? t("This action is permanent and can't be undone. Are you sure?") :
-                                        ""
+                                        t('Are you sure?')
                 }
                 confirmButtonClassName={(confirmState.type === 'send' || confirmState.type === 'accept') ? '!bg-main' : ''}
                 confirmText={
@@ -773,6 +795,7 @@ const FeedDetail: React.FC = () => {
                                         t("Yes")
                 }
                 cancelText={t("Cancel")}
+                onClose={() => setConfirmState({ open: false, type: null })}
                 onConfirm={async () => {
                     if (confirmState.type === "send") {
                         try {
@@ -881,22 +904,15 @@ const FeedDetail: React.FC = () => {
                                         : p);
                                     searchStore.setResults(key, { posts });
                                 }
-                                // if (history.length > 1) {
-                                //     history.goBack();
-                                // } else {
-                                //     history.replace('/social-feed');
-                                // }
                             }
                         } catch (error) {
                             console.error('Failed to unrepost:', error);
                         }
                     }
-                    setConfirmState({ open: false, type: null });
                 }}
-                onClose={() => setConfirmState({ open: false, type: null })}
             />
+
         </div>
     );
 };
-
 export default FeedDetail;

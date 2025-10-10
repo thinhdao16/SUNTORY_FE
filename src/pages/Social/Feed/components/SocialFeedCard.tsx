@@ -607,6 +607,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
       </PostActionsProvider>
 
       <ConfirmModal
+        key={`${confirmState.type || 'none'}-${confirmState.friendRequestId || displayPost?.user?.id || '0'}`}
         isOpen={confirmState.open}
         onClose={closeConfirmModal}
         title={t("Are you sure?")}
@@ -617,7 +618,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                 confirmState.type === "reject" ? t('Reject friend request from {{name}}?', { name: confirmState.friendName }) :
                   confirmState.type === "accept" ? t('Accept friend request from {{name}}?', { name: confirmState.friendName }) :
                     confirmState.type === "unrepost" ? t('Remove your repost of this post?') :
-                      ""
+                      t('Are you sure?')
         }
         confirmButtonClassName={(confirmState.type === 'send' || confirmState.type === 'accept') ? '!bg-main' : ''}
 
@@ -697,7 +698,6 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
             // Trigger API toggle (BE handles unrepost)
             onRepostConfirm?.(originalCode, post.privacy);
           }
-          closeConfirmModal();
         }}
       />
 

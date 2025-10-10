@@ -18,7 +18,6 @@ import { GoDotFill } from 'react-icons/go';
 import { useAuthStore } from '@/store/zustand/auth-store';
 import { PrivacyPostType } from '@/types/privacy';
 import ExpandableText from '@/components/common/ExpandableText';
-import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 
 interface PostContentProps {
     displayPost: any;
@@ -43,7 +42,6 @@ const PostContent: React.FC<PostContentProps> = ({
     sendFriendRequestMutation,
     onUserProfileClick
 }) => {
-    console.log(displayPost)
     const { user } = useAuthStore()
     const { t } = useTranslation();
     const history = useHistory();
@@ -51,18 +49,7 @@ const PostContent: React.FC<PostContentProps> = ({
     const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
     const toLanguageId = useMemo(() => selectedLanguageSocialChat?.id || selectedLanguageTo?.id || 2, [selectedLanguageSocialChat, selectedLanguageTo]);
 
-    const {
-        hasFriendRequestOutgoing,
-        setFriendRequestOutgoing,
-        pruneExpiredFriendRequestOutgoing,
-    } = useSocialChatStore();
-
-    useEffect(() => {
-        const id = setInterval(() => {
-            pruneExpiredFriendRequestOutgoing();
-        }, 60000);
-        return () => clearInterval(id);
-    }, [pruneExpiredFriendRequestOutgoing]);
+    
 
     const isRepostWithDeletedOriginal = isRepost && (!originalPost || originalPost?.status === 190);
     const [translatedText, setTranslatedText] = React.useState<string | null>(null);
@@ -132,7 +119,7 @@ const PostContent: React.FC<PostContentProps> = ({
                             </div>
                         </div>
                         {!isOwnPost && displayPost?.isFriend === false && (
-                            hasFriendRequestOutgoing(displayPost?.user?.id) || displayPost?.friendRequest !== null ? (
+                            displayPost?.friendRequest !== null ? (
                                 <button className="flex items-center gap-1 text-sm font-semibold text-netural-300" disabled>
                                     {t('Sent')}
                                 </button>
@@ -140,8 +127,6 @@ const PostContent: React.FC<PostContentProps> = ({
                                 <button
                                     className="flex items-center gap-1 text-sm font-semibold text-netural-500"
                                     onClick={() => {
-                                        const uid = displayPost?.user?.id;
-                                        if (uid) setFriendRequestOutgoing(uid, 'sent', 86400);
                                         onSendFriendRequest();
                                     }}
                                     disabled={sendFriendRequestMutation.isLoading}
@@ -316,7 +301,7 @@ const PostContent: React.FC<PostContentProps> = ({
                         </div>
                     </div>
                     {!isOwnPost && postToDisplay?.isFriend === false && (
-                        hasFriendRequestOutgoing(displayPost?.user?.id) || postToDisplay?.friendRequest !== null ? (
+                        postToDisplay?.friendRequest !== null ? (
                             <button className="flex items-center gap-1 text-sm font-semibold text-netural-300" disabled>
                                 {t('Sent')}
                             </button>
@@ -324,8 +309,6 @@ const PostContent: React.FC<PostContentProps> = ({
                             <button
                                 className="flex items-center gap-1 text-sm font-semibold text-netural-500"
                                 onClick={() => {
-                                    const uid = displayPost?.user?.id;
-                                    if (uid) setFriendRequestOutgoing(uid, 'sent', 86400);
                                     onSendFriendRequest();
                                 }}
                                 disabled={sendFriendRequestMutation.isLoading}

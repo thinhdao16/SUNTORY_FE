@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import BackIcon from "@/icons/logo/back-default.svg?react";
 import MoreIcon from "@/icons/logo/more-default.svg?react";
 
@@ -29,13 +29,17 @@ const PostHeader: React.FC<PostHeaderProps> = ({
                 <span className="font-semibold">
                     {isOwnPost ? t('Your Post') : (
                         <span className="flex items-center">
-                            <span 
-                                className="max-w-[200px] truncate inline-block cursor-pointer hover:text-blue-600 transition-colors"
-                                onClick={() => onUserProfileClick?.(displayPost?.user?.id)}
-                            >
-                                {displayPost?.user?.fullName}
-                            </span>
-                            <span>{t("'s Post")}</span>
+                            <Trans
+                                i18nKey="post.byUser"
+                                values={{ name: displayPost?.user?.fullName || t('User') }}
+                                components={[
+                                    <span
+                                        key="0"
+                                        className="max-w-[200px] truncate inline-block cursor-pointer hover:text-blue-600 transition-colors"
+                                        onClick={() => onUserProfileClick?.(displayPost?.user?.id)}
+                                    />
+                                ]}
+                            />
                         </span>
                     )}
                 </span>

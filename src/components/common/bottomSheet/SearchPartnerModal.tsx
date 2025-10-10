@@ -16,6 +16,7 @@ import { useSocialSignalR } from "@/hooks/useSocialSignalR";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
 import ConfirmModal from "@/components/common/modals/ConfirmModal";
 import { t } from "@/lib/globalT";
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
 
 interface SearchPartnerModalProps {
   isOpen: boolean;
@@ -275,9 +276,12 @@ const SearchPartnerModal: React.FC<SearchPartnerModalProps> = ({
                   >
                     <div className="flex items-center" onClick={() => handleViewProfile(user?.id)}>
                       <img
-                        src={user?.avatar || "/favicon.png"}
-                        alt={user?.fullName}
                         className="w-14 h-14 rounded-2xl mr-3"
+                        src={user?.avatarLink || avatarFallback}
+                        alt={user?.name || 'User Avatar'}
+                        onError={(e) => {
+                            e.currentTarget.src = avatarFallback;
+                        }}
                       />
                       <span className="text-sm font-medium ">
                         {user?.fullName}
