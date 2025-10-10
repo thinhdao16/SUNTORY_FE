@@ -297,8 +297,8 @@ const FriendRequest: React.FC = () => {
     };
 
     return (
-        <IonContent className="h-220" style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
-            <div className="bg-white pb-20 w-full">
+        <IonContent className="h-[95%] flex" style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
+            <div className="bg-white pb-24 w-full">
                 {!data ? (
                     <div className="h-full flex items-center justify-center">
                         {renderSkeleton()}
