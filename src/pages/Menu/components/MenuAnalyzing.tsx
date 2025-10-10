@@ -5,8 +5,6 @@ import { useLocation, useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { menuAnalyzing } from '@/services/menu/menu-service';
 import { useMenuTranslationStore } from '@/store/zustand/menuTranslationStore';
-import { useMenuSignalR } from '@/hooks/useMenuSignalR';
-import { useAuthStore } from '@/store/zustand/auth-store';
 
 interface LocationState {
     base64Img: string;
@@ -15,13 +13,12 @@ interface LocationState {
 
 const MenuAnalyzing: React.FC = () => {
     const location = useLocation<LocationState>();
+    const { i18n } = useTranslation();
     const history = useHistory();
     const { t } = useTranslation();
     const base64Img = location.state?.base64Img || "";
     const [totalFood, setTotalFood] = useState(0);
     const setFoodSuccess = useMenuTranslationStore(state => state.setFoodSuccess);
-    const foodSuccess = useMenuTranslationStore(state => state.foodSuccess);
-    const { user } = useAuthStore();
     const [menuId, setMenuId] = useState(0);
     const [key, setKey] = useState("");
     // State cho Step 1: Analyzing Menu Content
@@ -38,7 +35,6 @@ const MenuAnalyzing: React.FC = () => {
     const analyzeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     // Refs để quản lý timeout hoàn tất step 2 và 3 sau 2s
     const step2TimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const step3TimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const base64ToFile = (base64: string, filename: string): File => {
         const arr = base64.split(",");
@@ -49,14 +45,12 @@ const MenuAnalyzing: React.FC = () => {
         return new File([u8arr], filename, { type: mime });
     };
 
-    // useMenuSignalR(user?.id?.toString() || "", key || "");
-
     const analyzeMenu = async () => {
         try {
             const formData = new FormData();
             const file = base64ToFile(base64Img, "gallery.png");
             formData.append("file", file);
-            const result = await menuAnalyzing(formData);
+            const result = await menuAnalyzing(formData, i18n.language || "en");
             setMenuId(result.data.id);
             setKey(result.data.key);
             if (result?.data != null) {

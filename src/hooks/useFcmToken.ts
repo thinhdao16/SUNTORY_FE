@@ -49,6 +49,10 @@ export function useFcmToken(mutate?: (data: { fcmToken: string }) => void) {
                         console.error("❌ Failed to parse warning:", e);
                     }
                 }
+
+                return () => {
+                    unsubscribe();
+                };
             });
         }
 

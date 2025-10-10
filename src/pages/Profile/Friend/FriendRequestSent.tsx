@@ -195,9 +195,6 @@ const FriendRequestSent: React.FC = () => {
                     <h3 className="font-semibold text-gray-900 text-[17px] truncate" title={requestSent.name}>
                         {truncate(requestSent.name, 18)}
                     </h3>
-                    <p className="text-[14px] text-gray-700 truncate" title={requestSent.code}>
-                        {truncate(requestSent.code, 15)}
-                    </p>
                 </div>
             </div>
 

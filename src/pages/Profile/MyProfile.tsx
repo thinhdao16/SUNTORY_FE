@@ -11,10 +11,8 @@ import UserPostsList from "./components/UserPostsList";
 import UserMediaGrid from "./components/UserMediaGrid";
 import { ProfileTabType } from "./hooks/useUserPosts";
 
-import { cameraOutline, copyOutline, createOutline } from "ionicons/icons";
+import { cameraOutline } from "ionicons/icons";
 import EditProfileIcon from "@/icons/logo/edit-profile.svg?react";
-import BackIcon from "@/icons/logo/back-default.svg?react";
-import CoppyIcon from "@/icons/logo/coppy-default.svg?react";
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
 
 const getTabType = (tabName: string): ProfileTabType => {

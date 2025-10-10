@@ -7,9 +7,10 @@ export const getDietStyle = async () => {
     return response.data;
 };
 
-export const menuAnalyzing = async (formData: FormData) => {
+export const menuAnalyzing = async (formData: FormData, langCode: string) => {
     const response = await httpClient.post<MenuAnalyzingResponse>("/api/v1/menu-translation/create-translation", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        params: { langCode }
     });
     return response.data;
 };

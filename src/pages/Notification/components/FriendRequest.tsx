@@ -35,6 +35,9 @@ const FriendRequest: React.FC = () => {
 
     const [displayedRequests, setDisplayedRequests] = useState<FriendRequestItem[]>([]);
     const [showAll, setShowAll] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const pageSize = 10;
     const {
         notificationCounts,
         friendRequestOptimistic,
@@ -42,11 +45,12 @@ const FriendRequest: React.FC = () => {
         removeFriendRequestOptimistic,
         pruneExpiredFriendRequestOptimistic,
     } = useSocialChatStore();
+
     const {
         data,
         refetch
     } = useFriendshipReceivedRequests(20);
-
+    const requests = data?.pages.flat() ?? [];
     const prevFriendRequestCount = useRef(notificationCounts.pendingFriendRequestsCount);
     const deviceInfo = useDeviceInfo();
 
@@ -56,7 +60,16 @@ const FriendRequest: React.FC = () => {
         autoConnect: true,
         enableDebugLogs: false,
     });
-    const requests = data?.pages.flat() ?? [];
+    const handleLoadMore = () => {
+        if (loadingMore) return;
+        
+        setLoadingMore(true);
+        setTimeout(() => {
+            setCurrentPage(prev => prev + 1);
+            setLoadingMore(false);
+        }, 500);
+    };
+
     useEffect(() => {
         const currentCount = notificationCounts.pendingFriendRequestsCount;
         const previousCount = prevFriendRequestCount.current;
@@ -67,7 +80,7 @@ const FriendRequest: React.FC = () => {
     }, [notificationCounts.pendingFriendRequestsCount, refetch]);
 
     useEffect(() => {
-        const baseList = showAll ? requests : requests.slice(0, 6);
+        const baseList = showAll ? requests : requests.slice(0, currentPage * pageSize);
         const now = Date.now();
         const pinnedList: FriendRequestItem[] = Object.values(friendRequestOptimistic || {})
             .filter((e: any) => !e.expiresAt || e.expiresAt > now)
@@ -79,9 +92,9 @@ const FriendRequest: React.FC = () => {
             const mergedBase = baseList.map(item => pinnedMap.get(item.id) ?? item);
             const pinnedNotInBase = pinnedList.filter(p => !baseIds.has(p.id));
             const combined = [...pinnedNotInBase, ...mergedBase];
-            return showAll ? combined : combined.slice(0, 6);
+            return showAll ? combined : combined.slice(0, currentPage * pageSize);
         });
-    }, [data, showAll, friendRequestOptimistic]);
+    }, [data, showAll, friendRequestOptimistic, currentPage, pageSize]);
 
     useEffect(() => {
         const id = setInterval(() => {
@@ -188,7 +201,17 @@ const FriendRequest: React.FC = () => {
     };
 
     const handleInfiniteScroll = async (event: CustomEvent<void>) => {
-        (event.target as HTMLIonInfiniteScrollElement).complete();
+        if (loadingMore) {
+            (event.target as HTMLIonInfiniteScrollElement).complete();
+            return;
+        }
+
+        setLoadingMore(true);
+        setTimeout(() => {
+            setCurrentPage(prev => prev + 1);
+            setLoadingMore(false);
+            (event.target as HTMLIonInfiniteScrollElement).complete();
+        }, 1000);
     };
 
     const renderSkeleton = () => (
@@ -228,7 +251,7 @@ const FriendRequest: React.FC = () => {
 
                 <div className="flex-1 min-w-0 flex flex-col">
                     <p className="text-[14px] text-black">
-                        <span className="font-semibold">{fullName}</span>{' '}
+                        <span className="font-semibold overflow-hidden max-w-[10px]">{fullName}</span>{' '}
                         {request.inviteStatus == 10 && (
                             <span className="text-black">{t('has sent you a friend request')}</span>
                         )}
@@ -292,25 +315,26 @@ const FriendRequest: React.FC = () => {
                             </div>
                         )}
 
-                        {!showAll && requests.length > 6 && (
-                            <div className="px-4 py-4 flex justify-center bg-white">
+                        {!showAll && displayedRequests.length < requests.length && (
+                            <div className="px-6 py-4 flex justify-center bg-white">
                                 <button
-                                    className="w-full bg-gray-100 hover:bg-gray-200 text-black font-semibold text-sm py-3 px-6 rounded-full transition-colors duration-200"
-                                    onClick={() => setShowAll(true)}
+                                    className="w-full bg-gray-100 hover:bg-gray-200 text-black font-semibold text-sm py-4 px-6 rounded-2xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onClick={handleLoadMore}
+                                    disabled={loadingMore}
                                 >
-                                    {t('See all')}
+                                    {loadingMore ? t('Loading...') : t('Load more')}
                                 </button>
                             </div>
                         )}
 
-                        {requests.length > 0 && showAll && (
+                        {requests.length > 0 && showAll && displayedRequests.length < requests.length && (
                             <IonInfiniteScroll
                                 onIonInfinite={handleInfiniteScroll}
                                 threshold="100px"
                             >
                                 <IonInfiniteScrollContent
                                     loadingSpinner="bubbles"
-                                    loadingText={t('loading...')}
+                                    loadingText={loadingMore ? t('Loading...') : t('loading...')}
                                 />
                             </IonInfiniteScroll>
                         )}
