@@ -352,7 +352,7 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
                 <div className="flex items-center justify-between">
                     <div className="flex-1">
                         <p className="text-m text-black">
-                            <span className="font-semibold">{notification.actorName}</span>{' '}
+                            <span className="font-semibold overflow-hidden max-w-[10px]">{notification.actorName}</span>{' '}
                             <span className="text-black">{getActionText(notification.type)}</span>
                         </p>
                         <p className="text-xs text-gray-500 mt-1">

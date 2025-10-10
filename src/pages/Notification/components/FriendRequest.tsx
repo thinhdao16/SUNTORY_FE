@@ -251,7 +251,7 @@ const FriendRequest: React.FC = () => {
 
                 <div className="flex-1 min-w-0 flex flex-col">
                     <p className="text-[14px] text-black">
-                        <span className="font-semibold">{fullName}</span>{' '}
+                        <span className="font-semibold overflow-hidden max-w-[10px]">{fullName}</span>{' '}
                         {request.inviteStatus == 10 && (
                             <span className="text-black">{t('has sent you a friend request')}</span>
                         )}

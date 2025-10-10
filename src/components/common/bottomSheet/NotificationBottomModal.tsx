@@ -45,7 +45,7 @@ const NotificationBottomModal: React.FC<NotificationBottomModalProps> = ({
         if (e.target === e.currentTarget) onClose?.();
     };
 
-    const SHEET_MAX_VH = isFromHeader == false ? 24 : 14;
+    const SHEET_MAX_VH = isFromHeader == false ? 30 : 22;
     const HEADER_PX = 56;
 
     // Notify parent about modal state changes

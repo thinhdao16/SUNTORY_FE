@@ -11,10 +11,8 @@ import UserPostsList from "./components/UserPostsList";
 import UserMediaGrid from "./components/UserMediaGrid";
 import { ProfileTabType } from "./hooks/useUserPosts";
 
-import { cameraOutline, copyOutline, createOutline } from "ionicons/icons";
+import { cameraOutline } from "ionicons/icons";
 import EditProfileIcon from "@/icons/logo/edit-profile.svg?react";
-import BackIcon from "@/icons/logo/back-default.svg?react";
-import CoppyIcon from "@/icons/logo/coppy-default.svg?react";
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
 
 const getTabType = (tabName: string): ProfileTabType => {
@@ -205,13 +203,6 @@ const MyProfile: React.FC = () => {
                     <div className="flex items-center space-x-2 ">
                       <h1 className="text-[20px] font-bold text-gray-900 overflow-hidden max-w-[200px] truncate">{userInfo?.name}</h1>
                       <span className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`} style={{ width: 20, height: 20, borderRadius: 9999 }} ></span>
-                    </div>
-                    <div className="flex items-center space-x-1 mb-2">
-                      <p
-                        className="text-black overflow-hidden max-w-[110px] truncate text-[15px]">
-                        @{userInfo?.code}
-                      </p>
-                      <CoppyIcon className="" onClick={() => { navigator.clipboard.writeText(userInfo.code || "") }} />
                     </div>
                     <div className="flex items-center space-x-1 mb-4" onClick={() => {
                       history.push('/friend-list');
