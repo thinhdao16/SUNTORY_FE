@@ -366,11 +366,11 @@ const OtherUserProfile: React.FC = () => {
                         <IonButtons slot="start" className="pl-4">
                             <BackIcon onClick={() => history.goBack()} />
                         </IonButtons>
-                        <IonTitle>
-                            <span className="font-semibold max-w-[250px] truncate " >
+                        <div>
+                            <span className="font-semibold max-w-[250px] truncate text-black pl-2" >
                                 {userInfo?.name}
                             </span>
-                        </IonTitle>
+                        </div>
                     </IonToolbar>
                 </IonHeader>
                 <IonContent style={{ '--background': 'white', height: '100%' } as any}>

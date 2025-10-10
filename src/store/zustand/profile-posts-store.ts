@@ -30,6 +30,7 @@ interface ProfilePostsStore {
 
   // posts
   setPosts: (posts: ProfilePost[], key?: string) => void;
+  prependPosts: (posts: ProfilePost[], key?: string) => void;
   appendPosts: (posts: ProfilePost[], key?: string) => void;
 
   // selectors
@@ -83,22 +84,64 @@ export const useProfilePostsStore = create<ProfilePostsStore>((set, get) => ({
   setPosts: (posts, key) => {
     const state = get();
     const k = key || state.activeProfileKey;
-    const existing = state.cachedProfiles[k]?.posts;
-    if (existing && existing.length === posts.length) {
-      // Skip only if code sequence is identical (order + members)
-      const a = existing.map((p) => p.code).join('|');
-      const b = posts.map((p) => p.code).join('|');
-      if (a === b) return;
+    const current = state.cachedProfiles[k];
+    if (current) {
+      set({
+        cachedProfiles: {
+          ...state.cachedProfiles,
+          [k]: {
+            ...current,
+            posts,
+            totalRecords: posts.length,
+          },
+        },
+      });
+    } else {
+      set({
+        cachedProfiles: {
+          ...state.cachedProfiles,
+          [k]: {
+            posts,
+            currentPage: 0,
+            hasNextPage: false,
+            totalPages: 0,
+            totalRecords: posts.length,
+          },
+        },
+      });
     }
+  },
+
+  prependPosts: (posts, key) => {
+    const state = get();
+    const k = key || state.activeProfileKey;
+    const current = state.cachedProfiles[k];
+    if (!current) {
+      set({
+        cachedProfiles: {
+          ...state.cachedProfiles,
+          [k]: {
+            posts,
+            currentPage: 1,
+            hasNextPage: true,
+            totalPages: 0,
+            totalRecords: posts.length,
+          },
+        },
+      });
+      return;
+    }
+    // de-duplicate by code and place new items at the top in given order
+    const existingCodes = new Set(current.posts.map((p) => p.code));
+    const newUnique = posts.filter((p) => !existingCodes.has(p.code));
+    if (newUnique.length === 0) return;
     set({
       cachedProfiles: {
         ...state.cachedProfiles,
         [k]: {
-          posts,
-          currentPage: 1,
-          hasNextPage: true,
-          totalPages: 0,
-          totalRecords: posts.length,
+          ...current,
+          posts: [...newUnique, ...current.posts],
+          totalRecords: current.totalRecords + newUnique.length,
         },
       },
     });

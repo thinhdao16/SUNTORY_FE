@@ -77,16 +77,25 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
     (async () => {
       console.log("🔥 Using native push notifications - event");
 
-      const { token } = await FirebaseMessaging.getToken();
-      console.log("🔥 Using native push notifications - token", token);
+      try {
+        const permStatus = await FirebaseMessaging.checkPermissions();
+        if (permStatus?.receive === 'granted') {
+          const { token } = await FirebaseMessaging.getToken();
+          console.log("🔥 Using native push notifications - token", token);
 
-      // Update device with new FCM token
-      if (deviceInfo.deviceId) {
-        console.log("🔥 Using native push notifications save ", deviceInfo.deviceId, token);
-        updateNewDevice.mutate({
-          deviceId: deviceInfo.deviceId,
-          firebaseToken: token,
-        });
+          // Update device with new FCM token
+          if (deviceInfo.deviceId && token) {
+            console.log("🔥 Using native push notifications save ", deviceInfo.deviceId, token);
+            updateNewDevice.mutate({
+              deviceId: deviceInfo.deviceId,
+              firebaseToken: token,
+            });
+          }
+        } else {
+          console.warn("Firebase Messaging permission not granted");
+        }
+      } catch (error) {
+        console.warn("Failed to get FCM token:", error);
       }
 
       regHandle = await PushNotifications.addListener("registration", async (token: Token) => {

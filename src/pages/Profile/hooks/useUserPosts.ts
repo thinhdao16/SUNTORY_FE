@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQueryClient } from 'react-query';
+import { useInfiniteQuery } from 'react-query';
 import httpClient from '@/config/http-client';
 import { useEffect } from 'react';
 import { useProfilePostsStore, generateProfileKey } from '@/store/zustand/profile-posts-store';
@@ -48,14 +48,27 @@ export const useUserPosts = (
   options?: { enabled?: boolean }
 ) => {
   const profileKey = generateProfileKey(tabType, targetUserId);
-  const { setActiveProfileKey, setPosts, appendPosts, setPaginationInfo } = useProfilePostsStore();
-  const queryClient = useQueryClient();
+  const { setActiveProfileKey, setPosts, setPaginationInfo } = useProfilePostsStore();
 
   useEffect(() => {
     setActiveProfileKey(profileKey);
   }, [profileKey]);
 
-  return useInfiniteQuery(
+  // Helper to extract posts from a page payload with flexible shapes
+  const takeList = (page: any): any[] => {
+    const d = page?.data;
+    if (!d) return [] as any[];
+    if (Array.isArray(d?.data)) return d.data as any[];
+    if (Array.isArray(d?.items)) return d.items as any[];
+    if (Array.isArray(d?.list)) return d.list as any[];
+    if (Array.isArray(d)) return d as any[];
+    if (Array.isArray(page?.data?.result)) return page.data.result as any[];
+    return [] as any[];
+  };
+
+  // (Removed redundant sync effect that didn't track query changes)
+
+  const query = useInfiniteQuery(
     ['userPosts', tabType, targetUserId, pageSize],
     ({ pageParam = 0 }) => fetchUserPosts({
       tabType,
@@ -72,94 +85,51 @@ export const useUserPosts = (
           return pageData.nextPage ? current + 1 : undefined;
         }
         if (typeof pageData.totalPages === 'number') {
-          // totalPages is a count; with 0-based index, next exists if current + 1 < totalPages
           return current + 1 < pageData.totalPages ? current + 1 : undefined;
         }
         if (typeof pageData.lastPage === 'number') {
-          // lastPage may be 1-based; allow next if current + 1 <= lastPage
           return current + 1 <= pageData.lastPage ? current + 1 : undefined;
         }
         return undefined;
       },
       keepPreviousData: true,
-      staleTime: 60 * 1000,
       cacheTime: 5 * 60 * 1000,
       refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
       refetchOnMount: true,
       enabled: options?.enabled ?? true,
       retry: false,
-      onSuccess: (data) => {
-        const pages = data?.pages || [];
-        // Build a unique list by id or (code+type) with page 0 priority to avoid missing or collapsing repost/original
-        const seen = new Set<string>();
-        const combined: any[] = [];
-        const takeList = (page: any) => {
-          const d = (page as any)?.data;
-          if (!d) return [] as any[];
-          if (Array.isArray(d?.data)) return d.data as any[];
-          if (Array.isArray(d?.items)) return d.items as any[];
-          if (Array.isArray(d?.list)) return d.list as any[];
-          if (Array.isArray(d)) return d as any[];
-          if (Array.isArray((page as any)?.data?.result)) return (page as any).data.result as any[];
-          return [] as any[];
-        };
-        for (let i = 0; i < pages.length; i++) {
-          const list = takeList(pages[i]);
-          for (let j = 0; j < list.length; j++) {
-            const p = list[j];
-            const key = (p?.code ? String(p.code) : (p?.id != null ? String(p.id) : undefined));
-            if (!key || seen.has(key)) continue;
-            seen.add(key);
-            combined.push(p);
-          }
-        }
-        setPosts(combined, profileKey);
-        // pagination info from last page
-        const last = pages[pages.length - 1];
-        const pd: any = last?.data || {};
-        const currentIndex = typeof pd.pageNumber === 'number' ? pd.pageNumber : Math.max(0, pages.length - 1);
-        const totalPages = pd.totalPages ?? pd.lastPage ?? (currentIndex + 1);
-        const hasNextPage = typeof pd.nextPage === 'boolean'
-          ? Boolean(pd.nextPage)
-          : (typeof pd.totalPages === 'number'
-              ? currentIndex + 1 < pd.totalPages
-              : (typeof pd.lastPage === 'number' ? currentIndex + 1 <= pd.lastPage : false));
-        const totalRecords = pd.totalRecords ?? pd.totalCount ?? combined.length;
-        setPaginationInfo({ currentPage: currentIndex, hasNextPage, totalPages, totalRecords }, profileKey);
-      },
-      onSettled: () => {
-        // If any page failed, React Query may not call onSuccess. Rebuild from cached pages to ensure page 0 changes are applied.
-        try {
-          const cache = queryClient.getQueryData(['userPosts', tabType, targetUserId, pageSize]) as any;
-          const pages = cache?.pages || [];
-          if (!pages.length) return;
-          const seen = new Set<string>();
-          const combined: any[] = [];
-          const takeList = (page: any) => {
-            const d = (page as any)?.data;
-            if (!d) return [] as any[];
-            if (Array.isArray(d?.data)) return d.data as any[];
-            if (Array.isArray(d?.items)) return d.items as any[];
-            if (Array.isArray(d?.list)) return d.list as any[];
-            if (Array.isArray(d)) return d as any[];
-            if (Array.isArray((page as any)?.data?.result)) return (page as any).data.result as any[];
-            return [] as any[];
-          };
-          for (let i = 0; i < pages.length; i++) {
-            const list = takeList(pages[i]);
-            for (let j = 0; j < list.length; j++) {
-              const p = list[j];
-              const key = (p?.code ? String(p.code) : (p?.id != null ? String(p.id) : undefined));
-              if (!key || seen.has(key)) continue;
-              seen.add(key);
-              combined.push(p);
-            }
-          }
-          if (combined.length) setPosts(combined, profileKey);
-        } catch {}
-      }
     }
   );
+
+  // Sync store whenever query data changes
+  useEffect(() => {
+    const pages = (query as any)?.data?.pages || [];
+    if (!pages.length) return;
+    const seen = new Set<string>();
+    const combined: any[] = [];
+    for (let i = 0; i < pages.length; i++) {
+      const list = takeList(pages[i]);
+      for (let j = 0; j < list.length; j++) {
+        const p = list[j];
+        const key = p?.code || p?.id;
+        if (!key) continue;
+        const sk = String(key);
+        if (seen.has(sk)) continue;
+        seen.add(sk);
+        combined.push(p);
+      }
+    }
+    setPosts(combined, profileKey);
+    const last = pages[pages.length - 1];
+    const pd: any = last?.data || {};
+    const currentIndex = typeof pd.pageNumber === 'number' ? pd.pageNumber : Math.max(0, pages.length - 1);
+    const totalPages = pd.totalPages ?? pd.lastPage ?? pages.length;
+    const hasNext = (typeof pd.nextPage === 'boolean'
+      ? !!pd.nextPage
+      : (typeof pd.totalPages === 'number' ? currentIndex + 1 < pd.totalPages : (typeof pd.lastPage === 'number' ? currentIndex + 1 <= pd.lastPage : false)));
+    const totalRecords = pd.totalRecords || pd.totalCount || combined.length;
+    setPaginationInfo({ currentPage: currentIndex, hasNextPage: !!hasNext, totalPages, totalRecords }, profileKey);
+  }, [query.data, profileKey, setPosts, setPaginationInfo]);
+
+  return query;
 };
-  
