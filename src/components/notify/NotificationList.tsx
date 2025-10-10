@@ -100,7 +100,7 @@ export const NotificationList = () => {
         startTimer(id, duration);
     };
 
-    const startTimer = (id: string | number, duration: number = 3500) => {
+    const startTimer = (id: string | number, duration: number = 3000) => {
         // Don't start timer if notification is pinned
         if (pinnedNotifications.has(id)) return;
         
@@ -190,22 +190,27 @@ export const NotificationList = () => {
                                                         </p>
                                                     )}
                                                 </div>
-                                                <button
+                                                <motion.button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         toggleExpanded(n.id);
                                                     }}
                                                     className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center flex-shrink-0"
+                                                    whileHover={{ scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
+                                                    transition={{ duration: 0.15 }}
                                                 >
-                                                    <svg
-                                                        className={`w-4 h-4 text-gray-600 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                    <motion.svg
+                                                        className="w-4 h-4 text-gray-600"
                                                         fill="none"
                                                         stroke="currentColor"
                                                         viewBox="0 0 24 24"
+                                                        animate={{ rotate: isExpanded ? 180 : 0 }}
+                                                        transition={{ duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }}
                                                     >
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                    </svg>
-                                                </button>
+                                                    </motion.svg>
+                                                </motion.button>
                                             </div>
 
                                             {/* Expanded State */}
@@ -213,11 +218,12 @@ export const NotificationList = () => {
                                                 initial={false}
                                                 animate={{
                                                     height: isExpanded ? "auto" : 0,
-                                                    opacity: isExpanded ? 1 : 0
+                                                    opacity: isExpanded ? 1 : 0,
+                                                    y: isExpanded ? 0 : -10
                                                 }}
                                                 transition={{
-                                                    duration: 0.25,
-                                                    ease: [0.04, 0.62, 0.23, 0.98]
+                                                    duration: 0.3,
+                                                    ease: [0.4, 0.0, 0.2, 1]
                                                 }}
                                                 className="overflow-hidden"
                                             >
@@ -238,7 +244,7 @@ export const NotificationList = () => {
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-4 pb-2 pl-14">
-                                                        <button
+                                                        <motion.button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 acceptRequest(Number(n.data.friend_request_id))
@@ -246,9 +252,12 @@ export const NotificationList = () => {
                                                                 clearOne(n.id);
                                                             }}
                                                             className="text-blue-500 text-sm font-semibold hover:text-blue-600 transition-colors"
+                                                            whileHover={{ scale: 1.05 }}
+                                                            whileTap={{ scale: 0.95 }}
+                                                            transition={{ duration: 0.15 }}
                                                         >
-                                                            {t("Accept")}</button>
-                                                        <button
+                                                            {t("Accept")}</motion.button>
+                                                        <motion.button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 rejectRequest(Number(n.data.friend_request_id))
@@ -256,8 +265,11 @@ export const NotificationList = () => {
                                                                 clearOne(n.id);
                                                             }}
                                                             className="text-red-500 text-sm font-semibold hover:text-red-600 transition-colors"
+                                                            whileHover={{ scale: 1.05 }}
+                                                            whileTap={{ scale: 0.95 }}
+                                                            transition={{ duration: 0.15 }}
                                                         >
-                                                            {t("Decline")}</button>
+                                                            {t("Decline")}</motion.button>
                                                     </div>
                                                 </div>
                                             </motion.div>
@@ -265,11 +277,15 @@ export const NotificationList = () => {
                                     );
                                 case "friend_request_accepted":
                                     return (
-                                        <div className="relative z-10 flex items-center gap-4 p-5 sm:p-5 text-neutral-900"
+                                        <motion.div 
+                                            className="relative z-10 flex items-center gap-4 p-5 sm:p-5 text-neutral-900 cursor-pointer"
                                             onClick={() => {
                                                 history.push(`/profile/${n.data.accepter_user_id}`);
                                                 markAsRead(n.id);
                                             }}
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            transition={{ duration: 0.15 }}
                                         >
                                             {n.avatar && (
                                                 <img
@@ -287,7 +303,7 @@ export const NotificationList = () => {
                                             {(n as any)?.data?.time_ago && (
                                                 <span className="shrink-0 text-[11px] text-neutral-700">{(n as any).data.time_ago}</span>
                                             )}
-                                        </div>
+                                        </motion.div>
                                     );
                                 case "chat_message":
                                     if (roomId === n.data.chat_code) {
@@ -300,11 +316,14 @@ export const NotificationList = () => {
                                     return (
                                         <div className="relative z-10 text-neutral-900">
                                             {/* Collapsed State */}
-                                            <div
+                                            <motion.div
                                                 className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                                                 onClick={() => {
                                                     history.push(`/social-chat/t/${n.data.chat_code}`);
                                                 }}
+                                                whileHover={{ scale: 1.01 }}
+                                                whileTap={{ scale: 0.99 }}
+                                                transition={{ duration: 0.15 }}
                                             >
                                                 <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
                                                     <LogoIcon className="w-8 h-8" />
@@ -322,34 +341,40 @@ export const NotificationList = () => {
                                                         </p>
                                                     )}
                                                 </div>
-                                                <button
+                                                <motion.button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         toggleExpanded(n.id);
                                                     }}
                                                     className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center flex-shrink-0"
+                                                    whileHover={{ scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
+                                                    transition={{ duration: 0.15 }}
                                                 >
-                                                    <svg
-                                                        className={`w-4 h-4 text-gray-600 transition-transform ${isChatExpanded ? 'rotate-180' : ''}`}
+                                                    <motion.svg
+                                                        className="w-4 h-4 text-gray-600"
                                                         fill="none"
                                                         stroke="currentColor"
                                                         viewBox="0 0 24 24"
+                                                        animate={{ rotate: isChatExpanded ? 180 : 0 }}
+                                                        transition={{ duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }}
                                                     >
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                    </svg>
-                                                </button>
-                                            </div>
+                                                    </motion.svg>
+                                                </motion.button>
+                                            </motion.div>
 
                                             {/* Expanded State */}
                                             <motion.div
                                                 initial={false}
                                                 animate={{
                                                     height: isChatExpanded ? "auto" : 0,
-                                                    opacity: isChatExpanded ? 1 : 0
+                                                    opacity: isChatExpanded ? 1 : 0,
+                                                    y: isChatExpanded ? 0 : -10
                                                 }}
                                                 transition={{
-                                                    duration: 0.25,
-                                                    ease: [0.04, 0.62, 0.23, 0.98]
+                                                    duration: 0.3,
+                                                    ease: [0.4, 0.0, 0.2, 1]
                                                 }}
                                                 className="overflow-hidden"
                                             >
@@ -370,16 +395,19 @@ export const NotificationList = () => {
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-4 pb-2 pl-14">
-                                                        <button
+                                                        <motion.button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 setReplyOpenId(replyOpenId === n.id ? null : n.id);
                                                                 if (replyOpenId !== n.id) setReplyText("");
                                                             }}
                                                             className="text-blue-500 text-sm font-semibold hover:text-blue-600 transition-colors"
+                                                            whileHover={{ scale: 1.05 }}
+                                                            whileTap={{ scale: 0.95 }}
+                                                            transition={{ duration: 0.15 }}
                                                         >
-                                                            {t("Reply")}</button>
-                                                        <button
+                                                            {t("Reply")}</motion.button>
+                                                        <motion.button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 markAsRead(n.id);
@@ -390,16 +418,22 @@ export const NotificationList = () => {
                                                                 clearOne(n.id);
                                                             }}
                                                             className="text-blue-500 text-sm font-semibold hover:text-gray-600 transition-colors"
+                                                            whileHover={{ scale: 1.05 }}
+                                                            whileTap={{ scale: 0.95 }}
+                                                            transition={{ duration: 0.15 }}
                                                         >
-                                                            {t("Mark as read")}</button>
+                                                            {t("Mark as read")}</motion.button>
                                                     </div>
                                                     {/* Reply Input - only show when Reply is clicked */}
                                                     {replyOpenId === n.id && (
                                                         <motion.div
-                                                            initial={{ opacity: 0, y: -6 }}
-                                                            animate={{ opacity: 1, y: 0 }}
-                                                            exit={{ opacity: 0, y: -6 }}
-                                                            transition={{ duration: 0.18, ease: "easeOut" }}
+                                                            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                                                            transition={{ 
+                                                                duration: 0.25, 
+                                                                ease: [0.4, 0.0, 0.2, 1] 
+                                                            }}
                                                             className="mt-3 flex gap-3 pl-14"
                                                         >
                                                             <input
@@ -422,7 +456,7 @@ export const NotificationList = () => {
                                                                 placeholder="Type a reply..."
                                                                 className="flex-1 rounded-xl bg-white border border-gray-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
                                                             />
-                                                            <button
+                                                            <motion.button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     if (!replyText.trim()) return;
@@ -438,8 +472,11 @@ export const NotificationList = () => {
                                                                 disabled={!replyText.trim()}
                                                                 className="px-3 py-2 rounded-xl text-sm text-white bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 aria-label="Send reply"
+                                                                whileHover={{ scale: replyText.trim() ? 1.05 : 1 }}
+                                                                whileTap={{ scale: replyText.trim() ? 0.95 : 1 }}
+                                                                transition={{ duration: 0.15 }}
                                                             >
-                                                                {t("Send")}</button>
+                                                                {t("Send")}</motion.button>
                                                         </motion.div>
                                                     )}
                                                 </div>
@@ -595,13 +632,16 @@ export const NotificationList = () => {
                                     }
                                     return (
                                         <div className="relative z-10 text-neutral-900">
-                                            <div
+                                            <motion.div
                                                 className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                                                 onClick={() => {
                                                     history.push(`/social-feed/f/${n.data.post_code}`);
                                                     markAsRead(n.id);
                                                     clearOne(n.id);
                                                 }}
+                                                whileHover={{ scale: 1.01 }}
+                                                whileTap={{ scale: 0.99 }}
+                                                transition={{ duration: 0.15 }}
                                             >
                                                 <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
                                                     <LogoIcon className="w-8 h-8" />
@@ -617,7 +657,7 @@ export const NotificationList = () => {
                                                         <span className="text-black">{t("liked your post")}</span>
                                                     </p>
                                                 </div>
-                                            </div>
+                                            </motion.div>
                                         </div>
                                     );
                                 case "commented_post":
@@ -627,13 +667,16 @@ export const NotificationList = () => {
                                     }
                                     return (
                                         <div className="relative z-10 text-neutral-900">
-                                            <div
+                                            <motion.div
                                                 className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                                                 onClick={() => {
                                                     history.push(`/social-feed/f/${n.data.post_code}`);
                                                     markAsRead(n.id);
                                                     clearOne(n.id);
                                                 }}
+                                                whileHover={{ scale: 1.01 }}
+                                                whileTap={{ scale: 0.99 }}
+                                                transition={{ duration: 0.15 }}
                                             >
                                                 <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
                                                     <LogoIcon className="w-8 h-8" />
@@ -649,7 +692,7 @@ export const NotificationList = () => {
                                                         <span className="text-black">{t("commented on your post")}</span>
                                                     </p>
                                                 </div>
-                                            </div>
+                                            </motion.div>
                                         </div>
                                     );
                                 case "reposted_post":
@@ -659,13 +702,16 @@ export const NotificationList = () => {
                                     }
                                     return (
                                         <div className="relative z-10 text-neutral-900">
-                                            <div
+                                            <motion.div
                                                 className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                                                 onClick={() => {
                                                     history.push(`/social-feed/f/${n.data.post_code}`);
                                                     markAsRead(n.id);
                                                     clearOne(n.id);
                                                 }}
+                                                whileHover={{ scale: 1.01 }}
+                                                whileTap={{ scale: 0.99 }}
+                                                transition={{ duration: 0.15 }}
                                             >
                                                 <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
                                                     <LogoIcon className="w-8 h-8" />
@@ -681,7 +727,7 @@ export const NotificationList = () => {
                                                         <span className="text-black">{t("reposted your post")}</span>
                                                     </p>
                                                 </div>
-                                            </div>
+                                            </motion.div>
                                         </div>
                                     );
                                 case "comment_liked_post":
@@ -691,13 +737,16 @@ export const NotificationList = () => {
                                     }
                                     return (
                                         <div className="relative z-10 text-neutral-900">
-                                            <div
+                                            <motion.div
                                                 className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                                                 onClick={() => {
                                                     history.push(`/social-feed/f/${n.data.post_code}`);
                                                     markAsRead(n.id);
                                                     clearOne(n.id);
                                                 }}
+                                                whileHover={{ scale: 1.01 }}
+                                                whileTap={{ scale: 0.99 }}
+                                                transition={{ duration: 0.15 }}
                                             >
                                                 <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
                                                     <LogoIcon className="w-8 h-8" />
@@ -713,19 +762,22 @@ export const NotificationList = () => {
                                                         <span className="text-black">{t("liked your comment")}</span>
                                                     </p>
                                                 </div>
-                                            </div>
+                                            </motion.div>
                                         </div>
                                     );
                                 case "reply_comment_post":
                                     return (
                                         <div className="relative z-10 text-neutral-900">
-                                            <div
+                                            <motion.div
                                                 className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                                                 onClick={() => {
                                                     history.push(`/social-feed/f/${n.data.post_code}`);
                                                     markAsRead(n.id);
                                                     clearOne(n.id);
                                                 }}
+                                                whileHover={{ scale: 1.01 }}
+                                                whileTap={{ scale: 0.99 }}
+                                                transition={{ duration: 0.15 }}
                                             >
                                                 <div className="w-10 h-10 rounded-3xl bg-blue-500 flex items-center justify-center flex-shrink-0">
                                                     <LogoIcon className="w-8 h-8" />
@@ -741,12 +793,17 @@ export const NotificationList = () => {
                                                         <span className="text-black">{t("replied to your comment")}</span>
                                                     </p>
                                                 </div>
-                                            </div>
+                                            </motion.div>
                                         </div>
                                     );
                                 default:
                                     return (
-                                        <div className="relative z-10 flex items-center gap-4 p-5 sm:p-5 text-neutral-900">
+                                        <motion.div 
+                                            className="relative z-10 flex items-center gap-4 p-5 sm:p-5 text-neutral-900"
+                                            whileHover={{ scale: 1.01 }}
+                                            whileTap={{ scale: 0.99 }}
+                                            transition={{ duration: 0.15 }}
+                                        >
                                             {n.avatar && (
                                                 <img
                                                     src={n.avatar}
@@ -762,7 +819,7 @@ export const NotificationList = () => {
                                             {(n as any)?.data?.time_ago && (
                                                 <span className="shrink-0 text-[11px] text-neutral-700">{(n as any).data.time_ago}</span>
                                             )}
-                                        </div>
+                                        </motion.div>
                                     );
                             }
                         };
@@ -770,32 +827,64 @@ export const NotificationList = () => {
                         return (
                             <motion.div
                                 key={n.id}
-                                initial={{ opacity: 0, y: -40 }}
+                                initial={{ 
+                                    opacity: 0, 
+                                    y: -50,
+                                    scale: 0.95
+                                }}
                                 animate={swipeDismissIds.has(n.id)
-                                    ? { opacity: 0, x: -200, transition: { duration: 0.22 } }
-                                    : { opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -40, transition: { duration: 0.22 } }}
-                                transition={{ duration: 0.3 }}
+                                    ? { 
+                                        opacity: 0, 
+                                        x: -300, 
+                                        scale: 0.8,
+                                        transition: { 
+                                            duration: 0.35,
+                                            ease: [0.4, 0.0, 0.2, 1]
+                                        } 
+                                    }
+                                    : { 
+                                        opacity: 1, 
+                                        y: 0,
+                                        scale: 1,
+                                        transition: {
+                                            duration: 0.4,
+                                            ease: [0.4, 0.0, 0.2, 1]
+                                        }
+                                    }}
+                                exit={{ 
+                                    opacity: 0, 
+                                    y: -30,
+                                    scale: 0.9,
+                                    transition: { 
+                                        duration: 0.3,
+                                        ease: [0.4, 0.0, 0.2, 1]
+                                    } 
+                                }}
                                 className="relative overflow-hidden rounded-2xl shadow-lg bg-white border border-gray-200"
                                 drag="x"
-                                dragElastic={0.12}
+                                dragElastic={0.15}
                                 dragMomentum={false}
-                                dragConstraints={{ left: -300, right: 0 }}
+                                dragConstraints={{ left: -350, right: 0 }}
                                 dragSnapToOrigin
                                 onDragStart={() => { isDraggingRef.current = true; }}
                                 onDragEnd={(_, info) => {
-                                    const passedOffset = info.offset.x < -40;
-                                    const passedVelocity = info.velocity.x < -300;
+                                    const passedOffset = info.offset.x < -50;
+                                    const passedVelocity = info.velocity.x < -400;
                                     if (passedOffset || passedVelocity) {
-                                        // animate sang trái rồi xóa
+                                        // animate sang trái rồi xóa với hiệu ứng mượt hơn
                                         setSwipeDismissIds(prev => { const s = new Set(prev); s.add(n.id); return s; });
                                         markAsRead(n.id);
-                                        setTimeout(() => clearOne(n.id), 220);
+                                        setTimeout(() => clearOne(n.id), 350);
                                     }
                                     // allow clicks again on next tick
                                     setTimeout(() => { isDraggingRef.current = false; }, 0);
                                 }}
-                                whileDrag={{ x: -8, opacity: 0.95 }}
+                                whileDrag={{ 
+                                    x: -12, 
+                                    opacity: 0.9,
+                                    scale: 0.98,
+                                    transition: { duration: 0.1 }
+                                }}
                                 
                                 onClickCapture={(e) => { if (isDraggingRef.current) e.stopPropagation(); }}
                                 onMouseEnter={() => pinNotification(n.id)}
