@@ -39,13 +39,9 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
         isFetchingNextPage,
         refetch,
     } = useUserPosts(tabType, targetUserId, 20, { enabled: targetUserId === undefined || !!targetUserId }) as any;
-
-    // Render from profile posts store for smoother optimistic UI
     const profileKey = useMemo(() => generateProfileKey(tabType, targetUserId), [tabType, targetUserId]);
-    // Cache the selector and avoid returning a new array. Fallback handled outside with a stable constant.
-    const selectPosts = useCallback((s: any) => s.cachedProfiles[profileKey]?.posts as any[] | undefined, [profileKey]);
-    const allPosts = useProfilePostsStore(selectPosts) ?? EMPTY_POSTS;
-
+    const allPosts = useProfilePostsStore((s: any) => s.cachedProfiles[profileKey]?.posts ?? EMPTY_POSTS);
+    console.log(allPosts)
     const postLikeMutation = useUserPostLike({ tabType, targetUserId });
     const postRepostMutation = useUserPostRepost({ tabType, targetUserId });
     const postUpdateMutation = useUserPostUpdate({ tabType, targetUserId });

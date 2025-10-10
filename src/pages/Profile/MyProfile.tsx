@@ -166,17 +166,15 @@ const MyProfile: React.FC = () => {
       <IonPage style={{ '--background': 'white', paddingBottom: '52px' } as any}>
         <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
           <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
-            <IonTitle slot="" >
-              {/* <BackIcon onClick={() => history.goBack()} /> */}
-              <span className="font-bold pl-4 " style={{ fontSize: '15px', color: 'black' }}>
+            <div className="w-full flex items-center justify-between px-4">
+              <div></div>
+              <span className="font-bold pl-4 text-black" >
                 {t('My profile')}
               </span  >
-            </IonTitle>
-            <IonButtons slot="end" onClick={() => history.push('/social-feed/create')}>
-              <IonButton fill="clear" style={{ textColor: 'black', fontSize: '15px' }}>
-                <EditProfileIcon />
-              </IonButton>
-            </IonButtons>
+              <button  onClick={() => history.push('/social-feed/create')}>
+              <EditProfileIcon />
+              </button>
+            </div>
           </IonToolbar>
         </IonHeader>
         <IonContent 

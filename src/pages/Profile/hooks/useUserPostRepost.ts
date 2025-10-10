@@ -4,6 +4,7 @@ import { useToastStore } from '@/store/zustand/toast-store';
 import { useTranslation } from 'react-i18next';
 import { ProfileTabType } from './useUserPosts';
 import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
+import { useProfilePostsStore, generateProfileKey } from '@/store/zustand/profile-posts-store';
 import { SocialPost } from '@/types/social-feed';
 
 interface UseUserPostRepostParams {
@@ -61,6 +62,12 @@ export const useUserPostRepost = ({ tabType, targetUserId }: UseUserPostRepostPa
           const store = useSocialFeedStore.getState();
           store.applyRealtimePatch(originalCode, { repostCount: optimistic, isRepostedByCurrentUser: true } as any);
           queryClient.setQueryData(['feedDetail', originalCode], (old: any) => ({ ...(old || {}), repostCount: optimistic, isRepostedByCurrentUser: true }));
+
+          // Patch profile posts store optimistically (affects Profile lists immediately)
+          try {
+            const profileStore = useProfilePostsStore.getState();
+            profileStore.applyPatch(originalCode, { repostCount: optimistic, isRepostedByCurrentUser: true } as any);
+          } catch {}
         } catch {}
       },
       onSuccess: async (created, variables) => {
@@ -79,6 +86,12 @@ export const useUserPostRepost = ({ tabType, targetUserId }: UseUserPostRepostPa
             store.applyRealtimePatch(originalCode, patch);
             queryClient.setQueryData(['feedDetail', originalCode], fresh);
             queryClient.invalidateQueries(['feedDetail', originalCode]);
+
+            // Also patch Profile posts store with fresh counts
+            try {
+              const profileStore = useProfilePostsStore.getState();
+              profileStore.applyPatch(originalCode, patch as any);
+            } catch {}
 
             // Also patch all profile userPosts caches so counts reflect immediately (Posts/Media/Likes/Reposts lists)
             try {
@@ -121,6 +134,24 @@ export const useUserPostRepost = ({ tabType, targetUserId }: UseUserPostRepostPa
                 queryClient.setQueryData(qk as any, newData);
               } catch {}
             });
+          } catch {}
+          // Prepend created repost into Profile store Reposts tab for the owner (ensures instant UI update)
+          try {
+            const ownerId = created?.userId;
+            if (ownerId && created) {
+              const k = generateProfileKey(ProfileTabType.Reposts, Number(ownerId));
+              const profileStore = useProfilePostsStore.getState();
+              profileStore.prependPosts([created as any], k);
+              // Also update 'self' key if the current profile is the owner's self profile
+              const currentViewKey = generateProfileKey(tabType, targetUserId);
+              if (tabType === ProfileTabType.Reposts) {
+                // If targetUserId is undefined (self) or matches owner, update the self view too
+                if (!targetUserId || Number(targetUserId) === Number(ownerId)) {
+                  const selfKey = generateProfileKey(ProfileTabType.Reposts, undefined);
+                  profileStore.prependPosts([created as any], selfKey);
+                }
+              }
+            }
           } catch {}
           // Optionally append created repost to feeds for visibility (dedupe handled in store)
           Object.keys(store.cachedFeeds || {}).forEach((fk) => { const f = store.cachedFeeds[fk as any]; if (f) store.appendFeedPosts([created], fk); });
