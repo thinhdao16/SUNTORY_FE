@@ -19,7 +19,7 @@ interface LoginFormValues {
     emailOrPhone: string;
     password: string;
     deviceId: string | null;
-    firebaseToken?: string;
+    firebaseToken?: string | undefined;
 }
 
 const Login: React.FC = () => {
@@ -37,10 +37,19 @@ const Login: React.FC = () => {
     } = useForm<LoginFormValues>();
 
     const onSubmit = async (data: LoginFormValues) => {
-        // const { token } = await FirebaseMessaging?.getToken();
+        let token: string | undefined;
+        try {
+            const permStatus = await FirebaseMessaging?.checkPermissions();
+            if (permStatus?.receive === 'granted') {
+                const result = await FirebaseMessaging?.getToken();
+                token = result?.token;
+            }
+        } catch (error) {
+            console.warn('Failed to get FCM token:', error);
+        }
 
         loginMutate(
-            { email: data.emailOrPhone, password: data.password, deviceId: deviceInfo.deviceId, firebaseToken: "" },
+            { email: data.emailOrPhone, password: data.password, deviceId: deviceInfo.deviceId, firebaseToken: token },
         );
     };
 
