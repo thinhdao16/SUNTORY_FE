@@ -61,7 +61,7 @@ const FoodList: React.FC = () => {
             // If no foods initially, keep loading for 40s
             loadingTimeoutRef.current = setTimeout(() => {
                 setLoading(false);
-            }, 60000); // 60 seconds
+            }, 80000); // 120 seconds
 
             return () => {
                 if (loadingTimeoutRef.current) {
@@ -78,7 +78,7 @@ const FoodList: React.FC = () => {
     // Clear loading timeout when we have foods
     useEffect(() => {
         if (foods.length > 0) {
-            // Clear the 60s timeout since we have data
+            // Clear the 120s timeout since we have data
             if (loadingTimeoutRef.current) {
                 clearTimeout(loadingTimeoutRef.current);
                 loadingTimeoutRef.current = null;
@@ -332,7 +332,7 @@ const FoodList: React.FC = () => {
                     lineHeight: '22px',
                     letterSpacing: '0%'
                 }}>
-                    {`${food.currency || ''} ${food.price}`}
+                    {`${food.currency || ''} ${food.price == 0 ? '' : food.price || ''}`}
                 </h3>
             </div>
         </div>
