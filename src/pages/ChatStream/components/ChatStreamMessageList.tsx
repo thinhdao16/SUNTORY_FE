@@ -7,6 +7,7 @@ import SparklesIcon from "@/icons/logo/AI_thinking.svg?react";
 import ChatStreamIntroMessage from "./ChatStreamIntroMessage";
 import ThinkingStatus from "./ThinkingStatus";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { MessageState } from "@/types/chat-message";
 
 type Attachment = {
     fileName: string;
@@ -30,6 +31,7 @@ type Message = {
     partialText?: string;
     completeText?: string;
     chunks?: any[];
+    messageState?: MessageState | string;
 };
 
 type ChatStreamMessageListProps = {
@@ -127,7 +129,13 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                     const isThisStreaming = msg.isStreaming && !msg.isComplete;
                     const isWaitingStreamForThis = !isUser && isThisStreaming && isWaitingForFirstChunk;
                     // While waiting for the first chunk, do NOT render the pending bot message (ThinkingStatus will represent it)
-                    if (isWaitingStreamForThis) return null;
+                    const isPendingBotMsg = !isUser && (
+                        msg.text === MessageState.PENDING ||
+                        msg.messageState === MessageState.PENDING ||
+                        msg.messageState === "SENDING" ||
+                        msg.text === 'PENDING_MESSAGE'
+                    );
+                    if (isWaitingStreamForThis || isPendingBotMsg) return null;
                     const hideAvatarForThis = false;
                     return (
                         <ChatMessageItem

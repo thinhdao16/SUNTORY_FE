@@ -75,23 +75,26 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const { t } = useTranslation();
   const createTranslationMutation = useCreateTranslationChat();
   const { user } = useAuthStore.getState();
+
   const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
   const { data: availableLangs } = useTranslationLanguages();
-  const toLanguageId = useMemo(() => {
-    const prefer = selectedLanguageSocialChat?.id || selectedLanguageTo?.id;
-    if (prefer) return prefer;
-    const langs = availableLangs || [];
-    const nav = (typeof navigator !== 'undefined' ? navigator.language : '') || '';
-    const navBase = nav.split('-')[0]?.toLowerCase() || '';
-    let pick = langs.find(l => (l.code || '').toLowerCase() === navBase);
-    if (!pick) pick = langs.find(l => /^en/i.test(l.code || ''));
-    if (!pick) pick = langs.find(l => /^vi/i.test(l.code || ''));
-    return pick?.id || langs[0]?.id;
-  }, [selectedLanguageSocialChat?.id, selectedLanguageTo?.id, availableLangs]);
+  const toLanguageId = user?.language?.id  || 2
+  // (() => {
+  //   const prefer = selectedLanguageSocialChat?.id || selectedLanguageTo?.id;
+  //   if (prefer) return prefer;
+  //   const langs = availableLangs || [];
+  //   const nav = (typeof navigator !== 'undefined' ? navigator.language : '') || '';
+  //   const navBase = nav.split('-')[0]?.toLowerCase() || '';
+  //   let pick = langs.find(l => (l.code || '').toLowerCase() === navBase);
+  //   if (!pick) pick = langs.find(l => /^en/i.test(l.code || ''));
+  //   if (!pick) pick = langs.find(l => /^vi/i.test(l.code || ''));
+  //   return pick?.id || langs[0]?.id;
+  // }, [selectedLanguageSocialChat?.id, selectedLanguageTo?.id, availableLangs]);
   const displayPost = post.isRepost && post.originalPost ? post.originalPost : post;
   const isRepost = post.isRepost && post.originalPost;
   const isRepostWithDeletedOriginal = post.isRepost && !post.originalPost || post?.isRepost && post?.originalPost?.status === 190;
   const [translatedText, setTranslatedText] = useState<string | null>(null);
+  console.log(translatedText)
   const [showOriginal, setShowOriginal] = useState(true);
   const [isPostOptionsOpen, setIsPostOptionsOpen] = useState(false);
   const [showPrivacySheet, setShowPrivacySheet] = useState(false);
@@ -428,7 +431,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                     </div>
                   </ActionButton>
                 ) : null}
-                {!showOriginal && translatedText && !sameAsOriginal && (
+                {!showOriginal && translatedText  && (
                   <div className="mt-2 border-l-3 border-gray-200 pl-3 text-sm text-netural-300 whitespace-pre-wrap">
                     {translatedText}
                   </div>
@@ -507,7 +510,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
                 </div>
               </ActionButton>
             ) : null}
-            {!showOriginal && translatedText && !sameAsOriginal && (
+            {!showOriginal && translatedText  && (
               <div className="mt-2 border-l-3 border-gray-200 pl-3 text-sm text-netural-300 whitespace-pre-wrap">
                 {translatedText}
               </div>

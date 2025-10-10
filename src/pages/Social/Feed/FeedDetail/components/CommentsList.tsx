@@ -45,22 +45,23 @@ const CommentsList: React.FC<CommentsListProps> = ({
     const createTranslationMutation = useCreateTranslationChat();
     const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
     const { data: availableLangs } = useTranslationLanguages();
-    const toLanguageId = useMemo(() => {
-        const prefer = selectedLanguageSocialChat?.id || selectedLanguageTo?.id;
-        if (prefer) return prefer;
-        const langs = availableLangs || [];
-        const nav = (typeof navigator !== 'undefined' ? navigator.language : '') || '';
-        const navBase = nav.split('-')[0]?.toLowerCase() || '';
-        let pick = langs.find(l => (l.code || '').toLowerCase() === navBase);
-        if (!pick) pick = langs.find(l => /^en/i.test(l.code || ''));
-        if (!pick) pick = langs.find(l => /^vi/i.test(l.code || ''));
-        return pick?.id || langs[0]?.id;
-    }, [selectedLanguageSocialChat?.id, selectedLanguageTo?.id, availableLangs]);
+    const toLanguageId = currentUser?.language?.id || 2
+    // useMemo(() => {
+    //     const prefer = selectedLanguageSocialChat?.id || selectedLanguageTo?.id;
+    //     if (prefer) return prefer;
+    //     const langs = availableLangs || [];
+    //     const nav = (typeof navigator !== 'undefined' ? navigator.language : '') || '';
+    //     const navBase = nav.split('-')[0]?.toLowerCase() || '';
+    //     let pick = langs.find(l => (l.code || '').toLowerCase() === navBase);
+    //     if (!pick) pick = langs.find(l => /^en/i.test(l.code || ''));
+    //     if (!pick) pick = langs.find(l => /^vi/i.test(l.code || ''));
+    //     return pick?.id || langs[0]?.id;
+    // }, [selectedLanguageSocialChat?.id, selectedLanguageTo?.id, availableLangs]);
 
     const [translatedTextMap, setTranslatedTextMap] = useState<Record<number, string | null>>({});
     const [showOriginalMap, setShowOriginalMap] = useState<Record<number, boolean>>({});
     const [pendingId, setPendingId] = useState<number | null>(null);
-
+console.log(translatedTextMap)
     const translateAndShow = async (id: number, original: string) => {
         if (!original || !toLanguageId) return;
         setPendingId(id);
@@ -192,9 +193,7 @@ const CommentsList: React.FC<CommentsListProps> = ({
                                             </div>
                                         </ActionButton>
                                     ) : null}
-                                    {!(showOriginalMap[comment.id] ?? true)
-                                        && (translatedTextMap[comment.id] ?? '').trim()
-                                        && (translatedTextMap[comment.id]?.trim() !== (comment?.content || '').trim()) && (
+                                    { (translatedTextMap[comment.id] ?? '').trim()&&  (
                                             <div className="mt-2 border-l-3 border-gray-200 pl-3 text-sm text-netural-300 whitespace-pre-wrap">
                                                 {translatedTextMap[comment.id]}
                                             </div>
@@ -320,9 +319,7 @@ const CommentsList: React.FC<CommentsListProps> = ({
                                                                 </div>
                                                             </ActionButton>
                                                         ) : null}
-                                                        {!(showOriginalMap[reply.id] ?? true)
-                                                            && (translatedTextMap[reply.id] ?? '').trim()
-                                                            && (translatedTextMap[reply.id]?.trim() !== (reply?.content || '').trim()) && (
+                                                        { (translatedTextMap[reply.id] ?? '').trim() && (
                                                                 <div className="mt-2 border-l-3 border-gray-200 pl-3 text-sm text-netural-300 whitespace-pre-wrap">
                                                                     {translatedTextMap[reply.id]}
                                                                 </div>

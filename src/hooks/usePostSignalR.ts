@@ -168,6 +168,7 @@ export function usePostSignalR(
         assignIfDefined('media');
         assignIfDefined('hashtags');
         assignIfDefined('isLike');
+        assignIfDefined('isRepostedByCurrentUser', payload.isRepostedByCurrentUser);
 
         if (payload.comment && payload.commentCount !== undefined) {
             patch.commentCount = payload.commentCount;
@@ -180,7 +181,6 @@ export function usePostSignalR(
         return patch;
     }, []);
 
-    // Build a shallow patch without mutating feed store (for Search cache)
     const buildPatchForSearch = useCallback((payload: any) => {
         if (!payload) return null as Partial<SocialPost> | null;
         const source = payload.post ?? payload.repostData ?? payload;
@@ -199,6 +199,7 @@ export function usePostSignalR(
         assignIfDefined('media');
         assignIfDefined('hashtags');
         assignIfDefined('isLike');
+        assignIfDefined('isRepostedByCurrentUser', payload.isRepostedByCurrentUser);
         return Object.keys(patch).length ? patch : null;
     }, []);
 
@@ -220,11 +221,9 @@ export function usePostSignalR(
         });
     }, [queryClient]);
 
-    // Patch across all userPosts queries (Profile tabs) so profile lists stay in sync in real time
     const applyPatchToUserPostsCaches = useCallback((codes: string[], patch: Partial<SocialPost> | null) => {
         if (!patch || !codes.length) return;
         const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
-        // Also patch the profile posts store so Profile lists update in real time
         try {
             const applyProfile = useProfilePostsStore.getState().applyPatch;
             codes.forEach(code => applyProfile(code, patch));
@@ -312,7 +311,6 @@ export function usePostSignalR(
                 }
                 useSocialFeedStore.getState().removePostFromFeeds(postCode);
                 queryClient.invalidateQueries(['feedDetail', postCode]);
-                // Also remove from Search caches and userPosts paginated caches
                 try {
                     useSearchResultsStore.getState().removePost(postCode);
                     const matchingUserPostQueries = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
@@ -336,10 +334,8 @@ export function usePostSignalR(
             }
             if (data.type === 45) {
                 console.log("New post created:", data);
-                // Handle asynchronously so we can fetch missing post data if needed
                 void (async () => {
                     let newPost = data.post || data.repostData;
-                    // Fallback: fetch the created/reposted post when payload doesn't include it
                     if (!newPost) {
                         try {
                             if (data.repostId) {
@@ -347,7 +343,6 @@ export function usePostSignalR(
                             } else if (data.repostCode) {
                                 newPost = await SocialFeedService.getPostByCode(data.repostCode);
                             } else if (data.postCode) {
-                                // Some backends return postCode for the new post
                                 newPost = await SocialFeedService.getPostByCode(data.postCode);
                             }
                         } catch (e) {
@@ -357,19 +352,16 @@ export function usePostSignalR(
 
                     if (newPost) {
                         const store = useSocialFeedStore.getState();
-                        // Append the new post into all cached feeds to keep UI responsive
                         Object.keys(store.cachedFeeds).forEach(feedKey => {
                             const currentFeed = store.cachedFeeds[feedKey];
                             if (currentFeed && currentFeed.posts) {
-                                // Append to end to avoid jumping viewport
                                 store.appendFeedPosts([newPost], feedKey);
                             }
                         });
 
-                        // Update Profile Reposts tab caches for the owner of the new post
                         try {
                             const ownerId = newPost.userId;
-                            const PROFILE_TAB_REPOSTS = 40; // see ProfileTabType.Reposts
+                            const PROFILE_TAB_REPOSTS = 40; 
                             const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
                             matching.forEach(([qk, old]) => {
                                 if (!old?.pages?.length || !Array.isArray(qk)) return;
@@ -389,14 +381,12 @@ export function usePostSignalR(
                             });
                         } catch {}
 
-                        // If this was a repost, ensure the original post's counter is not reset to 0
                         if (data.originalPostCode && data.interactionType === 50) {
                             const originalPostCode = data.originalPostCode as string;
                             try {
                                 if (typeof data.repostCount === 'number' && Number.isFinite(data.repostCount)) {
                                     store.applyRealtimePatch(originalPostCode, { repostCount: data.repostCount } as any);
                                 } else {
-                                    // Compute prev + 1 from any cached entry
                                     const state = useSocialFeedStore.getState();
                                     let prevCount: number | undefined;
                                     Object.keys(state.cachedFeeds).forEach(key => {
@@ -410,14 +400,12 @@ export function usePostSignalR(
                                     store.applyRealtimePatch(originalPostCode, { repostCount: next } as any);
                                 }
                                 queryClient.invalidateQueries(['feedDetail', originalPostCode]);
-                                // Also patch all profile userPosts caches so lists reflect the increment immediately
                                 try {
                                     const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
                                     matching.forEach(([qk, old]) => {
                                         if (!old?.pages) return;
                                         try {
                                             let foundPrev: number | undefined;
-                                            // derive next value if not provided by payload
                                             const nextRepost = typeof data.repostCount === 'number' && Number.isFinite(data.repostCount)
                                                 ? data.repostCount
                                                 : (() => {
@@ -445,7 +433,6 @@ export function usePostSignalR(
                             } catch {}
                         }
                     } else {
-                        // As a last resort, if we couldn't construct the new post, at least refresh the original counter
                         if (data.originalPostCode && data.interactionType === 50) {
                             try {
                                 const fresh = await SocialFeedService.getPostByCode(data.originalPostCode);
@@ -460,15 +447,12 @@ export function usePostSignalR(
                 return;
             }
             const { primary, codes } = resolveCodesFromPayload(data);
-            // Always update Search caches and Profile caches
             applyPatchToSearchCache(codes, data);
             const userPatch = buildPatchForSearch(data);
             applyPatchToUserPostsCaches(codes, userPatch);
-            // Only patch feed caches when joined (visible) to reduce work
             if (primary && joinedPostsRef.current.has(primary)) {
                 const patch = applyPatchSafe(codes, data);
                 applyPatchToQueryCache(codes, patch);
-                // If this update looks like a reaction update, skip scheduling refresh.
                 const looksLikeReaction = (
                     data?.reactionCount !== undefined ||
                     data?.isLike !== undefined ||
@@ -478,7 +462,6 @@ export function usePostSignalR(
                 if (!looksLikeReaction) {
                     schedulePostRefresh(primary);
                 }
-                // Removed immediate invalidate to avoid double refetch
             }
             onPostUpdated?.(data);
         });
@@ -487,7 +470,6 @@ export function usePostSignalR(
         connection.on("CommentAdded", (data: any) => {
             console.log("CommentAdded received:", data);
             const { primary, codes } = resolveCodesFromPayload(data);
-            // Update Search and Profile caches regardless of join state
             applyPatchToSearchCache(codes, data);
             applyPatchToUserPostsCaches(codes, buildPatchForSearch(data));
             if (!primary || !joinedPostsRef.current.has(primary)) return;
@@ -548,7 +530,6 @@ export function usePostSignalR(
             if (primary && joinedPostsRef.current.has(primary)) {
                 const patch = applyPatchSafe(codes, data);
                 applyPatchToQueryCache(codes, patch);
-                // Do not schedule a detail refresh for like events; single source of truth is the mutation success.
             }
             onPostLiked?.(data);
         });
@@ -562,7 +543,6 @@ export function usePostSignalR(
             if (primary && joinedPostsRef.current.has(primary)) {
                 const patch = applyPatchSafe(codes, data);
                 applyPatchToQueryCache(codes, patch);
-                // Do not schedule a detail refresh for unlike events; single source of truth is the mutation success.
             }
             onPostUnliked?.(data);
         });
@@ -617,13 +597,11 @@ export function usePostSignalR(
         connection.on("PostReposted", (data: any) => {
             console.log("PostReposted received:", data);
             const { primary, codes } = resolveCodesFromPayload({ ...data, postCode: data?.originalPostCode });
-            // Always keep Search and Profile caches in sync
             const patchForCaches = { ...data, postCode: primary };
             applyPatchToSearchCache(codes, patchForCaches);
             const userPatch = buildPatchForSearch(patchForCaches);
             applyPatchToUserPostsCaches(codes, userPatch);
 
-            // Fallback: if payload didn't include repostCount, increment by 1 in userPosts caches
             if (primary && (userPatch === null || (userPatch && (userPatch as any).repostCount === undefined))) {
                 try {
                     const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
@@ -653,13 +631,9 @@ export function usePostSignalR(
                 } catch {}
             }
 
-            // IMPORTANT: Update feed store across all cached feeds regardless of join state
-            // so Everyone/Hashtag/Friends lists reflect repostCount increments consistently for all users.
             const patch = applyPatchSafe(codes, patchForCaches);
-            // Optionally sync feedDetail cache when available (cheap)
             applyPatchToQueryCache(codes, patch);
 
-            // Only schedule network refresh if user is actively viewing this post (no immediate invalidate)
             if (primary && joinedPostsRef.current.has(primary)) {
                 schedulePostRefresh(primary);
             }

@@ -181,11 +181,16 @@ export const useSearchResultsStore = create<SearchResultsStore>((set, get) => ({
   // Apply a shallow patch to a post by code across all cached tabs/queries
   applyPostPatch: (postCode, patch) => {
     const state = get();
+    // Remove undefined values to prevent overwriting with undefined
+    const safePatch = Object.fromEntries(
+      Object.entries(patch || {}).filter(([, v]) => v !== undefined)
+    );
+    if (Object.keys(safePatch).length === 0) return;
     const updated: Record<string, SearchResultsTabState> = {};
     for (const [key, value] of Object.entries(state.cached)) {
       updated[key] = {
         ...value,
-        posts: (value.posts || []).map(p => p.code === postCode ? { ...p, ...patch } : p)
+        posts: (value.posts || []).map(p => p.code === postCode ? { ...p, ...safePatch } : p)
       };
     }
     set({ cached: updated });

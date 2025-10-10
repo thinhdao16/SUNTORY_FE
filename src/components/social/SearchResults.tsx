@@ -67,18 +67,15 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     const deviceInfo = useDeviceInfo();
     const [presentToast] = useIonToast();
     const showToast = useToastStore((s) => s.showToast);
-    
-    // Friend request mutations
-    const sendFriendRequestMutation = useSendFriendRequest(showToast, () => {});
-    const acceptFriendRequestMutation = useAcceptFriendRequest(showToast, () => {});
-    const rejectFriendRequestMutation = useRejectFriendRequest(showToast, () => {});
-    const cancelFriendRequestMutation = useCancelFriendRequest(showToast, () => {});
-    const unfriendMutation = useUnfriend(showToast, () => {});
-    
+
+    const sendFriendRequestMutation = useSendFriendRequest(showToast, () => { });
+    const acceptFriendRequestMutation = useAcceptFriendRequest(showToast, () => { });
+    const rejectFriendRequestMutation = useRejectFriendRequest(showToast, () => { });
+    const cancelFriendRequestMutation = useCancelFriendRequest(showToast, () => { });
+    const unfriendMutation = useUnfriend(showToast, () => { });
+
     const [localPosts, setLocalPosts] = useState<SocialPost[]>([]);
 
-    // Fingerprint the posts to detect in-place data changes from the data source
-    // This helps re-compute transforms even when the array reference stays the same.
     const postsFingerprint = useMemo(() => {
         const arr: any[] = Array.isArray(posts) ? posts : [];
         try {
@@ -123,7 +120,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         },
         onPostUpdated: (data) => {
             console.log('Post updated via SignalR:', data);
-            // Update local posts if this update affects any posts in search results
             const postCode = data.postCode || data.originalPostCode || data?.post?.code;
             if (postCode) {
                 setLocalPosts(prev => {
@@ -138,6 +134,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                                 repostCount: data.repostCount !== undefined ? data.repostCount : post.repostCount,
                                 shareCount: data.shareCount !== undefined ? data.shareCount : post.shareCount,
                                 isLike: data.isLike !== undefined ? data.isLike : post.isLike,
+                                isRepostedByCurrentUser: data.isRepostedByCurrentUser !== undefined ? data.isRepostedByCurrentUser : (post as any)?.isRepostedByCurrentUser,
                             } as SocialPost;
                         }
                         return post;
@@ -155,7 +152,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         isLike: data.isLike,
                         isRepostedByCurrentUser: data.isRepostedByCurrentUser,
                     });
-                } catch {}
+                } catch { }
             }
         },
         onCommentAdded: (data) => {
@@ -238,14 +235,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
     useEffect(() => {
         const targetSet = new Set(visiblePostCodes);
-        // cancel pending joins for codes no longer visible
         joinTimeoutsRef.current.forEach((timer, code) => {
             if (!targetSet.has(code)) {
                 clearTimeout(timer);
                 joinTimeoutsRef.current.delete(code);
             }
         });
-        // schedule joins for visible codes
         visiblePostCodes.forEach((code) => {
             if (joinedPostsRef.current.has(code) || joinTimeoutsRef.current.has(code)) return;
             const t = setTimeout(async () => {
@@ -258,11 +253,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             }, JOIN_DELAY_MS);
             joinTimeoutsRef.current.set(code, t);
         });
-        // schedule leaves for non-visible codes
         joinedPostsRef.current.forEach((code) => {
             if (targetSet.has(code) || leaveTimeoutsRef.current.has(code)) return;
             const t = setTimeout(async () => {
-                try { await leavePostUpdates(code); } catch {}
+                try { await leavePostUpdates(code); } catch { }
                 finally {
                     leaveTimeoutsRef.current.delete(code);
                     joinedPostsRef.current.delete(code);
@@ -286,10 +280,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
     const transformedPosts: SocialPost[] = useMemo(() => {
         return (posts || []).map((post: any, index: number) => {
-            const isFeedPost = post.hasOwnProperty('reactionCount');
-            const repostedFlag = Boolean(post?.isRepostedByCurrentUser ?? post?.isUserReposted ?? post?.isRepostByMe ?? false);
+            const isFeedPost = Object.prototype.hasOwnProperty.call(post, 'reactionCount');
+            const repostedRaw = (post?.isRepostedByCurrentUser ?? post?.isUserReposted ?? post?.isRepostByMe);
+            const hasRepostedValue = repostedRaw !== undefined && repostedRaw !== null;
             if (isFeedPost) {
-                return {
+                const base: any = {
                     ...post,
                     reactions: post.reactions || [],
                     comments: post.comments || [],
@@ -298,16 +293,17 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     totalComments: post.commentCount || 0,
                     totalReposts: post.repostCount || 0,
                     userReaction: null,
-                    isRepostedByCurrentUser: repostedFlag,
                     viewCount: post.viewCount || 0,
                     isBookmarked: post.isBookmarked || false,
                     bookmarkCount: post.bookmarkCount || 0,
                     shareCount: post.shareCount || 0,
                     isFriend: post.isFriend || false,
                     friendRequest: post.friendRequest || null
-                } as any;
+                };
+                if (hasRepostedValue) base.isRepostedByCurrentUser = Boolean(repostedRaw);
+                return base;
             } else {
-                return {
+                const base: any = {
                     id: Date.now() + index,
                     code: post.code,
                     userId: post.user.id,
@@ -337,7 +333,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     totalComments: 0,
                     totalReposts: 0,
                     userReaction: null,
-                    isRepostedByCurrentUser: repostedFlag,
                     reactionCount: 0,
                     commentCount: 0,
                     repostCount: 0,
@@ -349,36 +344,42 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     originalPost: null,
                     isFriend: post.isFriend || false,
                     friendRequest: post.friendRequest || null
-                } as any;
+                };
+                if (hasRepostedValue) base.isRepostedByCurrentUser = Boolean(repostedRaw);
+                return base;
             }
         });
     }, [posts, postsFingerprint]);
 
     useEffect(() => {
-        // Reconcile server-transformed posts into local state on every change.
-        // Server values always override local for overlapping fields.
         setLocalPosts(prev => {
             const prevMap = new Map(prev.map(p => [p.code, p]));
             const merged: SocialPost[] = transformedPosts.map(next => {
                 const old = prevMap.get(next.code);
-                return old ? ({ ...old, ...next } as SocialPost) : next;
+                if (!old) return next;
+                // Preserve local optimistic like state to avoid reverting after unrelated updates (e.g., repost)
+                const preserved: Partial<SocialPost> = {};
+                if (typeof old.isLike === 'boolean') preserved.isLike = old.isLike;
+                // Preserve repost flag when new data doesn't include it
+                const nextHasReposted = Object.prototype.hasOwnProperty.call(next as any, 'isRepostedByCurrentUser');
+                if (!nextHasReposted && typeof (old as any)?.isRepostedByCurrentUser === 'boolean') {
+                    (preserved as any).isRepostedByCurrentUser = (old as any).isRepostedByCurrentUser;
+                }
+                return { ...old, ...next, ...preserved } as SocialPost;
             });
             return merged;
         });
     }, [transformedPosts]);
 
-    // Listen to feed store changes to sync friend status updates from main feed
     useEffect(() => {
         const store = useSocialFeedStore.getState();
         const unsubscribe = useSocialFeedStore.subscribe((state) => {
-            // Check if any posts in search results need to be updated based on feed store changes
             setLocalPosts(prev => {
                 let hasChanges = false;
                 const updated = prev.map(post => {
-                    // Find this post in any cached feed to get latest friend status
                     let latestFriendStatus = null;
                     let latestFriendRequest = null;
-                    
+
                     Object.values(state.cachedFeeds || {}).forEach(feed => {
                         const foundPost = feed?.posts?.find((p: any) => p?.code === post.code);
                         if (foundPost) {
@@ -386,17 +387,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                             latestFriendRequest = foundPost.friendRequest;
                         }
                     });
-                    
-                    // Also check current post detail
                     if (state.currentPost?.code === post.code) {
                         latestFriendStatus = state.currentPost.isFriend;
                         latestFriendRequest = state.currentPost.friendRequest;
                     }
-                    
-                    // Update if we found newer friend status
-                    if (latestFriendStatus !== null && 
-                        (latestFriendStatus !== post.isFriend || 
-                         JSON.stringify(latestFriendRequest) !== JSON.stringify(post.friendRequest))) {
+
+                    if (latestFriendStatus !== null &&
+                        (latestFriendStatus !== post.isFriend ||
+                            JSON.stringify(latestFriendRequest) !== JSON.stringify(post.friendRequest))) {
                         hasChanges = true;
                         return {
                             ...post,
@@ -404,14 +402,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                             friendRequest: latestFriendRequest
                         } as SocialPost;
                     }
-                    
+
                     return post;
                 });
-                
+
                 return hasChanges ? updated : prev;
             });
         });
-        
+
         return unsubscribe;
     }, []);
 
@@ -423,9 +421,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 let hasChanges = false;
                 const updated = prev.map(post => {
                     const cachedDetail: any = queryClient.getQueryData(['feedDetail', post.code]);
-                    if (cachedDetail && 
-                        (cachedDetail.isFriend !== post.isFriend || 
-                         JSON.stringify(cachedDetail.friendRequest) !== JSON.stringify(post.friendRequest))) {
+                    if (cachedDetail &&
+                        (cachedDetail.isFriend !== post.isFriend ||
+                            JSON.stringify(cachedDetail.friendRequest) !== JSON.stringify(post.friendRequest))) {
                         hasChanges = true;
                         return {
                             ...post,
@@ -435,11 +433,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     }
                     return post;
                 });
-                
+
                 return hasChanges ? updated : prev;
             });
         }, 1000); // Check every second
-        
+
         return () => clearInterval(interval);
     }, [queryClient]);
 
@@ -463,33 +461,33 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         if (!post) return;
 
         const currentIsLiked = post.isLike || false;
-        
-        setLocalPosts(prevPosts => 
-            prevPosts.map(p => 
-                p.code === postCode 
-                    ? { 
-                        ...p, 
+
+        setLocalPosts(prevPosts =>
+            prevPosts.map(p =>
+                p.code === postCode
+                    ? {
+                        ...p,
                         isLike: !currentIsLiked,
-                        reactionCount: currentIsLiked 
+                        reactionCount: currentIsLiked
                             ? Math.max(0, (p.reactionCount || 0) - 1)
                             : (p.reactionCount || 0) + 1
-                    } 
+                    }
                     : p
             )
         );
-        
+
         postLikeMutation.mutate(
             { postCode, isLiked: currentIsLiked },
             {
                 onError: () => {
-                    setLocalPosts(prevPosts => 
-                        prevPosts.map(p => 
-                            p.code === postCode 
-                                ? { 
-                                    ...p, 
+                    setLocalPosts(prevPosts =>
+                        prevPosts.map(p =>
+                            p.code === postCode
+                                ? {
+                                    ...p,
                                     isLike: currentIsLiked,
                                     reactionCount: post.reactionCount
-                                } 
+                                }
                                 : p
                         )
                     );
@@ -499,6 +497,30 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         position: 'top',
                         color: 'danger'
                     });
+                },
+                onSuccess: async () => {
+                    try {
+                        const fresh = await SocialFeedService.getPostByCode(postCode);
+                        const rawPatch: Partial<SocialPost> = {
+                            isLike: (fresh as any)?.isLike,
+                            reactionCount: (fresh as any)?.reactionCount,
+                            commentCount: (fresh as any)?.commentCount,
+                            repostCount: (fresh as any)?.repostCount,
+                            shareCount: (fresh as any)?.shareCount,
+                            isRepostedByCurrentUser: (fresh as any)?.isRepostedByCurrentUser,
+                        };
+                        const patch = Object.fromEntries(
+                            Object.entries(rawPatch).filter(([, v]) => v !== undefined)
+                        ) as Partial<SocialPost>;
+                        // Update local list
+                        setLocalPosts(prev => prev.map(p => p.code === postCode ? { ...p, ...patch } as SocialPost : p));
+                        // Patch feed store caches
+                        try { useSocialFeedStore.getState().applyRealtimePatch(postCode, patch as any); } catch {}
+                        // Patch Search store cache
+                        try { useSearchResultsStore.getState().applyPostPatch(postCode, patch as any); } catch {}
+                        // Sync detail cache
+                        queryClient.setQueryData(['feedDetail', postCode], fresh);
+                    } catch { /* ignore */ }
                 }
             }
         );
@@ -560,7 +582,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                             commentCount: fresh?.commentCount,
                             shareCount: fresh?.shareCount,
                         } : p));
-                    } catch {}
+                    } catch { }
                 },
                 onError: () => {
                     setLocalPosts(prevSnapshot);
@@ -585,10 +607,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 friendRequest: (fresh as any)?.friendRequest,
             } as any);
             queryClient.setQueryData(['feedDetail', postCode], fresh);
-            
+
             // Update local posts state
-            setLocalPosts(prev => prev.map(p => 
-                p.code === postCode 
+            setLocalPosts(prev => prev.map(p =>
+                p.code === postCode
                     ? { ...p, isFriend: (fresh as any)?.isFriend, friendRequest: (fresh as any)?.friendRequest }
                     : p
             ));
@@ -597,7 +619,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         }
     }, [queryClient]);
 
-    // Friend request handlers
     const handleSendFriendRequest = useCallback(async (userId: number, postCode?: string) => {
         try {
             await sendFriendRequestMutation.mutateAsync(userId);
@@ -650,7 +671,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     }, [activeTab, effectiveQuery]);
 
     const handleTabSearch = async (tab: string, query: string) => {
-        // Force refresh cached data for this key to avoid stale values
         resetData();
         await Promise.resolve();
         await loadMoreData();
@@ -704,7 +724,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 onCancelFriendRequest={(requestId) => handleCancelFriendRequest(requestId, post.code)}
                 onUnfriend={(userId) => handleUnfriend(userId, post.code)}
                 onPostUpdate={(updatedPost) => {
-                    // Merge partial patches from child (e.g., unrepost sends only code/repostCount)
                     setLocalPosts(prev => prev.map(p => {
                         if (p.code === (updatedPost as any)?.code || p.code === post.code) {
                             return { ...p, ...updatedPost } as any;

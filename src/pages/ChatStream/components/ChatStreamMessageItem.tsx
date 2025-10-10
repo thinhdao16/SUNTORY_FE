@@ -33,7 +33,13 @@ const ChatStreamMessageItem: React.FC<{
         msg.messageState === MessageState.PENDING ||
         msg.messageState === "SENDING" ||
         msg.text === 'PENDING_MESSAGE';
-    const canShowCopy = !isPendingThis;
+    const hasImageAttachment = Array.isArray(msg.attachments) && msg.attachments.some((file: any) => {
+        const fileName = typeof file?.fileName === 'string' ? file.fileName : '';
+        const byExt = /(\.jpg|\.jpeg|\.png|\.gif|\.webp)$/i.test(fileName);
+        const byType = Number(file?.fileType) === 10; // 10 used elsewhere as image type
+        return byExt || byType;
+    });
+    const canShowCopy = !isPendingThis && !hasImageAttachment;
     return (
         <>
             {/* <motion.div

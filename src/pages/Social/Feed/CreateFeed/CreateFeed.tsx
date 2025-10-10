@@ -341,7 +341,7 @@ const CreateFeed: React.FC = () => {
 
                     </div>
 
-                    <div className="flex flex-col items-end space-y-2">
+                    <div className="flex  items-end space-y-2">
                         {(isUploading || audioUploadMutation.isLoading) && (
                             <div className="text-sm text-blue-600 font-medium">
                                 {audioUploadMutation.isLoading && t("Uploading...")}
