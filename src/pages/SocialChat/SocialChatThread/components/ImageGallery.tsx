@@ -249,7 +249,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                             return (
                                 <div
                                     key={photo.stableKey}
-                                    className="relative object-cover rounded-e-2xl w-full h-full cursor-pointer overflow-hidden"
+                                    className="relative object-cover rounded-br-2xl w-full h-full cursor-pointer overflow-hidden"
                                     onClick={() => handleImageClick(idx)}
                                 >
                                     <AppImage

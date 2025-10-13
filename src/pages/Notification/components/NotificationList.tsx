@@ -251,22 +251,22 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
 
     const getActionText = (type: number): string => {
         switch (type) {
-            case 10: return 'created a new post';
-            case 20: return 'updated a post';
-            case 25: return 'deleted a post';
-            case 30: return 'liked your post';
-            case 40: return 'unliked your post';
-            case 45: return 'reposted your post';
-            case 47: return 'shared your post';
-            case 50: return 'commented on your post';
-            case 60: return 'updated a comment';
-            case 70: return 'deleted a comment';
-            case 80: return 'liked your comment';
-            case 90: return 'unliked your comment';
-            case 100: return 'sent you a friend request';
-            case 110: return 'accepted your friend request';
-            case 120: return 'replied to your comment';
-            default: return 'performed an action';
+            case 10: return t('created a new post');
+            case 20: return t('updated a post');
+            case 25: return t('deleted a post');
+            case 30: return t('liked your post');
+            case 40: return t('unliked your post');
+            case 45: return t('reposted your post');
+            case 47: return t('shared your post');
+            case 50: return t('commented on your post');
+            case 60: return t('updated a comment');
+            case 70: return t('deleted a comment');
+            case 80: return t('liked your comment');
+            case 90: return t('unliked your comment');
+            case 100: return t('sent you a friend request');
+            case 110: return t('accepted your friend request');
+            case 120: return t('replied to your comment');
+            default: return t('performed an action');
         }
     };
     const handleNavigate = (type: number, id?: number, code?: string) => {

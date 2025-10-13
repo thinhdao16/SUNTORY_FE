@@ -28,7 +28,7 @@ const PostHeader: React.FC<PostHeaderProps> = ({
                 </button>
                 <span className="font-semibold">
                     {isOwnPost ? t('Your Post') : (
-                        <span className="flex items-center">
+                        <span className="flex items-center gap-1">
                             <Trans
                                 i18nKey="post.byUser"
                                 values={{ name: displayPost?.user?.fullName || t('User') }}

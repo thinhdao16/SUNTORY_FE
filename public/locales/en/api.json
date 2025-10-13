@@ -12,5 +12,12 @@
     "Please check your email for the verification code": "Please check your email for the verification code",
     "Current password is not correct": "Current password is not correct.",
     "Username or password did not match.": "Username or password did not match.",
-    "You have already reposted this post": "You have already reposted this post"
+    "You have already reposted this post": "You have already reposted this post",
+    "sent you a friend request": "sent you a friend request",
+    "Friend Request Accepted": "Friend Request Accepted",
+    "accepted your friend request": "accepted your friend request",
+    "New Group Chat": "New Group Chat",
+    "Group Chat Updated": "Group Chat Updated",
+    "New Members Added": "New Members Added",
+    "Members Removed": "Members Removed"
 }

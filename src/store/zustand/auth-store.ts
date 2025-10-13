@@ -70,6 +70,8 @@ export const useAuthStore = create<AuthState>()(
                 localStorage.removeItem("refreshToken");
                 localStorage.removeItem("registerEmail");
                 localStorage.removeItem("otpLastSent");
+                localStorage.removeItem("signalr-stream-storage");
+                localStorage.removeItem("health-master-data-storage");
                 sessionStorage.clear();
 
                 set({

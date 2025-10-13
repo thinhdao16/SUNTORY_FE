@@ -78,7 +78,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
                             ? t('Edit your comment...')
                             : replyingTo
                                 ? `${t('Reply to')} ${replyingToUser}...`
-                                : t(`Reply to ${displayPost?.user?.fullName}...`)
+                                : t(`Reply to`) + ' ' + displayPost?.user?.fullName + '...'
                     }
                     className="w-full pl-10 pr-1 py-2 bg-netural-50 rounded-xl text-sm outline-none placeholder:text-netural-300"
                     onKeyPress={(e) => {

@@ -7,8 +7,10 @@ import { useSendSocialChatMessage } from "@/pages/SocialChat/hooks/useSocialChat
 import { useHistory, useLocation } from "react-router-dom";
 import LogoIcon from "@/icons/logo/logo.svg?react";
 import { markAsReadMessageApi } from "@/services/social/social-chat-service";
+import { useTranslation } from 'react-i18next';
 
 export const NotificationList = () => {
+    const { t } = useTranslation();
     const { notifications, markAsRead, clearOne } = useNotificationStore();
     const [replyOpenId, setReplyOpenId] = useState<string | number | null>(null);
     const [replyText, setReplyText] = useState<string>("");
@@ -60,22 +62,22 @@ export const NotificationList = () => {
         const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000);
 
         if (diffInSeconds < 60) {
-            return 'now';
+            return t('time.now_short', { defaultValue: t('now') });
         } else if (diffInSeconds < 3600) {
             const minutes = Math.floor(diffInSeconds / 60);
-            return `${minutes}m`;
+            return t('time.minutes_short', { count: minutes, defaultValue: t('{{count}}m') });
         } else if (diffInSeconds < 86400) {
             const hours = Math.floor(diffInSeconds / 3600);
-            return `${hours}h`;
+            return t('time.hours_short', { count: hours, defaultValue: t('{{count}}h') });
         } else if (diffInSeconds < 2592000) {
             const days = Math.floor(diffInSeconds / 86400);
-            return `${days}d`;
+            return t('time.days_short', { count: days, defaultValue: t('{{count}}d') });
         } else if (diffInSeconds < 31536000) {
             const months = Math.floor(diffInSeconds / 2592000);
-            return `${months}mo`;
+            return t('time.months_short', { count: months, defaultValue: t('{{count}}mo') });
         } else {
             const years = Math.floor(diffInSeconds / 31536000);
-            return `${years}y`;
+            return t('time.years_short', { count: years, defaultValue: t('{{count}}y') });
         }
     };
 
@@ -103,12 +105,12 @@ export const NotificationList = () => {
     const startTimer = (id: string | number, duration: number = 3000) => {
         // Don't start timer if notification is pinned
         if (pinnedNotifications.has(id)) return;
-        
+
         const timer = setTimeout(() => {
             clearOne(String(id));
             timersRef.current.delete(id);
         }, duration);
-        
+
         timersRef.current.set(id, timer);
     };
 
@@ -145,7 +147,7 @@ export const NotificationList = () => {
             // When closing reply, use shorter timer
             unpinNotification(prevReplyIdRef.current, true);
         }
-        
+
         prevReplyIdRef.current = replyOpenId;
     }, [replyOpenId]);
 
@@ -153,7 +155,7 @@ export const NotificationList = () => {
     // Giới hạn hiển thị tối đa 3 notification cùng lúc
     const maxVisibleNotifications = 3;
     const visibleNotifications = notifications.slice(0, maxVisibleNotifications);
-
+    console.log(visibleNotifications)
     return (
         <div className="fixed inset-x-0 top-0 z-[9999] flex justify-center pointer-events-none pt-4">
             <div className="pointer-events-auto flex flex-col gap-3 w-100 max-w-[110vw]">
@@ -180,13 +182,13 @@ export const NotificationList = () => {
                                                 <div className="flex-1 min-w-0">
                                                     <div className="mb-1">
                                                         <span className="text-sm text-gray-400">
-                                                           {t("Friend request")} • {formatTimeAgo(new Date(n.createdAt))}
+                                                            {t("Friend request")} • {formatTimeAgo(new Date(n.createdAt))}
                                                         </span>
                                                     </div>
                                                     {!isExpanded && (
                                                         <p className="text-base line-clamp-1">
                                                             <span className="font-bold text-black">{(n as any)?.data?.from_user_name || "User"}</span>
-                                                            <span className="text-gray-700">: {n.body}</span>
+                                                            <span className="text-gray-700">: {t(n.body, { ns: 'api' })}</span>
                                                         </p>
                                                     )}
                                                 </div>
@@ -239,7 +241,7 @@ export const NotificationList = () => {
                                                         <div className="flex-1">
                                                             <p className="text-base">
                                                                 <span className="font-bold text-black">{(n as any)?.data?.from_user_name || "User"}</span>
-                                                                <span className="text-gray-600">:{t(" Hey my name is")} {(n as any)?.data?.from_user_name || "User"}. Nice to meet you</span>
+                                                                <span className="text-gray-600">:{t(" Hey my name is")} {(n as any)?.data?.from_user_name || "User"}. {t("Nice to meet you")}</span>
                                                             </p>
                                                         </div>
                                                     </div>
@@ -277,7 +279,7 @@ export const NotificationList = () => {
                                     );
                                 case "friend_request_accepted":
                                     return (
-                                        <motion.div 
+                                        <motion.div
                                             className="relative z-10 flex items-center gap-4 p-5 sm:p-5 text-neutral-900 cursor-pointer"
                                             onClick={() => {
                                                 history.push(`/profile/${n.data.accepter_user_id}`);
@@ -294,10 +296,10 @@ export const NotificationList = () => {
                                                 />
                                             )}
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
+                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{t(n.title, { ns: 'api' })}</p>
                                                 <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
                                                     <span className="font-semibold mr-1 text-neutral-900">{(n as any)?.data?.accepter_name || ""}</span>
-                                                    {n.body}
+                                                    {t(n.body, { ns: 'api' })}
                                                 </p>
                                             </div>
                                             {(n as any)?.data?.time_ago && (
@@ -336,7 +338,8 @@ export const NotificationList = () => {
                                                     </div>
                                                     {!isChatExpanded && (
                                                         <p className="text-base line-clamp-1">
-                                                            <span className="font-bold text-black">{(n.title || "")}</span>
+                                                            <span className="font-bold text-black">{(n?.fullData?.UserName)} {t("to")} {(n?.fullData?.ChatInfo?.Title)}</span>
+
                                                             <span className="text-gray-700">: {n.body}</span>
                                                         </p>
                                                     )}
@@ -430,9 +433,9 @@ export const NotificationList = () => {
                                                             initial={{ opacity: 0, y: -8, scale: 0.95 }}
                                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                                             exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                                                            transition={{ 
-                                                                duration: 0.25, 
-                                                                ease: [0.4, 0.0, 0.2, 1] 
+                                                            transition={{
+                                                                duration: 0.25,
+                                                                ease: [0.4, 0.0, 0.2, 1]
                                                             }}
                                                             className="mt-3 flex gap-3 pl-14"
                                                         >
@@ -493,10 +496,10 @@ export const NotificationList = () => {
                                                 />
                                             )}
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
+                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{t(n.title, { ns: 'api' })}</p>
                                                 <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
                                                     <span className="font-semibold mr-1 text-neutral-900">{n.data.creator_name ? (`${n.data.creator_name}: `) : ""}</span>
-                                                    {n.body}
+                                                    {t("added you to")}  {n?.data?.group_title}
                                                 </p>
                                             </div>
                                             {(n as any)?.data?.time_ago && (
@@ -518,10 +521,10 @@ export const NotificationList = () => {
                                                 />
                                             )}
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
+                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{t(n.title, { ns: 'api' })}</p>
                                                 <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
-                                                    <span className="font-semibold mr-1 text-neutral-900">{n.data.updater_name ?(`${n.data.updater_name}: `) : ""}</span>
-                                                    {n.body}
+                                                    <span className="font-semibold mr-1 text-neutral-900">{n.data.updater_name ? (`${n.data.updater_name}: `) : ""}</span>
+                                                    {t("updated")} {n?.data?.group_title}
                                                 </p>
                                             </div>
                                             {(n as any)?.data?.time_ago && (
@@ -543,10 +546,10 @@ export const NotificationList = () => {
                                                 />
                                             )}
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
+                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{t(n.title, { ns: 'api' })}</p>
                                                 <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
                                                     <span className="font-semibold mr-1 text-neutral-900">{n.data.adder_name ? (`${n.data.adder_name}: `) : ""}</span>
-                                                    {n.body}
+                                                    {t("added")} {n?.data?.adder_name}
                                                 </p>
                                             </div>
                                             {(n as any)?.data?.time_ago && (
@@ -568,10 +571,10 @@ export const NotificationList = () => {
                                                 />
                                             )}
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{n.title}</p>
+                                                <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{t(n.title, { ns: 'api' })}</p>
                                                 <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
                                                     <span className="font-semibold mr-1 text-neutral-900">{n.data.remover_name ? (`${n.data.remover_name}: `) : ""}</span>
-                                                    {n.body}
+                                                    {t("removed")} {n?.data?.remover_name}
                                                 </p>
                                             </div>
                                             {(n as any)?.data?.time_ago && (
@@ -798,7 +801,7 @@ export const NotificationList = () => {
                                     );
                                 default:
                                     return (
-                                        <motion.div 
+                                        <motion.div
                                             className="relative z-10 flex items-center gap-4 p-5 sm:p-5 text-neutral-900"
                                             whileHover={{ scale: 1.01 }}
                                             whileTap={{ scale: 0.99 }}
@@ -827,23 +830,23 @@ export const NotificationList = () => {
                         return (
                             <motion.div
                                 key={n.id}
-                                initial={{ 
-                                    opacity: 0, 
+                                initial={{
+                                    opacity: 0,
                                     y: -50,
                                     scale: 0.95
                                 }}
                                 animate={swipeDismissIds.has(n.id)
-                                    ? { 
-                                        opacity: 0, 
-                                        x: -300, 
+                                    ? {
+                                        opacity: 0,
+                                        x: -300,
                                         scale: 0.8,
-                                        transition: { 
+                                        transition: {
                                             duration: 0.35,
                                             ease: [0.4, 0.0, 0.2, 1]
-                                        } 
+                                        }
                                     }
-                                    : { 
-                                        opacity: 1, 
+                                    : {
+                                        opacity: 1,
                                         y: 0,
                                         scale: 1,
                                         transition: {
@@ -851,14 +854,14 @@ export const NotificationList = () => {
                                             ease: [0.4, 0.0, 0.2, 1]
                                         }
                                     }}
-                                exit={{ 
-                                    opacity: 0, 
+                                exit={{
+                                    opacity: 0,
                                     y: -30,
                                     scale: 0.9,
-                                    transition: { 
+                                    transition: {
                                         duration: 0.3,
                                         ease: [0.4, 0.0, 0.2, 1]
-                                    } 
+                                    }
                                 }}
                                 className="relative overflow-hidden rounded-2xl shadow-lg bg-white border border-gray-200"
                                 drag="x"
@@ -879,13 +882,13 @@ export const NotificationList = () => {
                                     // allow clicks again on next tick
                                     setTimeout(() => { isDraggingRef.current = false; }, 0);
                                 }}
-                                whileDrag={{ 
-                                    x: -12, 
+                                whileDrag={{
+                                    x: -12,
                                     opacity: 0.9,
                                     scale: 0.98,
                                     transition: { duration: 0.1 }
                                 }}
-                                
+
                                 onClickCapture={(e) => { if (isDraggingRef.current) e.stopPropagation(); }}
                                 onMouseEnter={() => pinNotification(n.id)}
                                 onMouseLeave={() => unpinNotification(n.id, true)}
