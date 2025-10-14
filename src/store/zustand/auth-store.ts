@@ -5,6 +5,8 @@ import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
 import { googleLogout } from '@react-oauth/google';
 import { logoutApi } from "@/services/auth/auth-service";
+import { Preferences } from "@capacitor/preferences";
+import { FCM_KEY } from "@/constants/global";
 
 interface AuthState {
     user: User | null;
@@ -65,13 +67,20 @@ export const useAuthStore = create<AuthState>()(
                     console.error("Third-party logout failed:", error);
                 }
 
-                // Xóa token và refresh token khỏi localStorage
                 localStorage.removeItem("token");
+                localStorage.removeItem("chat-session");
                 localStorage.removeItem("refreshToken");
                 localStorage.removeItem("registerEmail");
                 localStorage.removeItem("otpLastSent");
                 localStorage.removeItem("signalr-stream-storage");
                 localStorage.removeItem("health-master-data-storage");
+                try {
+                    localStorage.removeItem("CapacitorStorage.fcmToken");
+                    localStorage.removeItem("fcm-token");
+                    await Preferences.remove({ key: FCM_KEY });
+                } catch (e) {
+                    console.error("Failed to clear FCM token:", e);
+                }
                 sessionStorage.clear();
 
                 set({

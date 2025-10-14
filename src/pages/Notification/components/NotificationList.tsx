@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { IonContent, IonInfiniteScroll, IonInfiniteScrollContent, IonSkeletonText } from '@ionic/react';
-import avatarFallback from '@/icons/logo/social-chat/avt-rounded-full.svg';
+import avatarFallback from '@/icons/logo/social-chat/avt-rounded.svg';
 import WaveIcon from '@/icons/logo/social/wave-icon.svg?react';
 import { listNotificationApi, Notification } from '@/services/social/social-notification';
 import { useModalContext } from '@/contexts/ModalContext';
@@ -215,7 +215,7 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
             setOlderNotifications(olderNotifications.map((notif: Notification) => ({ ...notif, isRead: true })));
         }
     }, [isReadAll]);
-
+console.log(allNotifications)
     const formatTimestamp = (createDate: string): string => {
         const now = new Date();
 

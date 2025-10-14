@@ -231,7 +231,7 @@ const SocialChatMembers: React.FC = () => {
                                 <div className="px-4 py-2 text-gray-500 text-sm">
                                     {roomChatInfo?.participants?.length || 0} {t("members")}
                                 </div>
-                                <div className="flex-1 overflow-y-auto px-4 pb-6">
+                                <div className="flex-1 overflow-y-auto px-4 pb-28">
                                     <div className="bg-white rounded-xl overflow-hidden">
                                         {roomChatInfo?.participants?.map((member) => (
                                             <div key={member.userId} className="flex items-center justify-between  py-3 border-b border-gray-100 last:border-b-0">

@@ -67,7 +67,7 @@ const ExpandableText: React.FC<ExpandableTextProps> = ({
     <div className={className}>
       <div
         ref={contentRef}
-        className={`whitespace-pre-wrap ${contentClassName} ${isExpanded ? '' : clampClassName}`}
+        className={`whitespace-pre-wrap break-words ${contentClassName} ${isExpanded ? '' : clampClassName}`}
       >
         {children}
       </div>

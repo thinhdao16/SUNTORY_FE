@@ -56,7 +56,7 @@ export const parseHashtagsWithClick = (
       return (
         <span 
           key={index} 
-          className="text-blue-500 font-medium cursor-pointer hover:underline hover:text-blue-600 transition-colors"
+          className="text-blue-500 font-medium cursor-pointer hover:underline hover:text-blue-600 transition-colors break-all"
           onClick={(e) => { e.stopPropagation(); e.preventDefault(); void handleHashtagClick(part); }}
         >
           {part}

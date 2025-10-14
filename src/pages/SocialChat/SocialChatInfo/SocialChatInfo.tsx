@@ -316,13 +316,13 @@ const SocialChatInfo: React.FC<SocialChatInfoProps> = () => {
                             disabled={isDeleting}
                         >
                             <BiTrash className="text-xl" />
-                            <span>{isDeleting ? t("Deleting...") : "Xóa nhóm"}</span>
+                            <span>{isDeleting ? t("Deleting...") : t("Delete group")}</span>
                         </button>
                     )}
 
                     <button className="w-full flex items-center gap-3 px-4 py-4 text-red-500 border-t border-gray-100" onClick={() => setIsConfirmOpen(true)} disabled={isLeaving}>
                         <TbLogout className="text-xl" />
-                        <span>{isLeaving ? t("Leaving...") : "Rời nhóm"}</span>
+                        <span>{isLeaving ? t("Leaving...") : t("Leave group")}</span>
                     </button>
                 </div>
             </div>

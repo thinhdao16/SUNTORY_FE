@@ -524,7 +524,7 @@ export const NotificationList = () => {
                                                 <p className="font-semibold leading-snug text-[clamp(14px,2.5vw,16px)] line-clamp-1">{t(n.title, { ns: 'api' })}</p>
                                                 <p className="text-[clamp(12px,2.2vw,14px)] leading-snug text-neutral-700 line-clamp-2">
                                                     <span className="font-semibold mr-1 text-neutral-900">{n.data.updater_name ? (`${n.data.updater_name}: `) : ""}</span>
-                                                    {t("updated")} {n?.data?.group_title}
+                                                 {n?.body}
                                                 </p>
                                             </div>
                                             {(n as any)?.data?.time_ago && (

@@ -366,8 +366,8 @@ const OtherUserProfile: React.FC = () => {
                         <IonButtons slot="start" className="pl-4">
                             <BackIcon onClick={() => history.goBack()} />
                         </IonButtons>
-                        <div>
-                            <span className="font-semibold max-w-[200px] truncate text-black pl-2" >
+                        <div className="max-w-[200px] truncate">
+                            <span className="font-semibold  text-black pl-2" >
                                 {userInfo?.name}
                             </span>
                         </div>

@@ -104,12 +104,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                 <div
                     className={
                         displayPhotos.length === 1
-                            ? `w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "justify-end" : "justify-start"}`
-                            : displayPhotos.length === 2
-                                ? "grid  w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
-                                : displayPhotos.length === 3
-                                    ? "grid  w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2 grid-rows-2"
-                                    : "grid  w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
+                          
+                         ? `w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden flex ${isUser ? "justify-end" : "justify-start"}`
+                            : "grid gap-2 w-[70vw] lg:w-[320px] xl:w-[320px] rounded-2xl overflow-hidden grid-cols-2"
                     }
                 >
                     {displayPhotos.map((photo: {
@@ -134,7 +131,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                         const renderOverlay = () => {
                             if (isError) {
                                 return (
-                                    <div className="absolute inset-0 bg-red-500/20 rounded-2xl flex items-center justify-center z-10">
+                                    <div className="absolute inset-0  bg-red-500/20 rounded-2xl flex items-center justify-center z-10">
                                         <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
                                             {t("Upload failed")}
                                         </div>
@@ -202,14 +199,15 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                             return (
                                 <div
                                     key={photo.stableKey}
-                                    className="relative col-span-2 w-full h-[160px] rounded-b-2xl overflow-hidden cursor-pointer"
+                                    className="relative col-span-2 w-full h-[160px] rounded-2xl overflow-hidden cursor-pointer"
                                     onClick={() => handleImageClick(idx)}
                                 >
                                     <AppImage
                                         src={photo.src}
                                         serverSrc={photo.serverSrc}
                                         alt=""
-                                        className="w-full h-full object-cover rounded-b-2xl"
+                                        fit="cover"
+                                        className="w-full h-full object-cover rounded-2xl"
                                         mediaType={photo.mediaType}
                                         videoProps={videoProps}
                                     />
@@ -235,7 +233,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                         mediaType={photo.mediaType}
                                         videoProps={videoProps}
                                     />
-                                    <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="absolute inset-0 rounded-2xl flex items-center justify-center">
                                         <span className="text-white font-bold text-2xl bg-black/50 px-4 py-2 rounded-2xl select-none pointer-events-none">
                                             +{remaining}
                                         </span>
@@ -249,20 +247,20 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                             return (
                                 <div
                                     key={photo.stableKey}
-                                    className="relative object-cover rounded-br-2xl w-full h-full cursor-pointer overflow-hidden"
+                                    className="relative object-cover rounded-2xl w-full h-full cursor-pointer overflow-hidden"
                                     onClick={() => handleImageClick(idx)}
                                 >
                                     <AppImage
                                         src={photo.src}
                                         serverSrc={photo.serverSrc}
                                         alt=""
-                                        className="w-full h-full object-cover rounded-e-2xl"
+                                        className="w-full h-full object-cover rounded-2xl"
                                         style={{ filter: "brightness(0.7)" }}
                                         mediaType={photo.mediaType}
                                         videoProps={videoProps}
                                     />
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <span className="text-white font-bold text-2xl bg-black/50 px-4 py-2 rounded-e-2xl select-none pointer-events-none">
+                                    <div className="absolute inset-0 rounded-2xl flex items-center justify-center">
+                                        <span className="text-white font-bold text-2xl bg-black/50 px-4 py-2 rounded-2xl select-none pointer-events-none">
                                             +{remaining}
                                         </span>
                                     </div>
@@ -303,7 +301,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                         alt=""
                                         ref={ref1}
                                         onClick={() => handleImageClick(idx)}
-                                        className="object-cover  w-full h-full"
+                                        className="object-cover rounded-2xl w-full h-full"
                                         style={{ cursor: "pointer" }}
                                         mediaType={photo.mediaType}
                                         videoProps={videoProps}
@@ -322,7 +320,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                         alt=""
                                         ref={ref2}
                                         onClick={() => handleImageClick(idx)}
-                                        className="object-cover w-full h-full"
+                                        className="object-cover rounded-2xl w-full h-full"
                                         style={{ cursor: "pointer" }}
                                         mediaType={photo.mediaType}
                                         videoProps={videoProps}
@@ -339,7 +337,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                     serverSrc={photo.serverSrc}
                                     alt=""
                                     onClick={() => handleImageClick(idx)}
-                                    className="object-cover w-full h-full"
+                                    className="object-cover rounded-2xl w-full h-full"
                                     style={{ cursor: "pointer" }}
                                     mediaType={photo.mediaType}
                                     videoProps={videoProps}
