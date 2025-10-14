@@ -62,7 +62,7 @@ const FriendRequest: React.FC = () => {
     });
     const handleLoadMore = () => {
         if (loadingMore) return;
-        
+
         setLoadingMore(true);
         setTimeout(() => {
             setCurrentPage(prev => prev + 1);
@@ -80,21 +80,43 @@ const FriendRequest: React.FC = () => {
     }, [notificationCounts.pendingFriendRequestsCount, refetch]);
 
     useEffect(() => {
-        const baseList = showAll ? requests : requests.slice(0, currentPage * pageSize);
         const now = Date.now();
-        const pinnedList: FriendRequestItem[] = Object.values(friendRequestOptimistic || {})
-            .filter((e: any) => !e.expiresAt || e.expiresAt > now)
-            .map((e: any) => e.item as FriendRequestItem);
+        const optimisticMap = new Map(
+            Object.values(friendRequestOptimistic || {})
+                .filter((e: any) => !e.expiresAt || e.expiresAt > now)
+                .map((e: any) => [e.item.id, e.item as FriendRequestItem])
+        );
 
-        setDisplayedRequests(() => {
-            const baseIds = new Set(baseList.map(r => r.id));
-            const pinnedMap = new Map(pinnedList.map(p => [p.id, p]));
-            const mergedBase = baseList.map(item => pinnedMap.get(item.id) ?? item);
-            const pinnedNotInBase = pinnedList.filter(p => !baseIds.has(p.id));
-            const combined = [...pinnedNotInBase, ...mergedBase];
-            return showAll ? combined : combined.slice(0, currentPage * pageSize);
+        const baseList = showAll
+            ? requests
+            : requests.slice(0, currentPage * pageSize);
+        const serverMap = new Map(baseList.map(i => [i.id, i]));
+
+        setDisplayedRequests(prev => {
+            const updated: FriendRequestItem[] = [];
+
+            const seen = new Set<string>();
+
+            for (const old of prev || []) {
+                const newItem =
+                    optimisticMap.get(old.id) || serverMap.get(old.id) || old;
+                if (!seen.has(newItem.id)) {
+                    updated.push(newItem);
+                    seen.add(newItem.id);
+                }
+            }
+
+            for (const item of baseList) {
+                if (!seen.has(item.id)) {
+                    updated.push(optimisticMap.get(item.id) || item);
+                    seen.add(item.id);
+                }
+            }
+
+            return updated;
         });
     }, [data, showAll, friendRequestOptimistic, currentPage, pageSize]);
+
 
     useEffect(() => {
         const id = setInterval(() => {
@@ -138,25 +160,31 @@ const FriendRequest: React.FC = () => {
 
     const handleAccept = async (requestId: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        
+
         setDisplayedRequests(prev => {
             const found = prev.find(r => r.id === requestId);
             if (found) {
                 const updated = { ...found, inviteStatus: 20 as number };
                 setFriendRequestOptimistic(updated, 180);
-                return prev.map(request => request.id === requestId ? updated : request);
+
+                const index = prev.findIndex(request => request.id === requestId);
+                if (index !== -1) {
+                    const newList = [...prev];
+                    newList[index] = updated;
+                    return newList;
+                }
             }
             return prev;
         });
-        
+
         try {
             await acceptFriendRequest(requestId);
         } catch (error) {
             console.error('Error accepting friend request:', error);
             removeFriendRequestOptimistic(requestId);
-            setDisplayedRequests(prev => 
-                prev.map(request => 
-                    request.id === requestId 
+            setDisplayedRequests(prev =>
+                prev.map(request =>
+                    request.id === requestId
                         ? { ...request, inviteStatus: 10 }
                         : request
                 )
@@ -166,25 +194,31 @@ const FriendRequest: React.FC = () => {
 
     const handleDecline = async (requestId: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        
+
         setDisplayedRequests(prev => {
             const found = prev.find(r => r.id === requestId);
             if (found) {
                 const updated = { ...found, inviteStatus: 30 as number };
                 setFriendRequestOptimistic(updated, 180);
-                return prev.map(request => request.id === requestId ? updated : request);
+
+                const index = prev.findIndex(request => request.id === requestId);
+                if (index !== -1) {
+                    const newList = [...prev];
+                    newList[index] = updated;
+                    return newList;
+                }
             }
             return prev;
         });
-        
+
         try {
             await rejectFriendRequest(requestId);
         } catch (error) {
             console.error('Error rejecting friend request:', error);
             removeFriendRequestOptimistic(requestId);
-            setDisplayedRequests(prev => 
-                prev.map(request => 
-                    request.id === requestId 
+            setDisplayedRequests(prev =>
+                prev.map(request =>
+                    request.id === requestId
                         ? { ...request, inviteStatus: 10 }
                         : request
                 )
