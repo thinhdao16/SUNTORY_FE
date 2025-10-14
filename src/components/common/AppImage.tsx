@@ -30,7 +30,7 @@ const AppImage: React.FC<AppImageProps> = ({
   src,
   alt = "",
   className = "",
-  wrapperClassName = "rounded-2xl",
+  wrapperClassName = "",
   placeholderSrc = "/favicon.png",
   effect = "blur",
   onLoad,

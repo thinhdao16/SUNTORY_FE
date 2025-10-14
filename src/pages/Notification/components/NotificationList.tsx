@@ -10,11 +10,14 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useNotificationStore } from '@/store/zustand/notify-store';
 import { readNotificationApi, ReadNotificationParams } from "@/services/social/social-notification";
+import { useTranslation } from 'react-i18next';
+import { formatTimeFromNow } from '@/utils/formatTime';
 
 const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
     const history = useHistory();
     const { setHideBottomTabBar } = useModalContext();
     const lastNotificationTime = useNotificationStore((state) => state.lastNotificationTime);
+    const { t } = useTranslation();
     const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
     const [newNotifications, setNewNotifications] = useState<Notification[]>([]);
     const [olderNotifications, setOlderNotifications] = useState<Notification[]>([]);
@@ -215,38 +218,11 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
             setOlderNotifications(olderNotifications.map((notif: Notification) => ({ ...notif, isRead: true })));
         }
     }, [isReadAll]);
-console.log(allNotifications)
     const formatTimestamp = (createDate: string): string => {
-        const now = new Date();
-
-        let timestamp: Date;
-        if (createDate.includes('Z') || createDate.includes('+') || createDate.includes('-', 10)) {
-            timestamp = new Date(createDate);
-        } else {
-            timestamp = new Date(createDate + 'Z');
-        }
-
-        const diffInMs = now.getTime() - timestamp.getTime();
-        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-
-        if (diffInMinutes < 0) return 'Now';
-        if (diffInMinutes < 1) return 'Now';
-        if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-
-        const diffInHours = Math.floor(diffInMinutes / 60);
-        if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-
-        const diffInDays = Math.floor(diffInHours / 24);
-        if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-
-        const diffInWeeks = Math.floor(diffInDays / 7);
-        if (diffInWeeks < 4) return `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
-
-        const diffInMonths = Math.floor(diffInDays / 30);
-        if (diffInMonths < 12) return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
-
-        const diffInYears = Math.floor(diffInDays / 365);
-        return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ago`;
+        const iso = (createDate.includes('Z') || createDate.includes('+') || createDate.includes('-', 10))
+            ? createDate
+            : createDate + 'Z';
+        return formatTimeFromNow(iso, t);
     };
 
     const getActionText = (type: number): string => {
