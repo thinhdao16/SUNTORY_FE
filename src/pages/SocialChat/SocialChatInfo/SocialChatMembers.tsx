@@ -236,7 +236,7 @@ const SocialChatMembers: React.FC = () => {
                                         {roomChatInfo?.participants?.map((member) => (
                                             <div key={member.userId} className="flex items-center justify-between  py-3 border-b border-gray-100 last:border-b-0">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden">
+                                                    <div className="w-10 h-10 rounded-xl overflow-hidden">
                                                         <img
                                                             src={member?.user?.avatar || avatarFallback}
                                                             alt={member?.user?.fullName}

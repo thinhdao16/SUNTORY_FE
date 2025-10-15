@@ -13,7 +13,7 @@ import { readNotificationApi, ReadNotificationParams } from "@/services/social/s
 import { useTranslation } from 'react-i18next';
 import { formatTimeFromNow } from '@/utils/formatTime';
 
-const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
+const NotificationList = ({ isReadAll,refreshKey }: { isReadAll: boolean,refreshKey: number }) => {
     const history = useHistory();
     const { setHideBottomTabBar } = useModalContext();
     const lastNotificationTime = useNotificationStore((state) => state.lastNotificationTime);
@@ -24,11 +24,9 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [page, setPage] = useState(0);
-    const [pageSize, setPageSize] = useState(100); // 5 new + 3 older = 8 total
+    const pageSize = 100; 
     const [hasNextPage, setHasNextPage] = useState(true);
-    const [totalRecords, setTotalRecords] = useState(0);
-    const [maxPages, setMaxPages] = useState(0);
-    const [showAll, setShowAll] = useState(false); // Trạng thái hiển thị tất cả
+    const [showAll, setShowAll] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const [notificationIds, setNotificationIds] = useState<number[] | null>(null);
     const [isFromHeader, setIsFromHeader] = useState(false);
@@ -37,6 +35,7 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
     const startTimeRef = useRef<number | null>(null);
     const screenHeightRef = useRef(window.innerHeight);
     const velocityThreshold = 0.4;
+    const didInitRef = useRef(false);
 
     const handleTouchStart = (e: React.TouchEvent) => {
         handleTouchStartUtil(e, startYRef, startTimeRef);
@@ -83,42 +82,51 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
         }
     }
 
-    const loadNotifications = async (currentPage: number, isLoadMore: boolean = false) => {
+    const loadNotifications = async (currentPage: number, isLoadMore: boolean = false, silent: boolean = false) => {
         try {
             if (isLoadMore) {
                 setLoadingMore(true);
-            } else {
+            } else if (!silent) {
                 setIsLoading(true);
             }
             
             const response = await listNotificationApi({ pageNumber: currentPage, pageSize });
-            const responseData = response.data || [];
-            const totalRecs = responseData.totalRecords || 0;
-            const notifications = responseData.data || [];
+            const responseData = response?.data || {};
+            const totalRecs = responseData?.totalRecords || 0;
+            const notifications = responseData?.data || [];
 
             if (notifications.length > 0) {
-                const calculatedMaxPages = Math.ceil(totalRecs / pageSize);
-                setTotalRecords(totalRecs);
-                setMaxPages(calculatedMaxPages);
                 if (isLoadMore) {
                     setAllNotifications(prevNotifications => {
                         const existingIds = new Set(prevNotifications.map(notif => notif.id));
                         const newNotifications = notifications.filter((notif: Notification) => !existingIds.has(notif.id));
                         const updatedNotifications = [...prevNotifications, ...newNotifications];
-                        
+
                         const hasMore = updatedNotifications.length < totalRecs;
                         setHasNextPage(hasMore);
-                        
+
                         return updatedNotifications;
+                    });
+                } else if (silent) {
+                    setAllNotifications(prev => {
+                        const seen = new Set<number>();
+                        const merged: Notification[] = [];
+                        for (const n of notifications) {
+                            if (!seen.has(n.id)) { merged.push(n); seen.add(n.id); }
+                        }
+                        for (const p of prev) {
+                            if (!seen.has(p.id)) { merged.push(p); seen.add(p.id); }
+                        }
+                        setHasNextPage(merged.length < totalRecs);
+                        return merged;
                     });
                 } else {
                     setAllNotifications(notifications);
-                    
                     const hasMore = notifications.length < totalRecs;
                     setHasNextPage(hasMore);
                 }
             } else {
-                setIsLoading(false);
+                if (!silent) setIsLoading(false);
                 if (!isLoadMore) {
                     setHasNextPage(false);
                 }
@@ -130,15 +138,17 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
         } finally {
             if (isLoadMore) {
                 setLoadingMore(false);
+            } else {
+                setIsLoading(false);
             }
         }
     };
 
     useEffect(() => {
-        setAllNotifications([]);
+        const firstLoad = !didInitRef.current;
+        didInitRef.current = true;
         setPage(0);
-        setIsLoading(true);
-        loadNotifications(0, false);
+        loadNotifications(0, false, !firstLoad);
     }, [lastNotificationTime]);
 
     useEffect(() => {
@@ -188,7 +198,6 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
         });
 
         const olderNotifs = allNotifications.filter((notif: Notification) => {
-            // Parse createDate giống như trong formatTimestamp
             let createDate: Date;
             if (notif.createDate.includes('Z') || notif.createDate.includes('+') || notif.createDate.includes('-', 10)) {
                 createDate = new Date(notif.createDate);
@@ -327,10 +336,10 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                     <div className="flex-1">
-                        <p className="text-m text-black">
-                            <span className="font-semibold overflow-hidden max-w-[10px]">{notification.actorName}</span>{' '}
+                        <div className="text-m text-black flex gap-1">
+                            <div className="font-semibold overflow-hidden max-w-[60px] truncate ">{notification.actorName}</div>
                             <span className="text-black">{getActionText(notification.type)}</span>
-                        </p>
+                        </div>
                         <p className="text-xs text-gray-500 mt-1">
                             {formatTimestamp(notification.createDate)}
                         </p>
@@ -359,13 +368,11 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
                 ) : (
                     <>
                         {showAll ? (
-                            // Hiển thị tất cả notification không phân chia
                             <div className="bg-white">
                                 {allNotifications.map(renderNotificationItem)}
                             </div>
                         ) : (
                             <>
-                                {/* New Notifications */}
                                 {newNotifications.length > 0 && (
                                     <div className="bg-white">
                                         <div className="px-4 py-3 bg-white border-b border-gray-200 flex items-center justify-between">
@@ -375,7 +382,6 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
                                     </div>
                                 )}
 
-                                {/* Older Notifications */}
                                 {olderNotifications.length > 0 && (
                                     <div className="bg-white">
                                         <div className="px-4 py-3 bg-white border-b border-gray-200">
@@ -385,7 +391,6 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
                                     </div>
                                 )}
 
-                                {/* Empty State */}
                                 {newNotifications.length === 0 && olderNotifications.length === 0 && !isLoading && (
                                     <div className="flex flex-col items-center justify-center py-2 bg-[#EDF1FC]">
                                         <p className="text-black text-sm">{t('No notifications')}</p>
@@ -394,7 +399,6 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
                             </>
                         )}
 
-                        {/* Loading More Indicator */}
                         {loadingMore && (
                             <div className="flex justify-center py-4">
                                 <div className="flex items-center gap-2">
@@ -404,7 +408,6 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
                             </div>
                         )}
 
-                        {/* See Previous Notifications Button - chỉ hiển thị khi chưa showAll */}
                         {!showAll && (newNotifications.length > 0 || olderNotifications.length > 0) && (
                             <div className="px-6 py-4 flex justify-center bg-white">
                                 <button
@@ -419,7 +422,6 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
                             </div>
                         )}
 
-                        {/* Infinite Scroll */}
                         {allNotifications.length > 0 && showAll && (
                             <IonInfiniteScroll
                                 onIonInfinite={handleInfiniteScroll}

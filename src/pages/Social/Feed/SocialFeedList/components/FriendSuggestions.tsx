@@ -24,7 +24,6 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
     const showToast = useToastStore((s) => s.showToast);
     const history = useHistory();
     
-    // State for managing empty results and cooldown
     const [lastEmptyCheck, setLastEmptyCheck] = useState<number | null>(null);
     const [isInCooldown, setIsInCooldown] = useState(false);
     
@@ -43,13 +42,10 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
         pruneExpiredFriendRequestOutgoing,
     } = useSocialChatStore();
 
-    // Horizontal scroll container + sentinel
     const listRef = useRef<HTMLDivElement>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
-    // Local states
     const [dismissed, setDismissed] = useState<Set<number>>(new Set());
     const [sentLocal, setSentLocal] = useState<Set<number>>(new Set());
-    // Persist users across refetch
     const [userMap, setUserMap] = useState<Map<number, any>>(new Map());
     useEffect(() => {
         if (!data?.pages) return;
@@ -70,18 +66,15 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
     const users: any[] = useMemo(() => Array.from(userMap.values()), [userMap]);
     const visibleUsers = useMemo(() => users.filter((u: any) => !dismissed.has(u?.id)), [users, dismissed]);
     
-    // Check if we have empty results and manage cooldown
     useEffect(() => {
         if (!isLoading && !isFetchingNextPage && visibleUsers.length === 0 && data?.pages && data.pages.length > 0) {
             const now = Date.now();
-            const COOLDOWN_DURATION = 2 * 60 * 1000; // 2 minutes
+            const COOLDOWN_DURATION = 2 * 60 * 1000;  
             
-            // If this is the first time we detect empty results, start cooldown
             if (!lastEmptyCheck) {
                 setLastEmptyCheck(now);
                 setIsInCooldown(true);
                 
-                // Set timer to end cooldown after 2 minutes
                 setTimeout(() => {
                     setIsInCooldown(false);
                     setLastEmptyCheck(null);
@@ -92,7 +85,6 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
 
     const handleDismissCard = (id: number) => {
         setDismissed((prev) => new Set([...prev, id]));
-        // If not enough width to scroll, fetch more (but respect cooldown)
         setTimeout(() => {
             const el = listRef.current;
             if (!el) return;
@@ -103,7 +95,6 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
         }, 0);
     };
 
-    // Horizontal scroll to load more
     useEffect(() => {
         const el = listRef.current;
         if (!el) return;
@@ -116,7 +107,6 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
         return () => el.removeEventListener('scroll', onScroll);
     }, [isFetchingNextPage, fetchNextPage, isInCooldown]);
 
-    // IntersectionObserver sentinel at end (horizontal)
     useEffect(() => {
         const root = listRef.current;
         const target = sentinelRef.current;
@@ -158,7 +148,6 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                 )}
             </div>
             <div className="px-3 pb-4">
-                {/* Show empty state when no suggestions and in cooldown */}
                 {visibleUsers.length === 0 && isInCooldown && !isLoading && (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                         <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
@@ -170,9 +159,16 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                         <p className="text-xs text-gray-500">{t('We\'ll check for new suggestions in a few minutes')}</p>
                     </div>
                 )}
-                
-                {/* Show suggestions list when available or loading */}
-                {(visibleUsers.length > 0 || (!isInCooldown && isLoading)) && (
+
+                {visibleUsers.length === 0 && !isInCooldown && isLoading && (
+                    <div className="flex gap-3 overflow-x-auto">
+                        {Array.from({ length: Math.max(4, pageSize) }).map((_, i) => (
+                            <FriendCardSkeleton key={`init-s-${i}`} />
+                        ))}
+                    </div>
+                )}
+
+                {visibleUsers.length > 0 && (
                     <div ref={listRef} className="flex gap-3 overflow-x-auto ">
                         {visibleUsers.map((user: any) => {
                         const isSent = !!user?.isRequestSender;
@@ -185,7 +181,6 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                                 className="relative min-w-[180px] max-w-[180px] bg-white border border-netural-50 rounded-xl px-2 pb-2 pt-8"
                                 onClick={() => { if (user?.id) history.push(`/profile/${user.id}/posts`); }}
                             >
-                                {/* per-card dismiss */}
                                 <button
                                     aria-label="Dismiss card"
                                     className="absolute right-2 top-2 text-netural-300 hover:text-gray-600 text-3xl"
@@ -243,7 +238,6 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                             ))}
                         </>
                     )}
-                        {/* Horizontal sentinel */}
                         <div ref={sentinelRef} className="w-2" />
                     </div>
                 )}

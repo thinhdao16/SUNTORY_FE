@@ -53,6 +53,7 @@ const FeedDetail: React.FC = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const lastCommentElementRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const postCode = feedId;
     const isNative = Capacitor.isNativePlatform();
 
@@ -374,11 +375,12 @@ const FeedDetail: React.FC = () => {
             },
             {
                 threshold: 0.1,
-                rootMargin: '50px'
+                root: scrollContainerRef.current ?? null,
+                rootMargin: '50px',
             }
         );
-        const currentRef = lastCommentElementRef.current;
-        if (currentRef && allComments.length > 0) {
+        const currentRef = messagesEndRef.current;
+        if (currentRef) {
             observer.observe(currentRef);
         }
 
@@ -387,7 +389,7 @@ const FeedDetail: React.FC = () => {
                 observer.unobserve(currentRef);
             }
         };
-    }, [hasNextPage, isFetchingNextPage, isLoadingComments, fetchNextPage, allComments.length]);
+    }, [hasNextPage, isFetchingNextPage, isLoadingComments, fetchNextPage]);
 
     const handleCopyLink = () => {
         if (!displayPost?.code) {
@@ -682,7 +684,7 @@ const FeedDetail: React.FC = () => {
                 onUserProfileClick={handleUserProfileClick}
             />
 
-            <div className={`flex-1 overflow-x-hidden overflow-y-auto ${!isNative && !keyboardResizeScreen ? `pb-2 overflow-hidden` : ""}`}>
+            <div ref={scrollContainerRef} className={`flex-1 overflow-x-hidden overflow-y-auto ${!isNative && !keyboardResizeScreen ? `pb-2 overflow-hidden` : ""}`}>
                 <PostContent
                     displayPost={displayPost}
                     isRepost={isRepost || false}

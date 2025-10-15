@@ -4,6 +4,9 @@ import { Capacitor } from "@capacitor/core";
 import { useHistory } from "react-router";
 import { useInfiniteQuery } from "react-query";
 import { getUserChatRooms } from "@/services/social/social-chat-service";
+import avatarGroupFallback from "@/icons/logo/social-chat/avt-gr-rounded.svg";
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
+import { ChatInfoType } from "@/constants/socialChat";
 
 const PAGE_SIZE = 20;
 
@@ -66,14 +69,15 @@ const SocialChatSearch = () => {
                 onClick={() => history.push(`/social-chat/t/${user.code}`)}
               >
                 <div className=" flex items-center justify-center">
-                  <img
-                    src={user.avatarRoomChat || '/favicon.png'}
-                    alt={user.title}
-                    className="w-[50px] h-[50px] rounded-2xl object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = '/favicon.png';
-                    }}
-                  />
+                <img
+                        src={user?.avatarRoomChat || (user?.type === ChatInfoType.Group ? avatarGroupFallback : avatarFallback)}
+                        alt={user?.title}
+                        className="w-[50px] h-[50px] rounded-2xl object-cover flex-none"
+                        onError={(e) => {
+                          const fb = user?.type === ChatInfoType.Group ? avatarGroupFallback : avatarFallback;
+                          e.currentTarget.src = fb;
+                        }}
+                      />
                 </div>
                 <span className="text-sm font-medium">{user.title}</span>
               </div>

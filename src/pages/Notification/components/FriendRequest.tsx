@@ -11,6 +11,7 @@ import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
+import { formatTimeFromNow } from '@/utils/formatTime';
 
 interface FriendRequestItem {
     id: number;
@@ -29,7 +30,7 @@ interface FriendRequestItem {
     };
 }
 
-const FriendRequest: React.FC = () => {
+const FriendRequest: React.FC<{refreshKey: number}> = ({refreshKey}) => {
     const { t } = useTranslation();
     const history = useHistory();
 
@@ -73,12 +74,15 @@ const FriendRequest: React.FC = () => {
     useEffect(() => {
         const currentCount = notificationCounts.pendingFriendRequestsCount;
         const previousCount = prevFriendRequestCount.current;
-        if (previousCount !== currentCount && previousCount !== undefined && currentCount > previousCount) {
+        if (previousCount !== undefined && previousCount !== currentCount) {
             refetch();
         }
         prevFriendRequestCount.current = currentCount;
     }, [notificationCounts.pendingFriendRequestsCount, refetch]);
 
+    useEffect(() => {
+        refetch();
+    }, [refreshKey]);
     useEffect(() => {
         const now = Date.now();
         const optimisticMap = new Map(
@@ -95,20 +99,22 @@ const FriendRequest: React.FC = () => {
         setDisplayedRequests(prev => {
             const updated: FriendRequestItem[] = [];
 
-            const seen = new Set<string>();
+            const seen = new Set<number>();
 
             for (const old of prev || []) {
-                const newItem =
-                    optimisticMap.get(old.id) || serverMap.get(old.id) || old;
-                if (!seen.has(newItem.id)) {
-                    updated.push(newItem);
-                    seen.add(newItem.id);
+                const opt = optimisticMap.get(old.id);
+                const srv = serverMap.get(old.id);
+                const keep = opt ?? srv;
+                if (keep && !seen.has(keep.id)) {
+                    updated.push(keep);
+                    seen.add(keep.id);
                 }
             }
 
             for (const item of baseList) {
                 if (!seen.has(item.id)) {
-                    updated.push(optimisticMap.get(item.id) || item);
+                    const add = optimisticMap.get(item.id) || item;
+                    updated.push(add);
                     seen.add(item.id);
                 }
             }
@@ -127,35 +133,10 @@ const FriendRequest: React.FC = () => {
 
 
     const formatTimestamp = (createDate: string): string => {
-        const now = new Date();
-        let timestamp: Date;
-
-        if (createDate.includes('Z') || createDate.includes('+') || createDate.includes('-', 10)) {
-            timestamp = new Date(createDate);
-        } else {
-            timestamp = new Date(createDate + 'Z');
-        }
-
-        const diffInMs = now.getTime() - timestamp.getTime();
-        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-
-        if (diffInMinutes < 1) return 'Now';
-        if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-
-        const diffInHours = Math.floor(diffInMinutes / 60);
-        if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-
-        const diffInDays = Math.floor(diffInHours / 24);
-        if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-
-        const diffInWeeks = Math.floor(diffInDays / 7);
-        if (diffInWeeks < 4) return `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
-
-        const diffInMonths = Math.floor(diffInDays / 30);
-        if (diffInMonths < 12) return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
-
-        const diffInYears = Math.floor(diffInDays / 365);
-        return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ago`;
+        const iso = (createDate.includes('Z') || createDate.includes('+') || createDate.includes('-', 10))
+            ? createDate
+            : createDate + 'Z';
+        return formatTimeFromNow(iso, t);
     };
 
     const handleAccept = async (requestId: number, e: React.MouseEvent) => {
@@ -179,6 +160,7 @@ const FriendRequest: React.FC = () => {
 
         try {
             await acceptFriendRequest(requestId);
+            await refetch();
         } catch (error) {
             console.error('Error accepting friend request:', error);
             removeFriendRequestOptimistic(requestId);
@@ -213,6 +195,7 @@ const FriendRequest: React.FC = () => {
 
         try {
             await rejectFriendRequest(requestId);
+            await refetch();
         } catch (error) {
             console.error('Error rejecting friend request:', error);
             removeFriendRequestOptimistic(requestId);
@@ -284,12 +267,12 @@ const FriendRequest: React.FC = () => {
                 </div>
 
                 <div className="flex-1 min-w-0 flex flex-col">
-                    <p className="text-[14px] text-black">
-                        <span className="font-semibold overflow-hidden max-w-[10px]">{fullName}</span>{' '}
+                    <div className="text-[14px] text-black flex gap-1">
+                        <div className="font-semibold overflow-hidden max-w-[60px] truncate ">{fullName}</div>{' '}
                         {request.inviteStatus == 10 && (
                             <span className="text-black">{t('has sent you a friend request')}</span>
                         )}
-                    </p>
+                    </div>
                     {
                         request.inviteStatus == 20 && (
                             <p className="text-[12px] text-gray-500 mt-1">

@@ -44,7 +44,6 @@ function Notification() {
         );
     };
 
-    // Trigger refresh when lastActionTime changes
     useEffect(() => {
         if (lastActionTime > 0) {
             setRefreshKey(prev => prev + 1);
@@ -114,8 +113,8 @@ function Notification() {
 
                 {/* Tab Content */}
                 <div className="flex-1 overflow-hidden">
-                    {activeTab === 'notifications' && <NotificationList key={refreshKey} isReadAll={isReadAll} />}
-                    {activeTab === 'friend-requests' && <FriendRequest key={refreshKey} />}
+                    {activeTab === 'notifications' && <NotificationList  isReadAll={isReadAll} refreshKey={refreshKey} />}
+                    {activeTab === 'friend-requests' && <FriendRequest refreshKey={refreshKey} />}
                 </div>
             </div>
             <NotificationBottomModal
