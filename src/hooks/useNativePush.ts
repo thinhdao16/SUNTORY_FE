@@ -13,7 +13,7 @@ import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 import { useUpdateNewDevice } from "@/hooks/device/useDevice";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { useHistory } from "react-router-dom";
-import { NotificationType, isChatNotification } from "@/types/notification";
+import { NotificationType, isChatNotification, isStoryNotification } from "@/types/notification";
 
 const ANDROID_CHANNEL_ID = "messages_v2"; 
 
@@ -167,6 +167,9 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
 
           if (isChatNotification(data.type)) {
             history.push(`/social-chat/t/${data.chat_code}`);
+          }
+          else if (isStoryNotification(data.type)) {
+            history.push(`/social-feed/f/${data.post_code}`);
           }
           else if (data.type === NotificationType.FRIEND_REQUEST) {
             history.push(`/profile/${data.from_user_id}`);
