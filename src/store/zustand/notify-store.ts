@@ -73,14 +73,14 @@ export const useNotificationStore = create<NotificationState>((set) => ({
                     }
                 ],
                 lastNotificationTime: now,
-                isUnReadNotification: n.type !== "chat_message"
-                    && n.type !== "reaction"
-                    && n.type !== "group_chat_created"
-                    && n.type !== "group_chat_updated"
-                    && n.type !== "group_members_added"
-                    && n.type !== "group_members_removed"
-                    && n.type !== "member_added_to_group"
-                    && n.type !== "group_chat_removed" ? false : true,
+                isUnReadNotification: n.type === "chat_message"
+                    || n.type   === "reaction"
+                    || n.type == "group_chat_created"
+                    || n.type === "group_chat_updated"
+                    || n.type === "group_members_added"
+                    || n.type === "group_members_removed"
+                    || n.type === "member_added_to_group"
+                    || n.type === "group_chat_removed" ? false : true,
             };
         }),
     triggerRefresh: () =>
