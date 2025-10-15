@@ -26,7 +26,7 @@ export interface Notification {
     avatar?: string;
     data?: any;
     isAutoClear?: boolean;
-    fullData ?: any
+    fullData?: any,
 }
 
 interface NotificationState {
@@ -50,30 +50,37 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     addNotification: (n) =>
         set((state) => {
             const now = Date.now();
-            
+
             const uniqueKey = `${n.type}-${n.title}-${n.body}-${JSON.stringify(n.data || {})}`;
-            
+
             const isDuplicate = state.notifications.some(notification => {
                 const existingKey = `${notification.type}-${notification.title}-${notification.body}-${JSON.stringify(notification.data || {})}`;
                 const timeDiff = now - notification.createdAt;
                 return existingKey === uniqueKey && timeDiff < 5000;
             });
-            
+
             if (isDuplicate) {
                 return state;
             }
-            
+
+            // Chỉ giữ 1 notification, xóa tất cả notification cũ
             return {
                 notifications: [
                     {
                         ...n,
                         createdAt: now,
                         data: n.data || {},
-                    },
-                    ...state.notifications,
+                    }
                 ],
                 lastNotificationTime: now,
-                isUnReadNotification: true,
+                isUnReadNotification: n.type !== "chat_message"
+                    && n.type !== "reaction"
+                    && n.type !== "group_chat_created"
+                    && n.type !== "group_chat_updated"
+                    && n.type !== "group_members_added"
+                    && n.type !== "group_members_removed"
+                    && n.type !== "member_added_to_group"
+                    && n.type !== "group_chat_removed" ? false : true,
             };
         }),
     triggerRefresh: () =>
@@ -89,7 +96,7 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     clearAll: () => set({ notifications: [] }),
     clearOne: (id: string) =>
         set((state) => ({
-            notifications: state.notifications.filter((item) => item.id !== id),
+            notifications: state.notifications.filter((item) => item.id !== id)
         })),
     setIsUnReadNotification: (isUnReadNotification) => set({ isUnReadNotification }),
 }));

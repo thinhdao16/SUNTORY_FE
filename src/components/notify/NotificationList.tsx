@@ -116,10 +116,9 @@ export const NotificationList = () => {
 
     // Auto-dismiss notifications after 3 seconds
     useEffect(() => {
-        // Start timer cho tất cả notifications đang hiển thị (tối đa 3 cái)
         visibleNotifications.forEach((notification) => {
             if (!timersRef.current.has(notification.id) && !pinnedNotifications.has(notification.id)) {
-                startTimer(notification.id, 3000); // 3 giây
+                startTimer(notification.id, 5000); // 5 giây
             }
         });
 
@@ -129,6 +128,7 @@ export const NotificationList = () => {
             if (!currentIds.has(String(id))) {
                 clearTimeout(timer);
                 timersRef.current.delete(id);
+                clearOne(String(id));
             }
         });
 
@@ -151,11 +151,9 @@ export const NotificationList = () => {
         prevReplyIdRef.current = replyOpenId;
     }, [replyOpenId]);
 
+    // Chỉ hiển thị 1 notification
+    const visibleNotifications = notifications.slice(0, 1);
 
-    // Giới hạn hiển thị tối đa 3 notification cùng lúc
-    const maxVisibleNotifications = 3;
-    const visibleNotifications = notifications.slice(0, maxVisibleNotifications);
-    console.log(visibleNotifications)
     return (
         <div className="fixed inset-x-0 top-0 z-[9999] flex justify-center pointer-events-none pt-4">
             <div className="pointer-events-auto flex flex-col gap-3 w-100 max-w-[110vw]">
