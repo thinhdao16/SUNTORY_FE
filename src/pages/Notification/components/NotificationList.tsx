@@ -316,7 +316,7 @@ const NotificationList = ({ isReadAll,refreshKey }: { isReadAll: boolean,refresh
             const renderNotificationItem = (notification: Notification) => (
                 <div
                     key={notification.id}
-                    className={`notification-item flex items-center px-4 py-4 border-b border-gray-200 min-h-[78px] ${!notification.isRead ? 'bg-[#EDF1FC]' : 'bg-white'
+                    className={`notification-item flex items-start px-4 py-4 border-b border-gray-200 min-h-[78px] ${!notification.isRead ? 'bg-[#EDF1FC]' : 'bg-white'
                         }`}
                     onClick={() => {
                         history.push(handleNavigate(notification.type, notification.actorId, notification?.postCode || ''));
@@ -336,9 +336,9 @@ const NotificationList = ({ isReadAll,refreshKey }: { isReadAll: boolean,refresh
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                     <div className="flex-1">
-                        <div className="text-m text-black flex gap-1">
-                            <div className="font-semibold overflow-hidden max-w-[60px] truncate ">{notification.actorName}</div>
-                            <span className="text-black">{getActionText(notification.type)}</span>
+                        <div className="text-m text-black ">
+                            <span className="font-semibold overflow-hidden max-w-[160px] truncate inline-block align-middle">{notification.actorName}</span> {' '}
+                            <span className="text-black align-middle">{getActionText(notification.type)}</span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                             {formatTimestamp(notification.createDate)}

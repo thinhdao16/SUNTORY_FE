@@ -253,7 +253,7 @@ const FriendRequest: React.FC<{refreshKey: number}> = ({refreshKey}) => {
         return (
             <div
                 key={request.id}
-                className="flex items-center px-4 py-4 border-b border-gray-100 w-full"
+                className="flex items-start px-4 py-4 border-b border-gray-100 w-full"
                 onClick={() => {
                     history.push(`/profile/${request.fromUser?.id}`);
                 }}
@@ -267,10 +267,10 @@ const FriendRequest: React.FC<{refreshKey: number}> = ({refreshKey}) => {
                 </div>
 
                 <div className="flex-1 min-w-0 flex flex-col">
-                    <div className="text-[14px] text-black flex gap-1">
-                        <div className="font-semibold overflow-hidden max-w-[60px] truncate ">{fullName}</div>{' '}
+                    <div className="text-[14px] text-black leading-5">
+                        <span className="font-semibold overflow-hidden max-w-[160px] truncate inline-block align-middle">{fullName}</span>{' '}
                         {request.inviteStatus == 10 && (
-                            <span className="text-black">{t('has sent you a friend request')}</span>
+                            <span className="text-black align-middle">{t('has sent you a friend request')}</span>
                         )}
                     </div>
                     {
