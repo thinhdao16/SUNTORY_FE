@@ -366,8 +366,8 @@ const OtherUserProfile: React.FC = () => {
                         <IonButtons slot="start" className="pl-4">
                             <BackIcon onClick={() => history.goBack()} />
                         </IonButtons>
-                        <div>
-                            <span className="font-semibold max-w-[250px] truncate text-black pl-2" >
+                        <div className="max-w-[200px] truncate">
+                            <span className="font-semibold  text-black pl-2" >
                                 {userInfo?.name}
                             </span>
                         </div>
@@ -388,7 +388,7 @@ const OtherUserProfile: React.FC = () => {
                                             style={{ width: 20, height: 20, borderRadius: 9999 }}
                                         />
                                     </div>
-                                    <div className="flex items-center space-x-1 mb-2">
+                                    {/* <div className="flex items-center space-x-1 mb-2">
                                         <p className="text-black overflow-hidden max-w-[110px] truncate text-[15px]">
                                             @{userInfo?.code}
                                         </p>
@@ -396,7 +396,7 @@ const OtherUserProfile: React.FC = () => {
                                             className="cursor-pointer"
                                             onClick={() => { navigator.clipboard.writeText(userInfo.code || "") }}
                                         />
-                                    </div>
+                                    </div> */}
                                     <div className="flex items-center space-x-1 mb-4">
                                         <p className="font-medium">
                                             {userInfo?.friendNumber}

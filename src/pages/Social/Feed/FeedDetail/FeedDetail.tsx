@@ -302,10 +302,56 @@ const FeedDetail: React.FC = () => {
     const handleLikePost = () => {
         if (!displayPost) return;
 
-        postLikeMutation.mutate({
-            postCode: displayPost.code,
-            isLiked: displayPost.isLike || false
-        });
+        const prev = displayPost;
+        const wasLiked = Boolean(prev.isLike);
+        const prevCount = prev.reactionCount ?? 0;
+        const optimistic = {
+            ...prev,
+            isLike: !wasLiked,
+            reactionCount: wasLiked ? Math.max(0, prevCount - 1) : prevCount + 1,
+        };
+        setCurrentPost(optimistic as any);
+        if (prev?.code) {
+            queryClient.setQueryData(['feedDetail', prev.code], optimistic);
+        }
+
+        postLikeMutation.mutate(
+            {
+                postCode: prev.code,
+                isLiked: wasLiked,
+            },
+            {
+                onError: () => {
+                    setCurrentPost(prev as any);
+                    if (prev?.code) {
+                        queryClient.setQueryData(['feedDetail', prev.code], prev);
+                    }
+                },
+                onSuccess: async () => {
+                    try {
+                        const fresh = await SocialFeedService.getPostByCode(prev.code);
+                        const rawPatch: any = {
+                            isLike: (fresh as any)?.isLike,
+                            reactionCount: (fresh as any)?.reactionCount,
+                            commentCount: (fresh as any)?.commentCount,
+                            repostCount: (fresh as any)?.repostCount,
+                            shareCount: (fresh as any)?.shareCount,
+                            isRepostedByCurrentUser: (fresh as any)?.isRepostedByCurrentUser,
+                        };
+                        const patch: any = Object.fromEntries(
+                            Object.entries(rawPatch).filter(([, v]) => v !== undefined)
+                        );
+                        const merged = { ...optimistic, ...patch };
+                        setCurrentPost(merged as any);
+                        if (prev?.code) {
+                            queryClient.setQueryData(['feedDetail', prev.code], fresh);
+                        }
+                        try { useSocialFeedStore.getState().applyRealtimePatch(prev.code, patch); } catch {}
+                        try { useSearchResultsStore.getState().applyPostPatch(prev.code, patch); } catch {}
+                    } catch {}
+                }
+            }
+        );
     };
 
     const handleLikeComment = (commentCode: string, isLiked: boolean) => {

@@ -57,7 +57,7 @@ const DietLifeStyleModal: React.FC<DietLifeStyleModalProps> = ({
                 ? String(item.id)
                 : String(item.name.toLowerCase().replace(/\s+/g, '-')),
             name: item.name,
-            description: item.description || `${item.name} diet for your health journey.`,
+            description: item.description || `${t(item.name)} ${t("diet for your health journey")}`,
             icon: item.name.toLowerCase() === "omnivore" ? <OmnivoreIcon /> 
             : item.name.toLowerCase() === "keto" ? <KetoIcon /> 
             : item.name.toLowerCase() === "vegetarian" ? <VeganIcon /> 

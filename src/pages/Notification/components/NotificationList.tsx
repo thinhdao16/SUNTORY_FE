@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { IonContent, IonInfiniteScroll, IonInfiniteScrollContent, IonSkeletonText } from '@ionic/react';
-import avatarFallback from '@/icons/logo/social-chat/avt-rounded-full.svg';
+import avatarFallback from '@/icons/logo/social-chat/avt-rounded.svg';
 import WaveIcon from '@/icons/logo/social/wave-icon.svg?react';
 import { listNotificationApi, Notification } from '@/services/social/social-notification';
 import { useModalContext } from '@/contexts/ModalContext';
@@ -10,11 +10,14 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useNotificationStore } from '@/store/zustand/notify-store';
 import { readNotificationApi, ReadNotificationParams } from "@/services/social/social-notification";
+import { useTranslation } from 'react-i18next';
+import { formatTimeFromNow } from '@/utils/formatTime';
 
 const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
     const history = useHistory();
     const { setHideBottomTabBar } = useModalContext();
     const lastNotificationTime = useNotificationStore((state) => state.lastNotificationTime);
+    const { t } = useTranslation();
     const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
     const [newNotifications, setNewNotifications] = useState<Notification[]>([]);
     const [olderNotifications, setOlderNotifications] = useState<Notification[]>([]);
@@ -215,58 +218,31 @@ const NotificationList = ({ isReadAll }: { isReadAll: boolean }) => {
             setOlderNotifications(olderNotifications.map((notif: Notification) => ({ ...notif, isRead: true })));
         }
     }, [isReadAll]);
-
     const formatTimestamp = (createDate: string): string => {
-        const now = new Date();
-
-        let timestamp: Date;
-        if (createDate.includes('Z') || createDate.includes('+') || createDate.includes('-', 10)) {
-            timestamp = new Date(createDate);
-        } else {
-            timestamp = new Date(createDate + 'Z');
-        }
-
-        const diffInMs = now.getTime() - timestamp.getTime();
-        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-
-        if (diffInMinutes < 0) return 'Now';
-        if (diffInMinutes < 1) return 'Now';
-        if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-
-        const diffInHours = Math.floor(diffInMinutes / 60);
-        if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-
-        const diffInDays = Math.floor(diffInHours / 24);
-        if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-
-        const diffInWeeks = Math.floor(diffInDays / 7);
-        if (diffInWeeks < 4) return `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
-
-        const diffInMonths = Math.floor(diffInDays / 30);
-        if (diffInMonths < 12) return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
-
-        const diffInYears = Math.floor(diffInDays / 365);
-        return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ago`;
+        const iso = (createDate.includes('Z') || createDate.includes('+') || createDate.includes('-', 10))
+            ? createDate
+            : createDate + 'Z';
+        return formatTimeFromNow(iso, t);
     };
 
     const getActionText = (type: number): string => {
         switch (type) {
-            case 10: return 'created a new post';
-            case 20: return 'updated a post';
-            case 25: return 'deleted a post';
-            case 30: return 'liked your post';
-            case 40: return 'unliked your post';
-            case 45: return 'reposted your post';
-            case 47: return 'shared your post';
-            case 50: return 'commented on your post';
-            case 60: return 'updated a comment';
-            case 70: return 'deleted a comment';
-            case 80: return 'liked your comment';
-            case 90: return 'unliked your comment';
-            case 100: return 'sent you a friend request';
-            case 110: return 'accepted your friend request';
-            case 120: return 'replied to your comment';
-            default: return 'performed an action';
+            case 10: return t('created a new post');
+            case 20: return t('updated a post');
+            case 25: return t('deleted a post');
+            case 30: return t('liked your post');
+            case 40: return t('unliked your post');
+            case 45: return t('reposted your post');
+            case 47: return t('shared your post');
+            case 50: return t('commented on your post');
+            case 60: return t('updated a comment');
+            case 70: return t('deleted a comment');
+            case 80: return t('liked your comment');
+            case 90: return t('unliked your comment');
+            case 100: return t('sent you a friend request');
+            case 110: return t('accepted your friend request');
+            case 120: return t('replied to your comment');
+            default: return t('performed an action');
         }
     };
     const handleNavigate = (type: number, id?: number, code?: string) => {

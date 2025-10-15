@@ -1,147 +1,128 @@
-// useNativePush.ts
 import { useEffect } from "react";
 import { Capacitor, PluginListenerHandle } from "@capacitor/core";
 import {
   PushNotifications,
-  Token,
   PushNotificationSchema,
   ActionPerformed,
 } from "@capacitor/push-notifications";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { saveFcmToken } from "@/utils/save-fcm-token";
 import { FirebaseMessaging } from "@capacitor-firebase/messaging";
-import { useUpdateNewDevice } from "@/hooks/device/useDevice";
+import { saveFcmToken } from "@/utils/save-fcm-token";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { useHistory } from "react-router-dom";
 import { NotificationType, isChatNotification, isStoryNotification } from "@/types/notification";
 
-const ANDROID_CHANNEL_ID = "messages_v2"; 
+const ANDROID_CHANNEL_ID = "messages_v2";
 
 export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
-  const updateNewDevice = useUpdateNewDevice();
   const deviceInfo = useDeviceInfo();
   const history = useHistory();
 
   useEffect(() => {
-    console.log("🔥 Using native push notifications - platform", Capacitor.isNativePlatform());
-
     if (!Capacitor.isNativePlatform()) return;
+    const platform = Capacitor.getPlatform();
 
     (async () => {
-      if (Capacitor.getPlatform() === "ios") {
-        console.log("native push notifications", Capacitor.isNativePlatform());
+      try {
+        if (platform === "android") {
+          const localPerm = await LocalNotifications.requestPermissions();
+          console.log("Local permissions", localPerm);
+          if (localPerm.display !== "granted") {
+            console.warn("LocalNotifications permission not granted");
+          }
 
-        try {
-          await (PushNotifications as any).setPresentationOptions?.({
-            alert: true,
-            sound: true,
-            badge: true,
-          });
-        } catch {}
-      }
-
-      const pushPerm = await PushNotifications.requestPermissions();
-      console.log("Push permissions", pushPerm);
-      if (pushPerm.receive === "granted") {
-        await PushNotifications.register();
-      } else {
-        console.warn("Push permission not granted");
-      }
-
-      const localPerm = await LocalNotifications.requestPermissions();
-      console.log("Local permissions", localPerm);
-      if (localPerm.display !== "granted") {
-        console.warn("LocalNotifications permission not granted");
-      }
-
-      if (Capacitor.getPlatform() === "android") {
-        try {
           await LocalNotifications.createChannel({
             id: ANDROID_CHANNEL_ID,
             name: "Messages",
             description: "Message notifications",
-            importance: 5,   
-            visibility: 1,  
+            importance: 5,
+            visibility: 1,
             sound: "default",
             vibration: true,
             lights: true,
           });
-        } catch (e) {
-          console.warn("createChannel error", e);
+        } 
+        else if (platform === "ios") {
+          const pushPerm = await PushNotifications.requestPermissions();
+          if (pushPerm.receive === "granted") {
+            await PushNotifications.register();
+          }
         }
+      } catch (err) {
+        console.warn("Push init error:", err);
       }
     })();
 
     let regHandle: PluginListenerHandle | undefined;
-    let regErrHandle: PluginListenerHandle | undefined;
     let recvHandle: PluginListenerHandle | undefined;
+    let fmMsgHandle: PluginListenerHandle | undefined;
     let actHandle: PluginListenerHandle | undefined;
 
     (async () => {
-      console.log("🔥 Using native push notifications - event");
-
       try {
         const permStatus = await FirebaseMessaging.checkPermissions();
-        if (permStatus?.receive === 'granted') {
+        if (permStatus?.receive === "granted") {
           const { token } = await FirebaseMessaging.getToken();
-          console.log("🔥 Using native push notifications - token", token);
-
-          // Update device with new FCM token
           if (deviceInfo.deviceId && token) {
-            console.log("🔥 Using native push notifications save ", deviceInfo.deviceId, token);
-            updateNewDevice.mutate({
-              deviceId: deviceInfo.deviceId,
-              firebaseToken: token,
-            });
+            await saveFcmToken(token);
+            mutate?.({ fcmToken: token });
           }
-        } else {
-          console.warn("Firebase Messaging permission not granted");
         }
-      } catch (error) {
-        console.warn("Failed to get FCM token:", error);
-      }
+      } catch {}
 
-      regHandle = await PushNotifications.addListener("registration", async (token: Token) => {
-        console.log("✅ Registered token:", token.value);
-        await saveFcmToken(token.value);
+      fmMsgHandle = await FirebaseMessaging.addListener(
+        "notificationReceived",
+        async (msg: any) => {
+          const title = msg?.notification?.title || msg?.data?.title || "WayJet";
+          const body = msg?.notification?.body || msg?.data?.body || "";
+          const data = msg?.data || {};
 
-        // Update device with new FCM token
-        if (deviceInfo.deviceId) {
-          console.log("🔥 Using native push notifications registered ", deviceInfo.deviceId, token);
-          updateNewDevice.mutate({
-            deviceId: deviceInfo.deviceId,
-            firebaseToken: token.value,
-          });
+          if (platform === "android") {
+            try {
+              await LocalNotifications.schedule({
+                notifications: [
+                  {
+                    id: Date.now() % 2147483647,
+                    title,
+                    body,
+                    channelId: ANDROID_CHANNEL_ID,
+                    sound: "default",
+                    smallIcon: "ic_launcher",
+                    extra: data,
+                  },
+                ],
+              });
+            } catch (e) {
+              console.warn("LocalNotifications.schedule (Firebase) error", e);
+            }
+          }
         }
-
-        mutate?.({ fcmToken: token.value });
-      });
-
-      regErrHandle = await PushNotifications.addListener("registrationError", (err) => {
-        console.error("❌ Registration error:", err);
-      });
+      );
 
       recvHandle = await PushNotifications.addListener(
         "pushNotificationReceived",
         async (n: PushNotificationSchema) => {
-          console.log("✅ Received push notification:", n);
+          const title = n.title || "WayJet";
+          const body = n.body || "";
+          const data = n.data || {};
 
           try {
-            if (Capacitor.getPlatform() === "android") {
+            if (platform === "android") {
               await LocalNotifications.schedule({
-                notifications: [{
+                notifications: [
+                  {
                     id: Date.now() % 2147483647,
-                    title: n.title || "WayJet",
-                    body: n.body || "",
+                    title,
+                    body,
                     channelId: ANDROID_CHANNEL_ID,
-                    smallIcon: "ic_stat_name",     
                     sound: "default",
-                    extra: n.data || {},
-                    schedule: { at: new Date(Date.now() + 50) },
+                    smallIcon: "ic_launcher",
+                    extra: data,
                   },
                 ],
               });
-            } else if (Capacitor.getPlatform() === "ios") {
+            } 
+            else if (platform === "ios") {
               await LocalNotifications.schedule({
                notifications: [{
                  id: Date.now() % 2147483647,
@@ -183,10 +164,9 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
 
     return () => {
       regHandle?.remove();
-      regErrHandle?.remove();
       recvHandle?.remove();
+      fmMsgHandle?.remove();
       actHandle?.remove();
     };
-  }, [deviceInfo.deviceId]);
+  }, [deviceInfo.deviceId, mutate]);
 }
-

@@ -94,7 +94,6 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
   const isRepost = post.isRepost && post.originalPost;
   const isRepostWithDeletedOriginal = post.isRepost && !post.originalPost || post?.isRepost && post?.originalPost?.status === 190;
   const [translatedText, setTranslatedText] = useState<string | null>(null);
-  console.log(translatedText)
   const [showOriginal, setShowOriginal] = useState(true);
   const [isPostOptionsOpen, setIsPostOptionsOpen] = useState(false);
   const [showPrivacySheet, setShowPrivacySheet] = useState(false);

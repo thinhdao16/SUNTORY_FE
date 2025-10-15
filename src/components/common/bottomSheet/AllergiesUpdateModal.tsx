@@ -49,14 +49,14 @@ const AllergiesUpdateModal: React.FC<AllergiesUpdateModalProps> = ({
     const showToast = useToastStore.getState().showToast;
     // Mock data - sẽ được thay thế bằng data thật sau
     const mockAllergies: AllergyItem[] = [
-        { allergyId: 1, name: 'Peanuts' },
-        { allergyId: 2, name: 'Shellfish' },
-        { allergyId: 3, name: 'Dairy' },
-        { allergyId: 4, name: 'Eggs' },
-        { allergyId: 5, name: 'Soy' },
-        { allergyId: 6, name: 'Wheat' },
-        { allergyId: 7, name: 'Tree Nuts' },
-        { allergyId: 8, name: 'Fish' }
+        { allergyId: 1, name: t("Peanuts") },
+        { allergyId: 2, name: t("Shellfish") },
+        { allergyId: 3, name: t("Dairy") },
+        { allergyId: 4, name: t("Eggs") },
+        { allergyId: 5, name: t("Soy") },
+        { allergyId: 6, name: t("Wheat") },
+        { allergyId: 7, name: t("Tree Nuts") },
+        { allergyId: 8, name: t("Fish") }
     ];
 
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {

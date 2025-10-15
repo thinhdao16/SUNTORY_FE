@@ -23,6 +23,11 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
     const { t } = useTranslation();
     const showToast = useToastStore((s) => s.showToast);
     const history = useHistory();
+    
+    // State for managing empty results and cooldown
+    const [lastEmptyCheck, setLastEmptyCheck] = useState<number | null>(null);
+    const [isInCooldown, setIsInCooldown] = useState(false);
+    
     const {
         data,
         isLoading,
@@ -64,15 +69,35 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
     }, [data?.pages]);
     const users: any[] = useMemo(() => Array.from(userMap.values()), [userMap]);
     const visibleUsers = useMemo(() => users.filter((u: any) => !dismissed.has(u?.id)), [users, dismissed]);
+    
+    // Check if we have empty results and manage cooldown
+    useEffect(() => {
+        if (!isLoading && !isFetchingNextPage && visibleUsers.length === 0 && data?.pages && data.pages.length > 0) {
+            const now = Date.now();
+            const COOLDOWN_DURATION = 2 * 60 * 1000; // 2 minutes
+            
+            // If this is the first time we detect empty results, start cooldown
+            if (!lastEmptyCheck) {
+                setLastEmptyCheck(now);
+                setIsInCooldown(true);
+                
+                // Set timer to end cooldown after 2 minutes
+                setTimeout(() => {
+                    setIsInCooldown(false);
+                    setLastEmptyCheck(null);
+                }, COOLDOWN_DURATION);
+            }
+        }
+    }, [isLoading, isFetchingNextPage, visibleUsers.length, data?.pages, lastEmptyCheck]);
 
     const handleDismissCard = (id: number) => {
         setDismissed((prev) => new Set([...prev, id]));
-        // If not enough width to scroll, fetch more
+        // If not enough width to scroll, fetch more (but respect cooldown)
         setTimeout(() => {
             const el = listRef.current;
             if (!el) return;
             const needMore = (el.scrollWidth - el.clientWidth) <= 80;
-            if (!isFetchingNextPage && needMore) {
+            if (!isFetchingNextPage && needMore && !isInCooldown) {
                 fetchNextPage();
             }
         }, 0);
@@ -83,13 +108,13 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
         const el = listRef.current;
         if (!el) return;
         const onScroll = () => {
-            if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 80 && !isFetchingNextPage) {
+            if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 80 && !isFetchingNextPage && !isInCooldown) {
                 fetchNextPage();
             }
         };
         el.addEventListener('scroll', onScroll);
         return () => el.removeEventListener('scroll', onScroll);
-    }, [isFetchingNextPage, fetchNextPage]);
+    }, [isFetchingNextPage, fetchNextPage, isInCooldown]);
 
     // IntersectionObserver sentinel at end (horizontal)
     useEffect(() => {
@@ -99,7 +124,7 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
         const obs = new IntersectionObserver(
             (entries) => {
                 const [entry] = entries;
-                if (entry.isIntersecting && !isFetchingNextPage) {
+                if (entry.isIntersecting && !isFetchingNextPage && !isInCooldown) {
                     fetchNextPage();
                 }
             },
@@ -107,7 +132,7 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
         );
         obs.observe(target);
         return () => obs.disconnect();
-    }, [isFetchingNextPage, fetchNextPage]);
+    }, [isFetchingNextPage, fetchNextPage, isInCooldown]);
 
     useEffect(() => {
         const id = setInterval(() => {
@@ -133,8 +158,23 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                 )}
             </div>
             <div className="px-3 pb-4">
-                <div ref={listRef} className="flex gap-3 overflow-x-auto ">
-                    {visibleUsers.map((user: any) => {
+                {/* Show empty state when no suggestions and in cooldown */}
+                {visibleUsers.length === 0 && isInCooldown && !isLoading && (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-sm font-medium text-gray-900 mb-2">{t('No suggestions available')}</h3>
+                        <p className="text-xs text-gray-500">{t('We\'ll check for new suggestions in a few minutes')}</p>
+                    </div>
+                )}
+                
+                {/* Show suggestions list when available or loading */}
+                {(visibleUsers.length > 0 || (!isInCooldown && isLoading)) && (
+                    <div ref={listRef} className="flex gap-3 overflow-x-auto ">
+                        {visibleUsers.map((user: any) => {
                         const isSent = !!user?.isRequestSender;
                         const isSentStore = hasFriendRequestOutgoing(user?.id);
                         const isSentUI = isSent || isSentStore || sentLocal.has(user?.id);
@@ -203,9 +243,10 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                             ))}
                         </>
                     )}
-                    {/* Horizontal sentinel */}
-                    <div ref={sentinelRef} className="w-2" />
-                </div>
+                        {/* Horizontal sentinel */}
+                        <div ref={sentinelRef} className="w-2" />
+                    </div>
+                )}
 
             </div>
         </div>

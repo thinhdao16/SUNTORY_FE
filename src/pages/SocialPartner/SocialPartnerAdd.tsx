@@ -3,6 +3,7 @@ import MotionStyles from '@/components/common/bottomSheet/MotionStyles';
 import ShareQRModal from '@/components/common/bottomSheet/ShareQRModal';
 import React, { useRef, useState } from 'react';
 import { FiArrowLeft, FiDownload, } from 'react-icons/fi'
+import BackIcon from "@/icons/logo/back-default.svg?react"
 import { useHistory } from 'react-router';
 import {
     handleTouchStart as handleTouchStartUtil,
@@ -20,6 +21,7 @@ import { getPublicUrlFromCanvas } from '@/utils/get-public-url-from-canvas';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share as CapShare } from "@capacitor/share";
 import { QR_PREFIX } from '@/constants/global';
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
 
 const velocityThreshold = 0.4;
 const SocialPartnerAdd = () => {
@@ -132,10 +134,10 @@ const SocialPartnerAdd = () => {
                         <div className="min-h-screen">
                             <div className="bg-white px-4 pt-6">
                                 <div className="flex items-center justify-between mb-4">
-                                    <button className="text-blue-500 text-lg" onClick={() => history.goBack()}>
-                                        <FiArrowLeft />
+                                    <button className="" onClick={() => history.goBack()}>
+                                        <BackIcon />
                                     </button>
-                                    <h1 className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
+                                    <h1 className="font-semibold uppercase tracking-wide">
                                         {t("Add Friend")}
                                     </h1>
                                     <div className="w-5" />
@@ -145,9 +147,12 @@ const SocialPartnerAdd = () => {
                                     <div className="max-w-[200px] space-x-0 space-y-4">
                                         <div className="flex items-center gap-3">
                                             <img
-                                                src={user?.avatarLink || "/favicon.png"}
+                                                src={user?.avatarLink || avatarFallback}
                                                 alt={user?.name}
                                                 className="w-10 h-10 rounded-xl object-center"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = avatarFallback;
+                                                }}
                                             />
                                             <div className="text-start min-w-0">
                                                 <p className="font-semibold text-sm truncate" title={user?.name || ""}>

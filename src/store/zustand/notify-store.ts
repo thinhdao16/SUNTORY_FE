@@ -26,6 +26,7 @@ export interface Notification {
     avatar?: string;
     data?: any;
     isAutoClear?: boolean;
+    fullData ?: any
 }
 
 interface NotificationState {
