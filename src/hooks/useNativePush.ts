@@ -12,12 +12,15 @@ import { saveFcmToken } from "@/utils/save-fcm-token";
 import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 import { useUpdateNewDevice } from "@/hooks/device/useDevice";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
+import { useHistory } from "react-router-dom";
+import { NotificationType, isChatNotification } from "@/types/notification";
 
 const ANDROID_CHANNEL_ID = "messages_v2"; 
 
 export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
   const updateNewDevice = useUpdateNewDevice();
   const deviceInfo = useDeviceInfo();
+  const history = useHistory();
 
   useEffect(() => {
     console.log("🔥 Using native push notifications - platform", Capacitor.isNativePlatform());
@@ -159,6 +162,18 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
         "pushNotificationActionPerformed",
         (action: ActionPerformed) => {
           console.log("➡️ Tapped:", action);
+
+          const data = action.notification.data;
+
+          if (isChatNotification(data.type)) {
+            history.push(`/social-chat/t/${data.chat_code}`);
+          }
+          else if (data.type === NotificationType.FRIEND_REQUEST) {
+            history.push(`/profile/${data.from_user_id}`);
+          }
+          else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
+            history.push(`/profile/${data.accepter_user_id}`);
+          }
         }
       );
     })();
