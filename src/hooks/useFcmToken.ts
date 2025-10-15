@@ -18,7 +18,6 @@ export function useFcmToken(mutate?: (data: { fcmToken: string }) => void) {
         let unsubscribe = () => { };
         if (messaging) {
             unsubscribe = onMessage(messaging, (payload) => {
-                console.log(payload)
                 var id = crypto.randomUUID();
                 if (payload.notification) {
                     addNotification({

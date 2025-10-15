@@ -15,6 +15,7 @@ import { useUpdateNewDevice } from "@/hooks/device/useDevice";
 
 const ANDROID_CHANNEL_ID = "messages_v2";
 
+
 export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
   const updateNewDevice = useUpdateNewDevice();
   const deviceInfo = useDeviceInfo();
@@ -90,7 +91,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
             mutate?.({ fcmToken: token });
           }
         }
-      } catch {}
+      } catch { }
 
       fmMsgHandle = await FirebaseMessaging.addListener(
         "notificationReceived",
@@ -104,7 +105,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
             const nowTs = Date.now();
             const lastTs = lastSeenRef.current.get(dedupKey);
             if (lastTs && nowTs - lastTs < 8000) {
-              console.log("Skip duplicate notification", { dedupKey });
+              console.log("Skip Wduplicate notification", { dedupKey });
               return;
             }
             lastSeenRef.current.set(dedupKey, nowTs);
