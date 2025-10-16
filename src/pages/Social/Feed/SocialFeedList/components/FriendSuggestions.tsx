@@ -16,7 +16,7 @@ interface FriendSuggestionsProps {
 
 export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
     title,
-    pageSize = 8,
+    pageSize = 50,
     onDismiss,
     className = ''
 }) => {
@@ -67,64 +67,56 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
     const visibleUsers = useMemo(() => users.filter((u: any) => !dismissed.has(u?.id)), [users, dismissed]);
     const [renderLimit, setRenderLimit] = useState<number>(pageSize);
     const prefetchedOnceRef = useRef(false);
-    const noMoreRef = useRef(false);
+    const emptyStreakRef = useRef(0);
+    const lastFetchTsRef = useRef(0);
     const limitedUsers = useMemo(() => visibleUsers.slice(0, renderLimit), [visibleUsers, renderLimit]);
 
-    // When the latest page from API is empty, enter cooldown and stop further fetches for a while
     useEffect(() => {
         const pages = data?.pages ?? [];
         if (pages.length === 0) return;
         const last: any = pages[pages.length - 1];
         const len = Array.isArray(last?.data) ? last.data.length : 0;
         if (len === 0) {
-            noMoreRef.current = true;
+            emptyStreakRef.current = Math.min(emptyStreakRef.current + 1, 5);
             setIsInCooldown(true);
+            const backoffMs = Math.min(15000, 3000 * emptyStreakRef.current); // 3s,6s,9s,12s,15s
             const id = setTimeout(() => {
-                noMoreRef.current = false;
                 setIsInCooldown(false);
-            }, 2 * 60 * 1000);
+            }, backoffMs);
             return () => clearTimeout(id);
+        } else {
+            emptyStreakRef.current = 0;
         }
     }, [data?.pages]);
 
     const safeFetchNext = useCallback(() => {
-        if (isFetchingNextPage || isInCooldown || noMoreRef.current) return;
+        if (isFetchingNextPage || isInCooldown) return;
+        const now = Date.now();
+        if (now - lastFetchTsRef.current < 200) return; // throttle
+        lastFetchTsRef.current = now;
         fetchNextPage().catch(() => {
             setIsInCooldown(true);
-            setTimeout(() => setIsInCooldown(false), 60 * 1000);
+            setTimeout(() => setIsInCooldown(false), 10 * 1000);
         });
     }, [isFetchingNextPage, isInCooldown, fetchNextPage]);
     useEffect(() => {
-        // Keep limit within bounds and at least 1 page on data changes
         setRenderLimit((prev) => Math.max(pageSize, Math.min(prev, visibleUsers.length)));
     }, [visibleUsers.length, pageSize]);
 
-    // Prefetch one extra batch after first page arrives to ensure smooth horizontal scroll
     useEffect(() => {
         if (prefetchedOnceRef.current) return;
         const hasFirstPage = !!data?.pages && data.pages.length >= 1;
-        if (!isLoading && hasFirstPage && !isFetchingNextPage && !noMoreRef.current) {
+        if (!isLoading && hasFirstPage && !isFetchingNextPage) {
             prefetchedOnceRef.current = true;
             fetchNextPage();
         }
     }, [isLoading, isFetchingNextPage, data?.pages, fetchNextPage]);
     
     useEffect(() => {
-        if (!isLoading && !isFetchingNextPage && visibleUsers.length === 0 && data?.pages && data.pages.length > 0) {
-            const now = Date.now();
-            const COOLDOWN_DURATION = 2 * 60 * 1000;  
-            
-            if (!lastEmptyCheck) {
-                setLastEmptyCheck(now);
-                setIsInCooldown(true);
-                
-                setTimeout(() => {
-                    setIsInCooldown(false);
-                    setLastEmptyCheck(null);
-                }, COOLDOWN_DURATION);
-            }
+        if (!isLoading && !isFetchingNextPage && visibleUsers.length === 0) {
+            safeFetchNext();
         }
-    }, [isLoading, isFetchingNextPage, visibleUsers.length, data?.pages, lastEmptyCheck]);
+    }, [isLoading, isFetchingNextPage, visibleUsers.length, safeFetchNext]);
 
     const ensureFill = () => {
         const el = listRef.current;
@@ -135,6 +127,19 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
         }
         safeFetchNext();
     };
+
+    const pumpIfAtEnd = useCallback(() => {
+        const el = listRef.current;
+        if (!el) return;
+        const nearEnd = el.scrollWidth <= el.clientWidth || (el.scrollLeft + el.clientWidth >= el.scrollWidth - 80);
+        if (nearEnd) {
+            if (renderLimit < visibleUsers.length) {
+                setRenderLimit((prev) => Math.min(prev + pageSize, visibleUsers.length));
+            } else {
+                safeFetchNext();
+            }
+        }
+    }, [renderLimit, visibleUsers.length, pageSize, safeFetchNext]);
 
     const handleDismissCard = (id: number) => {
         setDismissed((prev) => new Set([...prev, id]));
@@ -173,11 +178,21 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                     safeFetchNext();
                 }
             },
-            { root, threshold: 0.1 }
+            { root, threshold: 0, rootMargin: '600px' }
         );
         obs.observe(target);
         return () => obs.disconnect();
-    }, [isFetchingNextPage, fetchNextPage, isInCooldown, renderLimit, visibleUsers.length, pageSize]);
+    }, [isFetchingNextPage, fetchNextPage, isInCooldown, renderLimit, visibleUsers.length, pageSize, safeFetchNext]);
+
+    // Auto-chain after pages or list changes
+    useEffect(() => {
+        pumpIfAtEnd();
+        // slight delays to allow layout to settle and chain further
+        const id0 = setTimeout(pumpIfAtEnd, 0);
+        const id1 = setTimeout(pumpIfAtEnd, 250);
+        const id2 = setTimeout(pumpIfAtEnd, 800);
+        return () => { clearTimeout(id0); clearTimeout(id1); clearTimeout(id2); };
+    }, [data?.pages?.length, visibleUsers.length, renderLimit, pumpIfAtEnd]);
 
     useEffect(() => {
         const id = setInterval(() => {
