@@ -45,13 +45,13 @@ const BottomTabBar: React.FC = () => {
     const { keyboardResizeScreen } = useKeyboardResize();
     const { triggerRefresh } = useRefresh();
     const { hideBottomTabBar } = useModalContext();
-    const { isUnReadNotification ,setIsUnReadNotification} = useNotificationStore();
+    const { isUnReadNotification, setIsUnReadNotification } = useNotificationStore();
     const [isNewNotification, setIsNewNotification] = useState(isUnReadNotification);
 
     useEffect(() => {
         if (isUnReadNotification == true) {
             setIsNewNotification(true);
-        }else{
+        } else {
             setIsNewNotification(false);
         }
     }, [isUnReadNotification]);
@@ -78,7 +78,7 @@ const BottomTabBar: React.FC = () => {
             icon: StoryIcon,
             iconActive: StoryActiveIcon,
             path: `/social-feed`,
-            activePath: (pathname: string) => pathname.startsWith("/social-feed") ,
+            activePath: (pathname: string) => pathname.startsWith("/social-feed"),
             classNameIcon: "",
         },
         // {
@@ -111,14 +111,14 @@ const BottomTabBar: React.FC = () => {
             icon: ProfileIcon,
             iconActive: ProfileActiveIcon,
             path: "/my-profile",
-            activePath: (pathname: string) => pathname.startsWith("/my-profile") 
-            || pathname.startsWith("/profile-setting")
-            || pathname.startsWith("/my-information")
-            || pathname.startsWith("/ai-profile-setting")
-            || pathname.startsWith("/profile/help")
-            || pathname.startsWith("/friend-list")
-            || pathname.startsWith("/friend-request-sent")
-            || pathname.startsWith("/share-profile"),
+            activePath: (pathname: string) => pathname.startsWith("/my-profile")
+                || pathname.startsWith("/profile-setting")
+                || pathname.startsWith("/my-information")
+                || pathname.startsWith("/ai-profile-setting")
+                || pathname.startsWith("/profile/help")
+                || pathname.startsWith("/friend-list")
+                || pathname.startsWith("/friend-request-sent")
+                || pathname.startsWith("/share-profile"),
             classNameIcon: "",
         },
     ];
@@ -142,14 +142,17 @@ const BottomTabBar: React.FC = () => {
     const handleTabClick = (tab: TabItem) => {
         const isActive = isCurrentTab(tab);
         const isExactPath = location.pathname === tab.path;
-        
+
         if (isActive && isExactPath) {
             triggerRefresh(tab.path);
         } else {
+            console.log("tab.label", tab.label);
             clearAll();
             history.push(tab.path);
             useChatStore.getState().setIsSending(false);
-            setIsUnReadNotification(false);
+            if (tab.label === t("Notifications")) {
+                setIsUnReadNotification(false);
+            }
         }
     };
 
