@@ -204,7 +204,7 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
               </div>
             )}
 
-            <div className="absolute inset-0  bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded-lg flex items-center justify-center">
+            {/* <div className="absolute inset-0  bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded-lg flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-4 text-white">
                 <button
                   className="flex items-center space-x-1 hover:scale-110 transition-transform"
@@ -223,7 +223,7 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
                   <span className="text-sm">{item.postComments || 0}</span>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         ))}
       </div>
