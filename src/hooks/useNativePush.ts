@@ -3,15 +3,17 @@ import { Capacitor, PluginListenerHandle } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import {
   PushNotifications,
-  Token,
   PushNotificationSchema,
   ActionPerformed,
+  Token,
 } from "@capacitor/push-notifications";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 import { saveFcmToken } from "@/utils/save-fcm-token";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
-import { useUpdateNewDevice } from "@/hooks/device/useDevice";
+import { useHistory } from "react-router-dom";
+import { NotificationType, isChatNotification, isStoryNotification } from "@/types/notification";
+import { useUpdateNewDevice } from "./device/useDevice";
 
 const ANDROID_CHANNEL_ID = "messages_v2";
 
@@ -19,31 +21,22 @@ const ANDROID_CHANNEL_ID = "messages_v2";
 export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
   const updateNewDevice = useUpdateNewDevice();
   const deviceInfo = useDeviceInfo();
+  const history = useHistory();
   const appActiveRef = useRef<boolean>(true);
   const lastSeenRef = useRef<Map<string, number>>(new Map());
-
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const platform = Capacitor.getPlatform();
 
     (async () => {
       try {
-        if (platform === "ios") {
-          await (PushNotifications as any).setPresentationOptions?.({
-            alert: true,
-            sound: true,
-            badge: true,
-          });
-        }
-
-        const pushPerm = await PushNotifications.requestPermissions();
-        if (pushPerm.receive === "granted") {
-          await PushNotifications.register();
-        }
-
-        await LocalNotifications.requestPermissions();
-
         if (platform === "android") {
+          const localPerm = await LocalNotifications.requestPermissions();
+          console.log("Local permissions", localPerm);
+          if (localPerm.display !== "granted") {
+            console.warn("LocalNotifications permission not granted");
+          }
+
           await LocalNotifications.createChannel({
             id: ANDROID_CHANNEL_ID,
             name: "Messages",
@@ -54,6 +47,12 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
             vibration: true,
             lights: true,
           });
+        } 
+        else if (platform === "ios") {
+          const pushPerm = await PushNotifications.requestPermissions();
+          if (pushPerm.receive === "granted") {
+            await PushNotifications.register();
+          }
         }
       } catch (err) {
         console.warn("Push init error:", err);
@@ -164,8 +163,41 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
 
       recvHandle = await PushNotifications.addListener(
         "pushNotificationReceived",
-        (n: PushNotificationSchema) => {
-          console.log("➡️ Received:", n);
+        async (n: PushNotificationSchema) => {
+          const title = n.title || "WayJet";
+          const body = n.body || "";
+          const data = n.data || {};
+
+          try {
+            if (platform === "android") {
+              await LocalNotifications.schedule({
+                notifications: [
+                  {
+                    id: Date.now() % 2147483647,
+                    title,
+                    body,
+                    channelId: ANDROID_CHANNEL_ID,
+                    sound: "default",
+                    smallIcon: "ic_launcher",
+                    extra: data,
+                  },
+                ],
+              });
+            } 
+            else if (platform === "ios") {
+              await LocalNotifications.schedule({
+               notifications: [{
+                 id: Date.now() % 2147483647,
+                 title: n.title || "WayJet",
+                 body: n.body || "",
+                 sound: "default",
+                 schedule: { at: new Date(Date.now() + 50) },
+               }],
+              });
+            }
+          } catch (e) {
+            console.warn("LocalNotifications.schedule error", e);
+          }
         }
       );
 
@@ -173,6 +205,21 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
         "pushNotificationActionPerformed",
         (action: ActionPerformed) => {
           console.log("➡️ Tapped:", action);
+
+          const data = action.notification.data;
+
+          if (isChatNotification(data.type)) {
+            history.push(`/social-chat/t/${data.chat_code}`);
+          }
+          else if (isStoryNotification(data.type)) {
+            history.push(`/social-feed/f/${data.post_code}`);
+          }
+          else if (data.type === NotificationType.FRIEND_REQUEST) {
+            history.push(`/profile/${data.from_user_id}`);
+          }
+          else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
+            history.push(`/profile/${data.accepter_user_id}`);
+          }
         }
       );
     })();

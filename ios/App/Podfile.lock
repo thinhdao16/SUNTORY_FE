@@ -156,6 +156,7 @@ DEPENDENCIES:
   - "CapacitorVoiceRecorder (from `../../node_modules/.pnpm/capacitor-voice-recorder@7.0.6_@capacitor+core@7.4.2_@capacitor+filesystem@7.1.4_@capacitor+core@7.4.2_/node_modules/capacitor-voice-recorder`)"
   - "CodetrixStudioCapacitorGoogleAuth (from `../../node_modules/.pnpm/@codetrix-studio+capacitor-google-auth@3.4.0-rc.4_@capacitor+core@7.4.2/node_modules/@codetrix-studio/capacitor-google-auth`)"
   - Firebase/Messaging
+  - FirebaseMessaging
 
 SPEC REPOS:
   trunk:
@@ -269,6 +270,6 @@ SPEC CHECKSUMS:
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   SDWebImage: 9f177d83116802728e122410fb25ad88f5c7608a
 
-PODFILE CHECKSUM: 60afcc9bba5664fc33f17881310e42b7e8cf3884
+PODFILE CHECKSUM: eb46cdbbbb6f61cb6cc3a8e40e7d57d5edd86475
 
 COCOAPODS: 1.16.2
