@@ -8,6 +8,7 @@ import {
   Token,
 } from "@capacitor/push-notifications";
 import { LocalNotifications } from "@capacitor/local-notifications";
+import { Preferences } from '@capacitor/preferences'; 
 import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 import { saveFcmToken } from "@/utils/save-fcm-token";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
@@ -65,7 +66,6 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
     let fmMsgHandle: PluginListenerHandle | undefined;
     let appStateHandle: PluginListenerHandle | undefined;
     let actHandle: PluginListenerHandle | undefined;
-
     try {
       (async () => {
         try {
@@ -203,25 +203,33 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
 
       actHandle = await PushNotifications.addListener(
         "pushNotificationActionPerformed",
-        (action: ActionPerformed) => {
-          console.log("➡️ Tapped:", action);
-
+        async (action: ActionPerformed) => {
           const data = action.notification.data;
+          let route = "";
+          console.log("data", data)
 
           if (isChatNotification(data.type)) {
-            history.push(`/social-chat/t/${data.chat_code}`);
+            route = `/social-chat/t/${data.chat_code}`;
+            // history.push(`/social-chat/t/${data.chat_code}`);
           }
           else if (isStoryNotification(data.type)) {
-            history.push(`/social-feed/f/${data.post_code}`);
+            // history.push(`/social-feed/f/${data.post_code}`);
+            route = `/social-feed/f/${data.post_code}`;
           }
           else if (data.type === NotificationType.FRIEND_REQUEST) {
-            history.push(`/profile/${data.from_user_id}`);
+            route = `/profile/${data.from_user_id}`;
+            // history.push(`/profile/${data.from_user_id}`);
           }
           else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
-            history.push(`/profile/${data.accepter_user_id}`);
+            route = `/profile/${data.accepter_user_id}`;
+            // history.push(`/profile/${data.accepter_user_id}`);
+          }
+          if (route) {
+            await Preferences.set({ key: "pendingRoute", value: route });
+            history.push(route);
           }
         }
-      );
+      );  
     })();
 
     return () => {
