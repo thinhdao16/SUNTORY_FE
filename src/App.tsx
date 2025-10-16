@@ -23,18 +23,34 @@ import { NotificationList } from "./components/notify/NotificationList";
 import { RefreshProvider } from "@/contexts/RefreshContext";
 import { ModalProvider } from "@/contexts/ModalContext";
 import { useQueryClient } from "react-query";
+import { Preferences } from '@capacitor/preferences';
+import { useHistory } from "react-router-dom";
 
 setupIonicReact();
 initGoogleAuth();
 
 const App: React.FC = () => {
   useAppInit();
+  const history = useHistory();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     StatusBar.setOverlaysWebView({ overlay: true });
     StatusBar.setStyle({ style: Style.Light });
   }, []);
+
+  useEffect(() => {
+    const checkPendingRoute = async () => {
+      const { value } = await Preferences.get({ key: "pendingRoute" });
+      console.log("value", value)
+      if (value) {
+        await Preferences.remove({ key: "pendingRoute" });
+        history.push(value);
+      }
+    };
+
+    checkPendingRoute();
+  }, [history]);
 
   // Global: after hashtag interest success, refresh related caches
   useEffect(() => {
