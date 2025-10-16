@@ -301,14 +301,6 @@ const CreateFeed: React.FC = () => {
                                 {!isRecording && (
                                     <>
                                         <button
-                                            onClick={handleGallerySelect}
-                                            className="flex items-center space-x-1 text-gray-600 hover:text-gray-800"
-                                            title={t("Select from Gallery")}
-                                            disabled={!!audioBlob}
-                                        >
-                                            <ImageIcon />
-                                        </button>
-                                        <button
                                             onClick={handleCameraCapture}
                                             className="flex items-center space-x-1 text-gray-600 hover:text-gray-800"
                                             title={t("Take Photo")}
@@ -316,6 +308,15 @@ const CreateFeed: React.FC = () => {
                                         >
                                             <CamIcon />
                                         </button>
+                                        <button
+                                            onClick={handleGallerySelect}
+                                            className="flex items-center space-x-1 text-gray-600 hover:text-gray-800"
+                                            title={t("Select from Gallery")}
+                                            disabled={!!audioBlob}
+                                        >
+                                            <ImageIcon />
+                                        </button>
+                                    
                                     </>
                                 )}
                             </>

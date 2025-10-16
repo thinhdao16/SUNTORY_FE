@@ -12,11 +12,14 @@ import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 import { saveFcmToken } from "@/utils/save-fcm-token";
 import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { useHistory } from "react-router-dom";
-import { NotificationType, isChatNotification, isStoryNotification } from "@/types/notification";
+import {
+  NotificationType,
+  isChatNotification,
+  isStoryNotification,
+} from "@/types/notification";
 import { useUpdateNewDevice } from "./device/useDevice";
 
 const ANDROID_CHANNEL_ID = "messages_v2";
-
 
 export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
   const updateNewDevice = useUpdateNewDevice();
@@ -47,8 +50,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
             vibration: true,
             lights: true,
           });
-        } 
-        else if (platform === "ios") {
+        } else if (platform === "ios") {
           const pushPerm = await PushNotifications.requestPermissions();
           if (pushPerm.receive === "granted") {
             await PushNotifications.register();
@@ -73,9 +75,12 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
           appActiveRef.current = !!st.isActive;
         } catch {}
         try {
-          appStateHandle = await App.addListener("appStateChange", ({ isActive }) => {
-            appActiveRef.current = !!isActive;
-          });
+          appStateHandle = await App.addListener(
+            "appStateChange",
+            ({ isActive }) => {
+              appActiveRef.current = !!isActive;
+            }
+          );
         } catch {}
       })();
     } catch {}
@@ -90,12 +95,13 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
             mutate?.({ fcmToken: token });
           }
         }
-      } catch { }
+      } catch {}
 
       fmMsgHandle = await FirebaseMessaging.addListener(
         "notificationReceived",
         async (msg: any) => {
-          const title = msg?.notification?.title || msg?.data?.title || "WayJet";
+          const title =
+            msg?.notification?.title || msg?.data?.title || "WayJet";
           const body = msg?.notification?.body || msg?.data?.body || "";
           const data = msg?.data || {};
 
@@ -183,16 +189,17 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
                   },
                 ],
               });
-            } 
-            else if (platform === "ios") {
+            } else if (platform === "ios") {
               await LocalNotifications.schedule({
-               notifications: [{
-                 id: Date.now() % 2147483647,
-                 title: n.title || "WayJet",
-                 body: n.body || "",
-                 sound: "default",
-                 schedule: { at: new Date(Date.now() + 50) },
-               }],
+                notifications: [
+                  {
+                    id: Date.now() % 2147483647,
+                    title: n.title || "WayJet",
+                    body: n.body || "",
+                    sound: "default",
+                    schedule: { at: new Date(Date.now() + 50) },
+                  },
+                ],
               });
             }
           } catch (e) {
@@ -210,14 +217,11 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
 
           if (isChatNotification(data.type)) {
             history.push(`/social-chat/t/${data.chat_code}`);
-          }
-          else if (isStoryNotification(data.type)) {
+          } else if (isStoryNotification(data.type)) {
             history.push(`/social-feed/f/${data.post_code}`);
-          }
-          else if (data.type === NotificationType.FRIEND_REQUEST) {
+          } else if (data.type === NotificationType.FRIEND_REQUEST) {
             history.push(`/profile/${data.from_user_id}`);
-          }
-          else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
+          } else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
             history.push(`/profile/${data.accepter_user_id}`);
           }
         }

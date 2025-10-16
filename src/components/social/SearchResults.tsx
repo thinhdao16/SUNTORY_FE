@@ -360,10 +360,19 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 // Preserve local optimistic like state to avoid reverting after unrelated updates (e.g., repost)
                 const preserved: Partial<SocialPost> = {};
                 if (typeof old.isLike === 'boolean') preserved.isLike = old.isLike;
-                // Preserve repost flag when new data doesn't include it
+                // Preserve repost flag to avoid flicker/reset from list refreshes after share
                 const nextHasReposted = Object.prototype.hasOwnProperty.call(next as any, 'isRepostedByCurrentUser');
-                if (!nextHasReposted && typeof (old as any)?.isRepostedByCurrentUser === 'boolean') {
-                    (preserved as any).isRepostedByCurrentUser = (old as any).isRepostedByCurrentUser;
+                const oldReposted = (old as any)?.isRepostedByCurrentUser;
+                const nextReposted = (next as any)?.isRepostedByCurrentUser;
+                if (
+                    // If new data doesn't carry the field, keep old
+                    !nextHasReposted ||
+                    // If old says true and incoming tries to set false (e.g., from a stale list refresh), keep true
+                    (oldReposted === true && nextHasReposted && nextReposted === false)
+                ) {
+                    if (typeof oldReposted === 'boolean') {
+                        (preserved as any).isRepostedByCurrentUser = oldReposted;
+                    }
                 }
                 return { ...old, ...next, ...preserved } as SocialPost;
             });
@@ -726,7 +735,16 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 onPostUpdate={(updatedPost) => {
                     setLocalPosts(prev => prev.map(p => {
                         if (p.code === (updatedPost as any)?.code || p.code === post.code) {
-                            return { ...p, ...updatedPost } as any;
+                            const incoming = updatedPost as any;
+                            // Preserve repost flag if current is true and incoming tries to unset or set false
+                            const preserve: any = {};
+                            if (p && (p as any).isRepostedByCurrentUser === true) {
+                                const hasIncomingField = Object.prototype.hasOwnProperty.call(incoming, 'isRepostedByCurrentUser');
+                                if (!hasIncomingField || incoming.isRepostedByCurrentUser === false) {
+                                    preserve.isRepostedByCurrentUser = true;
+                                }
+                            }
+                            return { ...p, ...incoming, ...preserve } as any;
                         }
                         return p;
                     }));
