@@ -17,6 +17,7 @@ const ANDROID_CHANNEL_ID = "messages_v2";
 export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
   const deviceInfo = useDeviceInfo();
   const history = useHistory();
+
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const platform = Capacitor.getPlatform();
@@ -39,12 +40,13 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
         await LocalNotifications.requestPermissions();
 
         if (platform === "android") {
+          // Tạo channel với cấu hình tối ưu để tránh mất thông báo
           await LocalNotifications.createChannel({
             id: ANDROID_CHANNEL_ID,
             name: "Messages",
             description: "Message notifications",
-            importance: 5,
-            visibility: 1,
+            importance: 5, // HIGH importance
+            visibility: 1, // PUBLIC
             sound: "default",
             vibration: true,
             lights: true,
@@ -72,35 +74,38 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
         }
       } catch { }
 
-      // fmMsgHandle = await FirebaseMessaging.addListener(
-      //   "notificationReceived",
-      //   async (msg: any) => {
-      //     const title = msg?.notification?.title || msg?.data?.title || "WayJet";
-      //     const body = msg?.notification?.body || msg?.data?.body || "";
-      //     const data = msg?.data || {};
-      //     console.log("notificationReceived", msg);
-      //     console.log("msg", msg);
-      //     if (platform === "android") {
-      //       try {
-      //         await LocalNotifications.schedule({
-      //           notifications: [
-      //             {
-      //               id: Date.now() % 2147483647,
-      //               title,
-      //               body,
-      //               channelId: ANDROID_CHANNEL_ID,
-      //               sound: "default",
-      //               smallIcon: "ic_launcher",
-      //               extra: data,
-      //             },
-      //           ],
-      //         });
-      //       } catch (e) {
-      //         console.warn("LocalNotifications.schedule (Firebase) error", e);
-      //       }
-      //     }
-      //   }
-      // );
+      fmMsgHandle = await FirebaseMessaging.addListener(
+        "notificationReceived",
+        async (msg: any) => {
+          const title = msg?.notification?.title || msg?.data?.title || "WayJet";
+          const body = msg?.notification?.body || msg?.data?.body || "";
+          const data = msg?.data || {};
+          console.log("notificationReceived", msg);
+          console.log("msg", msg);
+          
+          // Hiển thị local notification với cấu hình tối ưu
+          if (platform === "android") {
+            try {
+              await LocalNotifications.schedule({
+                notifications: [
+                  {
+                    id: Date.now() % 2147483647,
+                    title,
+                    body,
+                    channelId: ANDROID_CHANNEL_ID,
+                    sound: "default",
+                    smallIcon: "ic_launcher",
+                    extra: data,
+                    ongoing: false, // Không phải notification liên tục
+                  },
+                ],
+              });
+            } catch (e) {
+              console.warn("LocalNotifications.schedule (Firebase) error", e);
+            }
+          }
+        }
+      );
 
       recvHandle = await PushNotifications.addListener(
         "pushNotificationReceived",
@@ -122,6 +127,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
                     sound: "default",
                     smallIcon: "ic_launcher",
                     extra: data,
+                    ongoing: false, // Không phải notification liên tục
                   },
                 ],
               });
@@ -136,6 +142,30 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
         "pushNotificationActionPerformed",
         (action: ActionPerformed) => {
           const data = action.notification?.data;
+          console.log("pushNotificationActionPerformed", data);
+
+          // Navigate based on notification type
+          // if (data?.type) {
+          //   switch (data.type) {
+          //     case 'message':
+          //       history.push('/messages');
+          //       break;
+          //     case 'order':
+          //       history.push('/orders');
+          //       break;
+          //     case 'promotion':
+          //       history.push('/promotions');
+          //       break;
+          //     case 'profile':
+          //       history.push('/profile');
+          //       break;
+          //     default:
+          //       // Default navigation hoặc không navigate
+          //       console.log('Unknown notification type:', data.type);
+          //       break;
+          //   }
+          // }
+
         }
       );
     })();
