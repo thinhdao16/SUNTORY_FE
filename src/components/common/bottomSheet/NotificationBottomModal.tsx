@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { IonIcon } from "@ionic/react";
-import { checkmark, checkmarkDone, trash } from "ionicons/icons";
+import { checkmarkDone, trash } from "ionicons/icons";
 import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence } from "framer-motion";
 import { deleteNotificationApi, readNotificationApi, ReadNotificationParams } from "@/services/social/social-notification";
-import httpClient from "@/config/http-client";
-import LineIcon from "@/icons/logo/social/line.svg?react";
+import BottomSheet from "@/components/common/BottomSheet";
 import ConfirmModal from "../modals/ConfirmModal";
 
 
@@ -16,39 +14,34 @@ interface NotificationBottomModalProps {
     translateY?: number;
     handleMarkAsRead?: () => void;
     handleTouchStart?: (e: React.TouchEvent) => void;
-    handleDelete?: () => void;
     handleTouchMove: (e: React.TouchEvent) => void;
     handleTouchEnd: () => void;
     showOverlay?: boolean;
     onModalStateChange?: (isOpen?: boolean) => void;
     isFromHeader?: boolean;
+    lockDismiss?: boolean;
+    handleDelete?: () => void;
 }
 const NotificationBottomModal: React.FC<NotificationBottomModalProps> = ({
     isOpen,
     onClose,
     notificationIds = null,
-    translateY,
+    translateY: _translateY,
     handleMarkAsRead,
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd,
+    handleTouchStart: _handleTouchStart,
+    handleTouchMove: _handleTouchMove,
+    handleTouchEnd: _handleTouchEnd,
     handleDelete,
-    showOverlay = true,
+    showOverlay: _showOverlay = true,
     onModalStateChange,
-    isFromHeader = false
+    isFromHeader = false,
+    lockDismiss,
 }) => {
     const { t } = useTranslation();
 
     const [isSaving, setIsSaving] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target === e.currentTarget) onClose?.();
-    };
 
-    const SHEET_MAX_VH = isFromHeader == false ? 30 : 22;
-    const HEADER_PX = 56;
-
-    // Notify parent about modal state changes
     useEffect(() => {
         onModalStateChange?.(isOpen || false);
     }, [isOpen, onModalStateChange]);
@@ -83,7 +76,6 @@ const NotificationBottomModal: React.FC<NotificationBottomModalProps> = ({
     const handleDeleteNotification = async () => {
         setIsSaving(true);
         try {
-            // TODO: Update with actual delete API endpoint when available
             await deleteNotificationApi({ id: notificationIds?.[0] as number });
             handleDelete?.();
             onClose?.();
@@ -95,80 +87,40 @@ const NotificationBottomModal: React.FC<NotificationBottomModalProps> = ({
     };
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    className={`fixed inset-0 z-[9999] h-screen flex justify-center items-end ${showOverlay ? 'bg-black/50' : 'bg-transparent'}`}
-                    initial={{ y: 10, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -10, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    onClick={handleOverlayClick}
-                    style={{
-                        position: 'fixed',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        top: 0,
-                        zIndex: 9999
-                    }}
-                >
-                    <div
-                        className="w-full shadow-lg bg-[#EBECEE] overflow-hidden rounded-t-4xl"
-                        style={{
-                            height: `calc(${SHEET_MAX_VH}vh - ${HEADER_PX}px)`,
-                            transform: `translateY(${translateY}px)`,
-                            touchAction: 'none',
-                            transition: 'transform 0.08s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                            willChange: 'transform',
-                            maxHeight: `${SHEET_MAX_VH}vh`,
-                            minHeight: '120px',
-                            position: 'relative',
-                            bottom: 0,
-                            left: 0,
-                            right: 0
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                    >
-                        <div className="flex flex-col items-center pt-3 pb-6">
-                            {/* Drag handle */}
-                            <div className="flex justify-center mb-4">
-                                <div className="w-12 h-1 bg-gray-400 rounded-full"></div>
-                            </div>
-
-                            {/* Content */}
-                            <div className="w-full px-4">
-                                <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-                                    {/* Mark as read button */}
-                                    <button
-                                        className={`w-full flex items-center justify-between px-5 py-4 text-left bg-white hover:bg-gray-50 transition-colors ${!isFromHeader ? 'border-b border-gray-100' : ''}`}
-                                        onClick={() => handleMarkRead?.()}
-                                        disabled={isSaving}
-                                    >
-                                        <span className="text-black text-[15px] font-medium">{!isFromHeader ? t('Mark as read') : t('Mark all as read')}</span>
-                                        <IonIcon icon={checkmarkDone} className="w-5 h-5 text-black" />
-                                    </button>
-
-                                    {/* Delete button */}
-                                    {!isFromHeader && (
-                                        <button
-                                            className="w-full flex items-center justify-between px-5 py-4 text-left bg-white hover:bg-red-50 transition-colors"
-                                            onClick={() => setShowDeleteConfirm(true)}
-                                            disabled={isSaving}
-                                        >
-                                            <span className="text-red-500 text-[15px] font-medium">{t('Delete this notification')}</span>
-                                            <IonIcon icon={trash} className="w-5 h-5 text-red-500" />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+        <>
+            <BottomSheet
+                isOpen={Boolean(isOpen)}
+                onClose={onClose || (() => {})}
+                title={null}
+                showCloseButton={false}
+                lockDismiss={lockDismiss ?? isSaving}
+                classNameContainer="!bg-netural-50"
+            >
+                <div className="flex flex-col items-center pt-3 " onClick={(e) => e.stopPropagation()}>
+                    <div className="w-full px-4">
+                        <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+                            <button
+                                className={`w-full flex items-center justify-between px-5 py-4 text-left bg-white hover:bg-gray-50 transition-colors ${!isFromHeader ? 'border-b border-gray-100' : ''}`}
+                                onClick={handleMarkRead}
+                                disabled={isSaving}
+                            >
+                                <span className="text-black text-[15px] font-medium">{!isFromHeader ? t('Mark as read') : t('Mark all as read')}</span>
+                                <IonIcon icon={checkmarkDone} className="w-5 h-5 text-black" />
+                            </button>
+                            {!isFromHeader && (
+                                <button
+                                    className="w-full flex items-center justify-between px-5 py-4 text-left bg-white hover:bg-red-50 transition-colors"
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    disabled={isSaving}
+                                >
+                                    <span className="text-red-500 text-[15px] font-medium">{t('Delete this notification')}</span>
+                                    <IonIcon icon={trash} className="w-5 h-5 text-red-500" />
+                                </button>
+                            )}
                         </div>
                     </div>
-                </motion.div>
-            )}
+                </div>
+            </BottomSheet>
             <ConfirmModal
                 isOpen={showDeleteConfirm}
                 title={t('Confirm')}
@@ -178,8 +130,7 @@ const NotificationBottomModal: React.FC<NotificationBottomModalProps> = ({
                 onConfirm={() => { handleDeleteNotification?.(); }}
                 onClose={() => setShowDeleteConfirm(false)}
             />
-        </AnimatePresence>
-
+        </>
     );
 };
 export default NotificationBottomModal;

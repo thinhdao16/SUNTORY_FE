@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
 import { arrowBack, personRemove, chatbubbleOutline, personRemoveOutline } from 'ionicons/icons';
 import { getFriendshipFriends, unfriend } from '@/services/social/social-partner-service';
-import avatarFallback from '@/icons/logo/social-chat/avt-rounded-full.svg';
+import avatarFallback from '@/icons/logo/social-chat/avt-rounded.svg';
 import ConfirmModal from '@/components/common/modals/ConfirmModal';
 
 

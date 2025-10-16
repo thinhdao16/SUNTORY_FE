@@ -20,7 +20,7 @@ import MuteIcon from "@/icons/logo/social-chat/mute.svg?react"
 import UnMuteIcon from "@/icons/logo/social-chat/unmute.svg?react"
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import PullToRefresh from '@/components/common/PullToRefresh';
-import { IonContent } from '@ionic/react';
+import { IonContent, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/react';
 import { useRefreshCallback } from '@/contexts/RefreshContext';
 dayjs.extend(utc);
 
@@ -69,8 +69,8 @@ export default function SocialChatRecent() {
     enableDebugLogs: false,
   });
 
-  const scrollRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLIonContentElement>(null);
+  const autoPrefetchingRef = useRef(false);
   const handleRefresh = async () => {
     setRefreshing(true);
 
@@ -92,12 +92,27 @@ export default function SocialChatRecent() {
 
   useRefreshCallback('/social-chat', handleRefresh);
 
-  // useEffect(() => {
-  //   if (data?.pages) {
-  //     const allRooms = data.pages.flat();
-  //     setChatRooms(allRooms);
-  //   }
-  // }, [data ,setChatRooms]);
+  // Auto-prefetch more pages if the content does not fill the viewport
+  useEffect(() => {
+    const run = async () => {
+      if (!hasNextPage || isFetchingNextPage || autoPrefetchingRef.current) return;
+      try {
+        const el = contentRef.current ? await contentRef.current.getScrollElement() : null;
+        if (!el) return;
+        // If content height is not enough to scroll, fetch next page once
+        if (el.scrollHeight <= el.clientHeight + 48) {
+          autoPrefetchingRef.current = true;
+          try {
+            await fetchNextPage();
+          } finally {
+            autoPrefetchingRef.current = false;
+          }
+        }
+      } catch {}
+    };
+    void run();
+  }, [chatRooms.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const getDisplayMessageText = (room: RoomChatInfo, currentUserId: number) => {
     const storeLast = getLastMessageForRoom(room.code);
     const last = storeLast ?? room?.lastMessageInfo;
@@ -192,7 +207,6 @@ export default function SocialChatRecent() {
             break;
           }
           case SystemMessageType.NOTIFY_GROUP_CHAT_SHARED: {
-            // Show concise attachments summary similar to Facebook
             const isImage = (a: any) => a?.fileType === 10 || /\.(jpg|jpeg|png|gif|webp|heic|bmp)$/i.test(a?.fileName || a?.fileUrl || "");
             const imgCount = attachments.filter(isImage).length;
             const fileCount = attachments.length - imgCount;
@@ -285,27 +299,13 @@ export default function SocialChatRecent() {
     });
     return arr;
   }, [chatRooms]);
-  useEffect(() => {
-    const handleScroll = () => {
-      const el = scrollRef.current;
-      if (!el || isFetchingNextPage || !hasNextPage) return;
-
-      const threshold = 100;
-      const isBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
-      if (isBottom) fetchNextPage();
-    };
-
-    const el = scrollRef.current;
-    el?.addEventListener('scroll', handleScroll);
-    return () => el?.removeEventListener('scroll', handleScroll);
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
     <IonContent
       ref={contentRef}
       className={`no-scrollbar `}
       style={{
-        height: 'calc(100vh - 100px)',
+        height: 'calc(100vh - 150px)',
         paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))'
       }}
       scrollY={true}
@@ -321,10 +321,7 @@ export default function SocialChatRecent() {
             </div>
           </div>
         )}
-        <div
-          ref={scrollRef}
-          className={`px-4 pt-4 pb-28`}
-        >
+        <div className={`px-4 pt-4 pb-32`}>
           <PullToRefresh onRefresh={handleRefresh}>
             <div className="">
               {sortedChatRooms.map((room) => {
@@ -388,9 +385,30 @@ export default function SocialChatRecent() {
               )}
             </div>
           </PullToRefresh>
-
         </div>
       </div>
+      {hasNextPage && (
+        <IonInfiniteScroll
+          onIonInfinite={async (event) => {
+            try {
+              if (!isFetchingNextPage) {
+                await fetchNextPage();
+              }
+            } finally {
+              const el = event.target as HTMLIonInfiniteScrollElement;
+              requestAnimationFrame(() => el.complete());
+            }
+          }}
+          threshold="150px"
+          disabled={!hasNextPage}
+          className="pb-16"
+        >
+          <IonInfiniteScrollContent
+            loadingSpinner="bubbles"
+            loadingText={t('Loading...')}
+          />
+        </IonInfiniteScroll>
+      )}
     </IonContent>
   );
 }

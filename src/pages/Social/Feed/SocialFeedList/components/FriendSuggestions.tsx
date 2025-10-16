@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFriendshipRecommendedInfinite, useSendFriendRequest } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { useToastStore } from '@/store/zustand/toast-store';
@@ -16,7 +16,7 @@ interface FriendSuggestionsProps {
 
 export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
     title,
-    pageSize = 8,
+    pageSize = 50,
     onDismiss,
     className = ''
 }) => {
@@ -24,7 +24,6 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
     const showToast = useToastStore((s) => s.showToast);
     const history = useHistory();
     
-    // State for managing empty results and cooldown
     const [lastEmptyCheck, setLastEmptyCheck] = useState<number | null>(null);
     const [isInCooldown, setIsInCooldown] = useState(false);
     
@@ -43,13 +42,10 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
         pruneExpiredFriendRequestOutgoing,
     } = useSocialChatStore();
 
-    // Horizontal scroll container + sentinel
     const listRef = useRef<HTMLDivElement>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
-    // Local states
     const [dismissed, setDismissed] = useState<Set<number>>(new Set());
     const [sentLocal, setSentLocal] = useState<Set<number>>(new Set());
-    // Persist users across refetch
     const [userMap, setUserMap] = useState<Map<number, any>>(new Map());
     useEffect(() => {
         if (!data?.pages) return;
@@ -69,54 +65,105 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
     }, [data?.pages]);
     const users: any[] = useMemo(() => Array.from(userMap.values()), [userMap]);
     const visibleUsers = useMemo(() => users.filter((u: any) => !dismissed.has(u?.id)), [users, dismissed]);
-    
-    // Check if we have empty results and manage cooldown
+    const [renderLimit, setRenderLimit] = useState<number>(pageSize);
+    const prefetchedOnceRef = useRef(false);
+    const emptyStreakRef = useRef(0);
+    const lastFetchTsRef = useRef(0);
+    const limitedUsers = useMemo(() => visibleUsers.slice(0, renderLimit), [visibleUsers, renderLimit]);
+
     useEffect(() => {
-        if (!isLoading && !isFetchingNextPage && visibleUsers.length === 0 && data?.pages && data.pages.length > 0) {
-            const now = Date.now();
-            const COOLDOWN_DURATION = 2 * 60 * 1000; // 2 minutes
-            
-            // If this is the first time we detect empty results, start cooldown
-            if (!lastEmptyCheck) {
-                setLastEmptyCheck(now);
-                setIsInCooldown(true);
-                
-                // Set timer to end cooldown after 2 minutes
-                setTimeout(() => {
-                    setIsInCooldown(false);
-                    setLastEmptyCheck(null);
-                }, COOLDOWN_DURATION);
+        const pages = data?.pages ?? [];
+        if (pages.length === 0) return;
+        const last: any = pages[pages.length - 1];
+        const len = Array.isArray(last?.data) ? last.data.length : 0;
+        if (len === 0) {
+            emptyStreakRef.current = Math.min(emptyStreakRef.current + 1, 5);
+            setIsInCooldown(true);
+            const backoffMs = Math.min(15000, 3000 * emptyStreakRef.current); // 3s,6s,9s,12s,15s
+            const id = setTimeout(() => {
+                setIsInCooldown(false);
+            }, backoffMs);
+            return () => clearTimeout(id);
+        } else {
+            emptyStreakRef.current = 0;
+        }
+    }, [data?.pages]);
+
+    const safeFetchNext = useCallback(() => {
+        if (isFetchingNextPage || isInCooldown) return;
+        const now = Date.now();
+        if (now - lastFetchTsRef.current < 200) return; // throttle
+        lastFetchTsRef.current = now;
+        fetchNextPage().catch(() => {
+            setIsInCooldown(true);
+            setTimeout(() => setIsInCooldown(false), 10 * 1000);
+        });
+    }, [isFetchingNextPage, isInCooldown, fetchNextPage]);
+    useEffect(() => {
+        setRenderLimit((prev) => Math.max(pageSize, Math.min(prev, visibleUsers.length)));
+    }, [visibleUsers.length, pageSize]);
+
+    useEffect(() => {
+        if (prefetchedOnceRef.current) return;
+        const hasFirstPage = !!data?.pages && data.pages.length >= 1;
+        if (!isLoading && hasFirstPage && !isFetchingNextPage) {
+            prefetchedOnceRef.current = true;
+            fetchNextPage();
+        }
+    }, [isLoading, isFetchingNextPage, data?.pages, fetchNextPage]);
+    
+    useEffect(() => {
+        if (!isLoading && !isFetchingNextPage && visibleUsers.length === 0) {
+            safeFetchNext();
+        }
+    }, [isLoading, isFetchingNextPage, visibleUsers.length, safeFetchNext]);
+
+    const ensureFill = () => {
+        const el = listRef.current;
+        if (!el) return;
+        const needMore = (el.scrollWidth - el.clientWidth) <= 80;
+        if (needMore && renderLimit < visibleUsers.length) {
+            setRenderLimit((prev) => Math.min(prev + pageSize, visibleUsers.length));
+        }
+        safeFetchNext();
+    };
+
+    const pumpIfAtEnd = useCallback(() => {
+        const el = listRef.current;
+        if (!el) return;
+        const nearEnd = el.scrollWidth <= el.clientWidth || (el.scrollLeft + el.clientWidth >= el.scrollWidth - 80);
+        if (nearEnd) {
+            if (renderLimit < visibleUsers.length) {
+                setRenderLimit((prev) => Math.min(prev + pageSize, visibleUsers.length));
+            } else {
+                safeFetchNext();
             }
         }
-    }, [isLoading, isFetchingNextPage, visibleUsers.length, data?.pages, lastEmptyCheck]);
+    }, [renderLimit, visibleUsers.length, pageSize, safeFetchNext]);
 
     const handleDismissCard = (id: number) => {
         setDismissed((prev) => new Set([...prev, id]));
-        // If not enough width to scroll, fetch more (but respect cooldown)
         setTimeout(() => {
-            const el = listRef.current;
-            if (!el) return;
-            const needMore = (el.scrollWidth - el.clientWidth) <= 80;
-            if (!isFetchingNextPage && needMore && !isInCooldown) {
-                fetchNextPage();
-            }
+            ensureFill();
         }, 0);
     };
 
-    // Horizontal scroll to load more
     useEffect(() => {
         const el = listRef.current;
         if (!el) return;
         const onScroll = () => {
-            if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 80 && !isFetchingNextPage && !isInCooldown) {
-                fetchNextPage();
+            const nearEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 80;
+            if (nearEnd) {
+                if (renderLimit < visibleUsers.length) {
+                    setRenderLimit((prev) => Math.min(prev + pageSize, visibleUsers.length));
+                }
+                safeFetchNext();
             }
         };
         el.addEventListener('scroll', onScroll);
         return () => el.removeEventListener('scroll', onScroll);
-    }, [isFetchingNextPage, fetchNextPage, isInCooldown]);
+    }, [isFetchingNextPage, fetchNextPage, isInCooldown, renderLimit, visibleUsers.length, pageSize]);
 
-    // IntersectionObserver sentinel at end (horizontal)
     useEffect(() => {
         const root = listRef.current;
         const target = sentinelRef.current;
@@ -124,15 +171,28 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
         const obs = new IntersectionObserver(
             (entries) => {
                 const [entry] = entries;
-                if (entry.isIntersecting && !isFetchingNextPage && !isInCooldown) {
-                    fetchNextPage();
+                if (entry.isIntersecting) {
+                    if (renderLimit < visibleUsers.length) {
+                        setRenderLimit((prev) => Math.min(prev + pageSize, visibleUsers.length));
+                    }
+                    safeFetchNext();
                 }
             },
-            { root, threshold: 0.1 }
+            { root, threshold: 0, rootMargin: '600px' }
         );
         obs.observe(target);
         return () => obs.disconnect();
-    }, [isFetchingNextPage, fetchNextPage, isInCooldown]);
+    }, [isFetchingNextPage, fetchNextPage, isInCooldown, renderLimit, visibleUsers.length, pageSize, safeFetchNext]);
+
+    // Auto-chain after pages or list changes
+    useEffect(() => {
+        pumpIfAtEnd();
+        // slight delays to allow layout to settle and chain further
+        const id0 = setTimeout(pumpIfAtEnd, 0);
+        const id1 = setTimeout(pumpIfAtEnd, 250);
+        const id2 = setTimeout(pumpIfAtEnd, 800);
+        return () => { clearTimeout(id0); clearTimeout(id1); clearTimeout(id2); };
+    }, [data?.pages?.length, visibleUsers.length, renderLimit, pumpIfAtEnd]);
 
     useEffect(() => {
         const id = setInterval(() => {
@@ -158,7 +218,6 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                 )}
             </div>
             <div className="px-3 pb-4">
-                {/* Show empty state when no suggestions and in cooldown */}
                 {visibleUsers.length === 0 && isInCooldown && !isLoading && (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                         <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
@@ -170,31 +229,36 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                         <p className="text-xs text-gray-500">{t('We\'ll check for new suggestions in a few minutes')}</p>
                     </div>
                 )}
-                
-                {/* Show suggestions list when available or loading */}
-                {(visibleUsers.length > 0 || (!isInCooldown && isLoading)) && (
+
+                {visibleUsers.length === 0 && !isInCooldown && isLoading && (
+                    <div className="flex gap-3 overflow-x-auto">
+                        {Array.from({ length: Math.max(4, pageSize) }).map((_, i) => (
+                            <FriendCardSkeleton key={`init-s-${i}`} />
+                        ))}
+                    </div>
+                )}
+
+                {visibleUsers.length > 0 && (
                     <div ref={listRef} className="flex gap-3 overflow-x-auto ">
-                        {visibleUsers.map((user: any) => {
-                        const isSent = !!user?.isRequestSender;
-                        const isSentStore = hasFriendRequestOutgoing(user?.id);
-                        const isSentUI = isSent || isSentStore || sentLocal.has(user?.id);
-                        const isFriend = !!user?.isFriend;
-                        return (
-                            <div
-                                key={user?.id}
+                        {limitedUsers.map((user: any) => {
+                            const isSent = !!user?.isRequestSender;
+                            const isSentStore = hasFriendRequestOutgoing(user?.id);
+                            const isSentUI = isSent || isSentStore || sentLocal.has(user?.id);
+                            const isFriend = !!user?.isFriend;
+                            return (
+                                <div
+                                    key={user?.id}
                                 className="relative min-w-[180px] max-w-[180px] bg-white border border-netural-50 rounded-xl px-2 pb-2 pt-8"
                                 onClick={() => { if (user?.id) history.push(`/profile/${user.id}/posts`); }}
-                            >
-                                {/* per-card dismiss */}
-                                <button
-                                    aria-label="Dismiss card"
-                                    className="absolute right-2 top-2 text-netural-300 hover:text-gray-600 text-3xl"
-                                    onClick={(e) => { e.stopPropagation(); handleDismissCard(user?.id); }}
                                 >
-                                    ×
-                                </button>
-                                <div className="flex flex-col items-center text-center">
-
+                                    <button
+                                        aria-label="Dismiss card"
+                                        className="absolute right-2 top-2 text-netural-300 hover:text-gray-600 text-3xl"
+                                        onClick={(e) => { e.stopPropagation(); handleDismissCard(user?.id); }}
+                                    >
+                                        ×
+                                    </button>
+                                    <div className="flex flex-col items-center text-center">
                                     <img
                                         src={user?.avatar || avatarFallback}
                                         alt={user?.name || 'User Avatar'}
@@ -243,7 +307,6 @@ export const FriendSuggestions: React.FC<FriendSuggestionsProps> = ({
                             ))}
                         </>
                     )}
-                        {/* Horizontal sentinel */}
                         <div ref={sentinelRef} className="w-2" />
                     </div>
                 )}

@@ -168,7 +168,7 @@ function SocialChatAddMembers() {
           </div>
         )}
       </div>
-      <div className={`px-4 mt-4 overflow-y-auto pb-28 ${isNative
+      <div className={`px-4 mt-4 overflow-y-auto pb-36 ${isNative
         ? "max-h-[85vh]"
         : "max-h-[90vh]"
         }`}>
