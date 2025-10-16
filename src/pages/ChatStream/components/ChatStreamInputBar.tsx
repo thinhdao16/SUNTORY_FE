@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import CameraIcon from "@/icons/logo/chat/cam.svg?react";
 import ImageIcon from "@/icons/logo/chat/image.svg?react";
 // import FileIcon from "@/icons/logo/chat/file.svg?react";
@@ -50,6 +50,8 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
         return isSpending || isLoading || imageLoading || imageLoadingMany || isLoadingHistory;
     }, [isSpending, isLoading, imageLoading, imageLoadingMany, isLoadingHistory]);
 
+    const composingRef = useRef(false);
+
     return (
         <>
         {!anActivate &&(
@@ -63,11 +65,19 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
                     className="flex-1 focus:outline-none resize-none max-h-[230px] overflow-y-auto"
                     rows={1}
                     onFocus={() => {
-                        setTimeout(() => {
-                            window.dispatchEvent(new Event("resize"));
-                        }, 100);
+                        if (!isNative) {
+                            setTimeout(() => {
+                                window.dispatchEvent(new Event("resize"));
+                            }, 100);
+                        }
                     }}
+                    onCompositionStart={() => { composingRef.current = true; }}
+                    onCompositionEnd={() => { composingRef.current = false; }}
                     onKeyDown={(e) => {
+                        // Block Enter during IME composition (Vietnamese, Chinese, Japanese...)
+                        if (composingRef.current || (e.nativeEvent as any)?.isComposing) {
+                            return;
+                        }
                         if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
                             if (!isLoadingBtn) {
