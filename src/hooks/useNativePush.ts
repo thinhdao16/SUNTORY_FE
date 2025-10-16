@@ -22,12 +22,8 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
   const updateNewDevice = useUpdateNewDevice();
   const deviceInfo = useDeviceInfo();
   const history = useHistory();
-<<<<<<< HEAD
-
-=======
   const appActiveRef = useRef<boolean>(true);
   const lastSeenRef = useRef<Map<string, number>>(new Map());
->>>>>>> thinh-feature/story-16093
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const platform = Capacitor.getPlatform();
@@ -35,22 +31,18 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
     (async () => {
       try {
         if (platform === "android") {
-<<<<<<< HEAD
-          // Tạo channel với cấu hình tối ưu để tránh mất thông báo
-=======
           const localPerm = await LocalNotifications.requestPermissions();
           console.log("Local permissions", localPerm);
           if (localPerm.display !== "granted") {
             console.warn("LocalNotifications permission not granted");
           }
 
->>>>>>> thinh-feature/story-16093
           await LocalNotifications.createChannel({
             id: ANDROID_CHANNEL_ID,
             name: "Messages",
             description: "Message notifications",
-            importance: 5, // HIGH importance
-            visibility: 1, // PUBLIC
+            importance: 5,
+            visibility: 1,
             sound: "default",
             vibration: true,
             lights: true,
@@ -106,35 +98,6 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
           const title = msg?.notification?.title || msg?.data?.title || "WayJet";
           const body = msg?.notification?.body || msg?.data?.body || "";
           const data = msg?.data || {};
-<<<<<<< HEAD
-          console.log("notificationReceived", msg);
-          console.log("msg", msg);
-          
-          // Hiển thị local notification với cấu hình tối ưu
-          if (platform === "android") {
-            try {
-              await LocalNotifications.schedule({
-                notifications: [
-                  {
-                    id: Date.now() % 2147483647,
-                    title,
-                    body,
-                    channelId: ANDROID_CHANNEL_ID,
-                    sound: "default",
-                    smallIcon: "ic_launcher",
-                    extra: data,
-                    ongoing: false, // Không phải notification liên tục
-                  },
-                ],
-              });
-            } catch (e) {
-              console.warn("LocalNotifications.schedule (Firebase) error", e);
-            }
-          }
-        }
-      );
-=======
->>>>>>> thinh-feature/story-16093
 
           if (platform === "android" && appActiveRef.current) {
             const dedupKey = `${title}|${body}|${JSON.stringify(data || {})}`;
@@ -159,7 +122,6 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
                     sound: "default",
                     smallIcon: "ic_launcher",
                     extra: data,
-                    ongoing: false, // Không phải notification liên tục
                   },
                 ],
               });
@@ -242,33 +204,6 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
       actHandle = await PushNotifications.addListener(
         "pushNotificationActionPerformed",
         (action: ActionPerformed) => {
-<<<<<<< HEAD
-          const data = action.notification?.data;
-          console.log("pushNotificationActionPerformed", data);
-
-          // Navigate based on notification type
-          // if (data?.type) {
-          //   switch (data.type) {
-          //     case 'message':
-          //       history.push('/messages');
-          //       break;
-          //     case 'order':
-          //       history.push('/orders');
-          //       break;
-          //     case 'promotion':
-          //       history.push('/promotions');
-          //       break;
-          //     case 'profile':
-          //       history.push('/profile');
-          //       break;
-          //     default:
-          //       // Default navigation hoặc không navigate
-          //       console.log('Unknown notification type:', data.type);
-          //       break;
-          //   }
-          // }
-
-=======
           console.log("➡️ Tapped:", action);
 
           const data = action.notification.data;
@@ -285,7 +220,6 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
           else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
             history.push(`/profile/${data.accepter_user_id}`);
           }
->>>>>>> thinh-feature/story-16093
         }
       );
     })();
