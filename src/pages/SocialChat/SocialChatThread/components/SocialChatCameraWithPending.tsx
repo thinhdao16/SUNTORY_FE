@@ -38,7 +38,7 @@ const SocialChatCameraWithPending: React.FC<SocialChatCameraWithPendingProps> = 
         <input
             ref={inputRef}
             type="file"
-            accept="image/*,video/*"
+            accept="image/*"
             capture="environment"
             style={{ display: "none" }}
             onChange={handleChange}

@@ -38,7 +38,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
     const [selectedPrivacy, setSelectedPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
     const [isLoading, setIsLoading] = useState(true);
     const [originalPost, setOriginalPost] = useState<SocialPost | null>(null);
-    
+
     const { images, isUploading, setIsUploading, addImages, addAudioItem, removeImage, reorderImages, clearImages, setImages } = useImageUploadState();
     const {
         audioBlob,
@@ -69,7 +69,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                 removeImage(audioIndex);
             }
         });
-        
+
         handleAudioRecorded(blob, duration, serverUrl, filename);
         if (serverUrl && filename) {
             addAudioItem(blob, filename, serverUrl, filename);
@@ -84,7 +84,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                 removeImage(audioIndex);
             }
         });
-        
+
         handleRemoveAudio();
     }, [handleRemoveAudio, images, removeImage]);
 
@@ -96,7 +96,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
     useAutoResizeTextarea(textareaRef, postText);
     useEffect(() => {
         const loadPost = async () => {
-            if (!postCode || !isOpen || originalPost) return; 
+            if (!postCode || !isOpen || originalPost) return;
             try {
                 setIsLoading(true);
                 const post = await SocialFeedService.getPostByCode(postCode);
@@ -108,19 +108,19 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                         const dummyFile = new File([''], media.fileName || `media-${index}`, {
                             type: media.fileType || 'image/jpeg'
                         });
-                        
+
                         return {
                             file: dummyFile,
-                            localUrl: media.urlFile, 
+                            localUrl: media.urlFile,
                             serverUrl: media.urlFile,
                             serverName: media.s3Key || media.fileName || '',
                             filename: media.s3Key || media.fileName || '',
                             mediaType: media.fileType?.startsWith('audio') ? 'audio' as const : 'image' as const,
                             isUploading: false,
-                            isExisting: true, 
+                            isExisting: true,
                             isUploaded: true,
-                            width: media.width|| 300,
-                            height: media.height|| 300,
+                            width: media.width || 300,
+                            height: media.height || 300,
                         };
                     });
                     clearImages();
@@ -199,7 +199,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                     return '';
                 })
                 .filter(filename => filename && filename !== '');
-            
+
             const newMediaFilenames = newUploads
                 .filter(item => (item.serverName || item.serverUrl || item.filename))
                 .map(item => {
@@ -215,9 +215,9 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                     return '';
                 })
                 .filter(filename => filename && filename !== '');
-            
+
             const allMediaFilenames = [...existingMediaFilenames, ...newMediaFilenames];
-            
+
             if (audioFilename && !images.some(item => item.mediaType === 'audio')) {
                 allMediaFilenames.push(audioFilename);
             }
@@ -230,7 +230,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                 hashtags: hashtags.length > 0 ? hashtags : undefined,
                 privacy: Number(selectedPrivacy)
             });
-            
+
             onSuccess?.();
             onClose();
         } catch (error) {
@@ -269,79 +269,79 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                             </div>
                         </div>
                     ) : ( */}
-                        <>
-                            <div className="flex items-center space-x-3">
-                                <img
-                                    src={user?.avatarLink || avatarFallback}
-                                    alt={user?.name || 'User Avatar'}
-                                    className="w-[40px] h-[40px] rounded-2xl object-cover"
-                                    onError={(e) => {
-                                        e.currentTarget.src = avatarFallback;
-                                    }}
-                                />
-                                <div>
-                                    <div className="font-semibold text-netural-900 mb-1">{user?.name}</div>
-                                    <button
-                                        onClick={() => setIsPrivacyModalOpen(true)}
-                                        className="flex items-center gap-1 px-2 py-0.5 font-semibold bg-primary-50 text-main rounded-lg hover:bg-blue-100 transition-colors"
-                                    >
-                                        <div className="text-sm">
-                                            {selectedPrivacyOption?.label}
-                                        </div>
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="relative">
-                                <textarea
-                                    ref={textareaRef}
-                                    value={postText}
-                                    onChange={(e) => setPostText(e.target.value)}
-                                    placeholder={t("What's new?")}
-                                    className="w-full min-h-[2.5rem] py-3 border-none outline-none resize-none text-transparent bg-transparent caret-gray-700 leading-relaxed relative z-10"
-                                    rows={1}
-                                    autoFocus
-                                    style={{ color: 'transparent' }}
-                                />
-                                <div 
-                                    className="absolute top-0 left-0 w-full min-h-[2.5rem] py-3 pointer-events-none text-gray-700 leading-relaxed whitespace-pre-wrap z-0"
-                                    style={{ 
-                                        minHeight: textareaRef.current?.scrollHeight || 'auto',
-                                        wordBreak: 'break-word'
-                                    }}
-                                >
-                                    {postText ? parseHashtags(postText) : (
-                                        <span className="text-gray-400">{t("What's new?")}</span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <DraggableImageGrid
-                                images={images.filter(item => item.mediaType === 'image' || (item.mediaType as any) === 'video')}
-                                onRemoveImage={removeImage}
-                                onReorderImages={reorderImages}
-                                enableDragDrop={true}
-                                showDragHandle={true}
-                                dragFromTopArea={true}
+                    <>
+                        <div className="flex items-center space-x-3">
+                            <img
+                                src={user?.avatarLink || avatarFallback}
+                                alt={user?.name || 'User Avatar'}
+                                className="w-[40px] h-[40px] rounded-2xl object-cover"
+                                onError={(e) => {
+                                    e.currentTarget.src = avatarFallback;
+                                }}
                             />
+                            <div>
+                                <div className="font-semibold text-netural-900 mb-1">{user?.name}</div>
+                                <button
+                                    onClick={() => setIsPrivacyModalOpen(true)}
+                                    className="flex items-center gap-1 px-2 py-0.5 font-semibold bg-primary-50 text-main rounded-lg hover:bg-blue-100 transition-colors"
+                                >
+                                    <div className="text-sm">
+                                        {selectedPrivacyOption?.label}
+                                    </div>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
 
-                            {(audioBlob || audioServerUrl) && (
-                                <AudioRecorder
-                                    onAudioRecorded={handleAudioRecordedWithImageItem}
-                                    onRemoveAudio={handleRemoveAudioWithImageItem}
-                                    audioBlob={audioBlob ?? undefined}
-                                    duration={audioDuration}
-                                    serverUrl={audioServerUrl}
-                                    isUploading={isAudioUploading || audioUploadMutation.isLoading}
-                                    className=""
-                                    showAsButton={false}
-                                    audioUploadMutation={audioUploadMutation}
-                                />
-                            )}
-                        </>
+                        <div className="relative">
+                            <textarea
+                                ref={textareaRef}
+                                value={postText}
+                                onChange={(e) => setPostText(e.target.value)}
+                                placeholder={t("What's new?")}
+                                className="w-full min-h-[2.5rem] py-3 border-none outline-none resize-none text-transparent bg-transparent caret-gray-700 leading-relaxed relative z-10"
+                                rows={1}
+                                autoFocus
+                                style={{ color: 'transparent' }}
+                            />
+                            <div
+                                className="absolute top-0 left-0 w-full min-h-[2.5rem] py-3 pointer-events-none text-gray-700 leading-relaxed whitespace-pre-wrap z-0"
+                                style={{
+                                    minHeight: textareaRef.current?.scrollHeight || 'auto',
+                                    wordBreak: 'break-word'
+                                }}
+                            >
+                                {postText ? parseHashtags(postText) : (
+                                    <span className="text-gray-400">{t("What's new?")}</span>
+                                )}
+                            </div>
+                        </div>
+
+                        <DraggableImageGrid
+                            images={images.filter(item => item.mediaType === 'image' || (item.mediaType as any) === 'video')}
+                            onRemoveImage={removeImage}
+                            onReorderImages={reorderImages}
+                            enableDragDrop={true}
+                            showDragHandle={true}
+                            dragFromTopArea={true}
+                        />
+
+                        {(audioBlob || audioServerUrl) && (
+                            <AudioRecorder
+                                onAudioRecorded={handleAudioRecordedWithImageItem}
+                                onRemoveAudio={handleRemoveAudioWithImageItem}
+                                audioBlob={audioBlob ?? undefined}
+                                duration={audioDuration}
+                                serverUrl={audioServerUrl}
+                                isUploading={isAudioUploading || audioUploadMutation.isLoading}
+                                className=""
+                                showAsButton={false}
+                                audioUploadMutation={audioUploadMutation}
+                            />
+                        )}
+                    </>
                     {/* )} */}
                 </div>
 
@@ -355,20 +355,20 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                                         {!isRecording && (
                                             <>
                                                 <button
-                                                    onClick={handleGallerySelect}
-                                                    className="flex items-center space-x-1 text-gray-600 hover:text-gray-800"
-                                                    title={t("Select from Gallery")}
-                                                    disabled={!!audioBlob || !!audioServerUrl}
-                                                >
-                                                    <ImageIcon />
-                                                </button>
-                                                <button
                                                     onClick={handleCameraCapture}
                                                     className="flex items-center space-x-1 text-gray-600 hover:text-gray-800"
                                                     title={t("Take Photo")}
                                                     disabled={!!audioBlob || !!audioServerUrl}
                                                 >
                                                     <CamIcon />
+                                                </button>
+                                                <button
+                                                    onClick={handleGallerySelect}
+                                                    className="flex items-center space-x-1 text-gray-600 hover:text-gray-800"
+                                                    title={t("Select from Gallery")}
+                                                    disabled={!!audioBlob || !!audioServerUrl}
+                                                >
+                                                    <ImageIcon />
                                                 </button>
                                             </>
                                         )}

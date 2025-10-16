@@ -13,3 +13,6 @@ npm install sharp --legacy-peer-deps --force
 
 # Test
 npx @capacitor/assets generate
+
+# install release
+adb install -r android/app/build/outputs/apk/release/app-release.apk

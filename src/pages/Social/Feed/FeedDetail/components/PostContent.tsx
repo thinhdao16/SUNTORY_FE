@@ -260,7 +260,7 @@ const PostContent: React.FC<PostContentProps> = ({
                                     className="mt-3"
                                     lightboxUserName={postToDisplay.user.fullName}
                                     lightboxUserAvatar={postToDisplay.user?.avatarUrl}
-                                    classNameAudio='px-4 '
+                                    classNameAudio='!px-4 '
 
                                 />
                             </div>
@@ -391,6 +391,7 @@ const PostContent: React.FC<PostContentProps> = ({
                                 mediaFiles={displayPost.media}
                                 lightboxUserName={displayPost.user.fullName}
                                 lightboxUserAvatar={displayPost.user.avatarUrl}
+                                classNameAudio='px-4'
                             />
                         </div>
                     )}
