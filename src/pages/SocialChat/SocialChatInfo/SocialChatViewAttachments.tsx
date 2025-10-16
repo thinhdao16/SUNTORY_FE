@@ -302,6 +302,16 @@ const SocialChatViewAttachments: React.FC = () => {
 
       {previewImage && (
         <ImageLightbox
+        options={{
+          showDownload: true,
+          showPageIndicator: true,
+          showNavButtons: true,
+          showZoomControls: false,
+          enableZoom: true,
+          showHeader: true,
+          effect: 'slide',
+          spaceBetween: 30,
+        }}
           open={!!previewImage}
           images={previewItems}
           initialIndex={previewIndex}
