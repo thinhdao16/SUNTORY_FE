@@ -34,18 +34,21 @@ interface NotificationState {
     lastNotificationTime: number;
     lastActionTime: number;
     isUnReadNotification: boolean;
+    isPinNotification: boolean;
     addNotification: (n: Omit<Notification, "createdAt">) => void;
     markAsRead: (id: string) => void;
     clearAll: () => void;
     clearOne: (id: string) => void;
     triggerRefresh: () => void;
     setIsUnReadNotification: (isUnReadNotification: boolean) => void;
+    setIsPinNotification: (isPinNotification: boolean) => void;
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
     notifications: [],
     lastNotificationTime: 0,
     lastActionTime: 0,
+    isPinNotification: false,
     isUnReadNotification: false,
     addNotification: (n) =>
         set((state) => {
@@ -64,6 +67,9 @@ export const useNotificationStore = create<NotificationState>((set) => ({
             }
 
             // Chỉ giữ 1 notification, xóa tất cả notification cũ
+            if (state.isPinNotification === true) {
+                return state; // Nếu đang pin thì không thêm notification mới
+            }
             return {
                 notifications: [
                     {
@@ -80,7 +86,7 @@ export const useNotificationStore = create<NotificationState>((set) => ({
                     || n.type === "group_members_added"
                     || n.type === "group_members_removed"
                     || n.type === "member_added_to_group"
-                    || n.type === "group_chat_removed" ? false : true,
+                    || n.type === "group_chat_removed" ? state.isUnReadNotification : true,
             };
         }),
     triggerRefresh: () =>
@@ -99,4 +105,5 @@ export const useNotificationStore = create<NotificationState>((set) => ({
             notifications: state.notifications.filter((item) => item.id !== id)
         })),
     setIsUnReadNotification: (isUnReadNotification) => set({ isUnReadNotification }),
+    setIsPinNotification: (isPinNotification) => set({ isPinNotification }),
 }));

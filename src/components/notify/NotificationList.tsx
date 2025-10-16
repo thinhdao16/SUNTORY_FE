@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 export const NotificationList = () => {
     const { t } = useTranslation();
-    const { notifications, markAsRead, clearOne } = useNotificationStore();
+    const { notifications, markAsRead, clearOne, isPinNotification, setIsPinNotification } = useNotificationStore();
     const [replyOpenId, setReplyOpenId] = useState<string | number | null>(null);
     const [replyText, setReplyText] = useState<string>("");
     const [expandedNotifications, setExpandedNotifications] = useState<Set<string | number>>(new Set());
@@ -88,6 +88,7 @@ export const NotificationList = () => {
         if (timer) {
             clearTimeout(timer);
             timersRef.current.delete(id);
+            setIsPinNotification(true);
         }
     };
 
@@ -100,6 +101,7 @@ export const NotificationList = () => {
         // Restart timer when unpinned - shorter duration if after interaction
         const duration = isAfterInteraction ? 1500 : 3500;
         startTimer(id, duration);
+        setIsPinNotification(false);
     };
 
     const startTimer = (id: string | number, duration: number = 3000) => {
@@ -138,6 +140,7 @@ export const NotificationList = () => {
             timersRef.current.clear();
         };
     }, [notifications, clearOne, pinnedNotifications]);
+    console.log("notifications", notifications)
 
     // Pin notification when reply input is open
     useEffect(() => {
