@@ -160,47 +160,48 @@ const MyProfile: React.FC = () => {
   };
 
   return (
-    <PageContainer>
-      <IonPage style={{ '--background': 'white', paddingBottom: '52px' } as any}>
-        <div className="ion-no-border border-b py-4 border-gray-200 flex-shrink-0" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
-          <div style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
-            <div className="w-full flex items-center justify-between px-4">
-              <div></div>
-              <span className="font-bold pl-4 text-black text-lg" >
-                {t('My profile')}
-              </span  >
-              <button  onClick={() => history.push('/social-feed/create')}>
+    <IonPage>
+      <IonHeader className="ion-no-border">
+        <IonToolbar style={{ '--background': '#FFFFFF' } as any}>
+          <div className="w-full flex items-center justify-between px-4 py-2">
+            <div></div>
+            <span className="font-bold text-black text-lg">
+              {t('My profile')}
+            </span>
+            <button onClick={() => history.push('/social-feed/create')}>
               <EditProfileIcon />
-              </button>
-            </div>
+            </button>
           </div>
-        </div>
-        <IonContent 
-          ref={contentRef}
-          style={{ '--background': 'white', height: '100%' } as any}
-        >
-          {/* Facebook-style refresh loading indicator */}
-          {refreshing && (
-            <div className="absolute top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
-              <div className="flex items-center justify-center py-3">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-                  <span className="text-sm text-gray-600">{t('Refreshing...')}</span>
-                </div>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent
+        ref={contentRef}
+        style={{ '--background': 'white' } as any}
+        scrollEvents={true}
+      >
+        {/* Facebook-style refresh loading indicator */}
+        {refreshing && (
+          <div className="absolute top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
+            <div className="flex items-center justify-center py-3">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                <span className="text-sm text-gray-600">{t('Refreshing...')}</span>
               </div>
             </div>
-          )}
-          
-          <PullToRefresh onRefresh={handleRefresh}>
-            <div className="bg-white">
+          </div>
+        )}
+
+        <PullToRefresh onRefresh={handleRefresh}>
+          <div className="bg-white">
             <hr className="border-gray-100" />
             {userInfo && (
               <div className="px-4 pt-4 pb-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2 ">
+                    <div className="flex items-center space-x-2">
                       <h1 className="text-[20px] font-bold text-gray-900 overflow-hidden max-w-[200px] truncate">{userInfo?.name}</h1>
-                      <span className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`} style={{ width: 20, height: 20, borderRadius: 9999 }} ></span>
+                      <span className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`} style={{ width: 20, height: 20, borderRadius: 9999 }}></span>
                     </div>
                     {/* <div className="flex items-center space-x-1 mb-2">
                       <p
@@ -215,8 +216,7 @@ const MyProfile: React.FC = () => {
                       <p className="font-medium">
                         {userInfo?.friendNumber}
                       </p>
-                      <p className="mb-0 font-sans"
-                      >
+                      <p className="mb-0 font-sans">
                         {t("friends")}</p>
                     </div>
                   </div>
@@ -283,10 +283,9 @@ const MyProfile: React.FC = () => {
             </div>
           </div>
           <div style={{ height: 'calc(112px + env(safe-area-inset-bottom, 0px))' }} />
-          </PullToRefresh>
-        </IonContent>
-      </IonPage>
-    </PageContainer>
+        </PullToRefresh>
+      </IonContent>
+    </IonPage>
   );
 };
 

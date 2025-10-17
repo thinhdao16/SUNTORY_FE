@@ -9,8 +9,9 @@ import { useChangePassword } from "../hooks/useAuth";
 import BackIcon from "@/icons/logo/back.svg?react";
 
 import { t } from "@/lib/globalT";
-import { IonIcon } from "@ionic/react";
+import { IonIcon, IonTitle } from "@ionic/react";
 import { arrowBack } from "ionicons/icons";
+import PageContainer from "@/components/layout/PageContainer";
 interface ChangePasswordForm {
     currentPassword: string;
     password: string;
@@ -53,7 +54,7 @@ const ChangePassword: React.FC = () => {
     };
 
     return (
-        <AuthCardLayout>
+        <PageContainer className="py-2 px-6">
             <div className="flex items-center justify-between mb-6">
                 <button
                     className="w-10 h-10 flex items-center justify-center font-medium rounded-full hover:bg-gray-100 p-2"
@@ -62,9 +63,9 @@ const ChangePassword: React.FC = () => {
                 >
                     <IonIcon icon={arrowBack} className="text-black" style={{ width: 20, height: 20, color: 'black', textEmphasisColor: 'black' }} />
                 </button>
-                <h1 className="flex-1 text-2xl text-center font-semibold text-black darkk:text-gray-200">
+                <span className="text-center font-bold text-black ">
                     {t("Change Password")}
-                </h1>
+                </span>
                 {/* Spacer to balance header width with back button */}
                 <div className="w-10 h-10" />
             </div>
@@ -118,7 +119,7 @@ const ChangePassword: React.FC = () => {
                     </form>
                 </div>
             </div>
-        </AuthCardLayout>
+        </PageContainer>
     );
 };
 

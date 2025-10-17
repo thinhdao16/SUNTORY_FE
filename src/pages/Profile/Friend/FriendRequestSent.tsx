@@ -211,57 +211,60 @@ const FriendRequestSent: React.FC = () => {
     );
 
     return (
-        <IonPage className="ion-page" style={{ '--background': 'white', height: '100%' } as any}>
-            {/* Fixed Header */}
-            <IonToolbar style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
-                <IonButtons slot="start">
-                    <IonButton
-                        fill="clear"
-                        onClick={() => history.goBack()}
-                        className="ml-2"
-                    >
-                        <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
-                    </IonButton>
-                </IonButtons>
-                <IonTitle className="text-center font-semibold text-lg">
-                    {t('Request sent')}
-                </IonTitle>
-                <IonButtons slot="end">
-                    <IonButton className="opacity-0 pointer-events-none" fill="clear">
-                        <IonIcon icon={arrowBack} />
-                    </IonButton>
-                </IonButtons>
-            </IonToolbar>
+        <IonPage>
+            <IonHeader style = {{ 'box-shadow': 'none' } as any}>
+                <IonToolbar style={{ '--background': 'white' } as any}>
+                    <IonButtons slot="start">
+                        <IonButton onClick={() => history.goBack()}>
+                            <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
+                        </IonButton>
+                    </IonButtons>
+                    <IonTitle className="text-center font-semibold text-lg">
+                        {t('Request sent')}
+                    </IonTitle>
+                    <IonButtons slot="end">
+                        <IonButton className="opacity-0 pointer-events-none" fill="clear">
+                            <IonIcon icon={arrowBack} />
+                        </IonButton>
+                    </IonButtons>
+                </IonToolbar>
 
-            {/* Fixed Search Bar */}
-            <div className="px-3 py-3 bg-white">
-                <IonSearchbar
-                    value={searchInput}
-                    onIonInput={(e) => setSearchInput((e.detail.value ?? '').toString())}
-                    type="text"
-                    placeholder={t('Search')}
-                    showClearButton="focus"
-                    className="custom-searchbar"
-                    style={{
-                        '--background': '#f3f4f6',
-                        '--border-radius': '12px',
-                        '--box-shadow': 'none',
-                        '--padding-start': '16px',
-                        '--padding-end': '16px'
-                    } as any}
-                />
-            </div>
+                <div className="px-3 py-3 bg-white">
+                    <IonSearchbar
+                        value={searchInput}
+                        onIonInput={(e) => setSearchInput((e.detail.value ?? '').toString())}
+                        type="text"
+                        placeholder={t('Search')}
+                        showClearButton="focus"
+                        className="custom-searchbar"
+                        style={{
+                            '--background': '#f3f4f6',
+                            '--border-radius': '12px',
+                            '--box-shadow': 'none',
+                            '--padding-start': '16px',
+                            '--padding-end': '16px'
+                        } as any}
+                    />
+                </div>
 
-            {/* Scrollable Content */}
+                {/* Request Count */}
+                <div className="px-4 pb-2 bg-white">
+                    <p className="text-m text-black font-semibold">
+                        {requestSents.length} {t('requests')}
+                    </p>
+                </div>
+            </IonHeader>
+
             <IonContent
-                className="ion-padding"
-                style={{ '--background': 'white', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' } as any}
+                fullscreen
+                scrollY={true}
+                style={{ '--background': 'white' } as any}
             >
-                <div className="px-4 pb-24">
+                <div className="px-4 pb-20">
                     {loading ? (
                         renderSkeleton()
                     ) : (
-                        <div className="space-y-2 space-x-1">
+                        <div className="px-4">
                             {requestSents.map((requestSent) => renderRequestSentItem(requestSent))}
                         </div>
                     )}

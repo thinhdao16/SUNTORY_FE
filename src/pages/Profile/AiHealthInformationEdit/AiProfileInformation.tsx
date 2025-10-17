@@ -120,7 +120,7 @@ const AiProfileInformation: React.FC = () => {
 
     return (
         <PageContainer>
-            <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
+            <div style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
                 <IonToolbar style={{ '--background': '#EDF1FC', '--ion-background-color': '#EDF1FC' } as any}>
                     <IonButtons slot="start">
                         <IonButton
@@ -140,7 +140,7 @@ const AiProfileInformation: React.FC = () => {
                         </IonButton>
                     </IonButtons>
                 </IonToolbar>
-            </IonHeader>
+            </div>
             <div className="min-h-screen max-h-[calc(100vh-200px)] overflow-y-auto bg-white flex flex-col px-6 pb-24" style={{ backgroundColor: '#EDF1FC' }}>
                 <div className=" bg-white flex flex-col">
                     <div className="pb-20" style={{ backgroundColor: '#EDF1FC' }}>
