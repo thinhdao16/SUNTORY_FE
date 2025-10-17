@@ -19,6 +19,7 @@ import {
 } from "@/types/notification";
 import { useUpdateNewDevice } from "./device/useDevice";
 import { useNotificationStore } from "@/store/zustand/notify-store";
+import { Preferences } from "@capacitor/preferences";
 
 const ANDROID_CHANNEL_ID = "messages_v2";
 
@@ -222,7 +223,8 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
           } else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
             route = `/profile/${data.accepter_user_id}`;
           }
-          useNotificationStore.getState().setRoute(route);
+          useNotificationStore.getState().setIsPendingRoute(true);
+          Preferences.set({ key: "route", value: route });
           history.push(route);
         }
       );
@@ -256,9 +258,11 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
   }, [deviceInfo.deviceId]);
 
   useEffect(() => {
-    if (useNotificationStore.getState().route) {
-      history.push(useNotificationStore.getState().route);
-      useNotificationStore.getState().setRoute("");
-    }
-  }, [useNotificationStore.getState().route]);
+    Preferences.get({ key: "route" }).then(({ value }) => {
+      if (value) {
+        history.push(value);
+        Preferences.remove({ key: "route" });
+      }
+    });
+  }, [useNotificationStore.getState().isPendingRoute]);
 }
