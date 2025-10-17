@@ -23,6 +23,7 @@ import { NotificationList } from "./components/notify/NotificationList";
 import { RefreshProvider } from "@/contexts/RefreshContext";
 import { ModalProvider } from "@/contexts/ModalContext";
 import { useQueryClient } from "react-query";
+import { useHistory } from "react-router";
 
 setupIonicReact();
 initGoogleAuth();
@@ -44,11 +45,12 @@ const App: React.FC = () => {
         queryClient.invalidateQueries(["hashtagInterests"]);
         // Refresh any userPosts queries (TabType=10 and others)
         queryClient.invalidateQueries(["userPosts"]);
-      } catch {}
+      } catch { }
     };
     window.addEventListener("hashtag-interest-success", handler as EventListener);
     return () => window.removeEventListener("hashtag-interest-success", handler as EventListener);
   }, [queryClient]);
+
   return (
     <GoogleOAuthProvider clientId={GOOGLE_WEB_CLIENT_ID}>
       <RefreshProvider>
@@ -58,7 +60,7 @@ const App: React.FC = () => {
               <IonRouterOutlet>
                 <AppRoutes />
               </IonRouterOutlet>
-                <NotificationList />
+              <NotificationList />
               <Global />
             </IonReactRouter>
           </IonApp>

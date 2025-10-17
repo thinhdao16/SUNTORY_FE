@@ -18,6 +18,7 @@ import {
   isStoryNotification,
 } from "@/types/notification";
 import { useUpdateNewDevice } from "./device/useDevice";
+import { useNotificationStore } from "@/store/zustand/notify-store";
 
 const ANDROID_CHANNEL_ID = "messages_v2";
 
@@ -73,7 +74,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
         try {
           const st = await App.getState();
           appActiveRef.current = !!st.isActive;
-        } catch {}
+        } catch { }
         try {
           appStateHandle = await App.addListener(
             "appStateChange",
@@ -81,9 +82,9 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
               appActiveRef.current = !!isActive;
             }
           );
-        } catch {}
+        } catch { }
       })();
-    } catch {}
+    } catch { }
 
     (async () => {
       try {
@@ -95,7 +96,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
             mutate?.({ fcmToken: token });
           }
         }
-      } catch {}
+      } catch { }
 
       fmMsgHandle = await FirebaseMessaging.addListener(
         "notificationReceived",
@@ -103,7 +104,7 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
           const title =
             msg?.notification?.title || msg?.data?.title || "WayJet";
           const body = msg?.notification?.body || msg?.data?.body || "";
-          const data = msg?.data || {};
+          const data = msg?.notification?.data || {};
 
           if (platform === "android" && appActiveRef.current) {
             const dedupKey = `${title}|${body}|${JSON.stringify(data || {})}`;
@@ -141,7 +142,6 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
       regHandle = await PushNotifications.addListener(
         "registration",
         async (token: Token) => {
-          console.log("✅ Registered token:", token.value);
           await saveFcmToken(token.value);
 
           if (deviceInfo.deviceId) {
@@ -173,7 +173,6 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
           const title = n.title || "WayJet";
           const body = n.body || "";
           const data = n.data || {};
-
           try {
             if (platform === "android") {
               await LocalNotifications.schedule({
@@ -212,21 +211,39 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
         "pushNotificationActionPerformed",
         (action: ActionPerformed) => {
           console.log("➡️ Tapped:", action);
-
           const data = action.notification.data;
-
+          let route = "";
           if (isChatNotification(data.type)) {
-            history.push(`/social-chat/t/${data.chat_code}`);
+            route = `/social-chat/t/${data.chat_code}`;
           } else if (isStoryNotification(data.type)) {
-            history.push(`/social-feed/f/${data.post_code}`);
+            route = `/social-feed/f/${data.post_code}`;
           } else if (data.type === NotificationType.FRIEND_REQUEST) {
-            history.push(`/profile/${data.from_user_id}`);
+            route = `/profile/${data.from_user_id}`;
           } else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
-            history.push(`/profile/${data.accepter_user_id}`);
+            route = `/profile/${data.accepter_user_id}`;
           }
+          useNotificationStore.getState().setRoute(route);
+          history.push(route);
         }
       );
     })();
+
+    LocalNotifications.addListener(
+      "localNotificationActionPerformed",
+      (action) => {
+        const data = action.notification.extra;
+
+        if (isChatNotification(data.type)) {
+          history.push(`/social-chat/t/${data.chat_code}`);
+        } else if (isStoryNotification(data.type)) {
+          history.push(`/social-feed/f/${data.post_code}`);
+        } else if (data.type === NotificationType.FRIEND_REQUEST) {
+          history.push(`/profile/${data.from_user_id}`);
+        } else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
+          history.push(`/profile/${data.accepter_user_id}`);
+        }
+      }
+    );
 
     return () => {
       regHandle?.remove();
@@ -237,4 +254,11 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
       appStateHandle?.remove();
     };
   }, [deviceInfo.deviceId]);
+
+  useEffect(() => {
+    if (useNotificationStore.getState().route) {
+      history.push(useNotificationStore.getState().route);
+      useNotificationStore.getState().setRoute("");
+    }
+  }, [useNotificationStore.getState().route]);
 }
