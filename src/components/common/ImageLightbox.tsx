@@ -7,8 +7,6 @@ import { Navigation, Pagination, EffectCoverflow } from 'swiper/modules';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { saveImage } from '@/utils/save-image';
 import httpClient from '@/config/http-client';
-import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
 import DownloadIcon from "@/icons/logo/download-white.png"
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -175,25 +173,12 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
             fileName = seg || `media_${Date.now()}`;
         }
 
-        if (Capacitor.isNativePlatform()) {
-            const b64 = await blobToBase64(blob);
-            const base64Data = b64.includes(',') ? b64.split(',')[1] : b64;
-            await Filesystem.writeFile({
-                path: fileName,
-                data: base64Data,
-                directory: Directory.Documents
-            });
-            return;
-        }
-
-        const urlObj = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = urlObj;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(urlObj);
+        // Convert blob to base64 and use saveImage utility
+        const b64 = await blobToBase64(blob);
+        await saveImage({
+            dataUrlOrBase64: b64,
+            fileName: fileName
+        });
     };
 
     const downloadFromUrlDirect = async (item: MediaItem, idx: number) => {
@@ -212,25 +197,16 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
         })();
         const filename = item.fileName || `media_${idx + 1}_${Date.now()}.${extFromUrl}`;
 
-        if (Capacitor.isNativePlatform()) {
-            const resp = await fetch(item.url);
-            const blob = await resp.blob();
-            const b64 = await blobToBase64(blob);
-            const base64Data = b64.includes(',') ? b64.split(',')[1] : b64;
-            await Filesystem.writeFile({
-                path: filename,
-                data: base64Data,
-                directory: Directory.Documents
-            });
-            return;
-        }
+        // Fetch and convert to base64
+        const resp = await fetch(item.url);
+        const blob = await resp.blob();
+        const b64 = await blobToBase64(blob);
 
-        const a = document.createElement('a');
-        a.href = item.url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        // Use saveImage utility
+        await saveImage({
+            dataUrlOrBase64: b64,
+            fileName: filename
+        });
     };
 
     const handleDownloadCurrent = async (e: React.MouseEvent) => {
