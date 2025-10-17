@@ -9,6 +9,8 @@ const useSafeArea = () => {
           `--safe-area-inset-${key}`,
           `${value}px`
         );
+
+        console.log("SafeArea Insets:", insets);
       }
     });
 

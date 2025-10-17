@@ -57,7 +57,7 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: true,
   },
   ios: {
-    contentInset: "automatic",
+    contentInset: "never",
     scrollEnabled: true,
     allowsLinkPreview: false,
     preferredContentMode: "mobile",

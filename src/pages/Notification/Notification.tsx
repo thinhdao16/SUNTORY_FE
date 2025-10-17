@@ -53,14 +53,14 @@ function Notification() {
     return (
         <PageContainer className="!overflow-hidden">
             <div className="h-screen flex flex-col">
-                <IonHeader className="ion-no-border border-b border-gray-200 flex-shrink-0" style={{ '--background': 'white', justifyContent: 'center' } as any}>
-                    <IonToolbar style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
+                <div className="ion-no-border border-b py-4 border-gray-200 flex-shrink-0" style={{ '--background': 'white', justifyContent: 'center' } as any}>
+                    <div style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
                         <IonButtons slot="start">
                             {/* <IonButton
                                 fill="clear"
                                 onClick={() => history.goBack()}
                                 className="pl-4"
-                            >
+                            >   
                                 <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
                             </IonButton> */}
                         </IonButtons>
@@ -72,8 +72,8 @@ function Notification() {
                                 <IonIcon icon={arrowBack} />
                             </IonButton>
                         </IonButtons> */}
-                    </IonToolbar>
-                </IonHeader>
+                    </div>
+                </div>
 
                 {/* Tab Buttons */}
                 <div className="px-3 py-3 bg-white no-border flex justify-between items-center">

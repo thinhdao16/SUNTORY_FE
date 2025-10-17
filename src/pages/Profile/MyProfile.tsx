@@ -162,8 +162,8 @@ const MyProfile: React.FC = () => {
   return (
     <PageContainer>
       <IonPage style={{ '--background': 'white', paddingBottom: '52px' } as any}>
-        <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
-          <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
+        <div className="ion-no-border border-b py-4 border-gray-200 flex-shrink-0" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
+          <div style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
             <div className="w-full flex items-center justify-between px-4">
               <div></div>
               <span className="font-bold pl-4 text-black text-lg" >
@@ -173,8 +173,8 @@ const MyProfile: React.FC = () => {
               <EditProfileIcon />
               </button>
             </div>
-          </IonToolbar>
-        </IonHeader>
+          </div>
+        </div>
         <IonContent 
           ref={contentRef}
           style={{ '--background': 'white', height: '100%' } as any}
