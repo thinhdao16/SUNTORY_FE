@@ -23,34 +23,19 @@ import { NotificationList } from "./components/notify/NotificationList";
 import { RefreshProvider } from "@/contexts/RefreshContext";
 import { ModalProvider } from "@/contexts/ModalContext";
 import { useQueryClient } from "react-query";
-import { Preferences } from '@capacitor/preferences';
-import { useHistory } from "react-router-dom";
+import { useHistory } from "react-router";
 
 setupIonicReact();
 initGoogleAuth();
 
 const App: React.FC = () => {
   useAppInit();
-  const history = useHistory();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     StatusBar.setOverlaysWebView({ overlay: true });
     StatusBar.setStyle({ style: Style.Light });
   }, []);
-
-  useEffect(() => {
-    const checkPendingRoute = async () => {
-      const { value } = await Preferences.get({ key: "pendingRoute" });
-      console.log("value", value)
-      if (value) {
-        await Preferences.remove({ key: "pendingRoute" });
-        history.push(value);
-      }
-    };
-
-    checkPendingRoute();
-  }, [history]);
 
   // Global: after hashtag interest success, refresh related caches
   useEffect(() => {
@@ -60,11 +45,12 @@ const App: React.FC = () => {
         queryClient.invalidateQueries(["hashtagInterests"]);
         // Refresh any userPosts queries (TabType=10 and others)
         queryClient.invalidateQueries(["userPosts"]);
-      } catch {}
+      } catch { }
     };
     window.addEventListener("hashtag-interest-success", handler as EventListener);
     return () => window.removeEventListener("hashtag-interest-success", handler as EventListener);
   }, [queryClient]);
+
   return (
     <GoogleOAuthProvider clientId={GOOGLE_WEB_CLIENT_ID}>
       <RefreshProvider>
@@ -74,7 +60,7 @@ const App: React.FC = () => {
               <IonRouterOutlet>
                 <AppRoutes />
               </IonRouterOutlet>
-                <NotificationList />
+              <NotificationList />
               <Global />
             </IonReactRouter>
           </IonApp>
