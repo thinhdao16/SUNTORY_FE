@@ -87,7 +87,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
         const allItems = photoAlbumPhotos.map((p: any) => ({
             url: p.src,
             type: (p.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
-            s3Key: p?.attachment?.s3Key,
+            // Prefer s3Key; fallback to legacy 'key' if BE returns that field
+            s3Key: p?.attachment?.s3Key ?? p?.attachment?.key,
             fileName: p?.attachment?.fileName,
         }));
         setLightboxItems(allItems);
