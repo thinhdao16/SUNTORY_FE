@@ -32,14 +32,14 @@ export interface Notification {
 interface NotificationState {
     notifications: Notification[];
     lastNotificationTime: number;
-    route: string;
     lastActionTime: number;
+    isPendingRoute: boolean;
     isUnReadNotification: boolean;
     isPinNotification: boolean;
     addNotification: (n: Omit<Notification, "createdAt">) => void;
     markAsRead: (id: string) => void;
     clearAll: () => void;
-    setRoute: (route: string) => void;
+    setIsPendingRoute: (isPendingRoute: boolean) => void;
     clearOne: (id: string) => void;
     triggerRefresh: () => void;
     setIsUnReadNotification: (isUnReadNotification: boolean) => void;
@@ -52,8 +52,8 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     lastActionTime: 0,
     isPinNotification: false,
     isUnReadNotification: false,
-    route: "",
-    setRoute: (route) => set({ route }),
+    isPendingRoute: false,
+    setIsPendingRoute: (isPendingRoute) => set({ isPendingRoute }),
     addNotification: (n) =>
         set((state) => {
             const now = Date.now();
