@@ -48,6 +48,13 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
     }, [isSpending, isLoading, imageLoading, imageLoadingMany, isLoadingHistory]);
 
     const composingRef = useRef(false);
+    const normalizePastedText = (s: string) => {
+        try { s = s.normalize('NFKC'); } catch {}
+        s = s.replace(/\u00A0/g, ' ');
+        s = s.replace(/[\u200B-\u200D\u2060\uFEFF\uFE0E\uFE0F]/g, '');
+        s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+        return s;
+    };
 
     return (
         <>
@@ -80,19 +87,31 @@ const ChatInputBar: React.FC<ChatInputBarProps> = ({
                         }
                     }}
                     onPaste={async (e) => {
-                        const items = e.clipboardData?.items;
-                        if (!items) return;
-                        for (const item of items) {
-                            if (item.type.startsWith("image/")) {
-                                const file = item.getAsFile();
-                                if (file) {
-                                    await uploadImageMutation.mutateAsync(file, {
-                                        onSuccess: (uploaded: any) => {
-                                            if (uploaded && uploaded.length > 0) {
-                                                addPendingImages([uploaded[0].linkImage]);
-                                            }
-                                        },
-                                    });
+                        const cd = e.clipboardData; const items = cd?.items;
+                        const pastedText = cd?.getData('text/plain') || '';
+                        if (pastedText) {
+                            e.preventDefault();
+                            const norm = normalizePastedText(pastedText);
+                            const ta = messageRef.current;
+                            const start = (ta?.selectionStart ?? messageValue.length);
+                            const end = (ta?.selectionEnd ?? start);
+                            const next = messageValue.slice(0, start) + norm + messageValue.slice(end);
+                            setMessageValue(next);
+                            setTimeout(() => { if (ta) { try { ta.setSelectionRange(start + norm.length, start + norm.length); } catch {} } }, 0);
+                        }
+                        if (items) {
+                            for (const item of items) {
+                                if (item.type.startsWith("image/")) {
+                                    const file = item.getAsFile();
+                                    if (file) {
+                                        await uploadImageMutation.mutateAsync(file, {
+                                            onSuccess: (uploaded: any) => {
+                                                if (uploaded && uploaded.length > 0) {
+                                                    addPendingImages([uploaded[0].linkImage]);
+                                                }
+                                            },
+                                        });
+                                    }
                                 }
                             }
                         }

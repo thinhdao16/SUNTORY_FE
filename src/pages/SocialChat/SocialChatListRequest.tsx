@@ -120,8 +120,8 @@ function SocialChatListRequest() {
         <div className="h-screen">
             <div
                 ref={scrollRef}
-                className={`overflow-y-auto px-4 pt-4 pb-28 ${isNative
-                    ? "max-h-[85vh]"
+                className={`overflow-y-auto px-4 pt-4 pb-36 ${isNative
+                    ? "max-h-[95vh]"
                     : "max-h-[75vh] lg:max-h-[75vh] xl:max-h-[85vh]"
                 }`}
                 style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}

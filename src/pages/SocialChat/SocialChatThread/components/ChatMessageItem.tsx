@@ -26,6 +26,7 @@ import Portal from "@/components/common/Portal";
 import ChatSystemMessage from "./ChatSystemMessage";
 import SharedPostBubble from "./SharedPostBubble";
 import { KEYCHATFORMATNOTI, SystemMessageType } from "@/constants/socialChat";
+import { Link } from "react-router-dom";
 
 interface ChatMessageItemProps {
     msg: any;
@@ -400,12 +401,23 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 >
                     {!isUser && shouldShowAvatar && (
                         <div className="flex flex-col items-center mr-2">
-                            <img
-                                src={avatarUrl || avatarFallback}
-                                alt={msg.userName || "Avatar"}
-                                className="w-[30px] aspect-square object-cover rounded-[12px]"
-                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarFallback; }}
-                            />
+                            {msg?.userId ? (
+                                <Link to={`/profile/${msg.userId}`} className="block">
+                                    <img
+                                        src={avatarUrl || avatarFallback}
+                                        alt={msg.userName || "Avatar"}
+                                        className="w-[30px] aspect-square object-cover rounded-[12px] cursor-pointer"
+                                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarFallback; }}
+                                    />
+                                </Link>
+                            ) : (
+                                <img
+                                    src={avatarUrl || avatarFallback}
+                                    alt={msg.userName || "Avatar"}
+                                    className="w-[30px] aspect-square object-cover rounded-[12px]"
+                                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarFallback; }}
+                                />
+                            )}
                         </div>
                     )}
                     {!isUser && !shouldShowAvatar && <div className="w-[30px] ml-2" />}
@@ -425,7 +437,15 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                             )}
                             {isEdited && !isRevoked && isUser && <div className="text-xs text-main font-semibold">{t("Edited")}</div>}
                         </div>
-                        {isGroup && showSenderName && (<div className="text-xs text-gray-500 ml-1 mb-0.5">{msg.userName}</div>)}
+                        {isGroup && showSenderName && (
+                            <div className="text-xs text-gray-500 ml-1 mb-0.5">
+                                {msg?.userId ? (
+                                    <Link to={`/profile/${msg.userId}`} className="font-semibold hover:underline">{msg.userName}</Link>
+                                ) : (
+                                    msg.userName
+                                )}
+                            </div>
+                        )}
                         {msg.replyToMessage && (<ReplyBubble msg={msg.replyToMessage} isUser={isUser} isRevoked={msg.replyToMessage.isRevoked === 1} />)}
                         <div
                             className="longpress-safe"

@@ -2,6 +2,7 @@ import MotionBottomSheet from '@/components/common/bottomSheet/MotionBottomSheet
 import MotionStyles from '@/components/common/bottomSheet/MotionStyles';
 import ShareQRModal from '@/components/common/bottomSheet/ShareQRModal';
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiArrowLeft, FiDownload, } from 'react-icons/fi'
 import BackIcon from "@/icons/logo/back-default.svg?react"
 import { useHistory } from 'react-router';
@@ -22,9 +23,12 @@ import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share as CapShare } from "@capacitor/share";
 import { QR_PREFIX } from '@/constants/global';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
+import { useToastStore } from '@/store/zustand/toast-store';
 
 const velocityThreshold = 0.4;
 const SocialPartnerAdd = () => {
+    const { t } = useTranslation();
+    const showToast = useToastStore((state) => state.showToast);
     const [isOpen, setIsOpen] = useState({ shareQR: false, search: false });
     const [translateY, setTranslateY] = useState(0);
     const screenHeight = useRef(window.innerHeight);
@@ -185,15 +189,33 @@ const SocialPartnerAdd = () => {
                                         </button>
                                         <button
                                             className="w-full border border-main text-main text-sm font-semibold px-6 py-2 rounded-full flex items-center justify-center gap-2"
-                                            onClick={async () => {
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                
                                                 const canvas = document.getElementById('qr-gen') as HTMLCanvasElement | null;
-                                                if (!canvas) return;
+                                                if (!canvas) {
+                                                    showToast(t('QR code not found'), 2000, 'error');
+                                                    return;
+                                                }
                                                 const dataUrl = canvas.toDataURL('image/png');
 
                                                 try {
-                                                    await saveImage({ dataUrlOrBase64: dataUrl, fileName: 'qr-code.png' });
-                                                } catch (e) {
-                                                    console.error(e);
+                                                    const timestamp = new Date().getTime();
+                                                    await saveImage({ 
+                                                        dataUrlOrBase64: dataUrl, 
+                                                        fileName: `wayjet-qr-${timestamp}.png`,
+                                                        albumIdentifier: 'WayJet'
+                                                    });
+                                                    showToast(t('Image saved to gallery'), 2000, 'success');
+                                                } catch (e: any) {
+                                                    console.error('[Save QR]', e);
+                                                    
+                                                    if (e?.message === 'PERMISSION_DENIED') {
+                                                        showToast(t('Please allow access to photos'), 3000, 'error');
+                                                    } else {
+                                                        showToast(t('Failed to save image'), 2000, 'error');
+                                                    }
                                                 }
                                             }}
                                         >

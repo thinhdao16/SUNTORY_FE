@@ -754,7 +754,6 @@ const FeedDetail: React.FC = () => {
             <PostActionsProvider
                 post={displayPost}
                 onSendFriendRequest={(userId: number) => {
-                    // Open confirm instead of executing immediately
                     if (confirmState.open) return;
                     closePostOptions();
                     openConfirmModal('send', undefined, displayPost?.user?.fullName, userId, displayPost?.user?.fullName);

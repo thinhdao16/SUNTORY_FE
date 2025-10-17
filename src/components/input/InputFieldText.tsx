@@ -1,4 +1,5 @@
 import React from "react";
+import NormalizedInput from "@/components/common/NormalizedInput";
 
 interface InputFieldTextProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label: string;
@@ -34,12 +35,11 @@ const InputTextField = React.forwardRef<HTMLInputElement, InputFieldTextProps>(
                     {label}
                     {required && <span className="text-red-500 ml-1">*</span>}
                 </label>
-                <input
+                <NormalizedInput
                     ref={ref}
                     type={type}
                     id={id}
                     placeholder={placeholder}
-                    // required={required}
                     className={`mt-1 block w-full px-4 py-3 border ${error
                         ? "border-red-500"
                         : "border-netural-200"

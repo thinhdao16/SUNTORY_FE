@@ -414,6 +414,7 @@ export function useSocialChatHandlers({
                                         fileType: att.fileType,
                                         fileSize: att.fileSize,
                                         createDate: att.createDate,
+                                        s3Key: att.s3Key ?? att.key,
                                         originalIndex: localAtt?.originalIndex ?? index,
                                         isSending: false,
                                         isUploading: false,
@@ -712,6 +713,7 @@ export function useSocialChatHandlers({
                                         fileName: att.fileName,
                                         fileType: att.fileType,
                                         createDate: att.createDate,
+                                        s3Key: att.s3Key ?? att.key,
                                     }))
                                     : pendingMsg.chatAttachments,
                             isSend: true,

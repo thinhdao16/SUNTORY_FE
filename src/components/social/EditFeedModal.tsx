@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IonModal } from '@ionic/react';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
@@ -12,6 +12,7 @@ import { useAudioUploadState } from '@/pages/Social/Feed/CreateFeed/hooks/useAud
 import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
 import { PrivacyPostType } from '@/types/privacy';
 import { useAuthStore } from '@/store/zustand/auth-store';
+import { useToastStore } from '@/store/zustand/toast-store';
 import { SocialFeedService } from '@/services/social/social-feed-service';
 import { SocialPost } from '@/types/social-feed';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
@@ -93,7 +94,13 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const updatePostMutation = useUpdatePost();
     const { user } = useAuthStore();
+    const showToast = useToastStore((state) => state.showToast);
     useAutoResizeTextarea(textareaRef, postText);
+
+    // Memoize filtered images to prevent re-render when typing
+    const visualImages = useMemo(() => {
+        return images.filter(item => item.mediaType === 'image' || (item.mediaType as any) === 'video');
+    }, [images]);
     useEffect(() => {
         const loadPost = async () => {
             if (!postCode || !isOpen || originalPost) return;
@@ -222,7 +229,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                 allMediaFilenames.push(audioFilename);
             }
 
-            const hashtags = postText.match(/#\w+/g)?.map(tag => tag.substring(1)) || [];
+            const hashtags = [...new Set(postText.match(/#\w+/g)?.map(tag => tag.substring(1)) || [])];
             await updatePostMutation.mutateAsync({
                 postCode,
                 content: postText.trim(),
@@ -231,6 +238,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                 privacy: Number(selectedPrivacy)
             });
 
+            showToast(t("Post updated successfully"), 2000, "success");
             onSuccess?.();
             onClose();
         } catch (error) {
@@ -305,6 +313,23 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                                 rows={1}
                                 autoFocus
                                 style={{ color: 'transparent' }}
+                                onPaste={(e) => {
+                                    const cd = e.clipboardData; if (!cd) return;
+                                    const txt = cd.getData('text/plain');
+                                    if (txt) {
+                                        e.preventDefault();
+                                        let s = txt; try { s = s.normalize('NFKC'); } catch {}
+                                        s = s.replace(/\u00A0/g, ' ');
+                                        s = s.replace(/[\u200B-\u200D\u2060\uFEFF\uFE0E\uFE0F]/g, '');
+                                        s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+                                        const ta = textareaRef.current;
+                                        const start = (ta?.selectionStart ?? postText.length);
+                                        const end = (ta?.selectionEnd ?? start);
+                                        const next = postText.slice(0, start) + s + postText.slice(end);
+                                        setPostText(next);
+                                        setTimeout(() => { if (ta) { try { ta.setSelectionRange(start + s.length, start + s.length); } catch {} } }, 0);
+                                    }
+                                }}
                             />
                             <div
                                 className="absolute top-0 left-0 w-full min-h-[2.5rem] py-3 pointer-events-none text-gray-700 leading-relaxed whitespace-pre-wrap z-0"
@@ -320,7 +345,7 @@ const EditFeedModal: React.FC<EditFeedModalProps> = ({
                         </div>
 
                         <DraggableImageGrid
-                            images={images.filter(item => item.mediaType === 'image' || (item.mediaType as any) === 'video')}
+                            images={visualImages}
                             onRemoveImage={removeImage}
                             onReorderImages={reorderImages}
                             enableDragDrop={true}

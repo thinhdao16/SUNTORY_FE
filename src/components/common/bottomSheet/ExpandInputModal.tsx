@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import NormalizedTextarea from "@/components/common/NormalizedTextarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { IonIcon } from "@ionic/react";
 import { close } from "ionicons/icons";
@@ -100,14 +101,14 @@ const ExpandInputModal: React.FC<ExpandInputModalProps> = ({
                     </div>
 
                     <div className="px-6 pb-6 h-[calc(100%-64px)] overflow-auto">
-                        <textarea
+                        <NormalizedTextarea
                             ref={taRef}
                             value={value}
-                            onChange={(e) => onChange(e.target.value)}
+                            onValueChange={onChange}
                             placeholder={placeholder}
                             className="w-full outline-none resize-none text-[15px] leading-relaxed min-h-[100px] overflow-hidden"
                             onInput={(e) => {
-                                const el = e.currentTarget;
+                                const el = e.currentTarget as HTMLTextAreaElement;
                                 el.style.height = "auto";
                                 el.style.height = `${Math.min(el.scrollHeight, 1200)}px`;
                             }}

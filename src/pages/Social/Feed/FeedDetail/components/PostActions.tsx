@@ -8,6 +8,7 @@ import SendIcon from "@/icons/logo/social-feed/send.svg?react";
 import ReactHeartRedIcon from "@/icons/logo/social-feed/react-heart-red.svg?react";
 import AnimatedActionButton from '@/components/common/AnimatedActionButton';
 import { useAuthStore } from '@/store/zustand/auth-store';
+import { useToastStore } from '@/store/zustand/toast-store';
 import { PrivacyPostType } from '@/types/privacy';
 
 interface PostActionsProps {
@@ -27,7 +28,9 @@ const PostActions: React.FC<PostActionsProps> = ({
     onShare,
     postLikeMutation
 }) => {
+    const { t } = useTranslation();
     const { user } = useAuthStore();
+    const showToast = useToastStore((state) => state.showToast);
     const meId = user?.id;
     const isRepostByMeCard = !!displayPost?.isRepost && displayPost?.user?.id === meId;
     const isRepostedByMe = Boolean(displayPost?.isRepostedByCurrentUser) || isRepostByMeCard;
@@ -64,10 +67,17 @@ const PostActions: React.FC<PostActionsProps> = ({
                         activeIcon={<UnretryIcon />}
                         count={displayPost?.repostCount || 0}
                         isActive={isRepostedByMe}
-                        onClick={onRepost}
+                        onClick={() => {
+                            // Check if post is private and prevent repost
+                            if (displayPost?.privacy === PrivacyPostType.Private && !isRepostedByMe) {
+                                showToast(t("Cannot repost private posts"), 2000, "error");
+                                return;
+                            }
+                            onRepost();
+                        }}
                         activeColor="text-netural-900"
                         inactiveColor="text-gray-600"
-                        disabled={isErrorPost}
+                        disabled={isErrorPost || (displayPost?.privacy === PrivacyPostType.Private && !isRepostedByMe)}
                     />
                 )}
                 {displayPost?.privacy !== PrivacyPostType.Private && (
