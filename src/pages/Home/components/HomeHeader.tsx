@@ -259,7 +259,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ userInfo }) => {
             <div className="relative z-10">
                 <div className="flex items-center justify-between">
                     <button onClick={() => openSidebarWithAuthCheck()}>
-                        <NavBarHomeIcon />
+                        {/* <NavBarHomeIcon /> */}
                     </button>
 
                     <LanguageSwitcher {...languageSwitcher} userLanguageCode={userInfo?.language?.code} isFeeching={true} />

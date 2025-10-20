@@ -1,7 +1,6 @@
 import React from "react";
 import ChatMessageItem from "./ChatMessageItem";
 import { ChatMessage } from "@/types/social-chat";
-import { SystemMessageType } from "@/constants/socialChat";
 
 interface MessageSequenceProps {
     messages: any[];

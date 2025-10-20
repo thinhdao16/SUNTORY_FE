@@ -5,7 +5,12 @@ import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/re
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, EffectCoverflow } from 'swiper/modules';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { Capacitor } from '@capacitor/core';
 import { saveImage } from '@/utils/save-image';
+import httpClient from '@/config/http-client';
+import { useTranslation } from 'react-i18next';
+import { useToastStore } from '@/store/zustand/toast-store';
+import DownloadIcon from "@/icons/logo/download-white.png"
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
@@ -14,6 +19,11 @@ import 'swiper/css/effect-coverflow';
 interface MediaItem {
     url: string;
     type: 'image' | 'video';
+    // Preferred: s3Key for BE download API
+    s3Key?: string;
+    // Backward-compat legacy key prop
+    key?: string;
+    fileName?: string;
 }
 
 interface ImageLightboxProps {
@@ -62,6 +72,8 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
     onDownloadAll,
     onSlideChange
 }) => {
+    const { t } = useTranslation();
+    const showToast = useToastStore((state) => state.showToast);
     const {
         showDownload = true,
         showPageIndicator = true,
@@ -135,6 +147,83 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
         }
         setIsZoomed(false);
     }, [initialIndex, open, swiper]);
+    const blobToBase64 = (blob: Blob) => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve((reader.result as string) || '');
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+
+    const parseFilenameFromCD = (cd?: string, fallback?: string) => {
+        if (!cd) return fallback || undefined;
+        try {
+            const match = /filename\*=UTF-8''([^;]+)|filename\s*=\s*"?([^";]+)"?/i.exec(cd);
+            const name = decodeURIComponent(match?.[1] || match?.[2] || '');
+            return name || fallback;
+        } catch {
+            return fallback;
+        }
+    };
+
+    const downloadViaS3Key = async (key: string, suggestedName?: string) => {
+        const resp = await httpClient.get('/api/v1/s3-bucket/download-media', {
+            params: { Key: key },
+            responseType: 'blob'
+        });
+        const blob: Blob = resp.data as Blob;
+        const cd: string | undefined = resp.headers?.['content-disposition'] || resp.headers?.['Content-Disposition'];
+        let fileName = parseFilenameFromCD(cd, suggestedName);
+        if (!fileName) {
+            const seg = key.split('/').pop();
+            fileName = seg || `media_${Date.now()}`;
+        }
+
+        // Unified: convert to data URL then use saveImage (gallery on native, proper web handling)
+        const dataUrl = await blobToBase64(blob);
+        await saveImage({ dataUrlOrBase64: dataUrl, fileName, albumIdentifier: 'WayJet' });
+        try { showToast(t('Image saved to gallery'), 2000, 'success'); } catch {}
+    };
+
+    const downloadFromUrlDirect = async (item: MediaItem, idx: number) => {
+        const extFromUrl = (() => {
+            try {
+                const u = new URL(item.url);
+                const path = u.pathname || '';
+                const seg = path.split('/').pop() || '';
+                const dot = seg.lastIndexOf('.');
+                return dot !== -1 ? seg.slice(dot + 1) : (item.type === 'video' ? 'mp4' : 'jpg');
+            } catch {
+                const seg = item.url.split('?')[0].split('#')[0].split('/').pop() || '';
+                const dot = seg.lastIndexOf('.');
+                return dot !== -1 ? seg.slice(dot + 1) : (item.type === 'video' ? 'mp4' : 'jpg');
+            }
+        })();
+        const filename = item.fileName || `media_${idx + 1}_${Date.now()}.${extFromUrl}`;
+
+        // Try to fetch then use unified saver
+        try {
+            const resp = await fetch(item.url, { mode: 'cors' });
+            const blob = await resp.blob();
+            const dataUrl = await blobToBase64(blob);
+            await saveImage({ dataUrlOrBase64: dataUrl, fileName: filename, albumIdentifier: 'WayJet' });
+            try { showToast(t('Image saved to gallery'), 2000, 'success'); } catch {}
+        } catch (e) {
+            // CORS or network failure: fallback to opening in a new tab (web only)
+            if (!Capacitor.isNativePlatform()) {
+                const a = document.createElement('a');
+                a.href = item.url;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                // On native, show error toast instead of opening browser
+                try { showToast(t('Failed to save image'), 2000, 'error'); } catch {}
+            }
+        }
+    };
+
     const handleDownloadCurrent = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!mediaItems[currentIndex]) return;
@@ -144,14 +233,14 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
             setDownloadProgress({ current: 1, total: 1 });
 
             const currentItem = mediaItems[currentIndex];
-            const base64Data = await urlToBase64(currentItem.url);
-            const fileName = `image_${currentIndex + 1}_${Date.now()}.jpg`;
-
-            await saveImage({
-                dataUrlOrBase64: base64Data,
-                fileName,
-                albumIdentifier: 'WayJet'
-            });
+            const itemKey = currentItem.s3Key || currentItem.key;
+            if (itemKey) {
+                const fallbackName = currentItem.fileName || itemKey.split('/').pop() || undefined;
+                await downloadViaS3Key(itemKey, fallbackName);
+            } else {
+                // Fallback to direct URL (handle image/video)
+                await downloadFromUrlDirect(currentItem, currentIndex);
+            }
 
             if (onDownload) {
                 onDownload(currentItem.url);
@@ -177,13 +266,13 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
                 const item = mediaItems[i];
                 setDownloadProgress({ current: i + 1, total: mediaItems.length });
                 try {
-                    const base64Data = await urlToBase64(item.url);
-                    const fileName = `image_${i + 1}_${Date.now()}.jpg`;
-                    await saveImage({
-                        dataUrlOrBase64: base64Data,
-                        fileName,
-                        albumIdentifier: 'WayJet'
-                    });
+                    const itemKey = item.s3Key || item.key;
+                    if (itemKey) {
+                        const fallbackName = item.fileName || itemKey.split('/').pop() || undefined;
+                        await downloadViaS3Key(itemKey, fallbackName);
+                    } else {
+                        await downloadFromUrlDirect(item, i);
+                    }
                     if (i < mediaItems.length - 1) {
                         await new Promise(resolve => setTimeout(resolve, 300));
                     }
@@ -452,7 +541,7 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                <span className="text-white font-medium ml-2">
+                                                                <span className="text-white font-medium ml-2 max-w-40 truncate">
                                                                     {userInfo.name}
                                                                 </span>
                                                             </div>
@@ -492,16 +581,14 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
                                                                     disabled={isDownloading}
                                                                     className={`rounded-full h-8 w-8 aspect-square  bg-[#FFFFFF33] flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
                                                                 >
-                                                                    <IoDownloadOutline className="text-lg text-white" />
+                                                                    <img src={DownloadIcon} alt="" />
                                                                 </button>
-
-
-                                                                <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-sm rounded-lg py-2 min-w-[200px] z-50">
-                                                                    {isDownloading && (
+                                                                {isDownloading && (
+                                                                    <div className="absolute right-0 top-full mt-2 bg-black/90 backdrop-blur-sm rounded-lg py-2 min-w-[200px] z-50">
                                                                         <div className="px-4 py-2 text-white text-sm">
                                                                             <div className="flex items-center gap-2 mb-2">
                                                                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                                                <span>Đang tải... ({downloadProgress.current}/{downloadProgress.total})</span>
+                                                                                <span>{t("Đang tải...")} ({downloadProgress.current}/{downloadProgress.total})</span>
                                                                             </div>
                                                                             <div className="w-full bg-white/20 rounded-full h-1">
                                                                                 <div
@@ -510,10 +597,8 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
                                                                                 ></div>
                                                                             </div>
                                                                         </div>
-                                                                    )}
-
-
-                                                                </div>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>

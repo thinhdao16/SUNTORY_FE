@@ -10,11 +10,11 @@ import { useScrollRestoration } from '../hooks/useScrollRestoration';
 import { useAuthStore } from '@/store/zustand/auth-store';
 import { usePostLike } from '@/pages/Social/Feed/hooks/usePostLike';
 import { usePostRepost } from '../hooks/usePostRepost';
-import { TabNavigation, HashtagInput, PostsList, LoadingStates } from './components';
-import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
+import { TabNavigation, HashtagInput, PostsList, LoadingStates, FriendSuggestions } from './components';
 import PullToRefresh from '@/components/common/PullToRefresh';
 import { useIonToast, IonContent } from '@ionic/react';
 import { useRefreshCallback } from '@/contexts/RefreshContext';
+import { ProfileTabType } from '@/pages/Profile/hooks/useUserPosts';
 import { usePostSignalR } from '@/hooks/usePostSignalR';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 
@@ -40,18 +40,31 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   const lastRefreshTime = useRef<number>(Date.now());
   const scrollPosition = useRef<number>(0);
   const [activeTab, setActiveTab] = useState(initialActiveTab || 'everyone');
-  const [currentPrivacy, setCurrentPrivacy] = useState<PrivacyPostType | undefined>(privacy);
+  const currentPrivacy = useMemo<PrivacyPostType | undefined>(() => {
+    if (activeTab.startsWith('#')) return PrivacyPostType.Hashtag;
+    switch (activeTab) {
+      case 'everyone':
+        return PrivacyPostType.Public;
+      case 'your-friends':
+        return PrivacyPostType.Friend;
+      case 'for-you':
+        return PrivacyPostType.Private;
+      case 'Hashtags':
+        return PrivacyPostType.Hashtag;
+      default:
+        return privacy;
+    }
+  }, [activeTab, privacy]);
   const [selectedHashtag, setSelectedHashtag] = useState<string>(specificHashtag || '');
   const [recentHashtags, setRecentHashtags] = useState<string[]>([]);
-  const [repostingPostCode, setRepostingPostCode] = useState<string | null>(null);
-  const [showPrivacySheet, setShowPrivacySheet] = useState(false);
-  const [selectedPrivacy, setSelectedPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
+  const [showFriendSuggestions, setShowFriendSuggestions] = useState(true);
+  // Repost privacy handled inside SocialFeedCard via embedded PrivacyBottomSheet
 
-  const getTabsConfig = () => {
+  const getTabsConfig = React.useCallback(() => {
     const staticTabs = [
-      { key: 'everyone', label: 'Everyone', type: 'static' as const },
-      { key: 'your-friends', label: 'Your friends', type: 'static' as const },
-      { key: 'for-you', label: 'For you', type: 'static' as const },
+      { key: 'everyone', label: t('Everyone'), type: 'static' as const },
+      { key: 'your-friends', label: t('Your friends'), type: 'static' as const },
+      // { key: 'for-you', label: t('For you'), type: 'static' as const },
     ];
 
     const hashtagTabs = recentHashtags.map(hashtag => ({
@@ -61,7 +74,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     }));
 
     return [...staticTabs, ...hashtagTabs];
-  };
+  }, [recentHashtags]);
   const { data: hashtagInterestsData, isLoading: isLoadingHashtags } = useQuery(
     ['hashtagInterests'],
     () => SocialFeedService.getHashtagInterests(),
@@ -70,7 +83,11 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
         if (data?.data?.data) {
           return data.data.data.map((hashtag: HashtagInterest) => hashtag.hashtagNormalized).slice(0, 5);
         }
-      }
+      },
+
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: true,
     }
   );
 
@@ -92,13 +109,56 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     }
   }, [hashtagInterestsData]);
 
+  // Update recent hashtag tabs immediately after a successful interest track
+  useEffect(() => {
+    const onHashtagInterest = (e: Event) => {
+      try {
+        const ce = e as CustomEvent<string>;
+        const raw = (ce?.detail || '').toString();
+        const normalized = raw.startsWith('#') ? raw.substring(1) : raw;
+        if (!normalized) return;
+        setRecentHashtags((prev) => {
+          const exists = prev.some((h) => (h || '').toLowerCase() === normalized.toLowerCase());
+          if (exists) return prev;
+          return [normalized, ...prev].slice(0, 10);
+        });
+      } catch {}
+    };
+    window.addEventListener('hashtag-interest', onHashtagInterest as EventListener);
+    return () => window.removeEventListener('hashtag-interest', onHashtagInterest as EventListener);
+  }, []);
+
+  // After server confirms interest success: refresh interests and user posts (TabType=10)
+  useEffect(() => {
+    const onHashtagInterestSuccess = (e: Event) => {
+      try {
+        const ce = e as CustomEvent<string>;
+        const raw = (ce?.detail || '').toString();
+        const normalized = raw.startsWith('#') ? raw.substring(1) : raw;
+        if (normalized) {
+          setRecentHashtags((prev) => {
+            const exists = prev.some((h) => (h || '').toLowerCase() === normalized.toLowerCase());
+            if (exists) return prev;
+            return [normalized, ...prev].slice(0, 10);
+          });
+        }
+        // Refetch hashtag interests list
+        queryClient.invalidateQueries(['hashtagInterests']);
+        // Refetch any user posts queries with TabType=10 (Posts)
+        queryClient.invalidateQueries(['userPosts', ProfileTabType.Posts]);
+      } catch {}
+    };
+    window.addEventListener('hashtag-interest-success', onHashtagInterestSuccess as EventListener);
+    return () => window.removeEventListener('hashtag-interest-success', onHashtagInterestSuccess as EventListener);
+  }, [queryClient]);
+
   useEffect(() => {
     if (initialActiveTab) {
       setActiveTab(initialActiveTab);
     }
   }, [initialActiveTab]);
 
-  const { setCurrentPost, getFeedPosts, cachedFeeds, setActiveFeedKey } = useSocialFeedStore();
+  const { setCurrentPost, getFeedPosts, cachedFeeds, setActiveFeedKey, applyRealtimePatch } = useSocialFeedStore();
   const { user } = useAuthStore();
   const [presentToast] = useIonToast();
   const postLikeMutation = usePostLike();
@@ -110,12 +170,12 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     enableDebugLogs: false,
     onPostCreated: (data) => {
       console.log('New post created via SignalR:', data);
-      presentToast({
-        message: t('New post added to feed'),
-        duration: 2000,
-        position: 'top',
-        color: 'success'
-      });
+      // presentToast({
+      //   message: t('New post added to feed'),
+      //   duration: 2000,
+      //   position: 'top',
+      //   color: 'success'
+      // });
     },
     onPostUpdated: (data) => {
       console.log('Post updated via SignalR:', data);
@@ -162,11 +222,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     (activeTab.startsWith('#')) ? activeTab.substring(1) : undefined
   );
 
-  useEffect(() => {
-    setActiveFeedKey(currentFeedKey);
-  }, [currentFeedKey, setActiveFeedKey]);
   const posts = getFeedPosts(currentFeedKey);
-
   const {
     isLoading: loading,
     error,
@@ -184,7 +240,6 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     staleTime: 5 * 60 * 1000, 
     cacheTime: 30 * 60 * 1000, 
   });
-
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     
@@ -372,69 +427,70 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
   const handleShare = useCallback((postCode: string) => {
   }, []);
 
-  const handleRepost = useCallback((postCode: string) => {
-    const post = posts.find((p: any) => p.code === postCode);
-    if (!post || !user) return;
+  const handleRepostConfirm = useCallback((postCode: string, privacy: PrivacyPostType) => {
+    let savedScrollTop = 0;
+    const captureScroll = async () => {
+      try {
+        if (contentRef.current) {
+          const el = await contentRef.current.getScrollElement();
+          savedScrollTop = el?.scrollTop || 0;
+        }
+      } catch {}
+    };
 
-    const isOwnPost = post.user.id === user.id;
-    const isOwnOriginalPost = post.isRepost && post.originalPost && post.originalPost.user.id === user.id;
+    void captureScroll();
 
-    // if (isOwnPost || isOwnOriginalPost) {
-    //   presentToast({
-    //     message: t('You cannot repost your own post'),
-    //     duration: 3000,
-    //     position: 'bottom',
-    //     color: 'warning'
-    //   });
-    //   return;
-    // }
+    const target = posts.find((p: any) => p.code === postCode) as any | undefined;
+    const prevCount = target?.repostCount ?? 0;
+    const wasReposted = Boolean(target?.isRepostedByCurrentUser);
 
-    setRepostingPostCode(postCode);
-    setShowPrivacySheet(true);
-  }, [posts, user, presentToast, t]);
-
-  const handleSelectPrivacy = useCallback((privacy: PrivacyPostType) => {
-    if (repostingPostCode) {
-      postRepostMutation.mutate({
-        postCode: repostingPostCode,
-        caption: "Repost", 
-        privacy: Number(privacy)
-      });
-      setRepostingPostCode(null);
-    }
-    setSelectedPrivacy(privacy);
-    setShowPrivacySheet(false);
-  }, [repostingPostCode, postRepostMutation]);
-
-  const handleCloseModal = useCallback(() => {
-    setRepostingPostCode(null);
-    setShowPrivacySheet(false);
-  }, []);
-
-  useEffect(() => {
-    let newPrivacy: PrivacyPostType | undefined;
-    if (activeTab.startsWith('#')) {
-      newPrivacy = PrivacyPostType.Hashtag;
+    // optimistic toggle
+    if (wasReposted) {
+      applyRealtimePatch(postCode, {
+        isRepostedByCurrentUser: false,
+        repostCount: Math.max(0, prevCount - 1),
+      } as any);
     } else {
-      switch (activeTab) {
-        case 'everyone':
-          newPrivacy = PrivacyPostType.Public;
-          break;
-        case 'your-friends':
-          newPrivacy = PrivacyPostType.Friend;
-          break;
-        case 'for-you':
-          newPrivacy = PrivacyPostType.Private;
-          break;
-        case 'Hashtags':
-          newPrivacy = PrivacyPostType.Hashtag;
-          break;
-        default:
-          newPrivacy = undefined;
-      }
+      applyRealtimePatch(postCode, {
+        isRepostedByCurrentUser: true,
+        repostCount: prevCount + 1,
+      } as any);
     }
-    setCurrentPrivacy(newPrivacy);
-  }, [activeTab]);
+
+    postRepostMutation.mutate(
+      {
+        postCode,
+        caption: 'Repost',
+        privacy: Number(privacy)
+      },
+      {
+        onError: () => {
+          // rollback
+          if (wasReposted) {
+            applyRealtimePatch(postCode, {
+              isRepostedByCurrentUser: true,
+              repostCount: prevCount,
+            } as any);
+          } else {
+            applyRealtimePatch(postCode, {
+              isRepostedByCurrentUser: false,
+              repostCount: prevCount,
+            } as any);
+          }
+        },
+        onSettled: () => {
+          // preserve scroll position
+          try {
+            if (contentRef.current && savedScrollTop > 0) {
+              contentRef.current.scrollToPoint(0, savedScrollTop, 0);
+            }
+          } catch {}
+        }
+      }
+    );
+  }, [postRepostMutation, posts, applyRealtimePatch]);
+
+  // currentPrivacy is derived via useMemo above to avoid extra initial fetch
 
   const handleTabChange = useCallback((tab: string) => {
     if (tab.startsWith('#')) {
@@ -475,12 +531,13 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
     <IonContent 
       className={`${className} no-scrollbar`}
       style={{ 
-        height: 'calc(100vh - 110px)'
+        height: 'calc(100vh - 110px)',
+        paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))'
       }}
       scrollY={true}
       ref={contentRef}
     >
-      <div className="pb-4 relative">
+      <div className="pb-28 relative">
         {refreshing && (
           <div className="absolute top-20 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
             <div className="flex items-center justify-center py-3">
@@ -519,9 +576,17 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
             onLike={handleLike}
             onComment={handleComment}
             onShare={handleShare}
-            onRepost={handleRepost}
+            onRepostConfirm={handleRepostConfirm}
             onPostClick={handlePostClick}
             onVisiblePostsChange={handleVisiblePostsChange}
+            interstitial={showFriendSuggestions && posts.length > 5 ? (
+              <FriendSuggestions
+                title={t('Suggested for you')}
+                pageSize={8}
+                // onDismiss={() => setShowFriendSuggestions(false)}
+              />
+            ) : undefined}
+            interstitialAfter={4}
           />
         </PullToRefresh>
 
@@ -538,12 +603,7 @@ export const SocialFeedList: React.FC<SocialFeedListProps> = ({
         />
       </div>
 
-      <PrivacyBottomSheet
-        isOpen={showPrivacySheet}
-        closeModal={handleCloseModal}
-        selectedPrivacy={selectedPrivacy}
-        onSelectPrivacy={handleSelectPrivacy}
-      />
+      {/* PrivacyBottomSheet is embedded inside SocialFeedCard now */}
     </IonContent>
   );
 };

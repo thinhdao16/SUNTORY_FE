@@ -109,7 +109,16 @@ export const useSocialChatThread = () => {
 
     const translateSheet = useBottomSheet();
     const openInputExpandSheet = () => { setSheetExpandMode("input"); sheetExpand.open(); };
-    const openTranslateExpandSheet = () => { setSheetExpandMode("translate"); sheetExpand.open(); };
+    const openTranslateExpandSheet = () => {
+        setSheetExpandMode("translate");
+        try {
+            const current = messageTranslateRef.current?.value;
+            if (typeof current === 'string') {
+                setMessageTranslate(current);
+            }
+        } catch {}
+        sheetExpand.open();
+    };
     const closeSheet = () => { sheetExpand.close(); setTimeout(() => setSheetExpandMode(null), 300); };
     const isTranslating = !!createTranslationMutation?.isLoading;
     const {

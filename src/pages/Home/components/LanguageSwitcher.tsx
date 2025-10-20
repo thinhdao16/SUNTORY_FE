@@ -47,9 +47,6 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
     classNameButton
 }) => {
     const uiCode = normalizeUiCode(i18n.language || userLanguageCode || 'en');
-    console.log("uiCode", uiCode);
-    console.log("i18n.language", i18n.language);
-    console.log("userLanguageCode", userLanguageCode);
     // Keep i18n in sync with the UI code
     useEffect(() => {
         if (i18n.language !== uiCode) {

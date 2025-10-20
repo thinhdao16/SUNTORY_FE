@@ -47,20 +47,40 @@ export const LoadingStates: React.FC<LoadingStatesProps> = ({
     );
   }
 
+  // Initial loading/refreshing skeleton when no posts yet
+  if ((loading || isRefetching || refreshing) && posts.length === 0) {
+    return (
+      <div className="px-4 py-4 space-y-5">
+        {[0,1,2].map((i) => (
+          <div key={i} className="animate-pulse bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-9 h-9 bg-gray-200 rounded-2xl" />
+              <div className="flex-1">
+                <div className="h-3 bg-gray-200 rounded w-1/3 mb-2" />
+                <div className="h-2 bg-gray-100 rounded w-1/4" />
+              </div>
+            </div>
+            <div className="px-4 pb-4">
+              <div className="h-40 bg-gray-200 rounded-xl" />
+            </div>
+            <div className="px-4 pb-4 flex items-center gap-6">
+              <div className="h-3 w-8 bg-gray-200 rounded" />
+              <div className="h-3 w-8 bg-gray-200 rounded" />
+              <div className="h-3 w-8 bg-gray-200 rounded" />
+              <div className="h-3 w-8 bg-gray-200 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* Refreshing indicator */}
-      {(isRefetching || refreshing) && (
-        <div className="flex justify-center py-4">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm text-gray-600">{t('Refreshing...')}</span>
-          </div>
-        </div>
-      )}
+      {/* Refreshing indicator removed to prevent duplication with page-level overlay */}
 
       {/* Loading more posts indicator */}
-      {(loading || isFetchingNextPage) && posts.length > 0 && (
+      {isFetchingNextPage && posts.length > 0 && (
         <div className="flex justify-center py-6">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>

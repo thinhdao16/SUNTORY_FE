@@ -71,7 +71,7 @@ const PendingFilesList: React.FC<PendingFilesListProps> = ({
                             {file.error && (
                                 <div className="absolute inset-0 bg-red-500 bg-opacity-80 flex items-center justify-center">
                                     <div className="text-white text-xs font-medium text-center px-1">
-                                        Lỗi
+                                        {t("Error")}
                                     </div>
                                 </div>
                             )}

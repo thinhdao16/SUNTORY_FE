@@ -134,7 +134,7 @@ const ShareProfile = () => {
                         borderRadius={borderRadius}
                     >
                         <div className="min-h-screen">
-                            <IonHeader className="ion-no-border" style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
+                            <div className="ion-no-border" style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
                                 <IonToolbar style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
                                     <IonButtons slot="start">
                                         <IonButton
@@ -154,7 +154,7 @@ const ShareProfile = () => {
                                         </IonButton>
                                     </IonButtons>
                                 </IonToolbar>
-                            </IonHeader>
+                            </div>
                             <div className="bg-white px-4 pt-6">
                                 <div className="bg-blue-50 rounded-2xl p-6 flex flex-col items-center text-center mb-6">
                                     <div className="max-w-[200px] space-x-0 space-y-4">

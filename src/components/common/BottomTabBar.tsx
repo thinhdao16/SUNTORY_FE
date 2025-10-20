@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useHistory } from "react-router-dom";
 import { useChatStore } from "@/store/zustand/chat-store";
-import { TopicType } from "@/constants/topicType";
 import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,8 +16,15 @@ import ProfileIcon from "@/icons/logo/footer/profile.svg?react";
 import ProfileActiveIcon from "@/icons/logo/footer/profile_active.svg?react";
 import TranslationIcon from "@/icons/logo/footer/translation.svg?react";
 import TranslationActiveIcon from "@/icons/logo/footer/translation_active.svg?react";
+import NotificationIcon from "@/icons/logo/footer/notification.svg?react";
+import NotificationIcon2 from "@/icons/logo/footer/notification-2.svg?react";
+import NotificationActiveIcon from "@/icons/logo/footer/notification_active.svg?react";
+import NotificationActiveIcon2 from "@/icons/logo/footer/notification_active-2.svg?react";
 import { useKeyboardResize } from "@/hooks/useKeyboardResize";
 import { useSignalRStreamStore } from "@/store/zustand/signalr-stream-store";
+import { useModalContext } from "@/contexts/ModalContext";
+import { useNotificationStore } from "@/store/zustand/notify-store";
+import { getUnreadNotificationCountsApi } from "@/services/social/social-notification";
 
 
 interface TabItem {
@@ -38,6 +44,17 @@ const BottomTabBar: React.FC = () => {
     const [keyboardOpen, setKeyboardOpen] = useState(false);
     const { keyboardResizeScreen } = useKeyboardResize();
     const { triggerRefresh } = useRefresh();
+    const { hideBottomTabBar } = useModalContext();
+    const { isUnReadNotification, setIsUnReadNotification } = useNotificationStore();
+    const [isNewNotification, setIsNewNotification] = useState(isUnReadNotification);
+
+    useEffect(() => {
+        if (isUnReadNotification == true) {
+            setIsNewNotification(true);
+        } else {
+            setIsNewNotification(false);
+        }
+    }, [isUnReadNotification]);
 
     const tabs: TabItem[] = [
         {
@@ -61,7 +78,7 @@ const BottomTabBar: React.FC = () => {
             icon: StoryIcon,
             iconActive: StoryActiveIcon,
             path: `/social-feed`,
-            activePath: (pathname: string) => pathname.startsWith("/social-feed") ,
+            activePath: (pathname: string) => pathname.startsWith("/social-feed"),
             classNameIcon: "",
         },
         // {
@@ -73,12 +90,20 @@ const BottomTabBar: React.FC = () => {
         //     className: "",
         //     classNameIcon: "",
         // },
+        // {
+        //     label: t("Translate"),
+        //     icon: TranslationIcon,
+        //     iconActive: TranslationActiveIcon,
+        //     path: "/translate",
+        //     activePath: (pathname: string) => pathname.startsWith("/translate"),
+        //     classNameIcon: "",
+        // },
         {
-            label: t("Translate"),
-            icon: TranslationIcon,
-            iconActive: TranslationActiveIcon,
-            path: "/translate",
-            activePath: (pathname: string) => pathname.startsWith("/translate"),
+            label: t("Notifications"),
+            icon: isNewNotification ? NotificationIcon2 : NotificationIcon,
+            iconActive: isNewNotification ? NotificationActiveIcon2 : NotificationActiveIcon,
+            path: "/notification-list",
+            activePath: (pathname: string) => pathname.startsWith("/notification-list"),
             classNameIcon: "",
         },
         {
@@ -86,14 +111,14 @@ const BottomTabBar: React.FC = () => {
             icon: ProfileIcon,
             iconActive: ProfileActiveIcon,
             path: "/my-profile",
-            activePath: (pathname: string) => pathname.startsWith("/my-profile") 
-            || pathname.startsWith("/profile-setting")
-            || pathname.startsWith("/my-information")
-            || pathname.startsWith("/ai-profile-setting")
-            || pathname.startsWith("/profile/help")
-            || pathname.startsWith("/friend-list")
-            || pathname.startsWith("/friend-request-sent")
-            || pathname.startsWith("/share-profile"),
+            activePath: (pathname: string) => pathname.startsWith("/my-profile")
+                || pathname.startsWith("/profile-setting")
+                || pathname.startsWith("/my-information")
+                || pathname.startsWith("/ai-profile-setting")
+                || pathname.startsWith("/profile/help")
+                || pathname.startsWith("/friend-list")
+                || pathname.startsWith("/friend-request-sent")
+                || pathname.startsWith("/share-profile"),
             classNameIcon: "",
         },
     ];
@@ -117,13 +142,17 @@ const BottomTabBar: React.FC = () => {
     const handleTabClick = (tab: TabItem) => {
         const isActive = isCurrentTab(tab);
         const isExactPath = location.pathname === tab.path;
-        
+
         if (isActive && isExactPath) {
             triggerRefresh(tab.path);
         } else {
+            console.log("tab.label", tab.label);
             clearAll();
             history.push(tab.path);
             useChatStore.getState().setIsSending(false);
+            if (tab.label === t("Notifications")) {
+                setIsUnReadNotification(false);
+            }
         }
     };
 
@@ -180,7 +209,7 @@ const BottomTabBar: React.FC = () => {
 
     return (
         <AnimatePresence>
-            {!keyboardOpen && !keyboardResizeScreen && (
+            {!keyboardOpen && !keyboardResizeScreen && !hideBottomTabBar && (
                 <motion.div
                     key="bottom-tab-bar"
                     initial={{ y: 80, opacity: 0 }}

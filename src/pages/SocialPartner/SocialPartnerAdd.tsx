@@ -2,7 +2,9 @@ import MotionBottomSheet from '@/components/common/bottomSheet/MotionBottomSheet
 import MotionStyles from '@/components/common/bottomSheet/MotionStyles';
 import ShareQRModal from '@/components/common/bottomSheet/ShareQRModal';
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiArrowLeft, FiDownload, } from 'react-icons/fi'
+import BackIcon from "@/icons/logo/back-default.svg?react"
 import { useHistory } from 'react-router';
 import {
     handleTouchStart as handleTouchStartUtil,
@@ -20,9 +22,13 @@ import { getPublicUrlFromCanvas } from '@/utils/get-public-url-from-canvas';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share as CapShare } from "@capacitor/share";
 import { QR_PREFIX } from '@/constants/global';
+import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
+import { useToastStore } from '@/store/zustand/toast-store';
 
 const velocityThreshold = 0.4;
 const SocialPartnerAdd = () => {
+    const { t } = useTranslation();
+    const showToast = useToastStore((state) => state.showToast);
     const [isOpen, setIsOpen] = useState({ shareQR: false, search: false });
     const [translateY, setTranslateY] = useState(0);
     const screenHeight = useRef(window.innerHeight);
@@ -132,11 +138,11 @@ const SocialPartnerAdd = () => {
                         <div className="min-h-screen">
                             <div className="bg-white px-4 pt-6">
                                 <div className="flex items-center justify-between mb-4">
-                                    <button className="text-blue-500 text-lg" onClick={() => history.goBack()}>
-                                        <FiArrowLeft />
+                                    <button className="" onClick={() => history.goBack()}>
+                                        <BackIcon />
                                     </button>
-                                    <h1 className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
-                                        {t("Add Partner")}
+                                    <h1 className="font-semibold uppercase tracking-wide">
+                                        {t("Add Friend")}
                                     </h1>
                                     <div className="w-5" />
                                 </div>
@@ -145,9 +151,12 @@ const SocialPartnerAdd = () => {
                                     <div className="max-w-[200px] space-x-0 space-y-4">
                                         <div className="flex items-center gap-3">
                                             <img
-                                                src={user?.avatarLink || "/favicon.png"}
+                                                src={user?.avatarLink || avatarFallback}
                                                 alt={user?.name}
                                                 className="w-10 h-10 rounded-xl object-center"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = avatarFallback;
+                                                }}
                                             />
                                             <div className="text-start min-w-0">
                                                 <p className="font-semibold text-sm truncate" title={user?.name || ""}>
@@ -180,15 +189,33 @@ const SocialPartnerAdd = () => {
                                         </button>
                                         <button
                                             className="w-full border border-main text-main text-sm font-semibold px-6 py-2 rounded-full flex items-center justify-center gap-2"
-                                            onClick={async () => {
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                
                                                 const canvas = document.getElementById('qr-gen') as HTMLCanvasElement | null;
-                                                if (!canvas) return;
+                                                if (!canvas) {
+                                                    showToast(t('QR code not found'), 2000, 'error');
+                                                    return;
+                                                }
                                                 const dataUrl = canvas.toDataURL('image/png');
 
                                                 try {
-                                                    await saveImage({ dataUrlOrBase64: dataUrl, fileName: 'qr-code.png' });
-                                                } catch (e) {
-                                                    console.error(e);
+                                                    const timestamp = new Date().getTime();
+                                                    await saveImage({ 
+                                                        dataUrlOrBase64: dataUrl, 
+                                                        fileName: `wayjet-qr-${timestamp}.png`,
+                                                        albumIdentifier: 'WayJet'
+                                                    });
+                                                    showToast(t('Image saved to gallery'), 2000, 'success');
+                                                } catch (e: any) {
+                                                    console.error('[Save QR]', e);
+                                                    
+                                                    if (e?.message === 'PERMISSION_DENIED') {
+                                                        showToast(t('Please allow access to photos'), 3000, 'error');
+                                                    } else {
+                                                        showToast(t('Failed to save image'), 2000, 'error');
+                                                    }
                                                 }
                                             }}
                                         >

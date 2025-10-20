@@ -35,7 +35,7 @@ const ChatMessageActions: React.FC<ChatMessageActionsProps> = ({
                     className="text-sm text-blue-500 hover:underline"
                     onClick={onEdit}
                 >
-                    Sửa
+                    {t("Edit")}
                 </button>
             )}
             {onRevoke && (
@@ -43,7 +43,7 @@ const ChatMessageActions: React.FC<ChatMessageActionsProps> = ({
                     className="text-sm text-orange-500 hover:underline"
                     onClick={onRevoke}
                 >
-                    Thu hồi
+                    {t("Revoke")}
                 </button>
             )}
             {onDelete && (
@@ -51,7 +51,7 @@ const ChatMessageActions: React.FC<ChatMessageActionsProps> = ({
                     className="text-sm text-red-500 hover:underline"
                     onClick={onDelete}
                 >
-                    Xóa
+                    {t("Delete")}
                 </button>
             )}
             {onReply && (
@@ -59,7 +59,7 @@ const ChatMessageActions: React.FC<ChatMessageActionsProps> = ({
                     className="text-sm text-gray-500 hover:underline"
                     onClick={onReply}
                 >
-                    Trả lời
+                    {t("Reply")}
                 </button>
             )}
         </div>

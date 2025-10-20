@@ -7,6 +7,8 @@ interface InfiniteScrollContainerProps {
     isLoading: boolean;
     threshold?: number;
     className?: string;
+    showEndIndicator?: boolean;
+    containerRefCallback?: (el: HTMLDivElement | null) => void;
 }
 
 const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
@@ -15,7 +17,9 @@ const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
     hasMore,
     isLoading,
     threshold = 200,
-    className = ""
+    className = "",
+    showEndIndicator = true,
+    containerRefCallback,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const loadingRef = useRef(false);
@@ -47,8 +51,12 @@ const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
         if (!container) return;
 
         container.addEventListener('scroll', handleScroll);
-        return () => container.removeEventListener('scroll', handleScroll);
-    }, [handleScroll]);
+        if (containerRefCallback) containerRefCallback(container);
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+            if (containerRefCallback) containerRefCallback(null);
+        };
+    }, [handleScroll, containerRefCallback]);
 
     return (
         <div 
@@ -57,19 +65,16 @@ const InfiniteScrollContainer: React.FC<InfiniteScrollContainerProps> = ({
         >
             {children}
             
-            {/* Loading indicator */}
             {isLoading && (
                 <div className="flex justify-center items-center py-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                    <span className="ml-2 text-gray-500">Loading more...</span>
+                    <span className="ml-2 text-gray-500">{t("Loading more...")}</span>
                 </div>
             )}
             
-            {/* End of results indicator */}
-            {!hasMore && !isLoading && (
+            {showEndIndicator && !hasMore && !isLoading && (
                 <div className="text-center py-4 text-gray-500 text-sm">
-                    No more results
-                </div>
+                    {t("No more results")}</div>
             )}
         </div>
     );

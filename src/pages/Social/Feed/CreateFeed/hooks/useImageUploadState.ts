@@ -62,6 +62,7 @@ export const useImageUploadState = () => {
         setImages(prev => {
             const next = [...prev];
             const target = next[index];
+            if (!target) return prev;
             if (target?.localUrl?.startsWith('blob:')) {
                 URL.revokeObjectURL(target.localUrl);
             }
@@ -74,7 +75,12 @@ export const useImageUploadState = () => {
                     (target.localUrl && it.localUrl && target.localUrl === it.localUrl) ||
                     (!!target.filename && !!it.filename && target.filename === it.filename)
                 );
-                if (mIdx >= 0) mgr.splice(mIdx, 1);
+                if (mIdx >= 0) {
+                    imageUploadManager.current.removeImage(mIdx);
+                } else if (target?.file) {
+                    // Item might not be in manager yet; cancel by file to prevent later upload
+                    imageUploadManager.current.cancelFile?.(target.file);
+                }
             }
             return next;
         });

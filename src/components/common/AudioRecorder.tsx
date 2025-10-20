@@ -119,7 +119,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
                         type: 'audio/aac'
                     });
                     if (audioUploadMutation) {
-                        audioUploadMutation.mutate(audioFile, {
+                        audioUploadMutation.mutate({ files: [audioFile] }, {
                             onSuccess: (response: any) => {
                                 console.log('Audio upload success:', response);
                                 const serverUrl = response.url || '';
@@ -320,7 +320,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
                 <button
                     onClick={isPlaying ? stopAudio : playAudio}
                     className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
-                    disabled={isUploading || audioUploadMutation.isLoading}
+                    disabled={isUploading || audioUploadMutation?.isLoading}
                 >
                     {isPlaying ? (
                         <svg className="w-6 h-6 text-netural-500" fill="currentColor" viewBox="0 0 24 24">
@@ -353,7 +353,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
                 <button
                     onClick={handleRemoveAudio}
                     className="w-7 h-7 aspect-square bg-netural-100 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors text-white"
-                    disabled={isUploading || audioUploadMutation.isLoading}
+                    disabled={isUploading || audioUploadMutation?.isLoading}
                 >
                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />

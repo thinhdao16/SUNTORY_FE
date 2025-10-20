@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import {
   Route,
   Switch,
@@ -12,6 +12,7 @@ import { useAuthStore } from "@/store/zustand/auth-store";
 import ChatSidebarLayout from "@/components/layout/ChatSidebarLayout";
 import useAppInit from "@/hooks/useAppInit";
 import TranslateHistory from "@/pages/Translate/TranslateHistory";
+import { usePlatform } from "@/hooks/usePlatform";
 
 const routes = {
   Chat: lazy(() => import("@/pages/ChatStream/ChatStream")),
@@ -57,6 +58,7 @@ const routes = {
   FriendList: lazy(() => import("@/pages/Profile/Friend/FriendList")),
   FriendRequestSent: lazy(() => import("@/pages/Profile/Friend/FriendRequestSent")),
   ShareProfile: lazy(() => import("@/pages/Profile/ShareProfile/ShareProfile")),
+  Notification: lazy(() => import("@/pages/Notification/Notification")),
 };
 
 const authRoutes = ["/login", "/register"];
@@ -66,6 +68,7 @@ const ignoreRoutes = ["/forgot-password", "/otp", "/new-password", "/change-pass
 const AppRoutes: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
+  const {isIOS}= usePlatform()
   const showTabBar =
     !authRoutes.some(path => location.pathname.startsWith(path)) &&
     !ignoreRoutes.some(path => location.pathname.startsWith(path)) &&
@@ -77,60 +80,63 @@ const AppRoutes: React.FC = () => {
     return <Redirect to="/social-chat" />;
   }
   return (
-    <>
-      <Suspense fallback={<RouteLoading />}>
-        <Switch>
-          <Route path="/login" component={routes.Login} exact />
-          <Route path="/register" component={routes.Register} exact />
-          <Route path="/forgot-password" component={routes.ForgotPassword} exact />
-          <Route path="/otp" component={routes.Otp} exact />
-          <Route path="/home" component={routes.Home} exact />
-          <Route path="/new-password" component={routes.NewPassword} exact />
-          <Route path="/take-photo" component={routes.TakePhoto} exact />
-          <Route path="/camera-web" component={routes.CameraWeb} exact />
+    <>  
+      <div className = {isIOS ? "pb-[var(--safe-area-inset-bottom)px] pt-[var(--safe-area-inset-top)px]" : ""}>
+        <Suspense fallback={<RouteLoading />}>
+          <Switch>
+            <Route path="/login" component={routes.Login} exact />
+            <Route path="/register" component={routes.Register} exact />
+            <Route path="/forgot-password" component={routes.ForgotPassword} exact />
+            <Route path="/otp" component={routes.Otp} exact />
+            <Route path="/home" component={routes.Home} exact />
+            <Route path="/new-password" component={routes.NewPassword} exact />
+            <Route path="/take-photo" component={routes.TakePhoto} exact />
+            <Route path="/camera-web" component={routes.CameraWeb} exact />
 
-          <PrivateRoute path="/camera" component={routes.Camera} exact />
-          <PrivateRoute path="/health-information" component={routes.HealthInformation} exact />
-          <PrivateRoute path="/health-information/welcome" component={routes.HealthInformationWelcome} exact />
-          <PrivateRoute path="/health-information/done" component={routes.HealthInformationDone} exact />
-          <PrivateRoute path="/health-information/health-info" component={routes.ProfileHealthInfo} exact />
-          <PrivateRoute path="/health-information/allergy-info" component={routes.ProfileAllergyInfo} exact />
-          <PrivateRoute path="/health-information/medicine-info" component={routes.ProfileMedicineInfo} exact />
-          <PrivateRoute path="/rate" component={routes.Rate} exact />
-          <PrivateRoute path="/chat/:type?/:sessionId?" component={routes.Chat} />
-          <PrivateRoute path="/social-chat/:type?/:roomId?/:infoRoom?" component={routes.SocialChatRecent} exact />
-          <PrivateRoute path="/social-feed/:type?/:feedId?/:infoFeed?/:tabName?" component={routes.SocialFeed} exact />
-          {/* <PrivateRoute path="/social-chat" component={() => <Redirect to="/social-chat" />}/> */}
-          <PrivateRoute path="/social-group/add" component={routes.SocialGroup} exact />
-          <PrivateRoute path="/social-group" component={() => <Redirect to="/social-group/add" />} />
-          <PrivateRoute path="/social-partner/add" component={routes.SocialPartner} exact />
-          <PrivateRoute path="/social-partner" component={() => <Redirect to="/social-partner/add" />} />
-          <PrivateRoute path="/share-profile" component={routes.ShareProfile} exact />
-          <PrivateRoute path="/social-qr-web" component={routes.SocialQRWeb} exact />
-          <PrivateRoute path="/social-qr-native" component={routes.SocialQRNative} exact />
-          <PrivateRoute path="/translate" component={routes.Translate} exact />
-          <PrivateRoute path="/translate/history" component={TranslateHistory} exact />
-          <PrivateRoute path="/change-password" component={routes.ChangePassword} exact />
-          <PrivateRoute path="/menu-translation/:section?" component={routes.MenuTranslation} exact />
-          <PrivateRoute path="/menu-analyzing" component={routes.MenuAnalyzing} exact />
-          <PrivateRoute path="/food-list" component={routes.FoodList} exact />
-          <PrivateRoute path="/my-profile/:tabName?" component={routes.MyProfile} exact />
-          <PrivateRoute path="/profile/:userId/:tab?" component={routes.OtherUserProfile} exact />
-          <PrivateRoute path="/profile-setting" component={routes.ProfileSetting} exact />
-          <PrivateRoute path="/my-information" component={routes.MyInformation} exact />
-          <PrivateRoute path="/ai-profile-setting" component={routes.AiProfileInformation} exact />
-          <PrivateRoute path="/friend-list" component={routes.FriendList} exact />
-          <PrivateRoute path="/friend-request-sent" component={routes.FriendRequestSent} exact />
-          <Route exact path="/" render={() => <Redirect to="/social-chat" />} />
-          <Route path="*" component={routes.NotFound} />
-        </Switch>
-      </Suspense>
-      {showTabBar && (
-        <>
-          <BottomTabBar />
-          <ChatSidebarLayout />
-        </>
-      )}
+            <PrivateRoute path="/camera" component={routes.Camera} exact />
+            <PrivateRoute path="/health-information" component={routes.HealthInformation} exact />
+            <PrivateRoute path="/health-information/welcome" component={routes.HealthInformationWelcome} exact />
+            <PrivateRoute path="/health-information/done" component={routes.HealthInformationDone} exact />
+            <PrivateRoute path="/health-information/health-info" component={routes.ProfileHealthInfo} exact />
+            <PrivateRoute path="/health-information/allergy-info" component={routes.ProfileAllergyInfo} exact />
+            <PrivateRoute path="/health-information/medicine-info" component={routes.ProfileMedicineInfo} exact />
+            <PrivateRoute path="/rate" component={routes.Rate} exact />
+            <PrivateRoute path="/chat/:type?/:sessionId?" component={routes.Chat} />
+            <PrivateRoute path="/social-chat/:type?/:roomId?/:infoRoom?" component={routes.SocialChatRecent} exact />
+            <PrivateRoute path="/social-feed/:type?/:feedId?/:infoFeed?/:tabName?" component={routes.SocialFeed} exact />
+            {/* <PrivateRoute path="/social-chat" component={() => <Redirect to="/social-chat" />}/> */}
+            <PrivateRoute path="/social-group/add" component={routes.SocialGroup} exact />
+            <PrivateRoute path="/social-group" component={() => <Redirect to="/social-group/add" />} />
+            <PrivateRoute path="/social-partner/add" component={routes.SocialPartner} exact />
+            <PrivateRoute path="/social-partner" component={() => <Redirect to="/social-partner/add" />} />
+            <PrivateRoute path="/share-profile" component={routes.ShareProfile} exact />
+            <PrivateRoute path="/social-qr-web" component={routes.SocialQRWeb} exact />
+            <PrivateRoute path="/social-qr-native" component={routes.SocialQRNative} exact />
+            <PrivateRoute path="/translate" component={routes.Translate} exact />
+            <PrivateRoute path="/translate/history" component={TranslateHistory} exact />
+            <PrivateRoute path="/change-password" component={routes.ChangePassword} exact />
+            <PrivateRoute path="/menu-translation/:section?" component={routes.MenuTranslation} exact />
+            <PrivateRoute path="/menu-analyzing" component={routes.MenuAnalyzing} exact />
+            <PrivateRoute path="/food-list" component={routes.FoodList} exact />
+            <PrivateRoute path="/my-profile/:tabName?" component={routes.MyProfile} exact />
+            <PrivateRoute path="/profile/:userId/:tab?" component={routes.OtherUserProfile} exact />
+            <PrivateRoute path="/profile-setting" component={routes.ProfileSetting} exact />
+            <PrivateRoute path="/my-information" component={routes.MyInformation} exact />
+            <PrivateRoute path="/ai-profile-setting" component={routes.AiProfileInformation} exact />
+            <PrivateRoute path="/friend-list" component={routes.FriendList} exact />
+            <PrivateRoute path="/friend-request-sent" component={routes.FriendRequestSent} exact />
+            <PrivateRoute path="/notification-list" component={routes.Notification} exact />
+            <Route exact path="/" render={() => <Redirect to="/social-chat" />} />
+            <Route path="*" component={routes.NotFound} />
+          </Switch>
+        </Suspense>
+        {showTabBar && (
+          <>
+            <BottomTabBar />
+            <ChatSidebarLayout />
+          </>
+        )}
+      </div>
     </>
   );
 };

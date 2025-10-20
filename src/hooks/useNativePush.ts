@@ -1,99 +1,207 @@
-// useNativePush.ts
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Capacitor, PluginListenerHandle } from "@capacitor/core";
+import { App } from "@capacitor/app";
 import {
   PushNotifications,
-  Token,
   PushNotificationSchema,
   ActionPerformed,
+  Token,
 } from "@capacitor/push-notifications";
 import { LocalNotifications } from "@capacitor/local-notifications";
+import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 import { saveFcmToken } from "@/utils/save-fcm-token";
+import useDeviceInfo from "@/hooks/useDeviceInfo";
+import { useHistory } from "react-router-dom";
+import {
+  NotificationType,
+  isChatNotification,
+  isStoryNotification,
+} from "@/types/notification";
+import { useUpdateNewDevice } from "./device/useDevice";
+import { useNotificationStore } from "@/store/zustand/notify-store";
+import { Preferences } from "@capacitor/preferences";
 
-const ANDROID_CHANNEL_ID = "messages_v2"; 
+const ANDROID_CHANNEL_ID = "messages_v2";
 
 export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
-
+  const updateNewDevice = useUpdateNewDevice();
+  const deviceInfo = useDeviceInfo();
+  const history = useHistory();
+  const appActiveRef = useRef<boolean>(true);
+  const lastSeenRef = useRef<Map<string, number>>(new Map());
   useEffect(() => {
-
     if (!Capacitor.isNativePlatform()) return;
+    const platform = Capacitor.getPlatform();
 
     (async () => {
-      if (Capacitor.getPlatform() === "ios") {
-        try {
-          await (PushNotifications as any).setPresentationOptions?.({
-            alert: true,
-            sound: true,
-            badge: true,
-          });
-        } catch {}
-      }
+      try {
+        if (platform === "android") {
+          const localPerm = await LocalNotifications.requestPermissions();
+          console.log("Local permissions", localPerm);
+          if (localPerm.display !== "granted") {
+            console.warn("LocalNotifications permission not granted");
+          }
 
-      const pushPerm = await PushNotifications.requestPermissions();
-      if (pushPerm.receive === "granted") {
-        await PushNotifications.register();
-      } else {
-        console.warn("Push permission not granted");
-      }
-
-      const localPerm = await LocalNotifications.requestPermissions();
-      if (localPerm.display !== "granted") {
-        console.warn("LocalNotifications permission not granted");
-      }
-
-      if (Capacitor.getPlatform() === "android") {
-        try {
           await LocalNotifications.createChannel({
             id: ANDROID_CHANNEL_ID,
             name: "Messages",
             description: "Message notifications",
-            importance: 5,   
-            visibility: 1,  
+            importance: 5,
+            visibility: 1,
             sound: "default",
             vibration: true,
             lights: true,
           });
-        } catch (e) {
-          console.warn("createChannel error", e);
+        } else if (platform === "ios") {
+          const pushPerm = await PushNotifications.requestPermissions();
+          if (pushPerm.receive === "granted") {
+            await PushNotifications.register();
+          }
         }
+      } catch (err) {
+        console.warn("Push init error:", err);
       }
     })();
 
     let regHandle: PluginListenerHandle | undefined;
     let regErrHandle: PluginListenerHandle | undefined;
     let recvHandle: PluginListenerHandle | undefined;
+    let fmMsgHandle: PluginListenerHandle | undefined;
+    let appStateHandle: PluginListenerHandle | undefined;
     let actHandle: PluginListenerHandle | undefined;
 
-    (async () => {
-      regHandle = await PushNotifications.addListener("registration", async (token: Token) => {
-        console.log("✅ Registered token:", token.value);
-        await saveFcmToken(token.value);
-        mutate?.({ fcmToken: token.value });
-      });
+    try {
+      (async () => {
+        try {
+          const st = await App.getState();
+          appActiveRef.current = !!st.isActive;
+        } catch { }
+        try {
+          appStateHandle = await App.addListener(
+            "appStateChange",
+            ({ isActive }) => {
+              appActiveRef.current = !!isActive;
+            }
+          );
+        } catch { }
+      })();
+    } catch { }
 
-      regErrHandle = await PushNotifications.addListener("registrationError", (err) => {
-        console.error("❌ Registration error:", err);
-      });
+    (async () => {
+      try {
+        const permStatus = await FirebaseMessaging.checkPermissions();
+        if (permStatus?.receive === "granted") {
+          const { token } = await FirebaseMessaging.getToken();
+          if (deviceInfo.deviceId && token) {
+            await saveFcmToken(token);
+            mutate?.({ fcmToken: token });
+          }
+        }
+      } catch { }
+
+      fmMsgHandle = await FirebaseMessaging.addListener(
+        "notificationReceived",
+        async (msg: any) => {
+          const title =
+            msg?.notification?.title || msg?.data?.title || "WayJet";
+          const body = msg?.notification?.body || msg?.data?.body || "";
+          const data = msg?.notification?.data || {};
+
+          if (platform === "android" && appActiveRef.current) {
+            const dedupKey = `${title}|${body}|${JSON.stringify(data || {})}`;
+            const nowTs = Date.now();
+            const lastTs = lastSeenRef.current.get(dedupKey);
+            if (lastTs && nowTs - lastTs < 8000) {
+              console.log("Skip Wduplicate notification", { dedupKey });
+              return;
+            }
+            lastSeenRef.current.set(dedupKey, nowTs);
+            for (const [k, v] of lastSeenRef.current) {
+              if (nowTs - v > 60000) lastSeenRef.current.delete(k);
+            }
+            try {
+              await LocalNotifications.schedule({
+                notifications: [
+                  {
+                    id: Date.now() % 2147483647,
+                    title,
+                    body,
+                    channelId: ANDROID_CHANNEL_ID,
+                    sound: "default",
+                    smallIcon: "ic_launcher",
+                    extra: data,
+                  },
+                ],
+              });
+            } catch (e) {
+              console.warn("LocalNotifications.schedule (Firebase) error", e);
+            }
+          }
+        }
+      );
+
+      regHandle = await PushNotifications.addListener(
+        "registration",
+        async (token: Token) => {
+          await saveFcmToken(token.value);
+
+          if (deviceInfo.deviceId) {
+            console.log(
+              "🔥 Using native push notifications registered ",
+              deviceInfo.deviceId,
+              token
+            );
+            updateNewDevice.mutate({
+              deviceId: deviceInfo.deviceId,
+              firebaseToken: token.value,
+            });
+          }
+
+          mutate?.({ fcmToken: token.value });
+        }
+      );
+
+      regErrHandle = await PushNotifications.addListener(
+        "registrationError",
+        (err: any) => {
+          console.warn("Push registration error:", err);
+        }
+      );
 
       recvHandle = await PushNotifications.addListener(
         "pushNotificationReceived",
         async (n: PushNotificationSchema) => {
-       
-
+          const title = n.title || "WayJet";
+          const body = n.body || "";
+          const data = n.data || {};
           try {
-            await LocalNotifications.schedule({
-              notifications: [{
-                id: Date.now() % 2147483647,
-                title: n.title || "WayJet",
-                body: n.body || "",
-                channelId: ANDROID_CHANNEL_ID,
-                  smallIcon: "ic_stat_name",     
-                  sound: "default",
-                  extra: n.data || {},
-                  schedule: { at: new Date(Date.now() + 50) },
-                },
-              ],
-            });
+            if (platform === "android") {
+              await LocalNotifications.schedule({
+                notifications: [
+                  {
+                    id: Date.now() % 2147483647,
+                    title,
+                    body,
+                    channelId: ANDROID_CHANNEL_ID,
+                    sound: "default",
+                    smallIcon: "ic_launcher",
+                    extra: data,
+                  },
+                ],
+              });
+            } else if (platform === "ios") {
+              await LocalNotifications.schedule({
+                notifications: [
+                  {
+                    id: Date.now() % 2147483647,
+                    title: n.title || "WayJet",
+                    body: n.body || "",
+                    sound: "default",
+                    schedule: { at: new Date(Date.now() + 50) },
+                  },
+                ],
+              });
+            }
           } catch (e) {
             console.warn("LocalNotifications.schedule error", e);
           }
@@ -104,15 +212,57 @@ export function useNativePush(mutate?: (data: { fcmToken: string }) => void) {
         "pushNotificationActionPerformed",
         (action: ActionPerformed) => {
           console.log("➡️ Tapped:", action);
+          const data = action.notification.data;
+          let route = "";
+          if (isChatNotification(data.type)) {
+            route = `/social-chat/t/${data.chat_code}`;
+          } else if (isStoryNotification(data.type)) {
+            route = `/social-feed/f/${data.post_code}`;
+          } else if (data.type === NotificationType.FRIEND_REQUEST) {
+            route = `/profile/${data.from_user_id}`;
+          } else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
+            route = `/profile/${data.accepter_user_id}`;
+          }
+          useNotificationStore.getState().setIsPendingRoute(true);
+          Preferences.set({ key: "route", value: route });
+          history.push(route);
         }
       );
     })();
+
+    LocalNotifications.addListener(
+      "localNotificationActionPerformed",
+      (action) => {
+        const data = action.notification.extra;
+
+        if (isChatNotification(data.type)) {
+          history.push(`/social-chat/t/${data.chat_code}`);
+        } else if (isStoryNotification(data.type)) {
+          history.push(`/social-feed/f/${data.post_code}`);
+        } else if (data.type === NotificationType.FRIEND_REQUEST) {
+          history.push(`/profile/${data.from_user_id}`);
+        } else if (data.type === NotificationType.FRIEND_REQUEST_ACCEPTED) {
+          history.push(`/profile/${data.accepter_user_id}`);
+        }
+      }
+    );
 
     return () => {
       regHandle?.remove();
       regErrHandle?.remove();
       recvHandle?.remove();
       actHandle?.remove();
+      fmMsgHandle?.remove();
+      appStateHandle?.remove();
     };
-  }, [mutate]);
+  }, [deviceInfo.deviceId]);
+
+  useEffect(() => {
+    Preferences.get({ key: "route" }).then(({ value }) => {
+      if (value) {
+        history.push(value);
+        Preferences.remove({ key: "route" });
+      }
+    });
+  }, [useNotificationStore.getState().isPendingRoute]);
 }

@@ -35,7 +35,6 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) onClose();
     };
-    console.log("ingredients: ", food.ingredients);
 
     const SHEET_MAX_VH = 85; 
     const HEADER_PX = 56; 
@@ -133,13 +132,16 @@ const FoodDetailModal: React.FC<FoodDetailModalProps> = ({ isOpen, onClose, food
                                     <h3 className="text-base font-semibold text-gray-900 mb-3">{'3. ' + t('What\'s Inside')}</h3>
                                     {
                                         food.ingredients.map((ingredient, index) => (
-                                            <div key={index} className="font-semibold text-black">•{ingredient}</div>
+                                            <div key={index} className="text-black">
+                                                <span className="font-semibold mr-1">•</span>
+                                                <span className="font-normal">{ingredient}</span>
+                                            </div>
                                         ))
                                     }
                                 </div>
                                 <div className='border-b border-gray-200 mb-6'></div>
                                 <div className="mb-2">  
-                                    <h3 className="text-base font-semibold text-gray-900 mb-3">{'3. ' + t('Advice')}</h3>
+                                    <h3 className="text-base font-semibold text-gray-900 mb-3">{'4. ' + t('Advice')}</h3>
                                     {/* Render advice với hỗ trợ **bold** và xuống dòng */}
                                     {(() => {
                                         const formatAdviceToHtml = (text: string) => {

@@ -25,8 +25,7 @@ function HealthInfo() {
             subtitle={t("Select the diseases you have (if any)")}
         >
             <div>
-                children
-            </div>
+                {t("children")}</div>
         </HealthInformationStepLayout>
     )
 }

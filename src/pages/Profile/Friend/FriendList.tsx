@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
 import { arrowBack, personRemove, chatbubbleOutline, personRemoveOutline } from 'ionicons/icons';
 import { getFriendshipFriends, unfriend } from '@/services/social/social-partner-service';
-import avatarFallback from '@/icons/logo/social-chat/avt-rounded-full.svg';
+import avatarFallback from '@/icons/logo/social-chat/avt-rounded.svg';
 import ConfirmModal from '@/components/common/modals/ConfirmModal';
 
 
@@ -183,12 +183,15 @@ const FriendList: React.FC = () => {
     const renderFriendItem = (friend: FriendItem) => (
         <div key={friend.id} className="flex items-center justify-between bg-white -mx-10 px-5 py-5 border-b border-gray-200 min-h-[80px] w-auto">
             {/* Left - Avatar + Text */}
-            <div className="flex items-center gap-4 min-w-0">
+            <div
+                className="flex items-center gap-4 min-w-0 cursor-pointer"
+                onClick={() => history.push(`/profile/${friend.id}`)}
+            >
                 <div className="relative flex-shrink-0">
                     <img
                         src={friend?.avatar || avatarFallback}
                         alt={friend.name}
-                        className="w-12 h-12 rounded-full object-cover"
+                        className="w-16 h-16 rounded-2xl object-cover"
                         onError={(e) => {
                             e.currentTarget.src = avatarFallback;
                         }}
@@ -201,9 +204,9 @@ const FriendList: React.FC = () => {
                     <h3 className="font-semibold text-gray-900 text-[17px] truncate" title={friend.name}>
                         {truncate(friend?.name, 18)}
                     </h3>
-                    <p className="text-[14px] text-gray-700 truncate" title={friend.code}>
+                    {/* <p className="text-[14px] text-gray-700 truncate" title={friend.code}>
                         {truncate(friend?.code, 15)}
-                    </p>
+                    </p> */}
                 </div>
             </div>
 
@@ -226,64 +229,61 @@ const FriendList: React.FC = () => {
     );
 
     return (
-        <IonPage className="ion-page" style={{ '--background': 'white', height: '100%' } as any}>
-            {/* Fixed Header */}
-            <IonToolbar style={{ '--background': 'white', '--ion-background-color': 'white' } as any}>
-                <IonButtons slot="start">
-                    <IonButton
-                        fill="clear"
-                        onClick={() => history.goBack()}
-                        className="ml-2"
-                    >
-                        <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
-                    </IonButton>
-                </IonButtons>
-                <IonTitle className="text-center font-semibold text-lg">
-                    {t('Friend list')}
-                </IonTitle>
-                <IonButtons slot="end">
-                    <IonButton className="opacity-0 pointer-events-none" fill="clear">
-                        <IonIcon icon={arrowBack} />
-                    </IonButton>
-                </IonButtons>
-            </IonToolbar>
+        <IonPage>
+            <IonHeader style = {{ 'box-shadow': 'none' } as any}>
+                <IonToolbar style={{ '--background': 'white' } as any}>
+                    <IonButtons slot="start">
+                        <IonButton onClick={() => history.goBack()}>
+                            <IonIcon icon={arrowBack} className="text-black font-bold text-2xl" />
+                        </IonButton>
+                    </IonButtons>
+                    <IonTitle className="text-center font-semibold text-lg">
+                        {t('Friend list')}
+                    </IonTitle>
+                    <IonButtons slot="end">
+                        <IonButton className="opacity-0 pointer-events-none" fill="clear">
+                            <IonIcon icon={arrowBack} />
+                        </IonButton>
+                    </IonButtons>
+                </IonToolbar>
 
-            {/* Fixed Search Bar */}
-            <div className="px-3 py-3 bg-white">
-                <IonSearchbar
-                    value={searchInput}
-                    onIonInput={(e) => setSearchInput((e.detail.value ?? '').toString())}
-                    type="text"
-                    placeholder={t('Search')}
-                    showClearButton="focus"
-                    className="custom-searchbar"
-                    style={{
-                        '--background': '#f3f4f6',
-                        '--border-radius': '12px',
-                        '--box-shadow': 'none',
-                        '--padding-start': '16px',
-                        '--padding-end': '16px'
-                    } as any}
-                />
-            </div>
+                {/* Search Bar */}
+                <div className="px-3 py-3 bg-white">
+                    <IonSearchbar
+                        value={searchInput}
+                        onIonInput={(e) => setSearchInput((e.detail.value ?? '').toString())}
+                        type="text"
+                        placeholder={t('Search')}
+                        showClearButton="focus"
+                        className="custom-searchbar"
+                        style={{
+                            '--background': '#f3f4f6',
+                            '--border-radius': '12px',
+                            '--box-shadow': 'none',
+                            '--padding-start': '16px',
+                            '--padding-end': '16px'
+                        } as any}
+                    />
+                </div>
 
-            {/* Fixed Friend Count */}
-            <div className="px-4 pb-2 bg-white">
-                <p className="text-m text-black font-semibold">
-                    {totalRecords} {t('friends')}
-                </p>
-            </div>
+                {/* Friend Count */}
+                <div className="px-4 pb-2 bg-white">
+                    <p className="text-m text-black font-semibold">
+                        {totalRecords} {t('friends')}
+                    </p>
+                </div>
+            </IonHeader>
 
-            {/* Scrollable Content */}
             <IonContent
-                className="ion-padding"
-                style={{ '--background': 'white', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' } as any}
+                fullscreen
+                scrollY={true}
+                style={{ '--background': 'white' } as any}
             >
-                <div className="px-4 pb-24">
+                <div className="px-4 pb-20">
                     {loading ? (
                         renderSkeleton()
                     ) : (
-                        <div className="space-y-2 space-x-1">
+                        <div className="px-4">
                             {friends.map((friend) => renderFriendItem(friend))}
                         </div>
                     )}
@@ -315,19 +315,19 @@ const FriendList: React.FC = () => {
                             </div>
                         </div>
                     )}
-
-                    {/* Infinite Scroll */}
-                    {friends.length > 0 && !searchQuery && (
-                        <IonInfiniteScroll
-                            onIonInfinite={handleInfiniteScroll}
-                            threshold="100px"
-                            disabled={!hasNextPage || loading}
-                            className="pb-16"
-                        >
-                        </IonInfiniteScroll>
-                    )}
                 </div>
+
+                {/* Infinite Scroll */}
+                {friends.length > 0 && !searchQuery && (
+                    <IonInfiniteScroll
+                        onIonInfinite={handleInfiniteScroll}
+                        threshold="100px"
+                        disabled={!hasNextPage || loading}
+                    >
+                    </IonInfiniteScroll>
+                )}
             </IonContent>
+
             <ConfirmModal
                 isOpen={confirmState.open}
                 title={t("Are you sure?")}

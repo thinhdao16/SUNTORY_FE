@@ -1,20 +1,20 @@
 import { create } from "zustand";
 
-export type NotificationType = "chat_message" 
-| "friend_request" 
-| "reaction"    
-| "friend_request_accepted" 
-| "group_chat_created" 
-| "group_chat_updated" 
-| "group_members_added" 
-| "group_members_removed" 
-| "member_added_to_group"
-| "group_chat_removed"
-| "liked_post"
-| "commented_post"
-| "reposted_post"
-| "comment_liked_post"
-| "reply_comment_post";
+export type NotificationType = "chat_message"
+    | "friend_request"
+    | "reaction"
+    | "friend_request_accepted"
+    | "group_chat_created"
+    | "group_chat_updated"
+    | "group_members_added"
+    | "group_members_removed"
+    | "member_added_to_group"
+    | "group_chat_removed"
+    | "liked_post"
+    | "commented_post"
+    | "reposted_post"
+    | "comment_liked_post"
+    | "reply_comment_post";
 
 export interface Notification {
     id: string;
@@ -26,28 +26,76 @@ export interface Notification {
     avatar?: string;
     data?: any;
     isAutoClear?: boolean;
+    fullData?: any,
 }
 
 interface NotificationState {
     notifications: Notification[];
+    lastNotificationTime: number;
+    lastActionTime: number;
+    isPendingRoute: boolean;
+    isUnReadNotification: boolean;
+    isPinNotification: boolean;
     addNotification: (n: Omit<Notification, "createdAt">) => void;
     markAsRead: (id: string) => void;
     clearAll: () => void;
+    setIsPendingRoute: (isPendingRoute: boolean) => void;
     clearOne: (id: string) => void;
+    triggerRefresh: () => void;
+    setIsUnReadNotification: (isUnReadNotification: boolean) => void;
+    setIsPinNotification: (isPinNotification: boolean) => void;
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
     notifications: [],
+    lastNotificationTime: 0,
+    lastActionTime: 0,
+    isPinNotification: false,
+    isUnReadNotification: false,
+    isPendingRoute: false,
+    setIsPendingRoute: (isPendingRoute) => set({ isPendingRoute }),
     addNotification: (n) =>
-        set((state) => ({
-            notifications: [
-                {
-                    ...n,
-                    createdAt: Date.now(),
-                    data: n.data || {},
-                },
-                ...state.notifications,
-            ],
+        set((state) => {
+            const now = Date.now();
+
+            const uniqueKey = `${n.type}-${n.title}-${n.body}-${JSON.stringify(n.data || {})}`;
+
+            const isDuplicate = state.notifications.some(notification => {
+                const existingKey = `${notification.type}-${notification.title}-${notification.body}-${JSON.stringify(notification.data || {})}`;
+                const timeDiff = now - notification.createdAt;
+                return existingKey === uniqueKey && timeDiff < 5000;
+            });
+
+            if (isDuplicate) {
+                return state;
+            }
+
+            // Chỉ giữ 1 notification, xóa tất cả notification cũ
+            if (state.isPinNotification === true) {
+                return state; // Nếu đang pin thì không thêm notification mới
+            }
+            return {
+                notifications: [
+                    {
+                        ...n,
+                        createdAt: now,
+                        data: n.data || {},
+                    }
+                ],
+                lastNotificationTime: now,
+                isUnReadNotification: n.type === "chat_message"
+                    || n.type   === "reaction"
+                    || n.type == "group_chat_created"
+                    || n.type === "group_chat_updated"
+                    || n.type === "group_members_added"
+                    || n.type === "group_members_removed"
+                    || n.type === "member_added_to_group"
+                    || n.type === "group_chat_removed" ? state.isUnReadNotification : true,
+            };
+        }),
+    triggerRefresh: () =>
+        set(() => ({
+            lastActionTime: Date.now(),
         })),
     markAsRead: (id) =>
         set((state) => ({
@@ -58,6 +106,8 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     clearAll: () => set({ notifications: [] }),
     clearOne: (id: string) =>
         set((state) => ({
-            notifications: state.notifications.filter((item) => item.id !== id),
+            notifications: state.notifications.filter((item) => item.id !== id)
         })),
+    setIsUnReadNotification: (isUnReadNotification) => set({ isUnReadNotification }),
+    setIsPinNotification: (isPinNotification) => set({ isPinNotification }),
 }));

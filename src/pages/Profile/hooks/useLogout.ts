@@ -14,7 +14,7 @@ export const useLogout = () => {
         try {
             await logout(deviceInfo.deviceId ?? undefined);
             showToast(t("Logout successful"), 500, "success");
-            history.push("/login");
+            await history.push("/login");
         } catch (error) {
             console.error("Logout failed:", error);
             showToast(t("Logout failed"), 500, "error");

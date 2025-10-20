@@ -207,7 +207,7 @@ const AppImage: React.FC<AppImageProps> = ({
       {/* Error state */}
       {hasError && (
         <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
-          <span className="text-gray-500 text-xs">Failed to load</span>
+          <span className="text-gray-500 text-xs">{t("Failed to load")}</span>
         </div>
       )}
     </div>

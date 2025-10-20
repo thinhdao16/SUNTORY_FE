@@ -26,6 +26,7 @@ const ChatSystemMessage: React.FC<ChatSystemMessageProps> = ({
 }) => {
     if (!roomData) return null;
     const { user } = useAuthStore();
+    const { t } = useTranslation();
 
     const parsedData = React.useMemo(() => {
         if (typeof data === 'string') {
@@ -33,23 +34,24 @@ const ChatSystemMessage: React.FC<ChatSystemMessageProps> = ({
                 return JSON.parse(data);
             } catch (error) {
                 console.error('Failed to parse system message data:', error);
-                return {};
+                return {} as any;
             }
         }
-        return data || {};
+        return (data || {}) as any;
     }, [data]);
 
+    
     if (!parsedData || Object.keys(parsedData).length === 0) {
         return null;
     }
 
+    
     const { title } = roomData;
     const targetUser = roomData?.participants?.find((p: any) => p.userId !== user?.id);
     const targetAvatar =
         targetUser?.user?.avatar ||
         targetUser?.chatInfo?.avatarRoomChat ||
         avatarFallback;
-    const { t } = useTranslation();
     const formatUser = (u: any) => {
         if (!u) return "Unknown";
         const userId = u.Id || u.id || u.UserId;
@@ -59,8 +61,8 @@ const ChatSystemMessage: React.FC<ChatSystemMessageProps> = ({
         }
         return (
             <Link
-                to={`/social-partner/profile/${userId}`}
-                className=""
+                to={`/profile/${userId}`}
+                className="font-semibold"
             >
                 {name}
             </Link>
@@ -72,6 +74,7 @@ const ChatSystemMessage: React.FC<ChatSystemMessageProps> = ({
         const targetUsers = parsedData.targetUsers || parsedData.Users || [];
 
         switch (type) {
+            
             case SystemMessageType.NOTIFY_GROUP_CHAT_CREATED:
                 return (
                     <div className="relative p-4 my-2 bg-white shadow-lg rounded-xl text-center text-base font-medium text-netural-500 overflow-hidden">
@@ -155,38 +158,38 @@ const ChatSystemMessage: React.FC<ChatSystemMessageProps> = ({
                 if (isLatestFriendlyAccepted) {
                     return (
                         <div className="my-4 flex justify-center">
-                        <div className="relative w-full max-w-lg overflow-hidden rounded-xl bg-white  shadow-[0px_2px_4px_2px_#0000001A] p-4">
-                            <div className="pointer-events-none absolute h-[60px] top-0 inset-0 flex items-center justify-center opacity-60">
-                                <img
-                                    src={CongratulationFriend}
-                                    alt="Congratulation"
-                                    className="w-full h-[60px] object-contain"
-                                />
-                            </div>
-        
-                            <div className="relative z-10 flex flex-col items-center gap-2 ">
-                                <div className="flex items-center -space-x-2 ">
+                            <div className="relative w-full max-w-lg overflow-hidden rounded-xl bg-white  shadow-[0px_2px_4px_2px_#0000001A] p-4">
+                                <div className="pointer-events-none absolute h-[60px] top-0 inset-0 flex items-center justify-center opacity-60">
                                     <img
-                                        src={targetAvatar}
-                                        alt="Friend Avatar"
-                                        className="h-[60px] w-[60px] rounded-full object-cover"
-                                        onError={(e) => (e.currentTarget.src = avatarFallback)}
-                                    />
-                                    <img
-                                        src={user?.avatarLink || avatarFallback}
-                                        alt="My Avatar"
-                                        className="h-[60px] w-[60px] rounded-full object-cover border border-white"
-                                        onError={(e) => (e.currentTarget.src = avatarFallback)}
+                                        src={CongratulationFriend}
+                                        alt="Congratulation"
+                                        className="w-full h-[60px] object-contain"
                                     />
                                 </div>
-                                <p className="mt-2 font-semibold text-gray-800">
-                                    {t("friendship.nowFriends", { name: title || t("yourFriend") })}
-                                </p>
-        
-                                <p className="text-sm text-neutral-500">{t("Send a hi to chat!")}</p>
+
+                                <div className="relative z-10 flex flex-col items-center gap-2 ">
+                                    <div className="flex items-center -space-x-2 ">
+                                        <img
+                                            src={targetAvatar}
+                                            alt="Friend Avatar"
+                                            className="h-[60px] w-[60px] rounded-full object-cover"
+                                            onError={(e) => (e.currentTarget.src = avatarFallback)}
+                                        />
+                                        <img
+                                            src={user?.avatarLink || avatarFallback}
+                                            alt="My Avatar"
+                                            className="h-[60px] w-[60px] rounded-full object-cover border border-white"
+                                            onError={(e) => (e.currentTarget.src = avatarFallback)}
+                                        />
+                                    </div>
+                                    <p className="mt-2 font-semibold text-gray-800">
+                                        {t("friendship.nowFriends", { name: title || t("yourFriend") })}
+                                    </p>
+
+                                    <p className="text-sm text-neutral-500">{t("Send a hi to chat!")}</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     );
                 } else {
                     return (

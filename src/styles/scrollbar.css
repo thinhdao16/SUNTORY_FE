@@ -1,35 +1,41 @@
 
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 2px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.5); 
-  border-radius: 2px;
-  transition: background-color 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(107, 114, 128, 0.7);
-}
-
-::-webkit-scrollbar-thumb:active {
-  background: rgba(75, 85, 99, 0.8); 
-}
-
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
+/* Default: hide scrollbars on mobile/tablet */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  scrollbar-width: none; /* Firefox */
+}
+*::-webkit-scrollbar {
+  width: 0; /* Safari/Chrome */
+  height: 0;
+}
+
+/* Desktop only: show thin, styled scrollbars */
+@media (min-width: 1024px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5);
+    border-radius: 2px;
+    transition: background-color 0.2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(107, 114, 128, 0.7);
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background: rgba(75, 85, 99, 0.8);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  * {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  }
 }
 
 .scrollbar-thin {

@@ -1,8 +1,8 @@
 export const ChatInfoType = {
     UserVsUser: 10,
     UserVsBot: 20,
-    Group: 30
-}
+    Group: 30,
+};
 
 export const CountLimitChatDontFriend = 3;
 
@@ -15,7 +15,16 @@ export const SystemMessageType = {
     NOTIFY_GROUP_CHAT_ADMIN_CHANGE_AVATAR_GROUP: 60,
     NOTIFY_GROUP_CHAT_ADMIN_LEAVE_GROUP: 70,
     NOTIFY_GROUP_CHAT_CHANGE_ADMIN: 80,
-    NOTIFY_FRIENDLY_ACCEPTED: 90
-}
+    NOTIFY_FRIENDLY_ACCEPTED: 90,
+    NOTIFY_GROUP_CHAT_SHARED: 100,
+};
 
-export const KEYCHATFORMATNOTI = "PMO4qwZv2RtLeWfIClE9Ec7HuV772oJlM1F967Xtudi9XEX8rZ"
+export const KEYCHATFORMATNOTI =
+    "PMO4qwZv2RtLeWfIClE9Ec7HuV772oJlM1F967Xtudi9XEX8rZ";
+    
+export const FeedType = {
+    Everyone: 10,
+    YourFriends: 20,
+    ForYou: 30,
+    Hashtag: 40,
+};

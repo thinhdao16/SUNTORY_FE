@@ -231,12 +231,12 @@ const SocialChatMembers: React.FC = () => {
                                 <div className="px-4 py-2 text-gray-500 text-sm">
                                     {roomChatInfo?.participants?.length || 0} {t("members")}
                                 </div>
-                                <div className="flex-1 overflow-y-auto px-4 pb-6">
+                                <div className="flex-1 overflow-y-auto px-4 pb-28">
                                     <div className="bg-white rounded-xl overflow-hidden">
                                         {roomChatInfo?.participants?.map((member) => (
                                             <div key={member.userId} className="flex items-center justify-between  py-3 border-b border-gray-100 last:border-b-0">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden">
+                                                    <div className="w-10 h-10 rounded-xl overflow-hidden">
                                                         <img
                                                             src={member?.user?.avatar || avatarFallback}
                                                             alt={member?.user?.fullName}
@@ -248,7 +248,7 @@ const SocialChatMembers: React.FC = () => {
                                                     </div>
                                                     <div>
                                                         <div className="font-medium flex items-end justify-start gap-1 ">
-                                                            <span> {member?.user?.fullName}</span>
+                                                            <span className='max-w-[200px] truncate'> {member?.user?.fullName}</span>
                                                             <span className='text-xs text-netural-200'>{member?.user?.id === user?.id ? t('(You)') : ''}</span>
                                                             {/* {actionLoading?.userId === member.userId && (
                                                                 <span className="ml-2">

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 type Props = {
     roomData: any;
@@ -9,6 +10,7 @@ type Props = {
 };
 
 const MessageLimitNotice: React.FC<Props> = ({ roomData, roomChatInfo, userInfo, isFriend, onSendFriend }) => {
+    const { t } = useTranslation();
     const otherParticipant = roomData?.participants?.find((p: any) => p.userId !== userInfo?.id);
     const otherName =
         (otherParticipant?.user?.firstname ? `${otherParticipant.user.firstname} ` : "") +
@@ -42,7 +44,7 @@ const MessageLimitNotice: React.FC<Props> = ({ roomData, roomChatInfo, userInfo,
                             onClick={onSendFriend}
                             className="ml-2 shrink-0 rounded-full bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 hover:bg-blue-700 active:scale-[.98] transition"
                         >
-                            Add friend
+                            {t("chat.addFriend")}
                         </button>
                     )}
                 </div>

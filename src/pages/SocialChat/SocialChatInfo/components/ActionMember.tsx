@@ -55,7 +55,7 @@ const ActionMember: React.FC<ActionMemberProps> = ({
                         className="py-4 text-start  border-b border-gray-100"
                         onClick={() => onViewProfile?.(userId)}
                     >
-                        View profile
+                        {t("View profile")}
                     </button>
 
                     {!isUser && (
@@ -63,7 +63,7 @@ const ActionMember: React.FC<ActionMemberProps> = ({
                             className="py-4 text-start  border-b border-gray-100"
                             onClick={() => onSendMessage?.(selectedUser?.user)}
                         >
-                            Send message
+                            {t("Send message")}
                         </button>
                     )}
 
@@ -74,7 +74,7 @@ const ActionMember: React.FC<ActionMemberProps> = ({
                                     className="py-4 text-start  border-b border-gray-100"
                                     onClick={() => onAppointAdmin?.(selectedUser?.userId)}
                                 >
-                                    Appoint as admin
+                                    {t("Appoint as admin")}
                                 </button>
                             )}
                             {!isUser && (

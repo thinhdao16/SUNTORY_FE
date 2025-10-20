@@ -1,12 +1,21 @@
 import httpClient from "@/config/http-client";
 import { AddGroupMembersPayload, CreateSocialChatMessagePayload, GetSocialChatMessagesParams, NotificationCounts, RemoveGroupMembersPayload, RevokeSocialChatMessagePayload, UpdateSocialChatMessagePayload,UpdateChatRoomPayload } from "./social-chat-type";
 
-export const getUserChatRooms = async (params: { PageNumber?: number; PageSize?: number; Keyword?: string } = {}) => {
-    const { PageNumber = 0, PageSize = 100, Keyword } = params;
+export const getUserChatRooms = async (params: { PageNumber?: number; PageSize?: number; Keyword?: string, Type?: number } = {}) => {
+    const { PageNumber = 0, PageSize = 100, Keyword, Type } = params;
     const res = await httpClient.get(`api/v1/chat-user/chatrooms`, {
-        params: { PageNumber, PageSize, Keyword },
+        params: { PageNumber, PageSize, Keyword, Type },
     });
     return res.data?.data?.data || [];
+};
+
+// Returns the full response with pagination metadata under .data
+export const getUserChatRoomsWithMeta = async (params: { PageNumber?: number; PageSize?: number; Keyword?: string, Type?: number } = {}) => {
+    const { PageNumber = 0, PageSize = 100, Keyword, Type } = params;
+    const res = await httpClient.get(`api/v1/chat-user/chatrooms`, {
+        params: { PageNumber, PageSize, Keyword, Type },
+    });
+    return res.data; // expect shape: { code, message, data: { data: Room[], pageNumber, totalPages, nextPage, ... } }
 };
 export const getChatRoomByCode = async (code: string) => {
     const res = await httpClient.get(`/api/v1/chat-user/chatroom/${code}`);

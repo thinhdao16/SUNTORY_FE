@@ -6,6 +6,8 @@ import BotIcon from "@/icons/logo/AI.svg?react";
 import SparklesIcon from "@/icons/logo/AI_thinking.svg?react";
 import ChatStreamIntroMessage from "./ChatStreamIntroMessage";
 import ThinkingStatus from "./ThinkingStatus";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { MessageState } from "@/types/chat-message";
 
 type Attachment = {
     fileName: string;
@@ -29,6 +31,7 @@ type Message = {
     partialText?: string;
     completeText?: string;
     chunks?: any[];
+    messageState?: MessageState | string;
 };
 
 type ChatStreamMessageListProps = {
@@ -41,6 +44,7 @@ type ChatStreamMessageListProps = {
     lastPage: { hasMore: boolean } | null;
     thinkLoading?: boolean;
     scrollToBottom?: () => void;
+    isLoadingMessages?: boolean;
 };
 
 export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
@@ -59,7 +63,8 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
     isSpending,
     lastPage,
     thinkLoading,
-    scrollToBottom
+    scrollToBottom,
+    isLoadingMessages,
 }) => {
         // const { text } = useSignalRStreamStore((s) => s.currentChatStream || { text: '' });
         const {
@@ -99,6 +104,14 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
         }, [allMessages]);
         return (
             <div className="flex flex-col gap-6 mx-auto pt-8">
+                {isLoadingMessages && allMessages.length === 0 && (
+                    <div className="flex flex-col gap-4">
+                        <Skeleton className="w-3/4 h-6" rounded="2xl"  />
+                        <Skeleton className="w-2/3 h-6" rounded="2xl"  />
+                        <Skeleton className="w-5/6 h-6" rounded="2xl"  />
+                        <Skeleton className="w-1/2 h-6" rounded="2xl"  />
+                    </div>
+                )}
                 {isLoadingMore && (
                     <div className="flex justify-center items-center py-4">
                         <div className="flex items-center gap-2 text-gray-500">
@@ -111,25 +124,39 @@ export const ChatStreamMessageList: React.FC<ChatStreamMessageListProps & {
                     <ChatStreamIntroMessage topicType={topicType} />
                 )}
 
-                {allMessages.map((msg, idx) => (
-                    <ChatMessageItem
-                        key={
-                            msg.id ??
-                            (msg.createdAt instanceof Date
-                                ? msg.createdAt.getTime()
-                                : msg.createdAt) ??
-                            idx
-                        }
-                        msg={msg}
-                        isUser={!!msg.isRight}
-                        isError={msg.isError}
-                        isSend={msg.isSend}
-                        onRetryMessage={onRetryMessage}
-                        isSpending={isSpending}
-                        loading={loading}
-                        hideAvatar={isWaitingForFirstChunk || (loading && !streamingMessage)}
-                    />
-                ))}
+                {allMessages.map((msg, idx) => {
+                    const isUser = !!msg.isRight;
+                    const isThisStreaming = msg.isStreaming && !msg.isComplete;
+                    const isWaitingStreamForThis = !isUser && isThisStreaming && isWaitingForFirstChunk;
+                    // While waiting for the first chunk, do NOT render the pending bot message (ThinkingStatus will represent it)
+                    const isPendingBotMsg = !isUser && (
+                        msg.text === MessageState.PENDING ||
+                        msg.messageState === MessageState.PENDING ||
+                        msg.messageState === "SENDING" ||
+                        msg.text === 'PENDING_MESSAGE'
+                    );
+                    if (isWaitingStreamForThis || isPendingBotMsg) return null;
+                    const hideAvatarForThis = false;
+                    return (
+                        <ChatMessageItem
+                            key={
+                                msg.id ??
+                                (msg.createdAt instanceof Date
+                                    ? msg.createdAt.getTime()
+                                    : msg.createdAt) ??
+                                idx
+                            }
+                            msg={msg}
+                            isUser={isUser}
+                            isError={msg.isError}
+                            isSend={msg.isSend}
+                            onRetryMessage={onRetryMessage}
+                            isSpending={isSpending}
+                            loading={loading}
+                            hideAvatar={hideAvatarForThis}
+                        />
+                    );
+                })}
 
                 {/* {streamingMessage && (
                 <StreamingMessageChunk msg={streamingMessage.completeText || ""} />

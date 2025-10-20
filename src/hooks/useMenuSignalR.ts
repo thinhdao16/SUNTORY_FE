@@ -3,39 +3,43 @@ import * as signalR from "@microsoft/signalr";
 import ENV from "@/config/env";
 import { useMenuTranslationStore } from "@/store/zustand/menuTranslationStore";
 
-export function useMenuSignalR(userId: string) {
+export function useMenuSignalR(menuId: string, userId: string) {
     const connectionRef = useRef<signalR.HubConnection | null>(null);
-    const { setIsConnected, setFoodSuccess, foodSuccess, setFoodFailed, foodFailed } = useMenuTranslationStore();
+    const { setIsConnected, setFoodSuccess, foodSuccess, setFoodFailed, foodFailed, setFoodImageSuccess, foodImageSuccess } = useMenuTranslationStore();
     const isConnectingRef = useRef(false);
-
     // Tách logic xử lý message ra thành callback riêng
     const handleReceive = useCallback((msg: any) => {
-        if (msg?.success === true) {
-            const newCount = foodSuccess + 1;
-            setFoodSuccess(newCount);
-            console.log("🍽️ FoodSuccess count: ", foodSuccess, "→", newCount);
+        if (msg?.success === true && msg?.isText === true) {
+            const newValue = foodSuccess + 1;
+            console.log("🍽️ FoodSuccess count: ", foodSuccess, "→", newValue);
+            setFoodSuccess(newValue);
         }
-        else {
-            const newCount = foodFailed + 1;
-            setFoodFailed(newCount);
-            console.log("🍽️ FoodFailed count: ", foodFailed, "→", newCount);
+        if (msg?.success === false && msg?.isText === true) {
+            const newValue = foodFailed + 1;
+            console.log("🍽️ FoodFailed count: ", foodFailed, "→", newValue);
+            setFoodFailed(newValue);
         }
-    }, [foodSuccess, setFoodSuccess, foodFailed, setFoodFailed]);
+        if (msg?.success === true && msg?.isImage === true) {
+            const newValue = foodImageSuccess + 1;
+            console.log("🍽️ FoodImageSuccess count: ", foodImageSuccess, "→", newValue);
+            setFoodImageSuccess(newValue);
+        }
+    }, [setFoodSuccess, setFoodFailed, setFoodImageSuccess, foodSuccess, foodFailed, foodImageSuccess]);
 
     // Tách logic kết nối ra thành callback riêng
     const startConnection = useCallback(async () => {
         if (!connectionRef.current || isConnectingRef.current) return;
-        
+
         try {
             isConnectingRef.current = true;
-            
+
             if (connectionRef.current.state === signalR.HubConnectionState.Connected) {
                 console.log("🔄 Menu SignalR already connected");
                 return;
             }
 
             await connectionRef.current.start();
-            await connectionRef.current.invoke("JoinFoodGroup", userId);
+            await connectionRef.current.invoke("JoinFoodGroup", userId, menuId);
             console.log("✅ Menu SignalR connected successfully");
             setIsConnected(true);
         } catch (err) {
@@ -44,19 +48,19 @@ export function useMenuSignalR(userId: string) {
         } finally {
             isConnectingRef.current = false;
         }
-    }, [userId, setIsConnected]);
+    }, [userId, menuId, setIsConnected]);
 
     // Tách logic join group ra thành callback riêng
     const joinGroup = useCallback(async () => {
         if (connectionRef.current?.state === signalR.HubConnectionState.Connected) {
             try {
-                await connectionRef.current.invoke("JoinFoodGroup", userId);
+                await connectionRef.current.invoke("JoinFoodGroup", userId, menuId);
                 console.log("👥 Joined food image group:", userId);
             } catch (err) {
                 console.error("❌ Failed to join group:", err);
             }
         }
-    }, [userId]);
+    }, [userId, menuId]);
 
     useEffect(() => {
         if (Number(userId) <= 0) return;
@@ -99,22 +103,22 @@ export function useMenuSignalR(userId: string) {
         // Cleanup function
         return () => {
             console.log("🧹 Cleaning up Menu SignalR");
-            
+
             // Remove event handlers
             connection.off("FoodGenerated", handleReceive);
-            
+
             // Stop connection
             if (connection.state !== signalR.HubConnectionState.Disconnected) {
                 connection.stop().catch((err) => {
                     console.error("❌ Error stopping connection:", err);
                 });
             }
-            
+
             // Reset refs
             connectionRef.current = null;
             isConnectingRef.current = false;
         };
-    }, [userId, startConnection, joinGroup, handleReceive, setIsConnected]);
+    }, [userId, menuId, startConnection, joinGroup, handleReceive, setIsConnected]);
 
     // Return connection state để component có thể sử dụng
     return {

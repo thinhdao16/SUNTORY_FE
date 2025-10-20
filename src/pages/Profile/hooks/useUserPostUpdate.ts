@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from 'react-query';
 import { useToastStore } from '@/store/zustand/toast-store';
 import { useTranslation } from 'react-i18next';
 import { ProfileTabType } from './useUserPosts';
+import { useProfilePostsStore } from '@/store/zustand/profile-posts-store';
 
 interface UseUserPostUpdateParams {
   tabType: ProfileTabType;
@@ -19,6 +20,8 @@ export const useUserPostUpdate = ({ tabType, targetUserId }: UseUserPostUpdatePa
     },
     {
       onMutate: async (updatedPost) => {
+        // Apply patch immediately to profile posts store (optimistic UI)
+        try { if (updatedPost?.code) useProfilePostsStore.getState().applyPatch(updatedPost.code, updatedPost as any); } catch {}
         await queryClient.cancelQueries(['userPosts', tabType, targetUserId]);
 
         const previousData = queryClient.getQueryData(['userPosts', tabType, targetUserId]);
@@ -58,6 +61,7 @@ export const useUserPostUpdate = ({ tabType, targetUserId }: UseUserPostUpdatePa
       },
       onSuccess: (updatedPost) => {
         showToast(t('Post updated successfully'), 2000, 'success');
+        try { if ((updatedPost as any)?.code) useProfilePostsStore.getState().applyPatch((updatedPost as any).code, updatedPost as any); } catch {}
         queryClient.invalidateQueries(['userPosts']);
         queryClient.invalidateQueries(['socialFeed']);
         queryClient.invalidateQueries(['social-posts']);

@@ -9,6 +9,8 @@ export function useKeyboardResize() {
     useEffect(() => {
         if (Capacitor.getPlatform() === "android") {
             Keyboard.setResizeMode({ mode: KeyboardResize.Body });
+        } else if (Capacitor.getPlatform() === "ios") {
+            Keyboard.setResizeMode({ mode: KeyboardResize.Body });
         } else {
             Keyboard.setResizeMode({ mode: KeyboardResize.None });
         }

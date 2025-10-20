@@ -186,7 +186,7 @@ const NativeGalleryPicker = forwardRef<NativeGalleryPickerHandle, Props>(functio
     }, [maxHeight]);
 
     if (!Capacitor.isNativePlatform()) {
-        return <div className="p-4 text-sm text-gray-500">Gallery chỉ hỗ trợ native.</div>;
+        return <div className="p-4 text-sm text-gray-500">{t("Gallery chỉ hỗ trợ native.")}</div>;
     }
 
     const showBar = showActionBar ?? multiSelect;
@@ -210,7 +210,7 @@ const NativeGalleryPicker = forwardRef<NativeGalleryPickerHandle, Props>(functio
             </div>
 
             {loading ? (
-                <div className="p-4 text-sm text-gray-500">Đang tải ảnh…</div>
+                <div className="p-4 text-sm text-gray-500">{t("Đang tải ảnh…")}</div>
             ) : (
                 <div ref={scrollerRef} onScroll={onScroll} className="flex-1 min-h-0 overflow-y-auto">
                     <div className="grid grid-cols-3 gap-1 p-1">

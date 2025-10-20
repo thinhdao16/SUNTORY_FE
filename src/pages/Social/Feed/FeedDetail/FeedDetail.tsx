@@ -13,13 +13,14 @@ import { useCommentLike } from '@/pages/Social/Feed/hooks/useCommentLike';
 import GlobalIcon from "@/icons/logo/social-feed/global-default.svg?react";
 import { usePostSignalR } from '@/hooks/usePostSignalR';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
-import { IoEyeOffOutline, IoFlagOutline, IoLinkOutline, IoNotificationsOutline, IoPersonRemoveOutline, IoPersonAddOutline } from 'react-icons/io5';
+import { IoEyeOffOutline, IoFlagOutline, IoLinkOutline, IoNotificationsOutline, IoPersonRemoveOutline, IoPersonAddOutline, IoTrash } from 'react-icons/io5';
 import { handleCopyToClipboard } from '@/components/common/HandleCoppy';
 import { useToastStore } from '@/store/zustand/toast-store';
 import BackIcon from "@/icons/logo/back-default.svg?react";
 import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
 import { PrivacyPostType } from '@/types/privacy';
 import { usePostRepost } from '@/pages/Social/Feed/hooks/usePostRepost';
+import { SocialFeedService } from '@/services/social/social-feed-service';
 import { useSendFriendRequest, useUnfriend, useCancelFriendRequest, useAcceptFriendRequest, useRejectFriendRequest } from '@/pages/SocialPartner/hooks/useSocialPartner';
 import { useDeleteComment } from '../hooks/useDeleteComment';
 import { useUpdateComment } from '../hooks/useUpdateComment';
@@ -34,6 +35,10 @@ import CommentsList from './components/CommentsList';
 import PostOptionsBottomSheet from '@/components/social/PostOptionsBottomSheet';
 import { usePostOptions } from '@/hooks/usePostOptions';
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
+import SharePostBottomSheet from '@/components/social/SharePostBottomSheet';
+import { useQueryClient } from 'react-query';
+import { useSearchResultsStore } from '@/store/zustand/search-results-store';
+import { FiEdit } from 'react-icons/fi';
 
 const FeedDetail: React.FC = () => {
     const { t } = useTranslation();
@@ -48,14 +53,18 @@ const FeedDetail: React.FC = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const lastCommentElementRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const postCode = feedId;
     const isNative = Capacitor.isNativePlatform();
 
     const [confirmState, setConfirmState] = useState<{
         open: boolean;
-        type: "send" | "cancel" | "unfriend" | "reject" | null;
+        type: "send" | "cancel" | "unfriend" | "reject" | "accept" | "unrepost" | "delete-comment" | null;
         friendRequestId?: number;
         friendName?: string;
+        targetUserId?: number;
+        targetUserName?: string;
+        commentCode?: string;
     }>({
         open: false,
         type: null,
@@ -69,6 +78,7 @@ const FeedDetail: React.FC = () => {
     const commentLikeMutation = useCommentLike();
     const deviceInfo = useDeviceInfo();
     const { post, isLoadingPost, data: fetchedPost, refetch: refetchPost } = useFeedDetail(postCode, true);
+    const queryClient = useQueryClient();
     const {
         data: commentsData,
         isLoading: isLoadingComments,
@@ -102,6 +112,7 @@ const FeedDetail: React.FC = () => {
     const [isRepostSheetOpen, setIsRepostSheetOpen] = useState(false);
     const [repostPrivacy, setRepostPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
     const [isCommentOptionsOpen, setIsCommentOptionsOpen] = useState(false);
+    const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
     const [selectedComment, setSelectedComment] = useState<any>(null);
     const showToast = useToastStore((state) => state.showToast);
     const openPostOptions = () => setIsPostOptionsOpen(true);
@@ -155,6 +166,18 @@ const FeedDetail: React.FC = () => {
     const repostCaption = displayPost?.captionRepost;
     const postToDisplay = isRepost ? originalPost : displayPost;
 
+    // Refresh detail from server and update store/cache
+    const refreshDetail = async () => {
+        try {
+            const code = postToDisplay?.code || displayPost?.code;
+            if (!code) return;
+            const fresh = await SocialFeedService.getPostByCode(code);
+            setCurrentPost(fresh as any);
+            queryClient.setQueryData(['feedDetail', code], fresh);
+            queryClient.invalidateQueries(['feedDetail', code]);
+        } catch {}
+    };
+
     const handleSendComment = async () => {
         if (!commentText.trim() || !postCode) return;
 
@@ -200,23 +223,51 @@ const FeedDetail: React.FC = () => {
         if (!postCode) return;
         setRepostPrivacy(privacy);
         setIsRepostSheetOpen(false);
-        postRepostMutation.mutate({ postCode, caption: 'Repost', privacy: Number(privacy) });
-        void refetchPost();
+        // Optimistic toggle to 'reposted'
+        const prevCount = displayPost?.repostCount ?? 0;
+        const patched = {
+            ...displayPost,
+            isRepostedByCurrentUser: true as any,
+            repostCount: prevCount + 1,
+        };
+        if (displayPost) setCurrentPost(patched as any);
+        postRepostMutation.mutate(
+            { postCode, caption: 'Repost', privacy: Number(privacy) },
+            {
+                onError: () => {
+                    // rollback
+                    if (displayPost) setCurrentPost({
+                        ...displayPost,
+                        isRepostedByCurrentUser: Boolean(displayPost?.isRepostedByCurrentUser) || false,
+                        repostCount: prevCount,
+                    } as any);
+                },
+            }
+        );
     };
 
-    const openConfirmModal = (type: "send" | "cancel" | "unfriend" | "reject", friendRequestId?: number, friendName?: string) => {
+    const openConfirmModal = (
+        type: "send" | "cancel" | "unfriend" | "reject" | "accept",
+        friendRequestId?: number,
+        friendName?: string,
+        targetUserId?: number,
+        targetUserName?: string,
+    ) => {
         setConfirmState({ open: false, type: null });
         requestAnimationFrame(() => {
-            setConfirmState({ open: true, type, friendRequestId, friendName });
+            setConfirmState({ open: true, type, friendRequestId, friendName, targetUserId, targetUserName });
         });
     };
 
-    const handleSendFriendRequestClick = async () => {
+    const handleSendFriendRequestClick = async (userId?: number, userName?: string) => {
         closePostOptions();
-        if (!authorId) return;
+        const targetId = userId ?? authorId;
+        const targetName = userName ?? displayPost?.user?.fullName;
+        if (!targetId) return;
         if (sendFriendRequestMutation.isLoading) return;
 
-        openConfirmModal("send");
+        // Open confirm with target user info
+        setConfirmState({ open: true, type: "send", targetUserId: targetId, targetUserName: targetName });
     };
 
     const handleUserProfileClick = (userId: number) => {
@@ -252,10 +303,56 @@ const FeedDetail: React.FC = () => {
     const handleLikePost = () => {
         if (!displayPost) return;
 
-        postLikeMutation.mutate({
-            postCode: displayPost.code,
-            isLiked: displayPost.isLike || false
-        });
+        const prev = displayPost;
+        const wasLiked = Boolean(prev.isLike);
+        const prevCount = prev.reactionCount ?? 0;
+        const optimistic = {
+            ...prev,
+            isLike: !wasLiked,
+            reactionCount: wasLiked ? Math.max(0, prevCount - 1) : prevCount + 1,
+        };
+        setCurrentPost(optimistic as any);
+        if (prev?.code) {
+            queryClient.setQueryData(['feedDetail', prev.code], optimistic);
+        }
+
+        postLikeMutation.mutate(
+            {
+                postCode: prev.code,
+                isLiked: wasLiked,
+            },
+            {
+                onError: () => {
+                    setCurrentPost(prev as any);
+                    if (prev?.code) {
+                        queryClient.setQueryData(['feedDetail', prev.code], prev);
+                    }
+                },
+                onSuccess: async () => {
+                    try {
+                        const fresh = await SocialFeedService.getPostByCode(prev.code);
+                        const rawPatch: any = {
+                            isLike: (fresh as any)?.isLike,
+                            reactionCount: (fresh as any)?.reactionCount,
+                            commentCount: (fresh as any)?.commentCount,
+                            repostCount: (fresh as any)?.repostCount,
+                            shareCount: (fresh as any)?.shareCount,
+                            isRepostedByCurrentUser: (fresh as any)?.isRepostedByCurrentUser,
+                        };
+                        const patch: any = Object.fromEntries(
+                            Object.entries(rawPatch).filter(([, v]) => v !== undefined)
+                        );
+                        const merged = { ...optimistic, ...patch };
+                        setCurrentPost(merged as any);
+                        if (prev?.code) {
+                            queryClient.setQueryData(['feedDetail', prev.code], fresh);
+                        }
+                        try { useSocialFeedStore.getState().applyRealtimePatch(prev.code, patch); } catch {}
+                        try { useSearchResultsStore.getState().applyPostPatch(prev.code, patch); } catch {}
+                    } catch {}
+                }
+            }
+        );
     };
 
     const handleLikeComment = (commentCode: string, isLiked: boolean) => {
@@ -278,11 +375,12 @@ const FeedDetail: React.FC = () => {
             },
             {
                 threshold: 0.1,
-                rootMargin: '50px'
+                root: scrollContainerRef.current ?? null,
+                rootMargin: '50px',
             }
         );
-        const currentRef = lastCommentElementRef.current;
-        if (currentRef && allComments.length > 0) {
+        const currentRef = messagesEndRef.current;
+        if (currentRef) {
             observer.observe(currentRef);
         }
 
@@ -291,7 +389,7 @@ const FeedDetail: React.FC = () => {
                 observer.unobserve(currentRef);
             }
         };
-    }, [hasNextPage, isFetchingNextPage, isLoadingComments, fetchNextPage, allComments.length]);
+    }, [hasNextPage, isFetchingNextPage, isLoadingComments, fetchNextPage]);
 
     const handleCopyLink = () => {
         if (!displayPost?.code) {
@@ -321,18 +419,9 @@ const FeedDetail: React.FC = () => {
 
     const handleDeleteComment = async () => {
         if (!selectedComment || !postCode) return;
-        closeCommentOptions();
-
-        try {
-            await deleteCommentMutation.mutateAsync({
-                commentCode: selectedComment.code,
-                postCode: postCode
-            });
-            void refetchComments();
-            void refetchPost();
-        } catch (error) {
-            console.error('Failed to delete comment:', error);
-        }
+        // Close only the sheet and open confirm. Keep the selected comment via confirmState
+        setIsCommentOptionsOpen(false);
+        setConfirmState({ open: true, type: "delete-comment", commentCode: selectedComment.code });
     };
 
     const handleReportComment = () => {
@@ -363,48 +452,95 @@ const FeedDetail: React.FC = () => {
             items.push({
                 key: 'edit-comment',
                 label: t('Edit comment'),
-                icon: <IoPersonAddOutline className="w-5 h-5" />,
+                icon: <FiEdit className="w-5 h-5" />,
                 tone: 'default' as const,
                 onClick: () => handleEditComment(selectedComment),
             });
             items.push({
                 key: 'delete-comment',
                 label: t('Delete comment'),
-                icon: <IoFlagOutline className="w-5 h-5" />,
+                icon: <IoTrash className="w-5 h-5" />,
                 tone: 'danger' as any,
                 onClick: handleDeleteComment,
             });
         } else {
-            if (!isOwnComment && selectedComment.user.id) {
-                items.push({
-                    key: 'add-friend-comment',
-                    label: t('Add friend'),
-                    icon: <IoPersonAddOutline className="w-5 h-5" />,
-                    tone: 'default' as const,
-                    onClick: () => {
-                        closeCommentOptions();
-                        handleSendFriendRequestClick();
-                    },
-                });
+            // Build friend actions using relationship data on the selected comment
+            const cUser = selectedComment.user;
+            const cIsFriend = Boolean(selectedComment?.isFriend);
+            const cFR = selectedComment?.friendRequest;
+            if (!isOwnComment && cUser?.id) {
+                if (!cIsFriend) {
+                    if (cFR) {
+                        if (cFR.fromUserId === user?.id) {
+                            // You sent request -> Cancel
+                            items.push({
+                                key: 'cancel-friend-request',
+                                label: t('Cancel Friend Request'),
+                                icon: <IoPersonRemoveOutline className="w-5 h-5" />,
+                                tone: 'default' as const,
+                                onClick: () => openConfirmModal('cancel', cFR.id, cUser.fullName, cUser.id, cUser.fullName),
+                            });
+                        } else if (cFR.toUserId === user?.id) {
+                            // Incoming request -> Accept / Reject
+                            items.push(
+                                {
+                                    key: 'accept-friend-request',
+                                    label: t('Accept Friend Request'),
+                                    icon: <IoPersonAddOutline className="w-5 h-5" />,
+                                    tone: 'default' as const,
+                                    onClick: () => openConfirmModal('accept', cFR.id, cUser.fullName, cUser.id, cUser.fullName),
+                                },
+                                {
+                                    key: 'reject-friend-request',
+                                    label: t('Reject Friend Request'),
+                                    icon: <IoPersonRemoveOutline className="w-5 h-5" />,
+                                    tone: 'danger' as any,
+                                    onClick: () => openConfirmModal('reject', cFR.id, cUser.fullName, cUser.id, cUser.fullName),
+                                }
+                            );
+                        }
+                    } else {
+                        // No request yet -> Add friend
+                        items.push({
+                            key: 'add-friend-comment',
+                            label: t('Add friend'),
+                            icon: <IoPersonAddOutline className="w-5 h-5" />,
+                            tone: 'default' as const,
+                            onClick: () => {
+                                closeCommentOptions();
+                                handleSendFriendRequestClick(cUser.id, cUser.fullName);
+                            },
+                        });
+                    }
+                } else {
+                    // Already friends -> Unfriend
+                    items.push({
+                        key: 'unfriend',
+                        label: t('Unfriend'),
+                        icon: <IoPersonRemoveOutline className="w-5 h-5" />,
+                        tone: 'danger' as any,
+                        onClick: () => openConfirmModal('unfriend', undefined, cUser.fullName, cUser.id, cUser.fullName),
+                    });
+                }
             }
             if (isPostOwner) {
                 items.push({
                     key: 'delete-comment-owner',
                     label: t('Delete comment'),
-                    icon: <IoFlagOutline className="w-5 h-5" />,
+                    icon: <IoTrash className="w-5 h-5" />,
                     tone: 'danger' as any,
                     onClick: handleDeleteComment,
                 });
             }
-
-            items.push({
-                key: 'report-comment',
-                label: t('Report'),
-                icon: <IoFlagOutline className="w-5 h-5" />,
-                tone: 'danger' as any,
-                onClick: handleReportComment,
-            });
         }
+        // Always include report action
+        // items.push({
+        //     key: 'report-comment',
+        //     label: t('Report'),
+        //     icon: <IoFlagOutline className="w-5 h-5" />,
+        //     tone: 'danger' as any,
+        //     onClick: handleReportComment,
+        // });
 
         return items;
     }, [
@@ -421,7 +557,7 @@ const FeedDetail: React.FC = () => {
     const handleSendFriendRequest = async (userId: number) => {
         try {
             await sendFriendRequestMutation.mutateAsync(userId);
-            void refetchPost();
+            void refreshDetail();
         } catch (error) {
             console.error('Failed to send friend request:', error);
         }
@@ -430,7 +566,7 @@ const FeedDetail: React.FC = () => {
     const handleUnfriend = async (userId: number) => {
         try {
             await unfriendMutation.mutateAsync({ friendUserId: userId });
-            void refetchPost();
+            void refreshDetail();
         } catch (error) {
             console.error('Failed to unfriend:', error);
         }
@@ -439,7 +575,7 @@ const FeedDetail: React.FC = () => {
     const handleCancelFriendRequestAction = async (requestId: number) => {
         try {
             await cancelFriendRequestMutation.mutateAsync(requestId);
-            void refetchPost();
+            void refreshDetail();
         } catch (error) {
             console.error('Failed to cancel friend request:', error);
         }
@@ -448,7 +584,7 @@ const FeedDetail: React.FC = () => {
     const handleAcceptFriendRequestAction = async (requestId: number) => {
         try {
             await acceptFriendRequestMutation.mutateAsync(requestId);
-            void refetchPost();
+            void refreshDetail();
         } catch (error) {
             console.error('Failed to accept friend request:', error);
         }
@@ -457,7 +593,7 @@ const FeedDetail: React.FC = () => {
     const handleRejectFriendRequestAction = async (requestId: number) => {
         try {
             await rejectFriendRequestMutation.mutateAsync(requestId);
-            void refetchPost();
+            void refreshDetail();
         } catch (error) {
             console.error('Failed to reject friend request:', error);
         }
@@ -548,7 +684,7 @@ const FeedDetail: React.FC = () => {
                 onUserProfileClick={handleUserProfileClick}
             />
 
-            <div className={`flex-1 overflow-x-hidden overflow-y-auto ${!isNative && !keyboardResizeScreen ? `pb-2 overflow-hidden` : ""}`}>
+            <div ref={scrollContainerRef} className={`flex-1 overflow-x-hidden overflow-y-auto ${!isNative && !keyboardResizeScreen ? `pb-2 overflow-hidden` : ""}`}>
                 <PostContent
                     displayPost={displayPost}
                     isRepost={isRepost || false}
@@ -565,8 +701,16 @@ const FeedDetail: React.FC = () => {
                     displayPost={displayPost}
                     onLike={handleLikePost}
                     onComment={() => inputRef.current?.focus()}
-                    onRepost={() => setIsRepostSheetOpen(true)}
-                    onShare={handleCopyLink}
+                    onRepost={() => {
+                        const isMyRepost = !!displayPost?.isRepost && (displayPost?.user?.id === user?.id);
+                        const isRepostedByMe = Boolean(displayPost?.isRepostedByCurrentUser) || isMyRepost;
+                        if (isRepostedByMe) {
+                            setConfirmState({ open: true, type: "unrepost" });
+                        } else {
+                            setIsRepostSheetOpen(true);
+                        }
+                    }}
+                    onShare={() => setIsShareSheetOpen(true)}
                     postLikeMutation={postLikeMutation}
                 />
 
@@ -609,13 +753,33 @@ const FeedDetail: React.FC = () => {
 
             <PostActionsProvider
                 post={displayPost}
-                onSendFriendRequest={handleSendFriendRequest}
-                onUnfriend={handleUnfriend}
-                onCancelFriendRequest={handleCancelFriendRequestAction}
-                onAcceptFriendRequest={handleAcceptFriendRequestAction}
-                onRejectFriendRequest={handleRejectFriendRequestAction}
+                onSendFriendRequest={(userId: number) => {
+                    if (confirmState.open) return;
+                    closePostOptions();
+                    openConfirmModal('send', undefined, displayPost?.user?.fullName, userId, displayPost?.user?.fullName);
+                }}
+                onUnfriend={(userId: number) => {
+                    if (confirmState.open) return;
+                    closePostOptions();
+                    openConfirmModal('unfriend', undefined, displayPost?.user?.fullName, userId, displayPost?.user?.fullName);
+                }}
+                onCancelFriendRequest={(requestId: number) => {
+                    if (confirmState.open) return;
+                    closePostOptions();
+                    openConfirmModal('cancel', requestId, displayPost?.user?.fullName, displayPost?.user?.id, displayPost?.user?.fullName);
+                }}
+                onAcceptFriendRequest={(requestId: number) => {
+                    if (confirmState.open) return;
+                    closePostOptions();
+                    openConfirmModal('accept', requestId, displayPost?.user?.fullName, displayPost?.user?.id, displayPost?.user?.fullName);
+                }}
+                onRejectFriendRequest={(requestId: number) => {
+                    if (confirmState.open) return;
+                    closePostOptions();
+                    openConfirmModal('reject', requestId, displayPost?.user?.fullName, displayPost?.user?.id, displayPost?.user?.fullName);
+                }}
                 onSuccess={() => {
-                    void refetchPost();
+                    void refreshDetail();
                 }}
                 navigateBackOnDelete={true}
             >
@@ -639,6 +803,13 @@ const FeedDetail: React.FC = () => {
                 onSelectPrivacy={handleSelectRepostPrivacy}
             />
 
+            {/* Share Bottom Sheet */}
+            <SharePostBottomSheet
+                isOpen={isShareSheetOpen}
+                onClose={() => setIsShareSheetOpen(false)}
+                postCode={displayPost.code}
+            />
+
             <PostOptionsBottomSheet
                 isOpen={isCommentOptionsOpen}
                 onClose={closeCommentOptions}
@@ -646,28 +817,41 @@ const FeedDetail: React.FC = () => {
             />
 
             <ConfirmModal
+                key={`${confirmState.type || 'none'}-${confirmState.friendRequestId || confirmState.targetUserId || ''}`}
                 isOpen={confirmState.open}
-                title={t("Are you sure?")}
+                title={confirmState.type === "delete-comment" ? t("Delete this comment?") : t("Are you sure?")}
                 message={
-                    confirmState.type === "send" ? t('Send friend request to {{name}}?', { name: displayPost?.user?.fullName }) :
+                    confirmState.type === "send" ? t('Send friend request to {{name}}?', { name: confirmState.targetUserName ?? displayPost?.user?.fullName }) :
                         confirmState.type === "cancel" ? t("You can always send another request later!") :
+                            confirmState.type === "accept" ? t('Accept friend request from {{name}}?', { name: confirmState.friendName }) :
                             confirmState.type === "unfriend" ? t("You will no longer see their updates or share yours with them") :
                                 confirmState.type === "reject" ? t('Reject friend request from {{name}}?', { name: confirmState.friendName }) :
-                                    ""
+                                    confirmState.type === "unrepost" ? t('Remove your repost of this post?') :
+                                    confirmState.type === "delete-comment" ? t("This action is permanent and can't be undone. Are you sure?") :
+                                        t('Are you sure?')
                 }
+                confirmButtonClassName={(confirmState.type === 'send' || confirmState.type === 'accept') ? '!bg-main' : ''}
                 confirmText={
                     confirmState.type === "send" ? t("Yes, send") :
                         confirmState.type === "cancel" ? t("Yes, cancel") :
+                            confirmState.type === "accept" ? t("Yes, accept") :
                             confirmState.type === "unfriend" ? t("Yes, unfriend") :
                                 confirmState.type === "reject" ? t("Yes, reject") :
-                                    t("Yes")
+                                    confirmState.type === "unrepost" ? t("Yes, remove") :
+                                    confirmState.type === "delete-comment" ? t("Delete comment") :
+                                        t("Yes")
                 }
                 cancelText={t("Cancel")}
+                onClose={() => setConfirmState({ open: false, type: null })}
                 onConfirm={async () => {
-                    if (confirmState.type === "send" && authorId) {
+                    if (confirmState.type === "send") {
                         try {
-                            await sendFriendRequestMutation.mutateAsync(authorId);
-                            void refetchPost();
+                            const targetId = confirmState.targetUserId ?? authorId;
+                            if (targetId) {
+                                await sendFriendRequestMutation.mutateAsync(targetId);
+                                void refreshDetail();
+                                void refetchComments();
+                            }
                         } catch (error) {
                             console.error('Failed to send friend request:', error);
                         }
@@ -675,16 +859,29 @@ const FeedDetail: React.FC = () => {
                     if (confirmState.type === "cancel" && confirmState.friendRequestId) {
                         try {
                             await cancelFriendRequestMutation.mutateAsync(confirmState.friendRequestId);
-                            console.log("first")
-                            void refetchPost();
+                            void refreshDetail();
+                            void refetchComments();
                         } catch (error) {
                             console.error('Failed to cancel friend request:', error);
                         }
                     }
-                    if (confirmState.type === "unfriend" && authorId) {
+                    if (confirmState.type === "accept" && confirmState.friendRequestId) {
                         try {
-                            await unfriendMutation.mutateAsync({ friendUserId: authorId });
-                            void refetchPost();
+                            await acceptFriendRequestMutation.mutateAsync(confirmState.friendRequestId);
+                            void refreshDetail();
+                            void refetchComments();
+                        } catch (error) {
+                            console.error('Failed to accept friend request:', error);
+                        }
+                    }
+                    if (confirmState.type === "unfriend") {
+                        try {
+                            const unfriendId = confirmState.targetUserId ?? authorId;
+                            if (unfriendId) {
+                                await unfriendMutation.mutateAsync({ friendUserId: unfriendId });
+                                void refreshDetail();
+                                void refetchComments();
+                            }
                         } catch (error) {
                             console.error('Failed to unfriend:', error);
                         }
@@ -692,17 +889,77 @@ const FeedDetail: React.FC = () => {
                     if (confirmState.type === "reject" && confirmState.friendRequestId) {
                         try {
                             await rejectFriendRequestMutation.mutateAsync(confirmState.friendRequestId);
-                            void refetchPost();
+                            void refreshDetail();
+                            void refetchComments();
                         } catch (error) {
                             console.error('Failed to reject friend request:', error);
                         }
                     }
-                    setConfirmState({ open: false, type: null });
+                    if (confirmState.type === "delete-comment") {
+                        try {
+                            if (confirmState.commentCode && postCode) {
+                                await deleteCommentMutation.mutateAsync({
+                                    commentCode: confirmState.commentCode,
+                                    postCode: postCode
+                                });
+                                void refetchComments();
+                                void refetchPost();
+                            }
+                        } catch (error) {
+                            console.error('Failed to delete comment:', error);
+                        }
+                    }
+                    if (confirmState.type === "unrepost") {
+                        try {
+                            const originalCode = postToDisplay?.code || displayPost?.code;
+                            if (originalCode) {
+                                await postRepostMutation.mutateAsync({ postCode: originalCode, caption: 'Repost', privacy: Number(repostPrivacy) });
+                                const store = useSocialFeedStore.getState();
+                                const isMyRepost = !!displayPost?.isRepost && (displayPost?.user?.id === user?.id);
+                                if (isMyRepost && displayPost?.code) {
+                                    store.removePostFromFeeds(displayPost.code);
+                                }
+                                const feeds = store.cachedFeeds || {} as any;
+                                let currentCount: number | undefined;
+                                for (const key of Object.keys(feeds)) {
+                                    const found = feeds[key]?.posts?.find((p: any) => p?.code === originalCode);
+                                    if (found) { currentCount = found.repostCount; break; }
+                                }
+                                store.applyRealtimePatch(originalCode, {
+                                    isRepostedByCurrentUser: false,
+                                    repostCount: Math.max(0, (currentCount ?? 1) - 1)
+                                } as any);
+                                // Update local detail state optimistically
+                                if (displayPost) {
+                                    setCurrentPost({
+                                        ...displayPost,
+                                        isRepostedByCurrentUser: false as any,
+                                        repostCount: Math.max(0, (displayPost?.repostCount ?? 1) - 1),
+                                    } as any);
+                                }
+                                const searchStore = useSearchResultsStore.getState();
+                                const cached = searchStore.cached || {} as Record<string, any>;
+                                for (const key of Object.keys(cached)) {
+                                    const tabState = cached[key];
+                                    if (!tabState) continue;
+                                    let posts = Array.isArray(tabState.posts) ? tabState.posts : [];
+                                    if (isMyRepost && displayPost?.code) {
+                                        posts = posts.filter((p: any) => p?.code !== displayPost.code);
+                                    }
+                                    posts = posts.map((p: any) => p?.code === originalCode
+                                        ? { ...p, isRepostedByCurrentUser: false, repostCount: Math.max(0, (p?.repostCount ?? 1) - 1) }
+                                        : p);
+                                    searchStore.setResults(key, { posts });
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Failed to unrepost:', error);
+                        }
+                    }
                 }}
-                onClose={() => setConfirmState({ open: false, type: null })}
             />
+
         </div>
     );
 };
-
 export default FeedDetail;

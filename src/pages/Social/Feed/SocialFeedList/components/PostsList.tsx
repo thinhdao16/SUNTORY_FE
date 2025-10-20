@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback, forwardRef } from 'react';
 import { SocialPost } from '@/types/social-feed';
 import { SocialFeedCard } from '@/pages/Social/Feed/components/SocialFeedCard';
+import { PrivacyPostType } from '@/types/privacy';
 
 interface PostsListProps {
   posts: SocialPost[];
@@ -11,12 +12,15 @@ interface PostsListProps {
   onLike: (postCode: string) => void;
   onComment: (postCode: string) => void;
   onShare: (postCode: string) => void;
-  onRepost: (postCode: string) => void;
+  onRepostConfirm?: (postCode: string, privacy: PrivacyPostType) => void;
   onPostClick: (postCode: string) => void;
   onVisiblePostsChange?: (postCodes: string[]) => void;
+  // Optional: render an interstitial component (e.g., friend suggestions) once in the list
+  interstitial?: React.ReactNode;
+  interstitialAfter?: number; // insert after this index (0-based). Example: 4 -> after 5th post
 }
 
-export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
+export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({ 
   posts,
   hasNextPage,
   isFetchingNextPage,
@@ -25,14 +29,18 @@ export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
   onLike,
   onComment,
   onShare,
-  onRepost,
+  onRepostConfirm,
   onPostClick,
-  onVisiblePostsChange
+  onVisiblePostsChange,
+  interstitial,
+  interstitialAfter = 4
 }, ref) => {
   const lastPostElementRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const visibilityMapRef = useRef<Map<string, boolean>>(new Map());
+  const fetchLockRef = useRef(false);
+  const lastFetchTsRef = useRef(0);
 
   const handleVisibilityChange = useCallback((entries: IntersectionObserverEntry[]) => {
     let hasChange = false;
@@ -49,10 +57,15 @@ export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
     });
 
     if (hasChange && onVisiblePostsChange) {
-      const visibleCodes = posts
+      const visibleCodesSet = new Set<string>();
+      posts
         .filter((post) => visibilityMapRef.current.get(post.code))
-        .map((post) => post.code);
-      onVisiblePostsChange(visibleCodes);
+        .forEach((post) => {
+          visibleCodesSet.add(post.code);
+          const originalCode = (post as any)?.originalPost?.code as string | undefined;
+          if (originalCode) visibleCodesSet.add(originalCode);
+        });
+      onVisiblePostsChange(Array.from(visibleCodesSet));
     }
   }, [onVisiblePostsChange, posts]);
 
@@ -60,13 +73,26 @@ export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
     const observer = new IntersectionObserver(
       (entries) => {
         const lastEntry = entries[0];
-        if (lastEntry.isIntersecting && hasNextPage && !isFetchingNextPage && !loading) {
-          onFetchNextPage();
-        }
+        if (!lastEntry?.isIntersecting) return;
+        if (!hasNextPage || isFetchingNextPage || loading) return;
+        if (fetchLockRef.current) return;
+
+        // throttle to at most 1 call per 400ms
+        const now = Date.now();
+        if (now - lastFetchTsRef.current < 400) return;
+
+        fetchLockRef.current = true;
+        lastFetchTsRef.current = now;
+        Promise.resolve(onFetchNextPage()).finally(() => {
+          // release lock slightly later to avoid back-to-back triggers on same frame
+          setTimeout(() => {
+            fetchLockRef.current = false;
+          }, 200);
+        });
       },
       {
         threshold: 0.1,
-        rootMargin: '100px'
+        rootMargin: '150px'
       }
     );
 
@@ -137,10 +163,14 @@ export const PostsList = forwardRef<HTMLDivElement, PostsListProps>(({
               onLike={onLike}
               onComment={onComment}
               onShare={onShare}
-              onRepost={onRepost}
+              onRepostConfirm={onRepostConfirm}
               onPostClick={onPostClick}
               containerRefCallback={(node) => setItemRef(post.code, node)}
             />
+            {/* Interstitial suggestion block appears once after specified index */}
+            {interstitial && index === interstitialAfter && (
+              <div className="my-3">{interstitial}</div>
+            )}
           </div>
         );
       })}

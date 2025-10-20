@@ -340,7 +340,7 @@ const SocialQRWeb = () => {
 
                 <div className="absolute top-8 z-50 flex justify-between w-full px-4 text-white">
                     <div></div>
-                    <div className="font-semibold text-center">{t("Scan to Rate")}</div>
+                    <div className="font-semibold text-center">{t("Scan")}</div>
                     <button 
                         type="button" 
                         onClick={handleGoBack} 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SocialMediaFile } from '@/types/social-feed';
 import { useTranslation } from 'react-i18next';
 import ImageLightbox from '@/components/common/ImageLightbox';
@@ -14,7 +14,9 @@ interface MediaDisplayProps {
   lightboxUserName?: string;
   lightboxUserAvatar?: string | null;
   classNameAudio?: string;
-  customLengthAudio?: number
+  customLengthAudio?: number;
+  singleWrapperClassName?: string; // overrides wrapper around single media (default px-4)
+  multiWrapperClassName?: string;  // overrides wrapper around multi media row (default flex gap-3 px-4 overflow-x-auto scrollbar-thin)
 }
 
 interface ImageGridProps {
@@ -213,6 +215,8 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
   lightboxUserAvatar,
   classNameAudio = '',
   customLengthAudio = 6,
+  singleWrapperClassName,
+  multiWrapperClassName,
 
 }) => {
   const categorized = useMemo(() => categorizeMediaFiles(mediaFiles || []), [mediaFiles]);
@@ -242,15 +246,16 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
   const visualMediaFiles = mediaFiles.filter(item =>
     item.fileType.startsWith('image/') || item.fileType.startsWith('video/')
   );
-
   const mediaItems = visualMediaFiles.map(item => ({
     url: item.urlFile,
-    type: item.fileType.startsWith('video/') ? 'video' : 'image' as 'video' | 'image'
+    type: item.fileType.startsWith('video/') ? 'video' : 'image' as 'video' | 'image',
+    s3Key: item?.s3Key,
+    fileName: item?.fileName,
   }));
   return (
     <div className={`${className}`}>
       {visualMediaFiles.length === 1 ? (
-        <div className="px-4">
+        <div className={singleWrapperClassName ?? "px-4"}>
           {(() => {
             const item = visualMediaFiles[0];
             return (
@@ -291,7 +296,7 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
                       maxHeight="60vh"
                       objectFit="cover"
                       controls={false}
-                      muted={true}
+                      muted={videoMuted[item.id] !== false}
                       autoPlay={true}
                     />
 
@@ -315,7 +320,7 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
           })()}
         </div>
       ) : visualMediaFiles.length > 1 ? (
-        <div className="flex gap-3 px-4 overflow-x-auto scrollbar-thin">
+        <div className={multiWrapperClassName ?? "flex gap-3 px-4 overflow-x-auto "}>
           {(() => {
             const maxHeight = Math.max(...visualMediaFiles.map(item => item.height || 0));
             const containerHeight = Math.min(Math.max(maxHeight / 4, 200), 280);
@@ -398,7 +403,6 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
         </div>
       ) : null}
 
-      {/* ImageLightbox for both images and videos */}
       {visualMediaFiles.length > 0 && (
         <ImageLightbox
           open={lightbox.open}
@@ -410,7 +414,7 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
             showDownload: true,
             showPageIndicator: true,
             showNavButtons: true,
-            showZoomControls: true,
+            showZoomControls: false,
             enableZoom: true,
             showHeader: true,
             effect: 'slide',
@@ -419,12 +423,10 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
         />
       )}
 
-      {/* Keep audios separate as before */}
       {categorized.audios.map((audio) => (
         <AudioPlayer key={audio.id} audioFile={audio} classNameAudio={classNameAudio} customLengthAudio={customLengthAudio} />
       ))}
 
-      {/* Keep documents separate */}
       {categorized.documents.map((doc) => (
         <DocumentDisplay key={doc.id} file={doc} />
       ))}

@@ -8,6 +8,7 @@ import { formatTimeFromNow } from '@/utils/formatTime';
 import { useSocialSignalRListChatRoom } from '@/hooks/useSocialSignalRListChatRoom';
 import useDeviceInfo from '@/hooks/useDeviceInfo';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
+import avatarGroupFallback from "@/icons/logo/social-chat/avt-gr-rounded.svg";
 import { ChatInfoType, KEYCHATFORMATNOTI } from '@/constants/socialChat';
 import { useAuthInfo } from '@/pages/Auth/hooks/useAuthInfo';
 import { useFriendshipReceivedRequests } from '@/pages/SocialPartner/hooks/useSocialPartner';
@@ -19,7 +20,7 @@ import MuteIcon from "@/icons/logo/social-chat/mute.svg?react"
 import UnMuteIcon from "@/icons/logo/social-chat/unmute.svg?react"
 import { useSocialSignalR } from '@/hooks/useSocialSignalR';
 import PullToRefresh from '@/components/common/PullToRefresh';
-import { IonContent } from '@ionic/react';
+import { IonContent, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/react';
 import { useRefreshCallback } from '@/contexts/RefreshContext';
 dayjs.extend(utc);
 
@@ -68,8 +69,8 @@ export default function SocialChatRecent() {
     enableDebugLogs: false,
   });
 
-  const scrollRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLIonContentElement>(null);
+  const autoPrefetchingRef = useRef(false);
   const handleRefresh = async () => {
     setRefreshing(true);
 
@@ -91,12 +92,27 @@ export default function SocialChatRecent() {
 
   useRefreshCallback('/social-chat', handleRefresh);
 
-  // useEffect(() => {
-  //   if (data?.pages) {
-  //     const allRooms = data.pages.flat();
-  //     setChatRooms(allRooms);
-  //   }
-  // }, [data ,setChatRooms]);
+  // Auto-prefetch more pages if the content does not fill the viewport
+  useEffect(() => {
+    const run = async () => {
+      if (!hasNextPage || isFetchingNextPage || autoPrefetchingRef.current) return;
+      try {
+        const el = contentRef.current ? await contentRef.current.getScrollElement() : null;
+        if (!el) return;
+        // If content height is not enough to scroll, fetch next page once
+        if (el.scrollHeight <= el.clientHeight + 48) {
+          autoPrefetchingRef.current = true;
+          try {
+            await fetchNextPage();
+          } finally {
+            autoPrefetchingRef.current = false;
+          }
+        }
+      } catch {}
+    };
+    void run();
+  }, [chatRooms.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const getDisplayMessageText = (room: RoomChatInfo, currentUserId: number) => {
     const storeLast = getLastMessageForRoom(room.code);
     const last = storeLast ?? room?.lastMessageInfo;
@@ -134,21 +150,20 @@ export default function SocialChatRecent() {
 
         const eventType = systemObj.Event;
         const eventValue = SystemMessageType[eventType as keyof typeof SystemMessageType];
-
-        switch (eventType) {
-          case "NOTIFY_GROUP_CHAT_CREATED": {
+        switch (eventValue) {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_CREATED: {
             systemPreview = `${actorName} ${t("has created the group!")}`;
             break;
           }
 
-          case "NOTIFY_GROUP_CHAT_KICKED": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_KICKED: {
             const kickedUser = systemObj.Users?.[0];
             const kickedName = kickedUser?.Id === currentUserId ? t("You") : kickedUser?.FullName || t("User");
             systemPreview = `${actorName} ${t("has removed")} ${kickedName}`;
             break;
           }
 
-          case "NOTIFY_GROUP_CHAT_ADD_MEMBER": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_ADD_MEMBER: {
             if (systemObj.Users && systemObj.Users.length > 0) {
               const names = systemObj.Users.map((u: any) =>
                 u.Id === currentUserId ? t("You") : u.FullName || u.UserName || "User"
@@ -165,30 +180,49 @@ export default function SocialChatRecent() {
             }
             break;
           }
-          case "NOTIFY_GROUP_CHAT_USER_LEAVE_GROUP": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_USER_LEAVE_GROUP: {
             systemPreview = `${actorName} ${t("has left the group")}`;
             break;
           }
-          case "NOTIFY_GROUP_CHAT_ADMIN_RENAME_GROUP": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_ADMIN_RENAME_GROUP: {
             systemPreview = `${actorName} ${t("has renamed the group")}`;
             break;
           }
-          case "NOTIFY_GROUP_CHAT_ADMIN_CHANGE_AVATAR_GROUP": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_ADMIN_CHANGE_AVATAR_GROUP: {
             systemPreview = `${actorName} ${t("has changed the group avatar")}`;
             break;
           }
-          case "NOTIFY_GROUP_CHAT_ADMIN_LEAVE_GROUP": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_ADMIN_LEAVE_GROUP: {
             systemPreview = `${actorName} ${t("has left the group as admin")}`;
             break;
           }
-          case "NOTIFY_GROUP_CHAT_CHANGE_ADMIN": {
+          case SystemMessageType.NOTIFY_GROUP_CHAT_CHANGE_ADMIN: {
             const newAdmin = systemObj.Users?.[0];
             const newAdminName = newAdmin?.Id === currentUserId ? t("You") : newAdmin?.FullName || t("User");
             systemPreview = `${actorName} ${t("has appointed")} ${newAdminName} ${t("as admin")}`;
             break;
           }
-          case "NOTIFY_FRIENDLY_ACCEPTED": {
+          case SystemMessageType.NOTIFY_FRIENDLY_ACCEPTED: {
             systemPreview = `${t("You")} ${t("and")} ${room?.title} ${t("are now friends")}`;
+            break;
+          }
+          case SystemMessageType.NOTIFY_GROUP_CHAT_SHARED: {
+            const isImage = (a: any) => a?.fileType === 10 || /\.(jpg|jpeg|png|gif|webp|heic|bmp)$/i.test(a?.fileName || a?.fileUrl || "");
+            const imgCount = attachments.filter(isImage).length;
+            const fileCount = attachments.length - imgCount;
+            if (attachments.length <= 0) {
+              systemPreview = `${actorName} ${t("has shared an attachment")}`;
+            } else if (imgCount > 0 && fileCount === 0) {
+              systemPreview = imgCount === 1
+                ? `${actorName} ${t("has shared a photo")}`
+                : `${actorName} ${t("has shared")} ${imgCount} ${t("photos")}`;
+            } else if (fileCount > 0 && imgCount === 0) {
+              systemPreview = fileCount === 1
+                ? `${actorName} ${t("has shared a file")}`
+                : `${actorName} ${t("has shared")} ${fileCount} ${t("files")}`;
+            } else {
+              systemPreview = `${actorName} ${t("has shared")} ${attachments.length} ${t("attachments")}`;
+            }
             break;
           }
           default:
@@ -265,27 +299,14 @@ export default function SocialChatRecent() {
     });
     return arr;
   }, [chatRooms]);
-  useEffect(() => {
-    const handleScroll = () => {
-      const el = scrollRef.current;
-      if (!el || isFetchingNextPage || !hasNextPage) return;
-
-      const threshold = 100;
-      const isBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
-      if (isBottom) fetchNextPage();
-    };
-
-    const el = scrollRef.current;
-    el?.addEventListener('scroll', handleScroll);
-    return () => el?.removeEventListener('scroll', handleScroll);
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
     <IonContent
       ref={contentRef}
       className={`no-scrollbar `}
       style={{
-        height: 'calc(100vh - 100px)'
+        height: 'calc(100vh - 150px)',
+        paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))'
       }}
       scrollY={true}
     >
@@ -300,10 +321,7 @@ export default function SocialChatRecent() {
             </div>
           </div>
         )}
-        <div
-          ref={scrollRef}
-          className={`   px-4 pt-4 `}
-        >
+        <div className={`px-4 pt-4 pb-32`}>
           <PullToRefresh onRefresh={handleRefresh}>
             <div className="">
               {sortedChatRooms.map((room) => {
@@ -321,10 +339,13 @@ export default function SocialChatRecent() {
                   >
                     <div className="flex items-center flex-1 min-w-0">
                       <img
-                        src={room?.avatarRoomChat || avatarFallback}
+                        src={room?.avatarRoomChat || (room?.type === ChatInfoType.Group ? avatarGroupFallback : avatarFallback)}
                         alt={room?.title}
                         className="w-[50px] h-[50px] rounded-2xl object-cover flex-none"
-                        onError={(e) => { e.currentTarget.src = avatarFallback; }}
+                        onError={(e) => {
+                          const fb = room?.type === ChatInfoType.Group ? avatarGroupFallback : avatarFallback;
+                          e.currentTarget.src = fb;
+                        }}
                       />
                       <div className="ml-3 min-w-0 flex-1 overflow-hidden">
                         <p className="text-base font-semibold truncate">{room.title}</p>
@@ -364,9 +385,30 @@ export default function SocialChatRecent() {
               )}
             </div>
           </PullToRefresh>
-
         </div>
       </div>
+      {hasNextPage && (
+        <IonInfiniteScroll
+          onIonInfinite={async (event) => {
+            try {
+              if (!isFetchingNextPage) {
+                await fetchNextPage();
+              }
+            } finally {
+              const el = event.target as HTMLIonInfiniteScrollElement;
+              requestAnimationFrame(() => el.complete());
+            }
+          }}
+          threshold="150px"
+          disabled={!hasNextPage}
+          className="pb-16"
+        >
+          <IonInfiniteScrollContent
+            loadingSpinner="bubbles"
+            loadingText={t('Loading...')}
+          />
+        </IonInfiniteScroll>
+      )}
     </IonContent>
   );
 }

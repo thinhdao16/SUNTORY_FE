@@ -25,10 +25,13 @@ export const useScrollRestoration = (options: UseScrollRestorationOptions = {}) 
             const ionContent = document.querySelector('ion-content');
             if (ionContent) {
                 const scrollElement = ionContent.shadowRoot?.querySelector('.inner-scroll') || ionContent;
-                return scrollElement;
+                return scrollElement as Element;
             }
-
-            return scrollContainerRef.current;
+            const el = scrollContainerRef.current as HTMLElement | null;
+            if (el && el.scrollHeight > el.clientHeight) {
+                return el as Element;
+            }
+            return null;
         };
 
         const handleScroll = () => {
@@ -70,27 +73,24 @@ export const useScrollRestoration = (options: UseScrollRestorationOptions = {}) 
         if (!enabled) return;
 
         const savedPosition = getScrollPosition(feedKey);
-
-
         if (savedPosition > 0) {
             isRestoringRef.current = true;
-
             const restorePosition = () => {
                 const ionContent = document.querySelector('ion-content');
                 let scrollElement: HTMLElement | null = null;
-
                 if (ionContent) {
                     scrollElement = (ionContent.shadowRoot?.querySelector('.inner-scroll') || ionContent) as HTMLElement;
                 } else {
-                    scrollElement = scrollContainerRef.current;
+                    const el = scrollContainerRef.current as HTMLElement | null;
+                    if (el && el.scrollHeight > el.clientHeight) {
+                        scrollElement = el;
+                    }
                 }
-
                 if (scrollElement) {
                     scrollElement.scrollTop = savedPosition;
                 } else {
                     window.scrollTo(0, savedPosition);
                 }
-
                 setTimeout(() => {
                     isRestoringRef.current = false;
                 }, 200);

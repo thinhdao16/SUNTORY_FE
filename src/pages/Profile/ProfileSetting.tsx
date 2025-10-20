@@ -1,15 +1,21 @@
 import { IonButtons, IonButton, IonHeader, IonToolbar, IonTitle, IonIcon } from "@ionic/react";
 import React, { useState } from "react";
-import { useHistory, useLocation, useParams } from "react-router-dom";
-import { useAuthInfo } from "../Auth/hooks/useAuthInfo";
+import { useHistory, useParams } from "react-router-dom";
 import i18n from "@/config/i18n";
-import MyInformation from "./AccountEdit/MyInformation";
-import HealthInformationEdit from "./HealthInformationEdit/HealthInformationEdit";
 import PageContainer from "@/components/layout/PageContainer";
-import ChangePassword from "../Auth/ChangePassword/ChangePassword";
 import { useLogout } from "./hooks/useLogout";
 import { arrowBack, chevronForwardOutline, peopleOutline, personAddOutline, lockClosedOutline, helpCircleOutline, logOutOutline, personCircleOutline, starOutline } from "ionicons/icons";
 import { t } from "@/lib/globalT";
+import ConfirmModal from "@/components/common/modals/ConfirmModal";
+import MyInfoIcon from "@/icons/logo/profile/my-info.svg?react"
+import AiInfoIcon from "@/icons/logo/profile/ai-profile.svg?react"
+import FriendListIcon from "@/icons/logo/profile/friend-list.svg?react"
+import FriendRequestIcon from "@/icons/logo/profile/friend-request.svg?react"
+import LockIcon from "@/icons/logo/profile/lock.svg?react"
+import HelpFeedbackIcon from "@/icons/logo/profile/help-feedback.svg?react"
+import LogoutIcon from "@/icons/logo/profile/logout.svg?react"
+
+
 
 
 const languageOptions = [
@@ -24,24 +30,25 @@ const Profile: React.FC = () => {
     const { section } = useParams<{ section?: string, type: string }>();
     const history = useHistory();
     const handleLogout = useLogout();
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const handleChangeLanguage = (status: boolean, lang?: string) => {
         setShowLanguageOptions(status);
     };
 
     return (
         <PageContainer className="">
-            <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
-                <IonToolbar style={{ '--background': '#EDF1FC', '--ion-background-color': '#EDF1FC' , '--item-color': 'black' } as any}>
+            <div style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
+                <IonToolbar style={{ '--background': '#EDF1FC', '--ion-background-color': '#EDF1FC', '--item-color': 'black' } as any}>
                     <IonButtons slot="start">
                         <IonButton
                             fill="clear"
                             onClick={() => history.push('/my-profile')}
                             className="pl-4"
                         >
-                            <IonIcon icon={arrowBack} className="text-gray-700 font-bold text-2xl" />
+                            <IonIcon icon={arrowBack} className=" text-black font-bold text-2xl" />
                         </IonButton>
                     </IonButtons>
-                    <IonTitle className="text-center font-bold" style={{ fontSize: '15px' }}>
+                    <IonTitle className="text-center font-bold text-black " style={{ fontSize: '15px' }}>
                         {section === "account"
                             ? t('My information')
                             : section === "health"
@@ -53,11 +60,11 @@ const Profile: React.FC = () => {
                     </IonTitle>
                     <IonButtons slot="end" style={{ textColor: 'black', fontSize: '15px' }}>
                         <IonButton className="opacity-0 pointer-events-none pr-4" fill="clear" style={{ textColor: 'black', fontSize: '15px' }}>
-                            <IonIcon icon={arrowBack} className="text-black"/>
+                            <IonIcon icon={arrowBack} className="text-black" />
                         </IonButton>
                     </IonButtons>
                 </IonToolbar>
-            </IonHeader>
+            </div>
             <div className="min-h-screen max-h-[calc(100vh-200px)] overflow-y-auto bg-white flex flex-col px-6 pb-24"
                 style={{ backgroundColor: '#EDF1FC' }}
             >
@@ -65,17 +72,17 @@ const Profile: React.FC = () => {
                     <div className="pb-20" style={{ backgroundColor: '#EDF1FC' }}>
                         <div className="space-y-4">
                             {/* Block 0: Profile info */}
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="bg-white rounded-2xl  border border-gray-100 overflow-hidden">
                                 <button
                                     type="button"
                                     className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-black hover:bg-gray-50 transition"
                                     onClick={() => history.push('/my-information')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={personCircleOutline} className="text-black text-2xl" />
+                                        <MyInfoIcon />
                                         <span>{t('My information')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-netural-300 text-xl" />
                                 </button>
                                 <hr className="border-gray-100" />
                                 <button
@@ -84,25 +91,24 @@ const Profile: React.FC = () => {
                                     onClick={() => history.push('/ai-profile-setting')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={starOutline} className="text-black text-2xl" />
+                                        <AiInfoIcon />
                                         <span>{t('AI health profile')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-netural-300 text-xl" />
                                 </button>
                             </div>
 
-                            {/* Block 1: Friends */}
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="bg-white rounded-2xl  border border-gray-100 overflow-hidden">
                                 <button
                                     type="button"
                                     className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-black hover:bg-gray-50 transition"
                                     onClick={() => history.push('/friend-list')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={peopleOutline} className="text-black text-2xl" />
+                                        <FriendListIcon />
                                         <span>{t('Friend list')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-netural-300 text-xl" />
                                 </button>
                                 <hr className="border-gray-100" />
                                 <button
@@ -111,46 +117,46 @@ const Profile: React.FC = () => {
                                     onClick={() => history.push('/friend-request-sent')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={personAddOutline} className="text-black text-2xl" />
+                                        <FriendRequestIcon />
                                         <span>{t('Friend request sent')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-netural-300 text-xl" />
                                 </button>
                             </div>
 
                             {/* Block 2: Settings */}
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="bg-white rounded-2xl  border border-gray-100 overflow-hidden">
                                 <button
                                     type="button"
                                     className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-black hover:bg-gray-50 transition"
                                     onClick={() => history.push('/change-password')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={lockClosedOutline} className="text-black text-2xl" />
+                                        <LockIcon />
                                         <span>{t('Reset password')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-netural-300 text-xl" />
                                 </button>
                                 <hr className="border-gray-100" />
-                                <button
+                                {/* <button
                                     type="button"
                                     className="w-full flex items-center justify-between px-4 py-[15px] text-left text-[15px] text-black hover:bg-gray-50 transition"
                                     onClick={() => history.push('/profile/help')}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={helpCircleOutline} className="text-black text-2xl" />
+                                        <HelpFeedbackIcon />
                                         <span>{t('Help & Feedbacks')}</span>
                                     </div>
-                                    <IonIcon icon={chevronForwardOutline} className="text-400 text-xl" />
+                                    <IonIcon icon={chevronForwardOutline} className="text-netural-300 text-xl" />
                                 </button>
-                                <hr className="border-gray-100" />
+                                <hr className="border-gray-100" /> */}
                                 <button
                                     type="button"
                                     className="w-full flex items-center justify-bet ween px-4 py-[15px] text-left text-[15px] text-red-500 hover:bg-red-50 transition"
-                                    onClick={() => { handleLogout() }}
+                                    onClick={() => setShowLogoutConfirm(true)}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <IonIcon icon={logOutOutline} className="text-red-500 text-2xl" />
+                                        <LogoutIcon />
                                         <span className="font-medium">{t('Log out')}</span>
                                     </div>
                                 </button>
@@ -199,6 +205,15 @@ const Profile: React.FC = () => {
                     )}
                 </div>
             </div>
+            <ConfirmModal
+                isOpen={showLogoutConfirm}
+                title={t('Confirm')}
+                message={t('Are you sure you want to log out?')}
+                confirmText={t('Yes, log out')}
+                cancelText={t('Cancel')}
+                onConfirm={() => { handleLogout(); }}
+                onClose={() => setShowLogoutConfirm(false)}
+            />
         </PageContainer>
     );
 };

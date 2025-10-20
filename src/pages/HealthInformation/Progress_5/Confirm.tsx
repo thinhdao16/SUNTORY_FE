@@ -24,8 +24,7 @@ function Confirm() {
             subtitle={t("Please review your information")}
         >
             <div>
-                children
-            </div>
+                {t("children")}</div>
         </HealthInformationStepLayout>
     )
 }

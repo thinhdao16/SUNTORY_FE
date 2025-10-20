@@ -24,7 +24,9 @@ import { useLongPressOpen } from "@/hooks/useLongPressOpen";
 import "./ChatMessageItem.css";
 import Portal from "@/components/common/Portal";
 import ChatSystemMessage from "./ChatSystemMessage";
+import SharedPostBubble from "./SharedPostBubble";
 import { KEYCHATFORMATNOTI, SystemMessageType } from "@/constants/socialChat";
+import { Link } from "react-router-dom";
 
 interface ChatMessageItemProps {
     msg: any;
@@ -83,20 +85,15 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     isLatestFriendlyAccepted = false,
     roomData,
 }) => {
-    const isDesktop = () => window.innerWidth > 1024;
 
     const { roomId } = useParams<{ roomId?: string; type?: string }>();
     const { t, i18n } = useTranslation();
-    const isNative = Capacitor.isNativePlatform();
     const { language: deviceLanguage } = useDeviceInfo();
 
     const hasText = typeof msg.messageText === "string" && msg.messageText.trim() !== "";
     const showText = hasText || msg.isRevoked === 1;
 
     const [isEditing, setIsEditing] = useState(false);
-    const [openModal, setOpenModal] = useState(false);
-    const [previewList, setPreviewList] = useState<string[]>([]);
-    const [previewIndex, setPreviewIndex] = useState(0);
 
     const [translatingMessages, setTranslatingMessages] = useState<Set<string>>(new Set());
 
@@ -201,9 +198,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     const reply = () => { if (onReplyMessage && !msg.isRevoked) onReplyMessage(msg); };
 
     const handleImageClick = (i: number, list: string[]) => {
-        setPreviewList(list);
-        setPreviewIndex(i);
-        setOpenModal(true);
+
     };
 
     const getTargetLanguageId = (): number => {
@@ -290,9 +285,8 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         }
         return null;
     };
-
     const eventData = parseSystemEvent(msg.messageText);
-
+    let sharedSystemData: any | null = null;
     if (eventData && eventData.Event && eventData.Key === KEYCHATFORMATNOTI) {
         const eventType = SystemMessageType[eventData.Event as keyof typeof SystemMessageType];
         const systemData = {
@@ -301,16 +295,22 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             target: eventData.Users?.length === 1 ? eventData.Users[0] : undefined,
             userIds: eventData.UserIds,
             key: eventData.Key,
+            PostCode: eventData.PostCode,
+            MessageShare: eventData.MessageShare,
         };
 
-        return (
-            <ChatSystemMessage
-                type={eventType}
-                data={systemData}
-                roomData={roomData}
-                isLatestFriendlyAccepted={isLatestFriendlyAccepted}
-            />
-        );
+        if (eventType === SystemMessageType.NOTIFY_GROUP_CHAT_SHARED) {
+            sharedSystemData = systemData;
+        } else {
+            return (
+                <ChatSystemMessage
+                    type={eventType}
+                    data={systemData}
+                    roomData={roomData}
+                    isLatestFriendlyAccepted={isLatestFriendlyAccepted}
+                />
+            );
+        }
     }
 
     const Bubble = (
@@ -401,12 +401,23 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 >
                     {!isUser && shouldShowAvatar && (
                         <div className="flex flex-col items-center mr-2">
-                            <img
-                                src={avatarUrl || avatarFallback}
-                                alt={msg.userName || "Avatar"}
-                                className="w-[30px] aspect-square object-cover rounded-[12px]"
-                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarFallback; }}
-                            />
+                            {msg?.userId ? (
+                                <Link to={`/profile/${msg.userId}`} className="block">
+                                    <img
+                                        src={avatarUrl || avatarFallback}
+                                        alt={msg.userName || "Avatar"}
+                                        className="w-[30px] aspect-square object-cover rounded-[12px] cursor-pointer"
+                                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarFallback; }}
+                                    />
+                                </Link>
+                            ) : (
+                                <img
+                                    src={avatarUrl || avatarFallback}
+                                    alt={msg.userName || "Avatar"}
+                                    className="w-[30px] aspect-square object-cover rounded-[12px]"
+                                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = avatarFallback; }}
+                                />
+                            )}
                         </div>
                     )}
                     {!isUser && !shouldShowAvatar && <div className="w-[30px] ml-2" />}
@@ -426,7 +437,15 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                             )}
                             {isEdited && !isRevoked && isUser && <div className="text-xs text-main font-semibold">{t("Edited")}</div>}
                         </div>
-                        {isGroup && showSenderName && (<div className="text-xs text-gray-500 ml-1 mb-0.5">{msg.userName}</div>)}
+                        {isGroup && showSenderName && (
+                            <div className="text-xs text-gray-500 ml-1 mb-0.5">
+                                {msg?.userId ? (
+                                    <Link to={`/profile/${msg.userId}`} className="font-semibold hover:underline">{msg.userName}</Link>
+                                ) : (
+                                    msg.userName
+                                )}
+                            </div>
+                        )}
                         {msg.replyToMessage && (<ReplyBubble msg={msg.replyToMessage} isUser={isUser} isRevoked={msg.replyToMessage.isRevoked === 1} />)}
                         <div
                             className="longpress-safe"
@@ -456,10 +475,27 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                             />
                         </div>
 
-                        {showText && Bubble}
-                        
+                        {sharedSystemData ? (
+                            <div
+                                id={anchorId}
+                                className={`${isUser ? "ml-auto" : "mr-auto"} longpress-safe touch-pan-y select-none`}
+                                {...bind((info) => {
+                                    const bubble = document.getElementById(anchorId) ?? (info.target as HTMLElement);
+                                    const r = bubble.getBoundingClientRect();
+                                    setAnchorRect(r);
+                                    setOverlayKind("message");
+                                    setMenuOpen(true);
+                                    requestAnimationFrame(() => update());
+                                })}
+                            >
+                                <SharedPostBubble data={sharedSystemData} isUser={isUser} />
+                            </div>
+                        ) : (
+                            showText && Bubble
+                        )}
+
                         {isUser && !isRevoked && (
-                            <MessageStatus 
+                            <MessageStatus
                                 message={msg}
                                 isGroup={isGroup || false}
                                 currentUserId={typeof currentUserId === 'string' ? parseInt(currentUserId) : (currentUserId || null)}
@@ -476,7 +512,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             {!isRevoked && menuOpen && anchorRect && layout && (
                 <Portal>
                     <motion.div
-                        className="fixed inset-0 z-[50] bg-black/10 backdrop-blur-sm pointer-events-auto select-none"
+                        className="fixed inset-0 z-[50] bg-black/10 backdrop-blur-md pointer-events-auto select-none"
                         style={{
                             userSelect: 'none',
                             WebkitUserSelect: 'none',
@@ -511,27 +547,31 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                             onContextMenu={(e) => e.preventDefault()}
                             onDragStart={(e) => e.preventDefault()}
                             onMouseDown={(e) => {
-                                if (e.detail > 1) e.preventDefault(); 
+                                if (e.detail > 1) e.preventDefault();
                             }}
                             onTouchStart={(e) => {
-                                e.preventDefault(); 
+                                e.preventDefault();
                             }}
                         >
                             {overlayKind === "message" ? (
-                                <MessageBubble
-                                    msg={msg}
-                                    isUser={isUser}
-                                    isEdited={isEdited}
-                                    isRevoked={isRevoked}
-                                    isError={isError}
-                                    isSend={isSend}
-                                    onEdit={undefined}
-                                    onRevoke={undefined}
-                                    onReply={undefined}
-                                    actionContainerRef={undefined}
-                                    showActionsMobile={false}
-                                    hasReachedLimit={true}
-                                />
+                                sharedSystemData ? (
+                                    <SharedPostBubble data={sharedSystemData} isUser={isUser} />
+                                ) : (
+                                    <MessageBubble
+                                        msg={msg}
+                                        isUser={isUser}
+                                        isEdited={isEdited}
+                                        isRevoked={isRevoked}
+                                        isError={isError}
+                                        isSend={isSend}
+                                        onEdit={undefined}
+                                        onRevoke={undefined}
+                                        onReply={undefined}
+                                        actionContainerRef={undefined}
+                                        showActionsMobile={false}
+                                        hasReachedLimit={true}
+                                    />
+                                )
                             ) : (
                                 <ImageGallery
                                     chatAttachments={msg.chatAttachments || []}
@@ -575,13 +615,13 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                                     <MdOutlineReply className="text-lg" /> {t("Reply")}
                                 </button>
                             )}
-                            {!isRevoked && isUser && hasText && (
+                            {!isRevoked && isUser && hasText && !sharedSystemData && (
                                 <button className="px-3 py-2 hover:bg-gray-100 w-full flex items-center gap-2"
                                     onClick={() => { setMenuOpen(false); setIsEditing(true); }}>
                                     <MdModeEditOutline className="text-lg" /> {t("Edit")}
                                 </button>
                             )}
-                            {!isRevoked && hasText && (
+                            {!isRevoked && hasText && !sharedSystemData && (
                                 <button className="px-3 py-2 hover:bg-gray-100 w-full flex items-center gap-2"
                                     onClick={() => { setMenuOpen(false); handleTranslateMessage(msg.code, msg.messageText); }}>
                                     <MdTranslate className="text-lg" /> {t("Translate")}
@@ -593,19 +633,21 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                                     <MdContentCopy className="text-lg" /> {t("Copy")}
                                 </button>
                             )} */}
-                            <div className="h-px bg-gray-200 my-1" />
                             {isUser && (
-                                <button className="px-3 py-2 text-red-600 hover:bg-red-50 w-full flex items-center gap-2"
-                                    onClick={() => { setMenuOpen(false); revoke(); }}>
-                                    <FaRegTrashAlt className="text-lg" /> {t("Delete")}
-                                </button>
+                                <>
+                                    <div className="h-px bg-gray-200 my-1" />
+                                    <button className="px-3 py-2 text-red-600 hover:bg-red-50 w-full flex items-center gap-2"
+                                        onClick={() => { setMenuOpen(false); revoke(); }}>
+                                        <FaRegTrashAlt className="text-lg" /> {t("Delete")}
+                                    </button>
+                                </>
                             )}
                         </div>
                     </div>
                 </Portal>
             )}
 
-                {/* <ImagesPreviewModal
+            {/* <ImagesPreviewModal
                     open={openModal}
                     images={previewList}
                     index={previewIndex}

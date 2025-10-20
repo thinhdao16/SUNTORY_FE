@@ -27,6 +27,15 @@ export function useFcmToken(mutate?: (data: { fcmToken: string }) => void) {
                         body: payload.notification.body || "No body",
                         avatar: payload?.data?.image_icon || "/favicon.png",
                         data: payload.data || {},
+                        fullData: (() => {
+                            try {
+                                const fullDataStr = payload?.data?.full_data;
+                                return fullDataStr ? JSON.parse(fullDataStr) : {};
+                            } catch (e) {
+                                console.warn('Failed to parse full_data:', e);
+                                return {};
+                            }
+                        })()
                     });
                     if (Notification.permission === "granted") {
                         const title = payload.notification.title || "Thông báo";
@@ -49,6 +58,10 @@ export function useFcmToken(mutate?: (data: { fcmToken: string }) => void) {
                         console.error("❌ Failed to parse warning:", e);
                     }
                 }
+
+                return () => {
+                    unsubscribe();
+                };
             });
         }
 

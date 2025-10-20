@@ -60,8 +60,8 @@ const TabNavigation: React.FC<{
                     key={tab.key}
                     onClick={() => onTabChange(tab.key)}
                     className={`flex-1 py-3 text-center font-medium transition-colors ${activeTab === tab.key
-                            ? "text-blue-600 border-b-2 border-blue-600"
-                            : "text-gray-500 hover:text-gray-700"
+                        ? "text-blue-600 border-b-2 border-blue-600"
+                        : "text-gray-500 hover:text-gray-700"
                         }`}
                 >
                     {tab.label}
@@ -87,7 +87,7 @@ const OtherUserProfile: React.FC = () => {
     const createAnonymousChatMutation = useCreateAnonymousChat();
 
     const targetUserId = parseInt(userId);
-    
+
     const { data: userInfo, isLoading, refetch } = useQuery(
         ['otherUserProfile', targetUserId],
         () => otherUserProfile({ userId: targetUserId }),
@@ -111,13 +111,13 @@ const OtherUserProfile: React.FC = () => {
             }
         }
     );
-    
+
     const sendFriendRequestMutation = useSendFriendRequest(showToast);
     const acceptFriendRequestMutation = useAcceptFriendRequest(showToast);
     const rejectFriendRequestMutation = useRejectFriendRequest(showToast);
     const cancelFriendRequestMutation = useCancelFriendRequest(showToast);
     const unfriendMutation = useUnfriend(showToast);
-    
+
     const refetchUserData = async () => {
         if (targetUserId && user?.id !== targetUserId) {
             await refetch();
@@ -130,14 +130,14 @@ const OtherUserProfile: React.FC = () => {
         autoConnect: true,
         enableDebugLogs: false,
     });
-    
+
     useEffect(() => {
         if (user?.id === targetUserId) {
             history.replace('/my-profile');
             return;
         }
     }, [user?.id, targetUserId, history]);
-    
+
     const handleTabChange = (tab: string) => {
         setActiveTab(tab);
         history.replace(`/profile/${userId}/${tab}`);
@@ -365,10 +365,12 @@ const OtherUserProfile: React.FC = () => {
                     <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
                         <IonButtons slot="start" className="pl-4">
                             <BackIcon onClick={() => history.goBack()} />
-                            <span className="font-semibold ml-4" style={{ fontSize: '15px' }}>
+                        </IonButtons>
+                        <div className="max-w-[200px] truncate">
+                            <span className="font-semibold  text-black pl-2" >
                                 {userInfo?.name}
                             </span>
-                        </IonButtons>
+                        </div>
                     </IonToolbar>
                 </IonHeader>
                 <IonContent style={{ '--background': 'white', height: '100%' } as any}>
@@ -386,7 +388,7 @@ const OtherUserProfile: React.FC = () => {
                                             style={{ width: 20, height: 20, borderRadius: 9999 }}
                                         />
                                     </div>
-                                    <div className="flex items-center space-x-1 mb-2">
+                                    {/* <div className="flex items-center space-x-1 mb-2">
                                         <p className="text-black overflow-hidden max-w-[110px] truncate text-[15px]">
                                             @{userInfo?.code}
                                         </p>
@@ -394,14 +396,13 @@ const OtherUserProfile: React.FC = () => {
                                             className="cursor-pointer"
                                             onClick={() => { navigator.clipboard.writeText(userInfo.code || "") }}
                                         />
-                                    </div>
+                                    </div> */}
                                     <div className="flex items-center space-x-1 mb-4">
                                         <p className="font-medium">
                                             {userInfo?.friendNumber}
                                         </p>
                                         <p className="mb-0 font-sans">
-                                            friends
-                                        </p>
+                                            {t("friends")}</p>
                                     </div>
                                 </div>
 
@@ -440,7 +441,7 @@ const OtherUserProfile: React.FC = () => {
                         >
                             <span className="font-medium">{t('Unfriend')}</span>
                         </button>
-                        
+
                         <button
                             className="w-full flex items-center justify-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                             onClick={() => setIsFriendOptionsOpen(false)}
@@ -459,7 +460,7 @@ const OtherUserProfile: React.FC = () => {
                         <p className="text-gray-600 text-center mb-4">
                             {t("Are you sure you want to cancel your friend request to")} {userInfo?.name}?
                         </p>
-                        
+
                         <button
                             className="w-full flex items-center justify-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             onClick={handleCancelFriendRequest}
@@ -467,7 +468,7 @@ const OtherUserProfile: React.FC = () => {
                         >
                             <span className="font-medium">{t('Cancel request')}</span>
                         </button>
-                        
+
                         <button
                             className="w-full flex items-center justify-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                             onClick={() => setIsCancelRequestOpen(false)}
@@ -487,7 +488,7 @@ const OtherUserProfile: React.FC = () => {
                         <p className="text-gray-600 text-center mb-4">
                             {userInfo?.name} {t("sent you a friend request")}
                         </p>
-                        
+
                         <button
                             className="w-full flex items-center justify-center gap-3 p-3 text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
                             onClick={handleAcceptFriendRequest}
@@ -495,7 +496,7 @@ const OtherUserProfile: React.FC = () => {
                         >
                             <span className="font-medium">{t('Accept')}</span>
                         </button>
-                        
+
                         <button
                             className="w-full flex items-center justify-center gap-3 p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                             onClick={handleDeclineFriendRequest}

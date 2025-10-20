@@ -1,7 +1,7 @@
 /* eslint-disable no-extra-boolean-cast */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // ================== Imports ==================
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import React, { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -15,7 +15,6 @@ import useDeviceInfo from "@/hooks/useDeviceInfo";
 import { useChatStreamMessages } from "./hooks/useChatStreamMessages";
 import { useKeyboardResize } from "@/hooks/useKeyboardResize";
 import { useScrollButton } from "@/hooks/useScrollButton";
-import { useAutoResizeTextarea } from "@/hooks/useAutoResizeTextarea";
 import { useScrollToBottom } from "@/hooks/useScrollToBottom";
 import { useUploadChatFile } from "@/hooks/common/useUploadChatFile";
 import { useAppState } from "@/hooks/useAppState";
@@ -27,16 +26,14 @@ import { useMessageRetry } from "@/hooks/useMessageRetry";
 import { useChatStore } from "@/store/zustand/chat-store";
 import { useImageStore } from "@/store/zustand/image-store";
 import { useUploadStore } from "@/store/zustand/upload-store";
-import { openSidebarWithAuthCheck } from "@/store/zustand/ui-store";
 
 import ChatInputBar from "./components/ChatStreamInputBar";
 import PendingFiles from "./components/PendingFiles";
 import PendingImages from "./components/PendingImages";
 import { ChatStreamMessageList } from "./components/ChatStreamMessageList";
-import NavBarHomeHistoryIcon from "@/icons/logo/nav_bar_home_history.svg?react";
 
 import "./ChatStream.module.css";
-import { IoArrowDown } from "react-icons/io5";
+import { IoArrowDown, IoArrowForward } from "react-icons/io5";
 import { useChatHistoryLastModule } from "./hooks/useChatStreamHistorylastModule";
 import { IonSpinner } from "@ionic/react";
 import { mergeMessagesStream } from "@/utils/mapSignalRStreamMessage ";
@@ -45,6 +42,7 @@ import { useSignalRChatStore } from "@/store/zustand/signalr-chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
 import BackDefaultIcon from "@/icons/logo/back.svg?react";
 import { useSignalRStream } from "@/hooks/useSignalRStream";
+import NextDefaultIcon from "@/icons/logo/next-default.svg?react";
 
 dayjs.extend(utc);
 
@@ -100,7 +98,8 @@ const Chat: React.FC = () => {
         pendingImages, pendingFiles,
         addPendingImages, addPendingFiles,
         removePendingImage, removePendingFile,
-        clearAll, removePendingImageByUrl
+        clearAll, removePendingImageByUrl,
+        replacePendingImage,
     } = useImageStore();
 
     const isSending = useChatStore((s) => s.isSending);
@@ -126,7 +125,6 @@ const Chat: React.FC = () => {
         return rawCompleted.filter((msg: any) => msg.chatCode === sessionIdString);
     }, [rawCompleted, sessionIdString]);
     
-    // Track active streams for current session
     const activeStreamsCount = useMemo(() => {
         return signalRMessages.filter(msg =>
             msg.chatCode === sessionIdString &&
@@ -135,7 +133,6 @@ const Chat: React.FC = () => {
         ).length;
     }, [signalRMessages, sessionIdString]);
     
-    // Log active streams count for monitoring
     useEffect(() => {
         if (activeStreamsCount > 0) {
             console.log(`[ChatStream] ${activeStreamsCount} active streams for session ${sessionIdString}`);
@@ -182,10 +179,11 @@ const Chat: React.FC = () => {
     useSignalRStream(deviceInfo.deviceId || "", sessionIdString, {
         logLevel: 0,
     });
-        const uploadImageMutation = useUploadChatFile();
+    const uploadImageMutation = useUploadChatFile();
     const scrollToBottomMess = useScrollToBottom(messagesEndRef);
     const { keyboardHeight, keyboardResizeScreen } = useKeyboardResize();
     const { showScrollButton, onContainerScroll, recalc } = useScrollButton(messagesContainerRef, messagesEndRef);
+    const [isPinnedBottom, setIsPinnedBottom] = useState(true);
     const {
         lastPage,
         messages,
@@ -208,11 +206,10 @@ const Chat: React.FC = () => {
         return true;
     }, [sessionIdString]);
 
-    const { chatHistory, isLoading: isLoadingHistory } = useChatHistoryLastModule(
+    const { chatHistory, isLoading: isLoadingHistory, refreshHistory } = useChatHistoryLastModule(
         parseInt(type || "0", 10),
         shouldFetchHistory
     );
-
     const {
         handleImageChange,
         handleFileChange,
@@ -240,6 +237,7 @@ const Chat: React.FC = () => {
         stopMessages,
         setStopMessages,
         removePendingImageByUrl,
+        replacePendingImage,
         messageRetry,
         setMessageRetry
     });
@@ -266,25 +264,12 @@ const Chat: React.FC = () => {
         });
     }, [signalRMessages, pendingMessages, pendingImages, pendingFiles, signalRMessagesBackUp, messages, completedMessages, dataBackUpMap]);
 
-    // Debug logging for sessionId and message flow tracking
-    useEffect(() => {
-        console.log('[ChatStream] Component state for session:', sessionIdString || 'undefined', {
-            sessionIdFromParams: sessionId,
-            sessionIdString: sessionIdString,
-            sessionIdType: typeof sessionId,
-            signalRMessages: signalRMessages.length,
-            completedMessages: completedMessages.length,
-            mergedMessages: mergedMessages.length,
-            pendingMessages: pendingMessages.length,
-            activeStreamsCount,
-            sessionStreams: signalRMessages.filter(msg => msg.chatCode === sessionIdString).length,
-            urlPath: window.location.pathname
-        });
-    }, [signalRMessages, completedMessages, mergedMessages, pendingMessages, sessionId, sessionIdString, activeStreamsCount]);
-
+    const handleSendForRetry = useCallback((e: any, messageText?: string) => {
+        (handleSendMessage as any)(e, true, messageText);
+    }, [handleSendMessage]);
 
     const { retryMessage } = useMessageRetry(
-        handleSendMessage,
+        handleSendForRetry,
         setMessageValue,
         addPendingImages,
         addPendingFiles,
@@ -303,6 +288,47 @@ const Chat: React.FC = () => {
         };
     }, [chatHistory, type]);
 
+    const quickSuggestions = useMemo(() => {
+        try {
+            const topicId = parseInt(type || "0", 10);
+            const bySession = sessionIdString ? (chatHistory || []).find((it: any) => it?.code === sessionIdString) as any : undefined;
+            const byTopic = (chatHistory || []).slice().reverse().find((it: any) => Number(it?.topic) === Number(topicId)) as any;
+            const src = (bySession || byTopic) as any;
+            const arr = Array.isArray(src?.questionRecomment) ? src.questionRecomment : [];
+            const cleaned = arr.filter((s: any) => typeof s === 'string' && s.trim());
+            if (cleaned.length > 0) return cleaned.slice(0, 3) as string[];
+            return [] as string[];
+        } catch {
+            return [] as string[];
+        }
+    }, [chatHistory, sessionIdString, type]);
+    const prevCompletedCountRef = useRef(0);
+    useEffect(() => {
+        if (completedMessages.length > prevCompletedCountRef.current) {
+            try { refreshHistory?.(); } catch {}
+        }
+        prevCompletedCountRef.current = completedMessages.length;
+    }, [completedMessages.length, refreshHistory]);
+
+    useEffect(() => {
+        if (sessionIdString && (quickSuggestions.length === 0)) {
+            try { refreshHistory?.(); } catch {}
+        }
+    }, [sessionIdString]);
+
+    const hasPendingAttachments = useMemo(() => {
+        return (pendingImages?.length ?? 0) > 0 || (pendingFiles?.length ?? 0) > 0 || uploadImageMutation.isLoading || imageLoading;
+    }, [pendingImages.length, pendingFiles.length, uploadImageMutation.isLoading, imageLoading]);
+
+    const handleQuickSuggestionClick = useCallback((q: string) => {
+        if (!q) return;
+        if (hasPendingAttachments) return;
+        setMessageValue(q);
+        try {
+            (handleSendMessage as any)({ preventDefault() {}, stopPropagation() {} }, true, q);
+        } catch {}
+    }, [handleSendMessage, setMessageValue, hasPendingAttachments]);
+
     const hasPendingMessages = useMemo(() => {
         return mergedMessages.some(msg =>
             msg.text === MessageState.PENDING ||
@@ -310,6 +336,8 @@ const Chat: React.FC = () => {
             msg.text === 'PENDING_MESSAGE'
         );
     }, [mergedMessages]);
+
+    
 
     const clearAllMessages = () => {
         useChatStore.getState().clearPendingMessages();
@@ -330,83 +358,55 @@ const Chat: React.FC = () => {
     }, []);
 
     const autoScrollIfNeeded = useCallback(() => {
-        if (!showScrollButton) {
+        if (isPinnedBottom) {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }
-    }, [showScrollButton]);
+    }, [isPinnedBottom]);
 
-    // Force re-render when new SignalR data arrives for current session
+    const scrollToBottomIfPinned = useCallback(() => {
+        if (isPinnedBottom) {
+            scrollToBottom();
+        }
+    }, [isPinnedBottom, scrollToBottom]);
+
     useEffect(() => {
         const currentSessionMessages = signalRMessages.filter(msg => msg.chatCode === sessionIdString);
         if (currentSessionMessages.length > 0) {
-            console.log(`[ChatStream] Force re-render: ${currentSessionMessages.length} SignalR messages for session ${sessionIdString}`);
-
-            // Trigger scroll to bottom for new messages if not showing scroll button
-            if (!showScrollButton) {
+            if (isPinnedBottom) {
                 setTimeout(forceScrollToBottomSmooth, 100);
             }
         }
-    }, [signalRMessages, sessionIdString, showScrollButton, forceScrollToBottomSmooth]);
-
-    // ==== Lifecycle Effects ====
-
-    // useEffect(() => {
-    //     if (sessionId && !isLoading) {
-    //         clearPendingMessages();
-    //         clearAllStreams();
-    //     }
-    // }, [isLoading]);
+    }, [signalRMessages, sessionIdString, isPinnedBottom, forceScrollToBottomSmooth]);
 
     useEffect(() => {
         if (!isValidTopicType) history.push("/home");
     }, [isValidTopicType, history]);
 
-    // Debug sessionId changes
-    useEffect(() => {
-        console.log('[ChatStream] SessionId from useParams changed:', {
-            sessionId: sessionId || 'undefined',
-            sessionIdType: typeof sessionId,
-            sessionIdValue: sessionId,
-            type: type || 'undefined',
-            urlPath: window.location.pathname,
-            timestamp: new Date().toISOString()
-        });
-    }, [sessionId, type]);
-
-    // Clear stale streams on component mount
     useEffect(() => {
         if (!sessionIdString) {
-            console.log('[ChatStream] SessionIdString not available yet, skipping stale stream cleanup');
             return;
         }
 
         const allStreams = Object.values(useSignalRStreamStore.getState().streamMessages);
         const staleStreams = allStreams.filter(stream => {
-            const isStale = Date.now() - new Date(stream.startTime).getTime() > 5 * 60 * 1000; // > 5 minutes
+            const isStale = Date.now() - new Date(stream.startTime).getTime() > 5 * 60 * 1000;
             const isDifferentSession = stream.chatCode !== sessionIdString;
             return isStale || isDifferentSession;
         });
 
         if (staleStreams.length > 0) {
-            console.log(`[ChatStream] Clearing ${staleStreams.length} stale streams on mount`);
             staleStreams.forEach(stream => {
                 useSignalRStreamStore.getState().clearStream(stream.messageCode);
             });
         }
-    }, [sessionIdString]); // Only run when sessionIdString changes
+    }, [sessionIdString]); 
 
     useEffect(() => {
         if (prevSessionIdRef.current !== sessionIdString) {
-            console.log(`[ChatStream] Session changed: ${prevSessionIdRef.current} → ${sessionIdString}`);
-
-            // Clear streams from previous session to prevent conflicts
             if (prevSessionIdRef.current) {
                 const prevSessionStreams = signalRMessages.filter(msg =>
                     msg.chatCode === prevSessionIdRef.current
                 );
-                console.log(`[ChatStream] Clearing ${prevSessionStreams.length} streams from previous session`);
-
-                // Clear streams for previous session
                 prevSessionStreams.forEach(stream => {
                     useSignalRStreamStore.getState().clearStream(stream.messageCode);
                 });
@@ -517,6 +517,7 @@ const Chat: React.FC = () => {
 useEffect(() => { recalc(); }, [mergedMessages.length]);
 useEffect(() => { recalc(); }, [keyboardHeight]);
 useEffect(() => { recalc(); }, []); 
+useEffect(() => { recalc(); }, [quickSuggestions.length]);
 
     useAppState(() => {
         if (sessionIdString) queryClient.invalidateQueries(["messages", sessionIdString]);
@@ -557,13 +558,13 @@ useEffect(() => { recalc(); }, []);
                     </span>
                 </div>
 
-                <div className="flex items-center justify-end z-10">
+                {/* <div className="flex items-center justify-end z-10">
                     <>
                         <button onClick={() => openSidebarWithAuthCheck()} aria-label="Sidebar">
                             <NavBarHomeHistoryIcon />
                         </button>
                     </>
-                </div>
+                </div> */}
             </div>
             {
                 debouncedLoading ? (
@@ -580,10 +581,18 @@ useEffect(() => { recalc(); }, []);
 
                         <div
                             className={`flex-1 overflow-x-hidden overflow-y-auto p-6 ${!isNative && !keyboardResizeScreen ? `pb-2 overflow-hidden` : ""}`}
-
                             ref={messagesContainerRef}
-                            onScroll={(e) => {
+                            onScroll={() => {
                                 onContainerScroll?.();
+                                const c = messagesContainerRef.current as HTMLElement | null;
+                                if (c) {
+                                    const distance = Math.max(0, c.scrollHeight - Math.ceil(c.scrollTop + c.clientHeight));
+                                    if (distance > 8) {
+                                        if (isPinnedBottom) setIsPinnedBottom(false);
+                                    } else {
+                                        if (!isPinnedBottom) setIsPinnedBottom(true);
+                                    }
+                                }
                                 handleScrollLoadMore();
                             }}
                         >
@@ -598,8 +607,35 @@ useEffect(() => { recalc(); }, []);
                                 onRetryMessage={retryMessage}
                                 isSpending={isSending || hasPendingMessages}
                                 thinkLoading={isSending || hasPendingMessages}
-                                scrollToBottom={scrollToBottom}
+                                scrollToBottom={scrollToBottomIfPinned}
+                                isLoadingMessages={isLoading || debouncedLoading}
                             />
+                            {!(isSending || hasPendingMessages || loadingStream.loading || activeStreamsCount > 0 || hasPendingAttachments) && (isLoadingHistory || quickSuggestions.length > 0) && (
+                                <div className="mt-4">
+                                    <div className="text-xs text-gray-400 mb-2">{t('Try saying...')}</div>
+                                    {isLoadingHistory && quickSuggestions.length === 0 ? (
+                                        <div className="flex flex-col gap-2">
+                                            <div className="h-11 rounded-xl bg-gray-100 animate-pulse" />
+                                            <div className="h-11 rounded-xl bg-gray-100 animate-pulse" />
+                                            <div className="h-11 rounded-xl bg-gray-100 animate-pulse" />
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col gap-2">
+                                            {quickSuggestions.map((q, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    className="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 rounded-xl border border-gray-200 text-left "
+                                                    onClick={() => handleQuickSuggestionClick(q)}
+                                                    disabled={isSending || hasPendingMessages || hasPendingAttachments}
+                                                >
+                                                    <span className="text-sm text-gray-800">{q}</span>
+                                                    <NextDefaultIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div style={{ marginTop: pendingBarHeight }} />
                             {/* {!isNative && (<div className={`h-25 lg:h-0 xl:h-15`} />)} */}
                             <div ref={messagesEndRef} className="h-px mt-auto shrink-0" />
@@ -614,7 +650,7 @@ useEffect(() => { recalc(); }, []);
                                     <div className="absolute top-[-42px] left-1/2 transform -translate-x-1/2">
                                         <button
                                             className="p-2.5 rounded-full shadow bg-white"
-                                            onClick={scrollToBottom}
+                                            onClick={() => { setIsPinnedBottom(true); scrollToBottom(); }}
                                         >
                                             <IoArrowDown />
                                         </button>

@@ -7,6 +7,7 @@ export enum TopicType {
     FoodDiscovery = 40,
     Chat = 50,
     MenuTranslation = 60,
+    Translatrion = 70,
 }
 
 export const TopicTypeLabel: Record<TopicType, string> = {
@@ -17,4 +18,5 @@ export const TopicTypeLabel: Record<TopicType, string> = {
     [TopicType.FoodDiscovery]: t("Food Label Interpretation"),
     [TopicType.MenuTranslation]: t("Menu Translation"),
     [TopicType.Chat]: t("JetAI"),
+    [TopicType.Translatrion]: t("Translation"),
 };

@@ -7,6 +7,8 @@ import { useQueryClient } from 'react-query';
 import { useSocialFeedStore } from '@/store/zustand/social-feed-store';
 import { SocialPost } from '@/types/social-feed';
 import { SocialFeedService } from '@/services/social/social-feed-service';
+import { useSearchResultsStore } from '@/store/zustand/search-results-store';
+import { useProfilePostsStore } from '@/store/zustand/profile-posts-store';
 
 export interface UsePostSignalROptions {
     postId?: string;
@@ -166,6 +168,7 @@ export function usePostSignalR(
         assignIfDefined('media');
         assignIfDefined('hashtags');
         assignIfDefined('isLike');
+        assignIfDefined('isRepostedByCurrentUser', payload.isRepostedByCurrentUser);
 
         if (payload.comment && payload.commentCount !== undefined) {
             patch.commentCount = payload.commentCount;
@@ -178,6 +181,35 @@ export function usePostSignalR(
         return patch;
     }, []);
 
+    const buildPatchForSearch = useCallback((payload: any) => {
+        if (!payload) return null as Partial<SocialPost> | null;
+        const source = payload.post ?? payload.repostData ?? payload;
+        const patch: Partial<SocialPost> = {};
+        const assignIfDefined = (key: keyof SocialPost, value?: unknown) => {
+            const val = value !== undefined ? value : source?.[key];
+            if (val !== undefined) {
+                patch[key] = val as any;
+            }
+        };
+        assignIfDefined('reactionCount', payload.reactionCount);
+        assignIfDefined('commentCount', payload.commentCount);
+        assignIfDefined('repostCount', payload.repostCount);
+        assignIfDefined('shareCount', payload.shareCount);
+        assignIfDefined('content');
+        assignIfDefined('media');
+        assignIfDefined('hashtags');
+        assignIfDefined('isLike');
+        assignIfDefined('isRepostedByCurrentUser', payload.isRepostedByCurrentUser);
+        return Object.keys(patch).length ? patch : null;
+    }, []);
+
+    const applyPatchToSearchCache = useCallback((codes: string[], payload: any) => {
+        const patch = buildPatchForSearch(payload);
+        if (!patch || !codes.length) return;
+        const apply = useSearchResultsStore.getState().applyPostPatch;
+        codes.forEach(code => apply(code, patch));
+    }, [buildPatchForSearch]);
+
     const applyPatchToQueryCache = useCallback((codes: string[], patch: Partial<SocialPost> | null) => {
         if (!patch || !codes.length) return;
 
@@ -186,6 +218,31 @@ export function usePostSignalR(
                 if (!old) return old;
                 return { ...old, ...patch };
             });
+        });
+    }, [queryClient]);
+
+    const applyPatchToUserPostsCaches = useCallback((codes: string[], patch: Partial<SocialPost> | null) => {
+        if (!patch || !codes.length) return;
+        const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+        try {
+            const applyProfile = useProfilePostsStore.getState().applyPatch;
+            codes.forEach(code => applyProfile(code, patch));
+        } catch {}
+        matching.forEach(([qk, old]) => {
+            if (!old?.pages) return;
+            try {
+                const newData = {
+                    ...old,
+                    pages: old.pages.map((page: any) => {
+                        if (!page?.data) return page;
+                        const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                        if (!list.length) return page;
+                        const updated = list.map((p: any) => codes.includes(p?.code) ? { ...p, ...patch } : p);
+                        return { ...page, data: { ...page.data, data: updated } };
+                    }),
+                };
+                queryClient.setQueryData(qk as any, newData);
+            } catch {}
         });
     }, [queryClient]);
 
@@ -254,44 +311,158 @@ export function usePostSignalR(
                 }
                 useSocialFeedStore.getState().removePostFromFeeds(postCode);
                 queryClient.invalidateQueries(['feedDetail', postCode]);
+                try {
+                    useSearchResultsStore.getState().removePost(postCode);
+                    const matchingUserPostQueries = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+                    matchingUserPostQueries.forEach(([qk, old]) => {
+                        if (!old?.pages) return;
+                        const newData = {
+                            ...old,
+                            pages: old.pages.map((page: any) => {
+                                if (!page?.data) return page;
+                                const prevList = Array.isArray(page.data?.data) ? page.data.data : [];
+                                const filtered = prevList.filter((p: any) => p?.code !== postCode);
+                                if (filtered === prevList) return page;
+                                return { ...page, data: { ...page.data, data: filtered } };
+                            }),
+                        };
+                        queryClient.setQueryData(qk as any, newData);
+                    });
+                } catch {}
                 onPostUpdated?.(data);
                 return;
             }
             if (data.type === 45) {
                 console.log("New post created:", data);
-                const newPost = data.post || data.repostData;
-                if (newPost) {
-                    const store = useSocialFeedStore.getState();
-                    Object.keys(store.cachedFeeds).forEach(feedKey => {
-                        const currentFeed = store.cachedFeeds[feedKey];
-                        if (currentFeed && currentFeed.posts) {
-                            const updatedPosts = [newPost, ...currentFeed.posts];
-                            store.setFeedPosts(updatedPosts, feedKey);
+                void (async () => {
+                    let newPost = data.post || data.repostData;
+                    if (!newPost) {
+                        try {
+                            if (data.repostId) {
+                                newPost = await SocialFeedService.getPostById(data.repostId);
+                            } else if (data.repostCode) {
+                                newPost = await SocialFeedService.getPostByCode(data.repostCode);
+                            } else if (data.postCode) {
+                                newPost = await SocialFeedService.getPostByCode(data.postCode);
+                            }
+                        } catch (e) {
+                            log("Failed to fetch created/reposted post", e);
                         }
-                    });
-                    if (Object.keys(store.cachedFeeds).length === 0) {
-                        store.appendFeedPosts([newPost], 'home');
                     }
-                    if (data.originalPostCode && data.interactionType === 50) {
-                        const originalPostCode = data.originalPostCode;
-                        store.applyRealtimePatch(originalPostCode, {
-                            repostCount: data.repostCount || 0
+
+                    if (newPost) {
+                        const store = useSocialFeedStore.getState();
+                        Object.keys(store.cachedFeeds).forEach(feedKey => {
+                            const currentFeed = store.cachedFeeds[feedKey];
+                            if (currentFeed && currentFeed.posts) {
+                                store.appendFeedPosts([newPost], feedKey);
+                            }
                         });
-                        queryClient.invalidateQueries(['feedDetail', originalPostCode]);
+
+                        try {
+                            const ownerId = newPost.userId;
+                            const PROFILE_TAB_REPOSTS = 40; 
+                            const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+                            matching.forEach(([qk, old]) => {
+                                if (!old?.pages?.length || !Array.isArray(qk)) return;
+                                const tabType = qk[1];
+                                const targetUserId = qk[2];
+                                const isRepostsTab = tabType === PROFILE_TAB_REPOSTS;
+                                const isTargetUser = !targetUserId || Number(targetUserId) === Number(ownerId);
+                                if (!isRepostsTab || !isTargetUser) return;
+                                try {
+                                    const firstPage = old.pages[0];
+                                    const list = Array.isArray(firstPage?.data?.data) ? firstPage.data.data : [];
+                                    const deduped = list.filter((p: any) => p?.code !== newPost.code);
+                                    const updatedFirst = { ...firstPage, data: { ...firstPage.data, data: [newPost, ...deduped] } };
+                                    const newData = { ...old, pages: [updatedFirst, ...old.pages.slice(1)] };
+                                    queryClient.setQueryData(qk as any, newData);
+                                } catch {}
+                            });
+                        } catch {}
+
+                        if (data.originalPostCode && data.interactionType === 50) {
+                            const originalPostCode = data.originalPostCode as string;
+                            try {
+                                if (typeof data.repostCount === 'number' && Number.isFinite(data.repostCount)) {
+                                    store.applyRealtimePatch(originalPostCode, { repostCount: data.repostCount } as any);
+                                } else {
+                                    const state = useSocialFeedStore.getState();
+                                    let prevCount: number | undefined;
+                                    Object.keys(state.cachedFeeds).forEach(key => {
+                                        (state.cachedFeeds[key]?.posts || []).forEach((p: any) => {
+                                            if (p?.code === originalPostCode || p?.originalPost?.code === originalPostCode) {
+                                                if (prevCount === undefined) prevCount = p?.repostCount;
+                                            }
+                                        });
+                                    });
+                                    const next = Math.max(0, (prevCount ?? 0) + 1);
+                                    store.applyRealtimePatch(originalPostCode, { repostCount: next } as any);
+                                }
+                                queryClient.invalidateQueries(['feedDetail', originalPostCode]);
+                                try {
+                                    const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+                                    matching.forEach(([qk, old]) => {
+                                        if (!old?.pages) return;
+                                        try {
+                                            let foundPrev: number | undefined;
+                                            const nextRepost = typeof data.repostCount === 'number' && Number.isFinite(data.repostCount)
+                                                ? data.repostCount
+                                                : (() => {
+                                                    old.pages.forEach((page: any) => {
+                                                        if (!page?.data) return;
+                                                        const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                                                        list.forEach((p: any) => { if (p?.code === originalPostCode && foundPrev === undefined) foundPrev = p?.repostCount; });
+                                                    });
+                                                    return Math.max(0, (foundPrev ?? 0) + 1);
+                                                })();
+                                            const newData = {
+                                                ...old,
+                                                pages: old.pages.map((page: any) => {
+                                                    if (!page?.data) return page;
+                                                    const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                                                    if (!list.length) return page;
+                                                    const updated = list.map((p: any) => p?.code === originalPostCode ? { ...p, repostCount: nextRepost } : p);
+                                                    return { ...page, data: { ...page.data, data: updated } };
+                                                }),
+                                            };
+                                            queryClient.setQueryData(qk as any, newData);
+                                        } catch {}
+                                    });
+                                } catch {}
+                            } catch {}
+                        }
+                    } else {
+                        if (data.originalPostCode && data.interactionType === 50) {
+                            try {
+                                const fresh = await SocialFeedService.getPostByCode(data.originalPostCode);
+                                useSocialFeedStore.getState().applyRealtimePatch(data.originalPostCode, { repostCount: (fresh as any)?.repostCount } as any);
+                            } catch {}
+                        }
                     }
-                    
-                    queryClient.invalidateQueries({ queryKey: ['socialFeed'] });
-                }
-                onPostCreated?.(data);
-                onPostUpdated?.(data);
+
+                    onPostCreated?.(data);
+                    onPostUpdated?.(data);
+                })();
                 return;
             }
             const { primary, codes } = resolveCodesFromPayload(data);
-            if (!primary || !joinedPostsRef.current.has(primary)) return;
-            const patch = applyPatchSafe(codes, data);
-            applyPatchToQueryCache(codes, patch);
-            schedulePostRefresh(primary);
-            queryClient.invalidateQueries(['feedDetail', primary]);
+            applyPatchToSearchCache(codes, data);
+            const userPatch = buildPatchForSearch(data);
+            applyPatchToUserPostsCaches(codes, userPatch);
+            if (primary && joinedPostsRef.current.has(primary)) {
+                const patch = applyPatchSafe(codes, data);
+                applyPatchToQueryCache(codes, patch);
+                const looksLikeReaction = (
+                    data?.reactionCount !== undefined ||
+                    data?.isLike !== undefined ||
+                    data?.post?.reactionCount !== undefined ||
+                    data?.post?.isLike !== undefined
+                );
+                if (!looksLikeReaction) {
+                    schedulePostRefresh(primary);
+                }
+            }
             onPostUpdated?.(data);
         });
 
@@ -299,6 +470,8 @@ export function usePostSignalR(
         connection.on("CommentAdded", (data: any) => {
             console.log("CommentAdded received:", data);
             const { primary, codes } = resolveCodesFromPayload(data);
+            applyPatchToSearchCache(codes, data);
+            applyPatchToUserPostsCaches(codes, buildPatchForSearch(data));
             if (!primary || !joinedPostsRef.current.has(primary)) return;
             
             if (data.comment) {
@@ -315,6 +488,7 @@ export function usePostSignalR(
         connection.on("CommentUpdated", (data: any) => {
             console.log("CommentUpdated received:", data);
             const { primary, codes } = resolveCodesFromPayload(data);
+            applyPatchToSearchCache(codes, data);
             if (!primary || !joinedPostsRef.current.has(primary)) return;
             
             if (data.comment) {
@@ -332,6 +506,7 @@ export function usePostSignalR(
         connection.on("CommentDeleted", (data: any) => {
             console.log("CommentDeleted received:", data);
             const { primary, codes } = resolveCodesFromPayload(data);
+            applyPatchToSearchCache(codes, data);
             if (!primary || !joinedPostsRef.current.has(primary)) return;
             
             if (data.comment || data.commentId) {
@@ -350,11 +525,12 @@ export function usePostSignalR(
         connection.on("PostLiked", (data: any) => {
             console.log("PostLiked received:", data);
             const { primary, codes } = resolveCodesFromPayload(data);
-            if (!primary || !joinedPostsRef.current.has(primary)) return;
-            const patch = applyPatchSafe(codes, data);
-            applyPatchToQueryCache(codes, patch);
-            schedulePostRefresh(primary);
-            queryClient.invalidateQueries(['feedDetail', primary]);
+            applyPatchToSearchCache(codes, data);
+            applyPatchToUserPostsCaches(codes, buildPatchForSearch(data));
+            if (primary && joinedPostsRef.current.has(primary)) {
+                const patch = applyPatchSafe(codes, data);
+                applyPatchToQueryCache(codes, patch);
+            }
             onPostLiked?.(data);
         });
 
@@ -362,11 +538,12 @@ export function usePostSignalR(
         connection.on("PostUnliked", (data: any) => {
             console.log("PostUnliked received:", data);
             const { primary, codes } = resolveCodesFromPayload(data);
-            if (!primary || !joinedPostsRef.current.has(primary)) return;
-            const patch = applyPatchSafe(codes, data);
-            applyPatchToQueryCache(codes, patch);
-            schedulePostRefresh(primary);
-            queryClient.invalidateQueries(['feedDetail', primary]);
+            applyPatchToSearchCache(codes, data);
+            applyPatchToUserPostsCaches(codes, buildPatchForSearch(data));
+            if (primary && joinedPostsRef.current.has(primary)) {
+                const patch = applyPatchSafe(codes, data);
+                applyPatchToQueryCache(codes, patch);
+            }
             onPostUnliked?.(data);
         });
 
@@ -375,6 +552,7 @@ export function usePostSignalR(
             console.log("CommentLiked received:", data);
             if (data?.userId === useAuthStore.getState().user?.id) return;
             const { primary, codes } = resolveCodesFromPayload(data);
+            applyPatchToSearchCache(codes, data);
             if (!primary || !joinedPostsRef.current.has(primary)) return;
             if (data.comment) {
                 const updatedComment = {
@@ -397,6 +575,7 @@ export function usePostSignalR(
             log("CommentUnliked received:", data);
             if (data?.userId === useAuthStore.getState().user?.id) return;
             const { primary, codes } = resolveCodesFromPayload(data);
+            applyPatchToSearchCache(codes, data);
             if (!primary || !joinedPostsRef.current.has(primary)) return;
             if (data.comment) {
                 const updatedComment = {
@@ -418,11 +597,46 @@ export function usePostSignalR(
         connection.on("PostReposted", (data: any) => {
             console.log("PostReposted received:", data);
             const { primary, codes } = resolveCodesFromPayload({ ...data, postCode: data?.originalPostCode });
-            if (!primary || !joinedPostsRef.current.has(primary)) return;
-            const patch = applyPatchSafe(codes, { ...data, postCode: primary });
+            const patchForCaches = { ...data, postCode: primary };
+            applyPatchToSearchCache(codes, patchForCaches);
+            const userPatch = buildPatchForSearch(patchForCaches);
+            applyPatchToUserPostsCaches(codes, userPatch);
+
+            if (primary && (userPatch === null || (userPatch && (userPatch as any).repostCount === undefined))) {
+                try {
+                    const matching = queryClient.getQueriesData(['userPosts']) as Array<[any, any]>;
+                    matching.forEach(([qk, old]) => {
+                        if (!old?.pages) return;
+                        try {
+                            let prev: number | undefined;
+                            old.pages.forEach((page: any) => {
+                                if (!page?.data) return;
+                                const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                                list.forEach((p: any) => { if (p?.code === primary && prev === undefined) prev = p?.repostCount; });
+                            });
+                            const next = Math.max(0, (prev ?? 0) + 1);
+                            const newData = {
+                                ...old,
+                                pages: old.pages.map((page: any) => {
+                                    if (!page?.data) return page;
+                                    const list = Array.isArray(page.data?.data) ? page.data.data : [];
+                                    if (!list.length) return page;
+                                    const updated = list.map((p: any) => p?.code === primary ? { ...p, repostCount: next } : p);
+                                    return { ...page, data: { ...page.data, data: updated } };
+                                }),
+                            };
+                            queryClient.setQueryData(qk as any, newData);
+                        } catch {}
+                    });
+                } catch {}
+            }
+
+            const patch = applyPatchSafe(codes, patchForCaches);
             applyPatchToQueryCache(codes, patch);
-            schedulePostRefresh(primary);
-            queryClient.invalidateQueries(['feedDetail', primary]);
+
+            if (primary && joinedPostsRef.current.has(primary)) {
+                schedulePostRefresh(primary);
+            }
             onPostUpdated?.(data);
         });
 

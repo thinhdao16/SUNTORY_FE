@@ -36,7 +36,7 @@ const LanguageDropdown: React.FC<LanguageDropdownProps> = ({
         <div ref={containerRef} className="relative inline-block text-left bg-success-500 px-3 py-1 rounded-xl" onClick={() => setOpen(!open)}>
             <div className="flex" >
                 <button type="button" className={`flex items-center focus:outline-none font-semibold text-sm  ${selected.code && ' uppercase'}`}>
-                    {selected.code ?? 'Auto'}
+                    {selected.code ?? t('Auto')}
                 </button>
                 <button>
                     <VectorUpIcon className={`${open ? 'transform rotate-180' : ''}`} />

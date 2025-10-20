@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SocialFeedCard } from '@/pages/Social/Feed/components/SocialFeedCard';
 import { useUserPosts, ProfileTabType } from '../hooks/useUserPosts';
@@ -9,8 +9,13 @@ import { useUserPostUpdate } from '../hooks/useUserPostUpdate';
 import { handleCopyToClipboard } from '@/components/common/HandleCoppy';
 import { useToastStore } from '@/store/zustand/toast-store';
 import { useHistory } from 'react-router-dom';
-import PrivacyBottomSheet from '@/components/common/PrivacyBottomSheet';
 import { PrivacyPostType } from '@/types/privacy';
+import { usePostSignalR } from '@/hooks/usePostSignalR';
+import useDeviceInfo from '@/hooks/useDeviceInfo';
+import { useProfilePostsStore, generateProfileKey } from '@/store/zustand/profile-posts-store';
+
+// Use a stable empty array to avoid creating a new reference on every render
+const EMPTY_POSTS: any[] = [];
 
 interface UserPostsListProps {
     tabType: ProfileTabType;
@@ -24,9 +29,6 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
     const showToast = useToastStore((state) => state.showToast);
     const scrollRef = useRef<HTMLDivElement>(null);
     
-    const [showPrivacySheet, setShowPrivacySheet] = useState(false);
-    const [repostPrivacy, setRepostPrivacy] = useState<PrivacyPostType>(PrivacyPostType.Public);
-    const [pendingRepostCode, setPendingRepostCode] = useState<string | null>(null);
 
     const {
         data,
@@ -36,41 +38,197 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
         hasNextPage,
         isFetchingNextPage,
         refetch,
-    } = useUserPosts(tabType, targetUserId) as any;
-
+    } = useUserPosts(tabType, targetUserId, 20, { enabled: targetUserId === undefined || !!targetUserId }) as any;
+    const profileKey = useMemo(() => generateProfileKey(tabType, targetUserId), [tabType, targetUserId]);
+    const allPosts = useProfilePostsStore((s: any) => s.cachedProfiles[profileKey]?.posts ?? EMPTY_POSTS);
+    console.log(allPosts)
     const postLikeMutation = useUserPostLike({ tabType, targetUserId });
     const postRepostMutation = useUserPostRepost({ tabType, targetUserId });
     const postUpdateMutation = useUserPostUpdate({ tabType, targetUserId });
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     const fetchingRef = useRef(false);
+    const ioRef = useRef<IntersectionObserver | null>(null);
+    const lastFetchAtRef = useRef(0);
+    const initialAutoLoadsRemainingRef = useRef(2);
+    const itemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+    const itemObserverRef = useRef<IntersectionObserver | null>(null);
+    const visibilityMapRef = useRef<Map<string, boolean>>(new Map());
+    const [visiblePostCodes, setVisiblePostCodes] = useState<string[]>([]);
+
+    // Single SignalR connection for Profile list
+    const deviceInfo = useDeviceInfo();
+    const { joinPostUpdates, leavePostUpdates } = usePostSignalR(deviceInfo.deviceId ?? '', {
+        autoConnect: true,
+        enableDebugLogs: false,
+    });
+    const MAX_REALTIME_POSTS = 8;
+    const JOIN_DELAY_MS = 1200;
+    const LEAVE_DELAY_MS = 800;
+    const joinTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+    const leaveTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+    const joinedPostsRef = useRef<Set<string>>(new Set());
+
+    // Reset auto load budget when tab/user changes
+    useEffect(() => {
+        initialAutoLoadsRemainingRef.current = 2;
+        lastFetchAtRef.current = 0;
+    }, [tabType, targetUserId]);
 
     useEffect(() => {
         if (!scrollRef.current || !sentinelRef.current) return;
         const root = scrollRef.current;
 
+        // Disconnect previous observer if any
+        if (ioRef.current) ioRef.current.disconnect();
+
         const io = new IntersectionObserver(
             async (entries) => {
                 const entry = entries[0];
-                if (
-                    entry.isIntersecting &&
-                    hasNextPage &&
-                    !isFetchingNextPage &&
-                    !fetchingRef.current
-                ) {
-                    fetchingRef.current = true;
+                if (!entry.isIntersecting) return;
+                if (!hasNextPage || isFetchingNextPage || fetchingRef.current) return;
+
+                // Throttle to prevent cascaded rapid fetches
+                const now = Date.now();
+                if (now - lastFetchAtRef.current < 400) return;
+
+                // Limit auto-loads on first render to avoid spamming many pages
+                const allowAutoLoad = initialAutoLoadsRemainingRef.current > 0;
+                const userHasScrolled = root.scrollTop > 0; // allow unlimited after user scrolls
+                if (!allowAutoLoad && !userHasScrolled) return;
+
+                fetchingRef.current = true;
+                lastFetchAtRef.current = now;
+                try {
                     await fetchNextPage();
+                } finally {
                     fetchingRef.current = false;
+                    if (initialAutoLoadsRemainingRef.current > 0) {
+                        initialAutoLoadsRemainingRef.current -= 1;
+                    }
                 }
             },
-            { root, rootMargin: '200px', threshold: 0 }
+            { root, rootMargin: '100px', threshold: 0.01 }
         );
 
         io.observe(sentinelRef.current);
+        ioRef.current = io;
         return () => io.disconnect();
-    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage, allPosts.length]);
 
+    // Observe each card to compute visible posts and manage SignalR joins
+    const setItemRef = useCallback((code: string, node: HTMLDivElement | null) => {
+        const obs = itemObserverRef.current;
+        const prev = itemRefs.current.get(code);
+        if (prev && obs) {
+            obs.unobserve(prev);
+        }
+        if (node) {
+            itemRefs.current.set(code, node);
+            if (obs) obs.observe(node);
+        } else {
+            itemRefs.current.delete(code);
+            visibilityMapRef.current.delete(code);
+        }
+    }, []);
 
-    const allPosts = data?.pages?.flatMap((page: any) => page?.data?.data || []) || [];
+    // Keep a ref to posts so the observer callback stays stable and doesn't re-create on each like toggle
+    const postsRef = useRef<any[]>(EMPTY_POSTS);
+    useEffect(() => { postsRef.current = allPosts; }, [allPosts]);
+
+    const handleVisibilityEntries = useCallback((entries: IntersectionObserverEntry[]) => {
+        let changed = false;
+        entries.forEach((entry) => {
+            const el = entry.target as HTMLElement;
+            const code = el.dataset.postCode;
+            if (!code) return;
+            const visible = entry.isIntersecting && entry.intersectionRatio >= 0.55;
+            const prev = visibilityMapRef.current.get(code) || false;
+            if (prev !== visible) {
+                visibilityMapRef.current.set(code, visible);
+                changed = true;
+            }
+        });
+        if (changed) {
+            const visibleCodes: string[] = [];
+            const list = postsRef.current || EMPTY_POSTS;
+            for (let i = 0; i < list.length; i++) {
+                const p: any = list[i];
+                if (visibilityMapRef.current.get(p.code)) {
+                    visibleCodes.push(p.code);
+                    const original = p?.originalPost?.code as string | undefined;
+                    if (original) visibleCodes.push(original);
+                }
+            }
+            const next = Array.from(new Set(visibleCodes)).slice(0, MAX_REALTIME_POSTS);
+            setVisiblePostCodes((prev) => {
+                if (prev.length === next.length && prev.every((c, i) => c === next[i])) return prev;
+                return next;
+            });
+        }
+    }, []);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(handleVisibilityEntries, {
+            threshold: [0.1, 0.25, 0.5, 0.75, 0.9],
+            root: scrollRef.current || null,
+            rootMargin: '50px'
+        });
+        itemObserverRef.current = observer;
+        // attach current nodes
+        itemRefs.current.forEach((node) => { if (node) observer.observe(node); });
+        return () => observer.disconnect();
+    }, [handleVisibilityEntries]);
+
+    useEffect(() => {
+        const targetSet = new Set(visiblePostCodes);
+        // cancel pending joins for posts no longer visible
+        joinTimeoutsRef.current.forEach((timer, code) => {
+            if (!targetSet.has(code)) {
+                clearTimeout(timer);
+                joinTimeoutsRef.current.delete(code);
+            }
+        });
+        // schedule joins
+        visiblePostCodes.forEach((code) => {
+            if (joinedPostsRef.current.has(code) || joinTimeoutsRef.current.has(code)) return;
+            const t = setTimeout(async () => {
+                try {
+                    const ok = await joinPostUpdates(code);
+                    if (ok !== false) joinedPostsRef.current.add(code);
+                } finally {
+                    joinTimeoutsRef.current.delete(code);
+                }
+            }, JOIN_DELAY_MS);
+            joinTimeoutsRef.current.set(code, t);
+        });
+        // schedule leaves for posts no longer visible
+        joinedPostsRef.current.forEach((code) => {
+            if (targetSet.has(code) || leaveTimeoutsRef.current.has(code)) return;
+            const t = setTimeout(async () => {
+                try { await leavePostUpdates(code); } catch {}
+                finally {
+                    leaveTimeoutsRef.current.delete(code);
+                    joinedPostsRef.current.delete(code);
+                }
+            }, LEAVE_DELAY_MS);
+            leaveTimeoutsRef.current.set(code, t);
+        });
+        return () => {
+            // no-op
+        };
+    }, [visiblePostCodes, joinPostUpdates, leavePostUpdates]);
+
+    useEffect(() => {
+        return () => {
+            joinTimeoutsRef.current.forEach((t) => clearTimeout(t));
+            leaveTimeoutsRef.current.forEach((t) => clearTimeout(t));
+            joinTimeoutsRef.current.clear();
+            leaveTimeoutsRef.current.clear();
+            joinedPostsRef.current.forEach((code) => { void leavePostUpdates(code); });
+            joinedPostsRef.current.clear();
+        };
+    }, [leavePostUpdates]);
+
     const handleLike = (postCode: string) => {
         const post = allPosts.find((p: any) => p.code === postCode);
         if (!post) return;
@@ -93,22 +251,12 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
         showToast(t('Link copied to clipboard'), 2000, 'success');
     };
 
-    const handleRepost = (postCode: string) => {
-        setPendingRepostCode(postCode);
-        setShowPrivacySheet(true);
-    };
-
-    const handlePrivacySelect = (privacy: PrivacyPostType) => {
-        if (pendingRepostCode) {
-            postRepostMutation.mutate({
-                postCode: pendingRepostCode,
-                caption: 'Repost',
-                privacy: Number(privacy)
-            });
-        }
-        setShowPrivacySheet(false);
-        setPendingRepostCode(null);
-        setRepostPrivacy(PrivacyPostType.Public);
+    const handleRepostConfirm = (postCode: string, privacy: PrivacyPostType) => {
+        postRepostMutation.mutate({
+            postCode,
+            caption: 'Repost',
+            privacy: Number(privacy)
+        });
     };
 
 
@@ -159,13 +307,13 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
     return (
         <div className="bg-white" ref={scrollRef} style={{ height: '100%' }}>
             {allPosts.map((post: any, index: number) => (
-                <div key={post.id || post.code}>
+                <div key={post.code} data-post-code={post.code} ref={(node) => setItemRef(post.code, node)}>
                     <SocialFeedCard
                         post={post}
                         onLike={handleLike}
                         onComment={handleComment}
                         onShare={handleShare}
-                        onRepost={handleRepost}
+                        onRepostConfirm={handleRepostConfirm}
                         onPostClick={handlePostClick}
                         onPostUpdate={(updatedPost) => {
                             postUpdateMutation.mutate(updatedPost);
@@ -188,17 +336,7 @@ const UserPostsList: React.FC<UserPostsListProps> = ({ tabType, targetUserId }) 
                 </div>
             )}
 
-            {/* Privacy Bottom Sheet for Repost */}
-            <PrivacyBottomSheet
-                isOpen={showPrivacySheet}
-                closeModal={() => {
-                    setShowPrivacySheet(false);
-                    setPendingRepostCode(null);
-                    setRepostPrivacy(PrivacyPostType.Public);
-                }}
-                selectedPrivacy={repostPrivacy}
-                onSelectPrivacy={handlePrivacySelect}
-            />
+            {/* PrivacyBottomSheet is embedded inside SocialFeedCard now */}
         </div>
     );
 };

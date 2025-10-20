@@ -191,7 +191,7 @@ const EditFeed: React.FC = () => {
                 allMediaFilenames.push(audioFilename);
             }
 
-            const hashtags = postText.match(/#\w+/g)?.map(tag => tag.substring(1)) || [];
+            const hashtags = [...new Set(postText.match(/#\w+/g)?.map(tag => tag.substring(1)) || [])];
 
             await updatePostMutation.mutateAsync({
                 postCode,

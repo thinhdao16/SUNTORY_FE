@@ -9,6 +9,9 @@ interface ConfirmModalProps {
     cancelText?: string;
     onConfirm: () => void;
     onClose: () => void;
+    // Optional class overrides for button colors/styles
+    confirmButtonClassName?: string;
+    cancelButtonClassName?: string;
 }
 
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -19,6 +22,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
     cancelText = t("Cancel"),
     onConfirm,
     onClose,
+    confirmButtonClassName = "",
+    cancelButtonClassName = "",
 }) => {
     return (
         <Transition appear show={isOpen} as={Fragment}>
@@ -57,7 +62,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
                                 <div className="mt-6 flex justify-center gap-3 bg-netural-50 p-4">
                                     <button
                                         onClick={onClose}
-                                        className="rounded-full bg-white px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                                        className={`${cancelButtonClassName} rounded-full bg-white px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200`}
                                     >
                                         {cancelText}
                                     </button>
@@ -66,7 +71,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
                                             onConfirm();
                                             onClose();
                                         }}
-                                        className="rounded-full bg-red-500 px-6 py-2 text-sm font-medium text-white hover:bg-red-600"
+                                        className={`${confirmButtonClassName} rounded-full bg-red-500 px-6 py-2 text-sm font-medium text-white hover:bg-red-600`}
                                     >
                                         {confirmText}
                                     </button>

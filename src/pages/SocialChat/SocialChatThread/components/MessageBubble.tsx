@@ -139,9 +139,9 @@ export const MessageBubble: React.FC<{
                                             {!translatedText && !isTranslating && (
                                                 <button
                                                     onClick={handleToggleTranslation}
-                                                    className={`text-xs border-t ${isUser ? "border-primary-200" : "border-netural-100"} pt-1`}
+                                                    className={`text-xs border-t w-full text-left ${isUser ? "border-primary-200" : "border-netural-100"} pt-1`}
                                                 >
-                                                    See translation
+                                                    {t("See translation")}
                                                 </button>
                                             )}
                                         </div>
@@ -152,13 +152,12 @@ export const MessageBubble: React.FC<{
                                                 onClick={() => setShowTranslation(!showTranslation)}
                                                 className={`text-xs ${isUser ? "border-primary-200" : "border-netural-100"} pt-1 ${showTranslation ? "" : "border-t "}`}
                                             >
-                                                {'Hide translation'}
+                                                {t('Hide translation')}
                                             </button>
                                         </div>
                                     )}
                                 </>
                             )}
-
                         </div>
                     </div>
                 </div>

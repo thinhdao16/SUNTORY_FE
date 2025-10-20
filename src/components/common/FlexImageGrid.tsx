@@ -142,7 +142,7 @@ const StripItem: React.FC<{
                 <div className="absolute inset-0 bg-black/35 flex items-center justify-center pointer-events-none">
                     <div className="flex items-center gap-2 text-white text-xs">
                         <div className="w-5 h-5 border-2 border-white/80 border-t-transparent rounded-full animate-spin" />
-                        <span>Uploading…</span>
+                        <span>{t("Uploading…")}</span>
                     </div>
                 </div>
             )}
@@ -150,8 +150,7 @@ const StripItem: React.FC<{
             {uploadError && (
                 <div className="absolute inset-0 bg-red-500/15 flex items-center justify-center">
                     <div className="bg-red-500 text-white px-2 py-1 rounded text-xs shadow">
-                        Upload error
-                    </div>
+                        {t("Upload error")}</div>
                 </div>
             )}
 

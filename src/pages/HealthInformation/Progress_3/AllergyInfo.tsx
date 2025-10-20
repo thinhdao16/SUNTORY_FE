@@ -25,8 +25,7 @@ function AllergyInfo() {
             subtitle={t("Help us avoid allergy-causing recommendations")}
         >
             <div>
-                children
-            </div>
+                {t("children")}</div>
         </HealthInformationStepLayout>
     );
 }

@@ -167,18 +167,15 @@ const YearOfBirthUpdateModal: React.FC<YearOfBirthUpdateModalProps> = ({
                                 />
                                 {year.trim().length === 0 && (
                                     <p className="text-xs text-red-500 font-medium mt-2">
-                                        Year of birth is required!
-                                    </p>
+                                        {t("Year of birth is required!")}</p>
                                 )}
                                 {year.length > 0 && yearNum < 1900 && (
                                     <p className="text-xs text-red-500 font-medium mt-2">
-                                        Year must be 1900 or later!
-                                    </p>
+                                        {t("Year must be 1900 or later!")}</p>
                                 )}
                                 {year.length > 0 && yearNum > currentYear && (
                                     <p className="text-xs text-red-500 font-medium mt-2">
-                                        Year cannot be in the future!
-                                    </p>
+                                        {t("Year cannot be in the future!")}</p>
                                 )}
                             </div>
 

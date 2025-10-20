@@ -2,6 +2,7 @@ import SocialChatRecent from './SocialChatRecent/SocialChatRecent';
 import SocialChatSearch from './SocialChatSearch';
 import SocialChatThread from './SocialChatThread/SocialChatThread';
 import SocialChatListRequest from './SocialChatListRequest';
+import SocialChatSuggestions from './SocialChatSuggestions';
 import SocialChatInfo from './SocialChatInfo/SocialChatInfo'; 
 import SocialChatMembers from './SocialChatInfo/SocialChatMembers'; 
 import SearchIcon from '@/icons/logo/social-chat/search.svg?react';
@@ -53,7 +54,8 @@ export function useSocialChatLayout(
       contentComponent = <SocialChatCameraWeb />;
       break;
     case 'list-request':
-      contentComponent = <SocialChatListRequest />;
+      // Repurpose this route to show Suggestions per new design
+      contentComponent = <SocialChatSuggestions />;
       leftIcon = (
         <SearchIcon onClick={() => goTo('/social-chat/search')} />
       );

@@ -1,8 +1,9 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { SearchService } from '@/services/social/search-service';
 import { SocialFeedService } from '@/services/social/social-feed-service';
-import { SearchUser, SearchPost } from '@/services/social/search-service';
-import { SocialPost } from '@/types/social-feed';
+import { SearchUser } from '@/services/social/search-service';
+import { useSearchResultsStore, generateSearchKey, SearchTab, SearchResultsTabState } from '@/store/zustand/search-results-store';
+import { FeedType } from '@/constants/socialChat';
 
 interface UseInfiniteSearchOptions {
     searchQuery: string;
@@ -15,151 +16,162 @@ export const useInfiniteSearch = ({
     activeTab, 
     pageSize = 20 
 }: UseInfiniteSearchOptions) => {
-    const [users, setUsers] = useState<SearchUser[]>([]);
-    const [posts, setPosts] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [hasMore, setHasMore] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const tab = (activeTab as SearchTab) || 'all';
+    const key = generateSearchKey(tab, searchQuery);
 
-    // Pagination states
-    const [currentPage, setCurrentPage] = useState(0);
-    const [lastPostCode, setLastPostCode] = useState<string | undefined>(undefined);
-
-    const isInitialLoad = useRef(true);
-
-    const resetData = useCallback(() => {
-        setUsers([]);
-        setPosts([]);
-        setCurrentPage(0);
-        setLastPostCode(undefined);
-        setHasMore(true);
-        setError(null);
-        isInitialLoad.current = true;
-    }, []);
+    const tabState = useSearchResultsStore(useCallback((s) => s.cached[key] as SearchResultsTabState | undefined, [key]));
+    const ensureKey = useSearchResultsStore(s => s.ensureKey);
+    const replaceUsers = useSearchResultsStore(s => s.replaceUsers);
+    const appendUsers = useSearchResultsStore(s => s.appendUsers);
+    const replacePosts = useSearchResultsStore(s => s.replacePosts);
+    const appendPosts = useSearchResultsStore(s => s.appendPosts);
+    const setHasMore = useSearchResultsStore(s => s.setHasMore);
+    const setCurrentPage = useSearchResultsStore(s => s.setCurrentPage);
+    const setLastPostCode = useSearchResultsStore(s => s.setLastPostCode);
+    const setLoading = useSearchResultsStore(s => s.setLoading);
+    const setError = useSearchResultsStore(s => s.setError);
 
     const loadMoreData = useCallback(async () => {
-        if (isLoading || !hasMore || !searchQuery.trim()) return;
+      const q = searchQuery.trim();
+      // Always read the latest tab state from the store to avoid stale closures
+      const local = useSearchResultsStore.getState().getResults(key) as SearchResultsTabState | undefined;
+      if (!q) return;
+      if (local?.isLoading || local?.hasMore === false) return;
 
-        setIsLoading(true);
-        setError(null);
+      setLoading(key, true);
+      setError(key, null);
 
         try {
             let newUsers: SearchUser[] = [];
-            let newPosts: any[] = [];
+          let newPosts: any[] = [];
 
-            switch (activeTab) {
+            switch (tab) {
                 case 'people':
                     const usersResponse = await SearchService.searchUsers(
-                        searchQuery, 
-                        currentPage, 
+                        q,
+                        (local?.currentPage ?? 0),
                         pageSize
                     );
                     newUsers = usersResponse.data.data || [];
                     
-                    if (isInitialLoad.current) {
-                        setUsers(newUsers);
+                    if ((local?.currentPage ?? 0) === 0) {
+                        replaceUsers(key, newUsers);
                     } else {
-                        setUsers(prev => [...prev, ...newUsers]);
+                        appendUsers(key, newUsers);
                     }
                     
-                    setHasMore(newUsers.length === pageSize);
-                    setCurrentPage(prev => prev + 1);
+                    setHasMore(key, newUsers.length === pageSize);
+                    setCurrentPage(key, (local?.currentPage ?? 0) + 1);
                     break;
 
-                case 'posts':
+                case 'latest':
                     const postsResponse = await SearchService.searchPosts(
-                        searchQuery, 
-                        currentPage, 
+                        q,
+                        (local?.currentPage ?? 0),
                         pageSize
                     );
                     newPosts = postsResponse.data.data || [];
                     
-                    if (isInitialLoad.current) {
-                        setPosts(newPosts);
+                    if ((local?.currentPage ?? 0) === 0) {
+                        replacePosts(key, newPosts);
                     } else {
-                        setPosts(prev => [...prev, ...newPosts]);
+                        appendPosts(key, newPosts);
                     }
                     
-                    setHasMore(newPosts.length === pageSize);
-                    setCurrentPage(prev => prev + 1);
+                    setHasMore(key, newPosts.length === pageSize);
+                    setCurrentPage(key, (local?.currentPage ?? 0) + 1);
                     break;
 
-                case 'latest':
-                    // Use feed API with lastPostCode pagination
-                    const feedResponse = await SocialFeedService.getFeedWithLastPostCode(
-                        lastPostCode,
-                        pageSize,
-                        30, // feedType for search
-                        searchQuery.startsWith('#') ? searchQuery.substring(1) : undefined
-                    );
+                case 'posts':
+                    {
+                        const isHashtag = q.startsWith('#');
+                        const feedResponse = await SocialFeedService.getFeedWithLastPostCode(
+                            local?.lastPostCode,
+                            pageSize,
+                            isHashtag ? FeedType.Hashtag : FeedType.Everyone,
+                            isHashtag ? q.substring(1) : undefined,
+                            !isHashtag ? q : undefined
+                        );
                     newPosts = feedResponse.data || [];
+                    }
                     
-                    if (isInitialLoad.current) {
-                        setPosts(newPosts);
+                    if ((local?.currentPage ?? 0) === 0 && (local?.posts?.length ?? 0) === 0) {
+                        replacePosts(key, newPosts);
                     } else {
-                        setPosts(prev => [...prev, ...newPosts]);
+                        appendPosts(key, newPosts);
                     }
-                    
-                    // Update lastPostCode for next load
                     if (newPosts.length > 0) {
-                        setLastPostCode(newPosts[newPosts.length - 1].code);
+                        setLastPostCode(key, newPosts[newPosts.length - 1].code);
                     }
                     
-                    setHasMore(newPosts.length === pageSize);
+                    setHasMore(key, newPosts.length === pageSize);
                     break;
 
                 case 'all':
                 default:
-                    // Load both users and posts
-                    const [allUsersResponse, allPostsResponse] = await Promise.all([
-                        SearchService.searchUsers(searchQuery, currentPage, Math.floor(pageSize / 2)),
-                        SearchService.searchPosts(searchQuery, currentPage, Math.floor(pageSize / 2))
-                    ]);
-                    
-                    newUsers = allUsersResponse.data.data || [];
-                    newPosts = allPostsResponse.data.data || [];
-                    
-                    if (isInitialLoad.current) {
-                        setUsers(newUsers);
-                        setPosts(newPosts);
-                    } else {
-                        setUsers(prev => [...prev, ...newUsers]);
-                        setPosts(prev => [...prev, ...newPosts]);
+                    // Load both users and posts. Prioritize showing full posts page size.
+                    {
+                        const usersPageSize = Math.max(1, Math.floor(pageSize / 2)); // e.g. 10 when pageSize=20
+                        const postsPageSize = pageSize; // show full page of posts
+                        const [allUsersResponse, allPostsResponse] = await Promise.all([
+                            SearchService.searchUsers(q, (local?.currentPage ?? 0), usersPageSize),
+                            SearchService.searchPosts(q, (local?.currentPage ?? 0), postsPageSize)
+                        ]);
+
+                        newUsers = allUsersResponse.data.data || [];
+                        newPosts = allPostsResponse.data.data || [];
+
+                        if ((local?.currentPage ?? 0) === 0) {
+                            replaceUsers(key, newUsers);
+                            replacePosts(key, newPosts);
+                        } else {
+                            appendUsers(key, newUsers);
+                            appendPosts(key, newPosts);
+                        }
+
+                        // hasMore if either list still has more pages
+                        setHasMore(key, (newPosts.length === postsPageSize) || (newUsers.length === usersPageSize));
+                        setCurrentPage(key, (local?.currentPage ?? 0) + 1);
                     }
-                    
-                    setHasMore(newUsers.length + newPosts.length === pageSize);
-                    setCurrentPage(prev => prev + 1);
                     break;
             }
-
-            isInitialLoad.current = false;
         } catch (err) {
             console.error('Error loading more data:', err);
-            setError('Failed to load more data');
+            setError(key, 'Failed to load more data');
         } finally {
-            setIsLoading(false);
+            setLoading(key, false);
         }
-    }, [searchQuery, activeTab, currentPage, lastPostCode, pageSize, isLoading, hasMore]);
+    }, [searchQuery, tab, pageSize, key]);
 
-    // Reset data when search query or tab changes
     useEffect(() => {
-        resetData();
-    }, [searchQuery, activeTab, resetData]);
+        ensureKey(key);
+    }, [key, ensureKey]);
 
-    // Load initial data
     useEffect(() => {
-        if (searchQuery.trim() && isInitialLoad.current) {
+        const q = searchQuery.trim();
+        if (!q) return;
+        if (tabState?.isLoading) return;
+        const emptyUsers = (tabState?.users?.length ?? 0) === 0;
+        const emptyPosts = (tabState?.posts?.length ?? 0) === 0;
+        if (emptyUsers && emptyPosts) {
             loadMoreData();
         }
-    }, [searchQuery, activeTab]);
+    }, [key, tabState?.isLoading, tabState?.users?.length, tabState?.posts?.length, loadMoreData, searchQuery]);
 
     return {
-        users,
-        posts,
-        isLoading,
-        hasMore,
-        error,
+        users: tabState?.users || [],
+        posts: tabState?.posts || [],
+        isLoading: tabState?.isLoading || false,
+        hasMore: tabState?.hasMore ?? true,
+        error: tabState?.error || null,
         loadMoreData,
-        resetData
+        resetData: () => {
+            replaceUsers(key, []);
+            replacePosts(key, []);
+            setCurrentPage(key, 0);
+            setLastPostCode(key, undefined);
+            setHasMore(key, true);
+            setError(key, null);
+        }
     };
-};
+}

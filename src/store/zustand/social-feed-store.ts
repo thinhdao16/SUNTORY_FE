@@ -233,21 +233,25 @@ export const useSocialFeedStore = create<SocialFeedStore>((set, get) => ({
     Object.keys(updatedFeeds).forEach(key => {
       updatedFeeds[key] = {
         ...updatedFeeds[key],
-        posts: updatedFeeds[key].posts.map((post: SocialPost) => 
-          post.code === postCode 
-            ? { ...post, isLike: !post.isLike, reactionCount: post.isLike ? post.reactionCount - 1 : post.reactionCount + 1 }
-            : post
-        )
+        posts: updatedFeeds[key].posts.map((post: SocialPost) => {
+          if (post.code !== postCode) return post;
+          const wasLiked = Boolean(post.isLike);
+          const prevCount = (post.reactionCount ?? 0);
+          const nextCount = wasLiked ? Math.max(0, prevCount - 1) : prevCount + 1;
+          return { ...post, isLike: !wasLiked, reactionCount: nextCount };
+        })
       };
     });
     
     set({
       cachedFeeds: updatedFeeds,
       currentPost: state.currentPost?.code === postCode 
-        ? { 
-            ...state.currentPost, 
-            isLike: !state.currentPost.isLike,
-            reactionCount: state.currentPost.isLike ? state.currentPost.reactionCount - 1 : state.currentPost.reactionCount + 1
+        ? {
+            ...state.currentPost,
+            isLike: !Boolean(state.currentPost.isLike),
+            reactionCount: Boolean(state.currentPost.isLike)
+              ? Math.max(0, (state.currentPost.reactionCount ?? 0) - 1)
+              : (state.currentPost.reactionCount ?? 0) + 1
           }
         : state.currentPost
     });
@@ -273,20 +277,50 @@ export const useSocialFeedStore = create<SocialFeedStore>((set, get) => ({
       }
       acc[key] = {
         ...feed,
-        posts: feed.posts.map((post: SocialPost) =>
-          post.code === postCode
-            ? mergePost(post)
-            : post
-        ),
+        posts: feed.posts.map((post: SocialPost) => {
+          if (post.code === postCode) {
+            // Direct match: merge into the post itself (and nested original if same)
+            return mergePost(post);
+          }
+          // If this is a repost card whose original matches the target code, update nested original
+          if (post.originalPost && post.originalPost.code === postCode) {
+            return {
+              ...post,
+              // Propagate key counters/flags to top-level so UI reads stay in sync
+              repostCount: (patch as any)?.repostCount ?? post.repostCount,
+              reactionCount: (patch as any)?.reactionCount ?? post.reactionCount,
+              commentCount: (patch as any)?.commentCount ?? post.commentCount,
+              shareCount: (patch as any)?.shareCount ?? post.shareCount,
+              isRepostedByCurrentUser: (patch as any)?.isRepostedByCurrentUser ?? post.isRepostedByCurrentUser,
+              originalPost: { ...post.originalPost, ...patch },
+            } as SocialPost;
+          }
+          return post;
+        }),
       };
       return acc;
     }, {} as Record<string, CachedFeed | undefined>) as Record<string, CachedFeed>;
 
+    // Sync currentPost as well (detail page)
+    const curr = state.currentPost;
+    let newCurrent = curr;
+    if (curr?.code === postCode) {
+      newCurrent = mergePost(curr);
+    } else if (curr?.originalPost && curr.originalPost.code === postCode) {
+      newCurrent = {
+        ...curr,
+        repostCount: (patch as any)?.repostCount ?? curr.repostCount,
+        reactionCount: (patch as any)?.reactionCount ?? curr.reactionCount,
+        commentCount: (patch as any)?.commentCount ?? curr.commentCount,
+        shareCount: (patch as any)?.shareCount ?? curr.shareCount,
+        isRepostedByCurrentUser: (patch as any)?.isRepostedByCurrentUser ?? curr.isRepostedByCurrentUser,
+        originalPost: { ...curr.originalPost, ...patch },
+      } as SocialPost;
+    }
+
     set({
       cachedFeeds: updatedFeeds,
-      currentPost: state.currentPost?.code === postCode
-        ? mergePost(state.currentPost)
-        : state.currentPost,
+      currentPost: newCurrent,
     });
   },
 
@@ -331,6 +365,21 @@ export const useSocialFeedStore = create<SocialFeedStore>((set, get) => ({
           ...state.cachedFeeds,
           [key]: {
             ...currentFeed,
+            scrollPosition: position
+          }
+        }
+      });
+    } else {
+      // Create a placeholder feed entry to store scroll position for custom keys (e.g., search pages)
+      set({
+        cachedFeeds: {
+          ...state.cachedFeeds,
+          [key]: {
+            posts: [],
+            currentPage: 0,
+            hasNextPage: false,
+            totalPages: 0,
+            totalRecords: 0,
             scrollPosition: position
           }
         }

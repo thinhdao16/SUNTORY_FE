@@ -13,12 +13,13 @@ import LogoIcon from "@/icons/logo/logo.svg?react";
 import LogoTextIcon from "@/icons/logo/logo_text.svg?react";
 import CloseIcon from "@/icons/logo/close.svg?react";
 import { useTranslation } from "react-i18next";
+import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 
 interface LoginFormValues {
     emailOrPhone: string;
     password: string;
     deviceId: string | null;
-    firebaseToken?: string;
+    firebaseToken?: string | undefined;
 }
 
 const Login: React.FC = () => {
@@ -35,9 +36,20 @@ const Login: React.FC = () => {
         setValue,
     } = useForm<LoginFormValues>();
 
-    const onSubmit = (data: LoginFormValues) => {
+    const onSubmit = async (data: LoginFormValues) => {
+        let token: string | undefined;
+        try {
+            const permStatus = await FirebaseMessaging?.checkPermissions();
+            if (permStatus?.receive === 'granted') {
+                const result = await FirebaseMessaging?.getToken();
+                token = result?.token;
+            }
+        } catch (error) {
+            console.warn('Failed to get FCM token:', error);
+        }
+
         loginMutate(
-            { email: data.emailOrPhone, password: data.password, deviceId: deviceInfo.deviceId },
+            { email: data.emailOrPhone, password: data.password, deviceId: deviceInfo.deviceId, firebaseToken: token },
         );
     };
 

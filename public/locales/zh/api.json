@@ -12,5 +12,12 @@
     "Please check your email for the verification code": "请检查您的电子邮件以获取验证码",
     "Current password is not correct": "当前密码不正确。",
     "Username or password did not match.": "用户名或密码不匹配。",
-    "You have already reposted this post": "您已经分享过这个帖子。"
+    "You have already reposted this post": "您已经分享过这个帖子。",
+    "sent you a friend request": "发送您一个朋友请求",
+    "Friend Request Accepted": "已接受您的朋友请求",
+    "accepted your friend request": "已接受您的朋友请求",
+    "New Group Chat": "已创建新群聊",
+    "Group Chat Updated": "已更新群聊",
+    "New Members Added": "已添加新成员",
+    "Members Removed": "已删除成员"
 }

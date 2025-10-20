@@ -14,6 +14,7 @@ def capacitor_pods
   pod 'CapacitorCommunityCameraPreview', :path => '../../node_modules/.pnpm/@capacitor-community+camera-preview@7.0.2_@capacitor+core@7.4.2/node_modules/@capacitor-community/camera-preview'
   pod 'CapacitorCommunityMedia', :path => '../../node_modules/.pnpm/@capacitor-community+media@8.0.1_@capacitor+core@7.4.2/node_modules/@capacitor-community/media'
   pod 'CapacitorCommunityTextToSpeech', :path => '../../node_modules/.pnpm/@capacitor-community+text-to-speech@6.0.0_@capacitor+core@7.4.2/node_modules/@capacitor-community/text-to-speech'
+  pod 'CapacitorFirebaseMessaging', :path => '../../node_modules/.pnpm/@capacitor-firebase+messaging@7.3.1_@capacitor+core@7.4.2_firebase@12.1.0/node_modules/@capacitor-firebase/messaging'
   pod 'CapacitorApp', :path => '../../node_modules/.pnpm/@capacitor+app@7.0.1_@capacitor+core@7.4.2/node_modules/@capacitor/app'
   pod 'CapacitorAppLauncher', :path => '../../node_modules/.pnpm/@capacitor+app-launcher@7.0.2_@capacitor+core@7.4.2/node_modules/@capacitor/app-launcher'
   pod 'CapacitorCamera', :path => '../../node_modules/.pnpm/@capacitor+camera@7.0.1_@capacitor+core@7.4.2/node_modules/@capacitor/camera'
@@ -32,11 +33,17 @@ def capacitor_pods
   pod 'CodetrixStudioCapacitorGoogleAuth', :path => '../../node_modules/.pnpm/@codetrix-studio+capacitor-google-auth@3.4.0-rc.4_@capacitor+core@7.4.2/node_modules/@codetrix-studio/capacitor-google-auth'
   pod 'CapacitorNativeSettings', :path => '../../node_modules/.pnpm/capacitor-native-settings@7.0.2_@capacitor+core@7.4.2/node_modules/capacitor-native-settings'
   pod 'CapacitorPluginSafeArea', :path => '../../node_modules/.pnpm/capacitor-plugin-safe-area@4.0.0_@capacitor+core@7.4.2/node_modules/capacitor-plugin-safe-area'
+  pod 'CapacitorVoiceRecorder', :path => '../../node_modules/.pnpm/capacitor-voice-recorder@7.0.6_@capacitor+core@7.4.2_@capacitor+filesystem@7.1.4_@capacitor+core@7.4.2_/node_modules/capacitor-voice-recorder'
 end
 
 target 'App' do
   capacitor_pods
   # Add your Pods here
+  pod 'Firebase/Messaging'
+end
+
+target 'NotificationService' do
+  pod 'FirebaseMessaging'
 end
 
 post_install do |installer|

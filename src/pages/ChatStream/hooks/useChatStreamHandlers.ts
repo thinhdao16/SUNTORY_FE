@@ -36,6 +36,7 @@ interface UseChatStreamHandlersProps {
     stopMessages?: boolean;
     setStopMessages: (value: boolean) => void;
     removePendingImageByUrl: (url: string) => void;
+    replacePendingImage: (oldUrl: string, newUrl: string) => void;
     messageRetry: string;
     setMessageRetry: (value: string) => void;
 }
@@ -57,6 +58,7 @@ export function useChatStreamHandlers({
     setHasFirstSignalRMessage,
     setStopMessages,
     removePendingImageByUrl,
+    replacePendingImage,
     messageRetry,
     setMessageRetry,
     deviceInfo
@@ -96,11 +98,13 @@ export function useChatStreamHandlers({
             }
             try {
                 const uploaded = await uploadImageMutation.mutateAsync(file);
-                removePendingImageByUrl(localUrl);
-                URL.revokeObjectURL(localUrl);
                 if (uploaded && uploaded.length > 0) {
-                    addPendingImages([uploaded[0].linkImage]);
+                    // Replace local preview with server URL in-place to avoid duplication/flicker
+                    replacePendingImage(localUrl, uploaded[0].linkImage);
+                } else {
+                    removePendingImageByUrl(localUrl);
                 }
+                URL.revokeObjectURL(localUrl);
             } catch {
                 removePendingImageByUrl(localUrl);
                 URL.revokeObjectURL(localUrl);
@@ -142,7 +146,7 @@ export function useChatStreamHandlers({
         const match = img.match(/(Develop_[^/]+.*)$/i);
         return match ? match[1] : img.split("/").pop() || `image_${idx}`;
     }
-    const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent,) => {
+    const handleSendMessage = async (e: React.KeyboardEvent | React.MouseEvent, force?: boolean, overrideText?: string) => {
         e.preventDefault();
         useChatStore.getState().setStopMessages(false);
         const setSession = useChatStore.getState().setSession;
@@ -150,7 +154,8 @@ export function useChatStreamHandlers({
         const sessionCreatedAt = useChatStore.getState().sessionCreatedAt;
         setHasFirstSignalRMessage(true);
         const sessionIdAtSend = sessionCreatedAt;
-        if (messageValue.trim() || pendingImages.length > 0 || pendingFiles.length > 0 || messageRetry.trim()) {
+        const textInput = (overrideText ?? messageValue ?? "").trim() || messageRetry.trim();
+        if (textInput || pendingImages.length > 0 || pendingFiles.length > 0) {
             setMessageValue("");
             setMessageRetry("");
             addPendingImages([]);
@@ -168,7 +173,7 @@ export function useChatStreamHandlers({
                 const shortLang = i18n.language?.split("-")[0] || "en";
                 const payload = {
                     chatCode: sessionId ?? null,
-                    messageText: messageValue.trim() || messageRetry.trim(),
+                    messageText: textInput,
                     topic: Number(topicType),
                     files: filesArr.length > 0 ? filesArr : undefined,
                     language: shortLang,
@@ -194,7 +199,7 @@ export function useChatStreamHandlers({
                     ...prev,
                     {
                         id: tempId,
-                        text: messageValue.trim() || messageRetry.trim(),
+                        text: textInput,
                         createdAt: now.format("YYYY-MM-DDTHH:mm:ss.SSS"),
                         timeStamp: generatePreciseTimestampFromDate(now.toDate()),
                         attachments: attachments.length > 0 ? attachments : undefined,

@@ -91,7 +91,7 @@ const MyInformation: React.FC = () => {
 
     return (
         <PageContainer>
-            <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
+            <div style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
                 <IonToolbar style={{ '--background': '#EDF1FC', '--ion-background-color': '#EDF1FC' } as any}>
                     <IonButtons slot="start">
                         <IonButton
@@ -111,7 +111,7 @@ const MyInformation: React.FC = () => {
                         </IonButton>
                     </IonButtons>
                 </IonToolbar>
-            </IonHeader>
+            </div>
             <div className="min-h-screen max-h-[calc(100vh-100px)] overflow-y-auto bg-[#EDF1FC] px-6 py-4 pb-24">
                 <div className="space-y-4">
                     {/* Personal Information Block */}

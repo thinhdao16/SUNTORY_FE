@@ -36,6 +36,7 @@ export interface SocialPost {
   userId: number;
   content: string;
   isRepost: boolean;
+  isRepostedByCurrentUser?: boolean;
   originalPostId: number | null;
   captionRepost: string | null;
   privacy: number;

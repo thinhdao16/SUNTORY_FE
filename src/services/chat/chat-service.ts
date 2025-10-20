@@ -33,31 +33,38 @@ export async function getChatMessages(
     pageNumber: number,
     pageSize: number
 ): Promise<{ items: ChatMessage[]; hasMore: boolean }> {
-    const res = await httpClient.get("/api/v1/chat/messages", {
-        params: { chatCode: sessionId, PageNumber: pageNumber, PageSize: pageSize },
-    });
+    try {
+        const res = await httpClient.get("/api/v1/chat/messages", {
+            params: { chatCode: sessionId, PageNumber: pageNumber, PageSize: pageSize },
+        });
 
-    const list = res.data?.data?.data || [];
-    const items: ChatMessage[] = list.map((msg: any) => ({
-        id: msg.id?.toString(),
-        text: msg.messageText,
-        isRight: msg.senderType === USER_SENDER_TYPE,
-        createdAt: msg.createDate,
-        timeStamp: generatePreciseTimestampFromDate(msg.createDate),
-        senderType: msg.senderType,
-        messageType: msg.messageType,
-        userName: msg.userName,
-        botName: msg.botName,
-        userAvatar: msg.userAvatar,
-        botAvatarUrl: msg.botAvatarUrl,
-        attachments: msg.chatAttachments,
-        replyToMessageId: msg.replyToMessageId,
-        status: msg.status,
-        chatInfoId: msg.chatInfoId,
-        chatCode: msg.code,
-    }));
+        const list = res.data?.data?.data || [];
+        const items: ChatMessage[] = list.map((msg: any) => ({
+            id: msg.id?.toString(),
+            text: msg.messageText,
+            isRight: msg.senderType === USER_SENDER_TYPE,
+            createdAt: msg.createDate,
+            timeStamp: generatePreciseTimestampFromDate(msg.createDate),
+            senderType: msg.senderType,
+            messageType: msg.messageType,
+            userName: msg.userName,
+            botName: msg.botName,
+            userAvatar: msg.userAvatar,
+            botAvatarUrl: msg.botAvatarUrl,
+            attachments: msg.chatAttachments,
+            replyToMessageId: msg.replyToMessageId,
+            status: msg.status,
+            chatInfoId: msg.chatInfoId,
+            chatCode: msg.code,
+        }));
 
-    return { items, hasMore: items.length === pageSize };
+        return { items, hasMore: items.length === pageSize };
+    } catch (err: any) {
+        if (err?.response?.status === 404) {
+            return { items: [], hasMore: false };
+        }
+        throw err;
+    }
 }
 export async function getChatHistoryModule(topicId: number): Promise<ChatHistoryLastModuleItem[]> {
     const res = await httpClient.get<ChatHistoryLastModuleResponse>("/api/v1/chat/history", { params: { topic: topicId } });

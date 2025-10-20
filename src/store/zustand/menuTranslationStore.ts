@@ -14,6 +14,8 @@ interface MenuTranslationStoreState {
     setFoodSuccess: (val: number) => void;
     foodFailed: number;
     setFoodFailed: (val: number) => void;
+    foodImageSuccess: number;
+    setFoodImageSuccess: (val: number) => void;
     savedAllergiesStore: AllergyItem[];
     setSavedAllergiesStore: (val: AllergyItem[]) => void;
     selectedAllergiesStore: AllergyItem[];
@@ -34,6 +36,8 @@ export const useMenuTranslationStore = create<MenuTranslationStoreState>()(
         setFoodSuccess: (val) => set({ foodSuccess: val }),
         foodFailed: 0,
         setFoodFailed: (val) => set({ foodFailed: val }),
+        foodImageSuccess: 0,
+        setFoodImageSuccess: (val) => set({ foodImageSuccess: val }),
         savedAllergiesStore: [],
         setSavedAllergiesStore: (val) => set({ savedAllergiesStore: val }),
         selectedAllergiesStore: [],

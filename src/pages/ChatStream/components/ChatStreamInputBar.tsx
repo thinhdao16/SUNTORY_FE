@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import CameraIcon from "@/icons/logo/chat/cam.svg?react";
 import ImageIcon from "@/icons/logo/chat/image.svg?react";
 // import FileIcon from "@/icons/logo/chat/file.svg?react";
@@ -50,6 +50,15 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
         return isSpending || isLoading || imageLoading || imageLoadingMany || isLoadingHistory;
     }, [isSpending, isLoading, imageLoading, imageLoadingMany, isLoadingHistory]);
 
+    const composingRef = useRef(false);
+    const normalizePastedText = (s: string) => {
+        try { s = s.normalize('NFKC'); } catch {}
+        s = s.replace(/\u00A0/g, ' ');
+        s = s.replace(/[\u200B-\u200D\u2060\uFEFF\uFE0E\uFE0F]/g, '');
+        s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+        return s;
+    };
+
     return (
         <>
         {!anActivate &&(
@@ -63,11 +72,19 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
                     className="flex-1 focus:outline-none resize-none max-h-[230px] overflow-y-auto"
                     rows={1}
                     onFocus={() => {
-                        setTimeout(() => {
-                            window.dispatchEvent(new Event("resize"));
-                        }, 100);
+                        if (!isNative) {
+                            setTimeout(() => {
+                                window.dispatchEvent(new Event("resize"));
+                            }, 100);
+                        }
                     }}
+                    onCompositionStart={() => { composingRef.current = true; }}
+                    onCompositionEnd={() => { composingRef.current = false; }}
                     onKeyDown={(e) => {
+                        // Block Enter during IME composition (Vietnamese, Chinese, Japanese...)
+                        if (composingRef.current || (e.nativeEvent as any)?.isComposing) {
+                            return;
+                        }
                         if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
                             if (!isLoadingBtn) {
@@ -76,19 +93,31 @@ const ChatStreamInputBar: React.FC<ChatStreamInputBarProps> = ({
                         }
                     }}
                     onPaste={async (e) => {
-                        const items = e.clipboardData?.items;
-                        if (!items) return;
-                        for (const item of items) {
-                            if (item.type.startsWith("image/")) {
-                                const file = item.getAsFile();
-                                if (file) {
-                                    await uploadImageMutation.mutateAsync(file, {
-                                        onSuccess: (uploaded: any) => {
-                                            if (uploaded && uploaded.length > 0) {
-                                                addPendingImages([uploaded[0].linkImage]);
-                                            }
-                                        },
-                                    });
+                        const cd = e.clipboardData; const items = cd?.items;
+                        const pastedText = cd?.getData('text/plain') || '';
+                        if (pastedText) {
+                            e.preventDefault();
+                            const norm = normalizePastedText(pastedText);
+                            const ta = messageRef.current;
+                            const start = (ta?.selectionStart ?? messageValue.length);
+                            const end = (ta?.selectionEnd ?? start);
+                            const next = messageValue.slice(0, start) + norm + messageValue.slice(end);
+                            setMessageValue(next);
+                            setTimeout(() => { if (ta) { try { ta.setSelectionRange(start + norm.length, start + norm.length); } catch {} } }, 0);
+                        }
+                        if (items) {
+                            for (const item of items) {
+                                if (item.type.startsWith("image/")) {
+                                    const file = item.getAsFile();
+                                    if (file) {
+                                        await uploadImageMutation.mutateAsync(file, {
+                                            onSuccess: (uploaded: any) => {
+                                                if (uploaded && uploaded.length > 0) {
+                                                    addPendingImages([uploaded[0].linkImage]);
+                                                }
+                                            },
+                                        });
+                                    }
                                 }
                             }
                         }

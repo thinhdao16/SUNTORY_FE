@@ -49,6 +49,7 @@ const CountryListModal: React.FC<CountryListModalProps> = ({ isOpen, onClose, se
     }, [isOpen, selectedCode]);
 
     useEffect(() => {
+        setQuery('');
         fetchCountries();
     }, []);
 

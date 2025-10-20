@@ -25,7 +25,7 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
     hasNextPage,
     isFetchingNextPage,
     refetch,
-  } = useUserPosts(ProfileTabType.Media, targetUserId) as any;
+  } = useUserPosts(ProfileTabType.Media, targetUserId, 20, { enabled: targetUserId === undefined || !!targetUserId }) as any;
 
   const postLikeMutation = useUserPostLike({ tabType: ProfileTabType.Media, targetUserId });
   const postUpdateMutation = useUserPostUpdate({ tabType: ProfileTabType.Media, targetUserId });
@@ -61,23 +61,46 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
         })
     );
 
+  const fetchingRef = useRef(false);
+  const ioRef = useRef<IntersectionObserver | null>(null);
+  const lastFetchAtRef = useRef(0);
+  const initialAutoLoadsRemainingRef = useRef(2);
+
   useEffect(() => {
     if (!sentinelRef.current) return;
 
+    if (ioRef.current) ioRef.current.disconnect();
+
     const observer = new IntersectionObserver(
-      (entries) => {
+      async (entries) => {
         const entry = entries[0];
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage && !isLoading) {
-          fetchNextPage();
+        if (!entry.isIntersecting) return;
+        if (!hasNextPage || isFetchingNextPage || isLoading || fetchingRef.current) return;
+
+        const now = Date.now();
+        if (now - lastFetchAtRef.current < 400) return;
+
+        const userHasScrolled = (window.scrollY || document.documentElement.scrollTop || 0) > 0;
+        const allowAutoLoad = initialAutoLoadsRemainingRef.current > 0;
+        if (!allowAutoLoad && !userHasScrolled) return;
+
+        fetchingRef.current = true;
+        lastFetchAtRef.current = now;
+        try {
+          await fetchNextPage();
+        } finally {
+          fetchingRef.current = false;
+          if (initialAutoLoadsRemainingRef.current > 0) initialAutoLoadsRemainingRef.current -= 1;
         }
       },
       {
-        threshold: 0,
-        rootMargin: '200px'
+        threshold: 0.01,
+        rootMargin: '100px'
       }
     );
 
     observer.observe(sentinelRef.current);
+    ioRef.current = observer;
     
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, isLoading, fetchNextPage, mediaItems.length]);
@@ -154,7 +177,7 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
                   target.style.display = 'flex';
                   target.style.alignItems = 'center';
                   target.style.justifyContent = 'center';
-                  target.innerHTML = '<span style="color: #6b7280;">Failed to load</span>';
+                  target.innerHTML = '<span style="color: #6b7280;">{t("Failed to load")}</span>';
                 }}
                 onLoad={() => {
                   console.log('Image loaded successfully:', item.urlFile || item.linkImage || item.url);
@@ -181,7 +204,7 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
               </div>
             )}
 
-            <div className="absolute inset-0  bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded-lg flex items-center justify-center">
+            {/* <div className="absolute inset-0  bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded-lg flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-4 text-white">
                 <button
                   className="flex items-center space-x-1 hover:scale-110 transition-transform"
@@ -200,7 +223,7 @@ const UserMediaGrid: React.FC<UserMediaGridProps> = ({ tabType, targetUserId }) 
                   <span className="text-sm">{item.postComments || 0}</span>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         ))}
       </div>

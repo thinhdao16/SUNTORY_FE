@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAutoResizeTextarea } from '@/hooks/useAutoResizeTextarea';
@@ -17,6 +17,7 @@ import CloseIcon from "@/icons/logo/close-default.svg?react"
 import CamIcon from "@/icons/logo/chat/cam.svg?react"
 import ImageIcon from "@/icons/logo/chat/image.svg?react"
 import { parseHashtags } from '@/utils/hashtagHighlight';
+import ConfirmModal from '@/components/common/modals/ConfirmModal';
 
 const CreateFeed: React.FC = () => {
     const { t } = useTranslation();
@@ -69,6 +70,47 @@ const CreateFeed: React.FC = () => {
 
     useAutoResizeTextarea(textareaRef, postText);
 
+    const hasUnsavedChanges = useMemo(() => {
+        return (postText && postText.trim().length > 0) || images.length > 0 || !!audioBlob;
+    }, [postText, images.length, audioBlob]);
+
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+    const unblockRef = useRef<null | (() => void)>(null);
+    const nextLocationRef = useRef<any>(null);
+
+    // Warn on browser/tab close or refresh
+    useEffect(() => {
+        const handler = (e: BeforeUnloadEvent) => {
+            if (!hasUnsavedChanges) return;
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [hasUnsavedChanges]);
+
+    // Block in-app route changes when there are unsaved changes
+    useEffect(() => {
+        // Clear previous block
+        if (unblockRef.current) {
+            unblockRef.current();
+            unblockRef.current = null;
+        }
+        if (hasUnsavedChanges) {
+            unblockRef.current = history.block((location: any, action: any) => {
+                setShowLeaveConfirm(true);
+                nextLocationRef.current = { location, action };
+                return false; // cancel navigation
+            });
+        }
+        return () => {
+            if (unblockRef.current) {
+                unblockRef.current();
+                unblockRef.current = null;
+            }
+        };
+    }, [hasUnsavedChanges, history]);
+
     React.useEffect(() => {
         const urlParams = new URLSearchParams(location.search);
         const privacy = urlParams.get('privacy');
@@ -101,11 +143,18 @@ const CreateFeed: React.FC = () => {
     const selectedPrivacyOption = privacyOptions.find(option => option.id === selectedPrivacy);
 
     const handleClose = () => {
-        history.goBack();
+        if (hasUnsavedChanges) {
+            setShowLeaveConfirm(true);
+        } else {
+            history.goBack();
+        }
     };
-
     const handlePost = async () => {
         if (!postText.trim() && images.length === 0 && !audioBlob) {
+            return;
+        }
+        // Do not allow posting while any media is still uploading
+        if (isUploading || audioUploadMutation.isLoading || images.some((item: any) => item?.isUploading)) {
             return;
         }
 
@@ -131,7 +180,7 @@ const CreateFeed: React.FC = () => {
                 allMediaFilenames.push(audioFilename);
             }
 
-            const hashtags = postText.match(/#\w+/g)?.map(tag => tag.substring(1)) || [];
+            const hashtags = [...new Set(postText.match(/#\w+/g)?.map(tag => tag.substring(1)) || [])];
 
             await createPostMutation.mutateAsync({
                 content: postText.trim(),
@@ -139,10 +188,15 @@ const CreateFeed: React.FC = () => {
                 hashtags: hashtags.length > 0 ? hashtags : undefined,
                 privacy: Number(selectedPrivacy)
             });
-            history.goBack();
+            // Unblock route guard and clear draft BEFORE navigating to avoid 'Leaving?' popup
+            if (unblockRef.current) {
+                unblockRef.current();
+                unblockRef.current = null;
+            }
             setPostText('');
             clearImages();
             clearAudio();
+            history.goBack();
 
         } catch (error) {
             console.error('Failed to create post:', error);
@@ -151,7 +205,7 @@ const CreateFeed: React.FC = () => {
         }
     };
     return (
-        <div className="h-screen bg-white flex flex-col">
+        <div className="h-[100dvh] bg-white flex flex-col overflow-hidden">
             <div className="flex items-center justify-start p-4 border-b border-netural-50 gap-6 flex-shrink-0">
                 <button
                     onClick={handleClose}
@@ -161,10 +215,10 @@ const CreateFeed: React.FC = () => {
                 <h1 className="text-lg font-semibold text-gray-900">{t("New post")}</h1>
             </div>
 
-            <div className="flex-1 p-4 space-y-4 overflow-y-auto pb-20">
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto pb-[calc(96px+env(safe-area-inset-bottom,0px))]">
                 <div className="flex items-center space-x-3">
                     <img
-                        src={user?.avatar || avatarFallback}
+                        src={user?.avatarLink || avatarFallback}
                         alt={user?.name || 'User Avatar'}
                         className="w-[40px] h-[40px] rounded-2xl object-cover"
                         onError={(e) => {
@@ -200,6 +254,23 @@ const CreateFeed: React.FC = () => {
                         rows={1}
                         autoFocus
                         style={{ color: 'transparent' }}
+                        onPaste={(e) => {
+                            const cd = e.clipboardData; if (!cd) return;
+                            const txt = cd.getData('text/plain');
+                            if (txt) {
+                                e.preventDefault();
+                                let s = txt; try { s = s.normalize('NFKC'); } catch {}
+                                s = s.replace(/\u00A0/g, ' ');
+                                s = s.replace(/[\u200B-\u200D\u2060\uFEFF\uFE0E\uFE0F]/g, '');
+                                s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+                                const ta = textareaRef.current;
+                                const start = (ta?.selectionStart ?? postText.length);
+                                const end = (ta?.selectionEnd ?? start);
+                                const next = postText.slice(0, start) + s + postText.slice(end);
+                                setPostText(next);
+                                setTimeout(() => { if (ta) { try { ta.setSelectionRange(start + s.length, start + s.length); } catch {} } }, 0);
+                            }
+                        }}
                     />
                     <div 
                         className="absolute top-0 left-0 w-full min-h-[2.5rem] py-3 pointer-events-none text-gray-700 leading-relaxed whitespace-pre-wrap z-0"
@@ -238,7 +309,7 @@ const CreateFeed: React.FC = () => {
                 )}
             </div>
 
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-netural-50 p-4">
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-netural-50 p-4 z-50">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         {
@@ -247,14 +318,6 @@ const CreateFeed: React.FC = () => {
                                 {!isRecording && (
                                     <>
                                         <button
-                                            onClick={handleGallerySelect}
-                                            className="flex items-center space-x-1 text-gray-600 hover:text-gray-800"
-                                            title={t("Select from Gallery")}
-                                            disabled={!!audioBlob}
-                                        >
-                                            <ImageIcon />
-                                        </button>
-                                        <button
                                             onClick={handleCameraCapture}
                                             className="flex items-center space-x-1 text-gray-600 hover:text-gray-800"
                                             title={t("Take Photo")}
@@ -262,6 +325,15 @@ const CreateFeed: React.FC = () => {
                                         >
                                             <CamIcon />
                                         </button>
+                                        <button
+                                            onClick={handleGallerySelect}
+                                            className="flex items-center space-x-1 text-gray-600 hover:text-gray-800"
+                                            title={t("Select from Gallery")}
+                                            disabled={!!audioBlob}
+                                        >
+                                            <ImageIcon />
+                                        </button>
+                                    
                                     </>
                                 )}
                             </>
@@ -287,18 +359,18 @@ const CreateFeed: React.FC = () => {
 
                     </div>
 
-                    <div className="flex flex-col items-end space-y-2">
+                    <div className="flex  items-end space-y-2">
                         {(isUploading || audioUploadMutation.isLoading) && (
                             <div className="text-sm text-blue-600 font-medium">
-                                {audioUploadMutation.isLoading && t("Uploading audio...")}
-                                {isUploading && !isAudioUploading && t("Uploading images...")}
-                                {isUploading && isAudioUploading && t("Uploading files...")}
+                                {audioUploadMutation.isLoading && t("Uploading...")}
+                                {isUploading && !isAudioUploading && t("Uploading...")}
+                                {isUploading && isAudioUploading && t("Uploading...")}
                             </div>
                         )}
                         {!isRecording && (
                             <ActionButton
                                 onClick={handlePost}
-                                disabled={!postText.trim() && images.length === 0 && !audioBlob}
+                                disabled={(!postText.trim() && images.length === 0 && !audioBlob) || isUploading || audioUploadMutation.isLoading}
                                 loading={createPostMutation.isLoading || isUploading || audioUploadMutation.isLoading}
                                 className="px-3 py-2 text-sm bg-main flex items-center justify-center gap-2 text-white rounded-2xl font-medium hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                             >
@@ -320,6 +392,44 @@ const CreateFeed: React.FC = () => {
                     closeModal={() => setIsPrivacyModalOpen(false)}
                     selectedPrivacy={selectedPrivacy}
                     onSelectPrivacy={setSelectedPrivacy}
+                />
+                <ConfirmModal
+                    isOpen={showLeaveConfirm}
+                    title={t('Leaving?')}
+                    message={t('Your post will not be saved. Are you sure?')}
+                    confirmText={t('Yes, leave')}
+                    cancelText={t('Cancel')}
+                    onConfirm={() => {
+                        setShowLeaveConfirm(false);
+                        // Optional: clear draft state before leaving
+                        setPostText('');
+                        clearImages();
+                        clearAudio();
+                        // Unblock and proceed to intended navigation
+                        if (unblockRef.current) {
+                            unblockRef.current();
+                            unblockRef.current = null;
+                        }
+                        const next = nextLocationRef.current;
+                        nextLocationRef.current = null;
+                        if (next) {
+                            const { location, action } = next;
+                            const path = `${location.pathname || ''}${location.search || ''}${location.hash || ''}`;
+                            if (action === 'POP') {
+                                history.goBack();
+                            } else if (action === 'REPLACE') {
+                                history.replace(path);
+                            } else {
+                                history.push(path);
+                            }
+                        } else {
+                            history.goBack();
+                        }
+                    }}
+                    onClose={() => {
+                        setShowLeaveConfirm(false);
+                        nextLocationRef.current = null;
+                    }}
                 />
             </div>
         </div>

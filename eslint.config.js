@@ -1,42 +1,20 @@
-import js from "@eslint/js";
 import globals from "globals";
-import reactHooks from "eslint-plugin-react-hooks";
-import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
+import noJsxLiteralText from "./eslint-rules/no-jsx-literal-text.js";
 
-export default tseslint.config(
-  { ignores: ["dist", "cypress.config.ts"] },
+export default [
+  { ignores: ["node_modules/**", "dist/**", "build/**", "public/**"] },
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    files: ["**/*.{ts,tsx}"],
+    files: ["src/**/*.{tsx,jsx}"],
     languageOptions: {
-      ecmaVersion: 2020,
+      parser: tseslint.parser,
+      parserOptions: { ecmaVersion: "latest", sourceType: "module", ecmaFeatures: { jsx: true } },
       globals: globals.browser,
     },
-    plugins: {
-      "react-hooks": reactHooks,
-      "react-refresh": reactRefresh,
-    },
+    plugins: { local: { rules: { "no-jsx-literal-text": noJsxLiteralText } } },
     rules: {
-      ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
-      "no-console": process.env.NODE_ENV === "production" ? "warn" : "off",
-      "no-debugger": process.env.NODE_ENV === "production" ? "warn" : "off",
-
-      "import/no-unresolved": "off",
-      "import/no-extraneous-dependencies": "off",
-      "import/prefer-default-export": "off",
-      "import/no-dynamic-require": "off",
-      "import/extensions": "off",
-      "import/order": "off",
-
-      "no-unused-vars": [
-        "warn",
-        { vars: "all", args: "after-used", ignoreRestSiblings: true },
-      ],
+      "i18next/no-literal-string": "off",     // tắt rule gây nhiễu
+      "local/no-jsx-literal-text": "error",   // dùng rule custom
     },
-  }
-);
+  },
+];

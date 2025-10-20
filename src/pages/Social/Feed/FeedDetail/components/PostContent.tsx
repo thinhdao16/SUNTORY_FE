@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg";
@@ -17,6 +17,7 @@ import AddFriendIcon from "@/icons/logo/social-feed/add-friend.svg?react";
 import { GoDotFill } from 'react-icons/go';
 import { useAuthStore } from '@/store/zustand/auth-store';
 import { PrivacyPostType } from '@/types/privacy';
+import ExpandableText from '@/components/common/ExpandableText';
 
 interface PostContentProps {
     displayPost: any;
@@ -46,7 +47,10 @@ const PostContent: React.FC<PostContentProps> = ({
     const history = useHistory();
     const createTranslationMutation = useCreateTranslationChat();
     const { selectedLanguageSocialChat, selectedLanguageTo } = useLanguageStore.getState();
-    const toLanguageId = useMemo(() => selectedLanguageSocialChat?.id || selectedLanguageTo?.id || 2, [selectedLanguageSocialChat, selectedLanguageTo]);
+    const toLanguageId = user?.language?.id || 2
+    // useMemo(() => selectedLanguageSocialChat?.id || selectedLanguageTo?.id || 2, [selectedLanguageSocialChat, selectedLanguageTo]);
+
+    
 
     const isRepostWithDeletedOriginal = isRepost && (!originalPost || originalPost?.status === 190);
     const [translatedText, setTranslatedText] = React.useState<string | null>(null);
@@ -107,23 +111,31 @@ const PostContent: React.FC<PostContentProps> = ({
                                     </div>
                                 </div>
                                 <div className="flex items-center text-netural-100 gap-1">
-                                            <span className="text-sm text-gray-500">{formatTimeFromNow(displayPost?.createDate || '', t)}</span>
-                                            <GoDotFill className="w-2 h-2" />
-                                            <span className='opacity-20'>
-                                                {getPrivacyIcon(displayPost?.privacy)}
-                                            </span>
-                                        </div>
+                                    <span className="text-sm text-gray-500">{formatTimeFromNow(displayPost?.createDate || '', t)}</span>
+                                    <GoDotFill className="w-2 h-2" />
+                                    <span className='opacity-20'>
+                                        {getPrivacyIcon(displayPost?.privacy)}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        {!isOwnPost && displayPost?.isFriend === false && displayPost?.friendRequest === null && (
-                            <button
-                                className="flex items-center gap-1 text-sm font-semibold text-netural-500"
-                                onClick={onSendFriendRequest}
-                                disabled={sendFriendRequestMutation.isLoading}
-                            >
-                                <AddFriendIcon />
-                                {t('Add Friend')}
-                            </button>
+                        {!isOwnPost && displayPost?.isFriend === false && (
+                            displayPost?.friendRequest !== null ? (
+                                <button className="flex items-center gap-1 text-sm font-semibold text-netural-300" disabled>
+                                    {t('Sent')}
+                                </button>
+                            ) : (
+                                <button
+                                    className="flex items-center gap-1 text-sm font-semibold text-netural-500"
+                                    onClick={() => {
+                                        onSendFriendRequest();
+                                    }}
+                                    disabled={sendFriendRequestMutation.isLoading}
+                                >
+                                    <AddFriendIcon />
+                                    {t('Add Friend')}
+                                </button>
+                            )
                         )}
                     </div>
 
@@ -183,9 +195,13 @@ const PostContent: React.FC<PostContentProps> = ({
                         )}
                         {!isRepostWithDeletedOriginal && (
                             <div className="px-4 py-3">
-                                <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
+                                <ExpandableText
+                                    contentClassName="text-gray-800 text-sm leading-relaxed"
+                                    clampClassName="line-clamp-2"
+                                    resetKey={postToDisplay?.content || ''}
+                                >
                                     {parseHashtagsWithClick(postToDisplay?.content || '')}
-                                </div>
+                                </ExpandableText>
                                 <div className="mt-2">
                                     {postToDisplay?.content && showOriginal ? (
                                         <ActionButton
@@ -238,13 +254,14 @@ const PostContent: React.FC<PostContentProps> = ({
                             </div>
                         )}
                         {!isRepostWithDeletedOriginal && postToDisplay?.media && postToDisplay.media.length > 0 && (
-                            <div data-media-display>
+                            <div data-media-display className='pb-4'>
                                 <MediaDisplay
                                     mediaFiles={postToDisplay.media}
                                     className="mt-3"
                                     lightboxUserName={postToDisplay.user.fullName}
-                                    lightboxUserAvatar={postToDisplay.user.avatarUrl}
-                                    classNameAudio='px-4'
+                                    lightboxUserAvatar={postToDisplay.user?.avatarUrl}
+                                    classNameAudio='!px-4 '
+
                                 />
                             </div>
                         )}
@@ -257,21 +274,22 @@ const PostContent: React.FC<PostContentProps> = ({
                 <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-3">
                         <img
-                            src={displayPost.user.avatarUrl || avatarFallback}
-                            alt={displayPost.user.fullName}
+                            src={displayPost?.user?.avatarUrl || avatarFallback}
+                            alt={displayPost?.user?.fullName}
                             className="w-9 h-9 rounded-2xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => onUserProfileClick?.(displayPost.user.id)}
                             onError={(e) => {
                                 (e.target as HTMLImageElement).src = avatarFallback;
                             }}
                         />
+
                         <div className="grid gap-0">
                             <div className="flex items-center gap-2">
                                 <span
                                     className="font-semibold text-sm cursor-pointer hover:underline max-w-[200px] truncate"
                                     onClick={() => onUserProfileClick?.(displayPost.user.id)}
                                 >
-                                    {displayPost.user.fullName}
+                                    {displayPost?.user?.fullName}
                                 </span>
                             </div>
                             <div className="flex items-center text-netural-100 gap-1">
@@ -283,15 +301,23 @@ const PostContent: React.FC<PostContentProps> = ({
                             </div>
                         </div>
                     </div>
-                    {!isOwnPost && postToDisplay?.isFriend === false && postToDisplay?.friendRequest === null && (
-                        <button
-                            className="flex items-center gap-1 text-sm font-semibold text-netural-500"
-                            onClick={onSendFriendRequest}
-                            disabled={sendFriendRequestMutation.isLoading}
-                        >
-                            <AddFriendIcon />
-                            {t('Add Friend')}
-                        </button>
+                    {!isOwnPost && postToDisplay?.isFriend === false && (
+                        postToDisplay?.friendRequest !== null ? (
+                            <button className="flex items-center gap-1 text-sm font-semibold text-netural-300" disabled>
+                                {t('Sent')}
+                            </button>
+                        ) : (
+                            <button
+                                className="flex items-center gap-1 text-sm font-semibold text-netural-500"
+                                onClick={() => {
+                                    onSendFriendRequest();
+                                }}
+                                disabled={sendFriendRequestMutation.isLoading}
+                            >
+                                <AddFriendIcon />
+                                {t('Add Friend')}
+                            </button>
+                        )
                     )}
                 </div>
             )}
@@ -300,9 +326,13 @@ const PostContent: React.FC<PostContentProps> = ({
             {!isRepost && (
                 <>
                     <div className="px-4">
-                        <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
+                        <ExpandableText
+                            contentClassName="text-gray-800 text-sm leading-relaxed"
+                            clampClassName="line-clamp-2"
+                            resetKey={displayPost?.content || ''}
+                        >
                             {parseHashtagsWithClick(displayPost.content)}
-                        </div>
+                        </ExpandableText>
                         <div className="mt-2">
                             {displayPost.content && showOriginal ? (
                                 <ActionButton
@@ -361,6 +391,7 @@ const PostContent: React.FC<PostContentProps> = ({
                                 mediaFiles={displayPost.media}
                                 lightboxUserName={displayPost.user.fullName}
                                 lightboxUserAvatar={displayPost.user.avatarUrl}
+                                classNameAudio='px-4'
                             />
                         </div>
                     )}

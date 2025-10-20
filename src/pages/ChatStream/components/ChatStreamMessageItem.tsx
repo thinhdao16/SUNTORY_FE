@@ -28,6 +28,18 @@ const ChatStreamMessageItem: React.FC<{
         if (isUser) setShowCopy(true);
 
     };
+    const isPendingThis =
+        msg.text === MessageState.PENDING ||
+        msg.messageState === MessageState.PENDING ||
+        msg.messageState === "SENDING" ||
+        msg.text === 'PENDING_MESSAGE';
+    const hasImageAttachment = Array.isArray(msg.attachments) && msg.attachments.some((file: any) => {
+        const fileName = typeof file?.fileName === 'string' ? file.fileName : '';
+        const byExt = /(\.jpg|\.jpeg|\.png|\.gif|\.webp)$/i.test(fileName);
+        const byType = Number(file?.fileType) === 10; // 10 used elsewhere as image type
+        return byExt || byType;
+    });
+    const canShowCopy = !isPendingThis && !hasImageAttachment;
     return (
         <>
             {/* <motion.div
@@ -46,7 +58,7 @@ const ChatStreamMessageItem: React.FC<{
                 className={`flex w-full mb-4 ${isUser ? "justify-end" : "justify-start"}`}
             >
                 <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : ""} items-start w-full`}>
-                    {!isUser && msg.text !== MessageState.PENDING && !hideAvatar && (
+                    {!isUser && !hideAvatar && (
                         <div>
                             <BotIcon className="min-w-[30px] aspect-square object-contain" />
                         </div>
@@ -107,7 +119,7 @@ const ChatStreamMessageItem: React.FC<{
                             >
                                 <div className="overflow-x-auto w-full px-4 py-3 min-w-[60px] xl:max-w-[350px] flex justify-between">
                                     <div className="prose prose-sm whitespace-break-spaces break-words text-[15px] font-semibold">
-                                        Tin nhắn thất bại, vui lòng thử lại.
+                                       {t(" Tin nhắn thất bại, vui lòng thử lại.")}
                                     </div>
                                     <RetryIcon
                                         className="cursor-pointer hover:scale-110 transition-transform"
@@ -149,13 +161,10 @@ const ChatStreamMessageItem: React.FC<{
 
                         {isUser || msg.text === MessageState.FAILED || msg.text === MessageState.PENDING ? (
                             <>
-                                {!isSpending && (
+                                {canShowCopy && (
                                     <div className="flex justify-end mt-1">
                                         <button
-                                            className={`bottom-2 right-2 p-1 rounded hover:bg-gray-100 transition
-                                                opacity-0 group-hover:opacity-100 group-active:opacity-100
-                                                ${showCopy ? "opacity-100" : ""}
-                                            `}
+                                            className="bottom-2 right-2 p-1 rounded hover:bg-gray-100 transition opacity-100"
                                             type="button"
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -176,10 +185,10 @@ const ChatStreamMessageItem: React.FC<{
                             </>
                         ) : (
                             <>
-                                {!isSpending && (
+                                {canShowCopy && (
                                     <div className="flex justify-end mt-1">
                                         <button
-                                            className="bottom-2 right-2 p-1 rounded hover:bg-gray-100 transition"
+                                            className="bottom-2 right-2 p-1 rounded hover:bg-gray-100 transition opacity-100"
                                             type="button"
                                             onClick={() => handleCopyToClipboard(
                                                 typeof msg.text === "string"

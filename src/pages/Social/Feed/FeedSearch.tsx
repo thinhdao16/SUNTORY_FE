@@ -57,8 +57,8 @@ const SocialStorySearch: React.FC = () => {
     }, [queryFromUrl, tab]);
 
     const handleBack = () => {
-        history.push('/social-feed');
-
+        // history.push('/social-feed');
+        history.goBack()
     };
 
     const handleClear = () => {

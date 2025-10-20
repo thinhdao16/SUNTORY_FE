@@ -16,6 +16,8 @@ export interface UploadFileRequest {
     files: File[];
     width?: number;
     height?: number;
+    // Optional abort signal to cancel the request
+    signal?: AbortSignal;
 }
 
 export const uploadSocialFiles = async (request: UploadFileRequest): Promise<UploadApiResponse> => {
@@ -34,6 +36,8 @@ export const uploadSocialFiles = async (request: UploadFileRequest): Promise<Upl
         headers: {
             'Content-Type': 'multipart/form-data',
         },
+        // Pass through abort signal if provided
+        signal: request.signal,
     });
     
     return response.data;

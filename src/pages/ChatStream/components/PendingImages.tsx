@@ -16,21 +16,19 @@ const PendingImages: React.FC<PendingImagesProps> = ({
     imageLoadingMany,
 
 }) => {
-    const [loadedIndexes, setLoadedIndexes] = useState<number[]>([]);
+    const [loadedUrls, setLoadedUrls] = useState<string[]>([]);
     useEffect(() => {
-        setLoadedIndexes(prev => {
-            const newIndexes = pendingImages.map((_, i) => i);
-            return prev.filter(i => newIndexes.includes(i));
-        });
-    }, [pendingImages.length]);
+        // Keep only loaded flags that still exist in the list
+        setLoadedUrls(prev => prev.filter(url => pendingImages.includes(url)));
+    }, [pendingImages]);
     if (pendingImages.length === 0) return null;
     return (
         <div className="mb-2 flex gap-2">
 
             {pendingImages.map((img, idx) => {
-                const isLoaded = loadedIndexes.includes(idx);
+                const isLoaded = loadedUrls.includes(img);
                 return (
-                    <div key={idx} className="relative w-[50px]">
+                    <div key={img} className="relative w-[50px]">
                         <button
                             className="absolute top-1 right-1 bg-black rounded-full w-[14px] h-[14px] flex items-center justify-center z-20"
                             onClick={() => removePendingImage(idx)}
@@ -44,17 +42,17 @@ const PendingImages: React.FC<PendingImagesProps> = ({
                         )}
                         <img
                             src={img}
-                            alt={`captured-${idx}`}
+                            alt={`pending-${idx}`}
                             className="w-full aspect-square object-cover rounded-xl transition-opacity duration-300"
                             style={{ opacity: isLoaded ? 1 : 0 }}
                             onLoad={() =>
-                                setLoadedIndexes((prev) =>
-                                    prev.includes(idx) ? prev : [...prev, idx]
+                                setLoadedUrls((prev) =>
+                                    prev.includes(img) ? prev : [...prev, img]
                                 )
                             }
                             onError={() =>
-                                setLoadedIndexes((prev) =>
-                                    prev.includes(idx) ? prev : [...prev, idx]
+                                setLoadedUrls((prev) =>
+                                    prev.includes(img) ? prev : [...prev, img]
                                 )
                             }
                         />
@@ -64,5 +62,4 @@ const PendingImages: React.FC<PendingImagesProps> = ({
         </div>
     );
 };
-
 export default PendingImages;

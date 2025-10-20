@@ -902,7 +902,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                                                 try { localStorage.setItem('weightUnit', 'kg'); } catch { }
                                             }}
                                         >
-                                            kg
+                                            {t("kg")}
                                         </button>
                                         <div style={{ width: 4 }} />
                                         <button
@@ -915,7 +915,7 @@ const WeightUpdateModal: React.FC<WeightUpdateModalProps> = ({
                                                 try { localStorage.setItem('weightUnit', 'lbs'); } catch { }
                                             }}
                                         >
-                                            lbs
+                                            {t("lbs")}
                                         </button>
                                     </div>
 

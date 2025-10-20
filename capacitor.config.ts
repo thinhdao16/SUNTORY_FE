@@ -6,7 +6,14 @@ const config: CapacitorConfig = {
   appId: 'com.wayjet.app',
   appName: 'WayJet',
   webDir: 'dist',
+  // server: {
+  //   cleartext: true,
+  //   url:"http://192.168.1.168:5173"
+  // },
   plugins: {
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"],
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
@@ -25,7 +32,7 @@ const config: CapacitorConfig = {
       forceCodeForRefreshToken: true,
     },
     Keyboard: {
-      resize: KeyboardResize.Body,
+      resize: KeyboardResize.Native,
       resizeOnFullScreen: true,
     },
     EdgeToEdge: {
@@ -35,9 +42,9 @@ const config: CapacitorConfig = {
       androidGalleryMode: true
     },
     LocalNotifications: {
-      smallIcon: 'ic_stat_notify',    
-      iconColor: '#0A6EBD',          
-      sound: 'default'               
+      smallIcon: 'ic_stat_notify',
+      iconColor: '#0A6EBD',
+      sound: 'default'
     },
     ScreenOrientation: {
       orientation: 'portrait'
@@ -46,8 +53,15 @@ const config: CapacitorConfig = {
   android: {
     adjustMarginsForEdgeToEdge: "force",
     allowMixedContent: true,
-    captureInput: true,
+    captureInput: false,
     webContentsDebuggingEnabled: true,
+  },
+  ios: {
+    contentInset: "never",
+    scrollEnabled: true,
+    allowsLinkPreview: false,
+    preferredContentMode: "mobile",
+    limitsNavigationsToAppBoundDomains: false,
   }
 };
 

@@ -11,10 +11,8 @@ import UserPostsList from "./components/UserPostsList";
 import UserMediaGrid from "./components/UserMediaGrid";
 import { ProfileTabType } from "./hooks/useUserPosts";
 
-import { cameraOutline, copyOutline, createOutline } from "ionicons/icons";
+import { cameraOutline } from "ionicons/icons";
 import EditProfileIcon from "@/icons/logo/edit-profile.svg?react";
-import BackIcon from "@/icons/logo/back-default.svg?react";
-import CoppyIcon from "@/icons/logo/coppy-default.svg?react";
 import avatarFallback from "@/icons/logo/social-chat/avt-rounded.svg"
 
 const getTabType = (tabName: string): ProfileTabType => {
@@ -162,75 +160,67 @@ const MyProfile: React.FC = () => {
   };
 
   return (
-    <PageContainer>
-      <IonPage style={{ '--background': 'white', paddingBottom: '52px' } as any}>
-        <IonHeader className="ion-no-border" style={{ '--background': '#EDF1FC', justifyContent: 'center' } as any}>
-          <IonToolbar style={{ '--background': '#ffffff', '--ion-background-color': '#ffffff' } as any}>
-            <IonButtons slot="start" className="pl-4">
-              <BackIcon onClick={() => history.goBack()} />
-              <span className="font-bold  ml-4" style={{ fontSize: '15px', color: 'black' }}>
-                {t('My profile')}
-              </span  >
-            </IonButtons>
-            <IonButtons slot="end" onClick={() => history.push('/social-feed/create')}>
-              <IonButton fill="clear" style={{ textColor: 'black', fontSize: '15px' }}>
-                <EditProfileIcon />
-              </IonButton>
-            </IonButtons>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent 
-          ref={contentRef}
-          style={{ '--background': 'white', height: '100%' } as any}
-        >
-          {/* Facebook-style refresh loading indicator */}
-          {refreshing && (
-            <div className="absolute top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
-              <div className="flex items-center justify-center py-3">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-                  <span className="text-sm text-gray-600">{t('Refreshing...')}</span>
-                </div>
+    <IonPage>
+      <IonHeader className="ion-no-border">
+        <IonToolbar style={{ '--background': '#FFFFFF' } as any}>
+          <div className="w-full flex items-center justify-between px-4 py-2">
+            <div></div>
+            <span className="font-bold text-black text-lg">
+              {t('My profile')}
+            </span>
+            <button onClick={() => history.push('/social-feed/create')}>
+              <EditProfileIcon />
+            </button>
+          </div>
+        </IonToolbar>
+      </IonHeader>
+
+      <IonContent
+        ref={contentRef}
+        style={{ '--background': 'white' } as any}
+        scrollEvents={true}
+      >
+        {/* Facebook-style refresh loading indicator */}
+        {refreshing && (
+          <div className="absolute top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
+            <div className="flex items-center justify-center py-3">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                <span className="text-sm text-gray-600">{t('Refreshing...')}</span>
               </div>
             </div>
-          )}
-          
-          <PullToRefresh onRefresh={handleRefresh}>
-            <div className="bg-white">
+          </div>
+        )}
+
+        <PullToRefresh onRefresh={handleRefresh}>
+          <div className="bg-white">
             <hr className="border-gray-100" />
             {userInfo && (
               <div className="px-4 pt-4 pb-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2 ">
+                    <div className="flex items-center space-x-2">
                       <h1 className="text-[20px] font-bold text-gray-900 overflow-hidden max-w-[200px] truncate">{userInfo?.name}</h1>
-                      <span className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`} style={{ width: 20, height: 20, borderRadius: 9999 }} ></span>
+                      <span className={`fi fi-${userInfo?.country?.code.toLowerCase()} fis`} style={{ width: 20, height: 20, borderRadius: 9999 }}></span>
                     </div>
-                    <div className="flex items-center space-x-1 mb-2">
+                    {/* <div className="flex items-center space-x-1 mb-2">
                       <p
                         className="text-black overflow-hidden max-w-[110px] truncate text-[15px]">
                         @{userInfo?.code}
                       </p>
                       <CoppyIcon className="" onClick={() => { navigator.clipboard.writeText(userInfo.code || "") }} />
-                    </div>
+                    </div> */}
                     <div className="flex items-center space-x-1 mb-4" onClick={() => {
                       history.push('/friend-list');
                     }}>
-                      <p
-                        className="font-medium"
-                      >
+                      <p className="font-medium">
                         {userInfo?.friendNumber}
                       </p>
-                      <p
-                        className="mb-0 font-sans"
-                      >
-                        friends
-                      </p>
+                      <p className="mb-0 font-sans">
+                        {t("friends")}</p>
                     </div>
                   </div>
-
                   <div className="relative ml-4">
-
                     <img
                       src={userInfo.avatarLink || avatarFallback}
                       alt={userInfo?.name || 'User Avatar'}
@@ -293,10 +283,9 @@ const MyProfile: React.FC = () => {
             </div>
           </div>
           <div style={{ height: 'calc(112px + env(safe-area-inset-bottom, 0px))' }} />
-          </PullToRefresh>
-        </IonContent>
-      </IonPage>
-    </PageContainer>
+        </PullToRefresh>
+      </IonContent>
+    </IonPage>
   );
 };
 

@@ -51,6 +51,7 @@ export interface ChatAttachment {
     isError?: boolean;
     localUrl?: string;
     serverUrl?: string;
+    s3Key?: string;
 
 }
 

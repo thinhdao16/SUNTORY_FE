@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "react-query";
-import { addGroupMembersApi, chatRoomAttachments, createAnonymousChatRoom, createSocialChatMessageApi, getChatRoomByCode, getNotificationCounts, getSocialChatMessages, getUserChatRooms, removeGroupMembersApi, revokeSocialChatMessageApi, updateSocialChatMessageApi, updateChatRoomApi, leaveChatRoomApi, toggleChatRoomQuietStatusApi, transferAdminApi } from "@/services/social/social-chat-service";
+import { addGroupMembersApi, chatRoomAttachments, createAnonymousChatRoom, createSocialChatMessageApi, getChatRoomByCode, getNotificationCounts, getSocialChatMessages, getUserChatRooms, getUserChatRoomsWithMeta, removeGroupMembersApi, revokeSocialChatMessageApi, updateSocialChatMessageApi, updateChatRoomApi, leaveChatRoomApi, toggleChatRoomQuietStatusApi, transferAdminApi } from "@/services/social/social-chat-service";
 import { useSocialChatStore } from "@/store/zustand/social-chat-store";
 import { useToastStore } from "@/store/zustand/toast-store";
 import { AddGroupMembersPayload, CreateSocialChatMessagePayload, NotificationCounts, RemoveGroupMembersPayload, RevokeSocialChatMessagePayload, UpdateSocialChatMessagePayload, UpdateChatRoomPayload, UseAddGroupMembersOptions, UseRemoveGroupMembersOptions } from "@/services/social/social-chat-type";
@@ -102,17 +102,45 @@ export const useRemoveGroupMembers = (options?: UseRemoveGroupMembersOptions) =>
 export const useUserChatRooms = (pageSize = 15,setChatRooms:any ) => {
     return useInfiniteQuery(
         ["chatRooms"],
-        ({ pageParam = 0 }) => getUserChatRooms({ PageNumber: pageParam, PageSize: pageSize }),
+        ({ pageParam = 0 }) => getUserChatRoomsWithMeta({ PageNumber: pageParam, PageSize: pageSize }),
         {
             getNextPageParam: (lastPage, pages) => {
-                const totalLoaded = pages.flat().length;
-                if (lastPage.length < pageSize) return undefined;
-                return Math.floor(totalLoaded / pageSize);
+                // Prefer API meta shape
+                if (lastPage && typeof lastPage === 'object') {
+                    const lp: any = lastPage;
+                    const meta = lp?.data && !Array.isArray(lp?.data) ? lp.data : lp;
+                    const nextPageFlag = meta?.nextPage;
+                    const pageNumber = typeof meta?.pageNumber === 'number' ? meta.pageNumber : undefined;
+                    const totalPages = typeof meta?.totalPages === 'number' ? meta.totalPages : undefined;
+
+                    // Strongest signal: explicit paging numbers
+                    if (typeof pageNumber === 'number' && typeof totalPages === 'number') {
+                        if (pageNumber + 1 >= totalPages) return undefined;
+                        return pageNumber + 1;
+                    }
+
+                    // Next best: nextPage flag
+                    if (typeof nextPageFlag === 'boolean') {
+                        if (!nextPageFlag) return undefined;
+                        return typeof pageNumber === 'number' ? pageNumber + 1 : pages.length;
+                    }
+
+                    const items = Array.isArray(lp?.data) ? lp.data : (Array.isArray(lp?.data?.data) ? lp.data.data : (Array.isArray(lp) ? lp : []));
+                    if (items.length === 0) return undefined;
+                    return pages.length;
+                }
+
+                // Fallback for array-only pages
+                const safe = Array.isArray(lastPage) ? lastPage : [];
+                if (safe.length === 0) return undefined;
+                return pages.length;
             },
             onSuccess: (data) => {
                 try {
                     const pages = data?.pages ?? [];
-                    const flat = Array.isArray(pages) ? pages.flat() : [];
+                    const flat = (Array.isArray(pages) ? pages : []).flatMap((p: any) =>
+                        Array.isArray(p) ? p : (Array.isArray(p?.data) ? p.data : (Array.isArray(p?.data?.data) ? p.data.data : []))
+                    );
                     setChatRooms(flat);
                 } catch (e) {
                     console.error("[useUserChatRooms] onSuccess log error", e);
@@ -133,7 +161,7 @@ export const useUserChatRooms = (pageSize = 15,setChatRooms:any ) => {
 };
 export const useListChatRooms = (pageSize = 10) => {
     return useInfiniteQuery(
-        ["chatRooms"],
+        ["chatRoomsList"],
         ({ pageParam = 0 }) => getUserChatRooms({ PageNumber: 0, PageSize: 50 }),
     );
 };
