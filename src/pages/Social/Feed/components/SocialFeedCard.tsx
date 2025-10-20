@@ -565,6 +565,12 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
               count={post.repostCount}
               isActive={isRepostedByMe}
               onClick={() => {
+                // Check if post is private and prevent repost
+                if (post.privacy === PrivacyPostType.Private && !isRepostedByMe) {
+                  showToast(t("Cannot repost private posts"), 2000, "error");
+                  return;
+                }
+                
                 if (isRepostedByMe) {
                   setConfirmState({ open: true, type: "unrepost" });
                 } else {
@@ -573,7 +579,7 @@ export const SocialFeedCard: React.FC<SocialFeedCardProps> = ({
               }}
               activeColor="text-netural-900"
               inactiveColor="text-netural-900"
-              disabled={isErrorPost}
+              disabled={isErrorPost || (post.privacy === PrivacyPostType.Private && !isRepostedByMe)}
             />
           )}
           {post?.privacy !== PrivacyPostType.Private && (

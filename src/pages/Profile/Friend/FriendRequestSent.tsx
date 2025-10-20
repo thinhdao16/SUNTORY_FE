@@ -11,6 +11,7 @@ import ConfirmModal from '@/components/common/modals/ConfirmModal';
 
 interface FriendItem {
     id: number;
+    userId: number;
     name: string;
     fullName: string;
     code: string;
@@ -61,6 +62,7 @@ const FriendRequestSent: React.FC = () => {
             const mapped: FriendItem[] = (apiList || [])
                 .map((it: any) => ({
                     id: Number(it?.id) || 0,
+                    userId: Number(it?.toUser?.id) || 0,
                     name: it?.toUser?.fullName || `${it?.toUser?.firstname ?? ''} ${it?.toUser?.lastname ?? ''}`.trim() || '',
                     fullName: it?.toUser?.fullName || `${it?.toUser?.firstname ?? ''} ${it?.toUser?.lastname ?? ''}`.trim() || '',
                     code: it?.toUser?.code ?? '',
@@ -177,7 +179,10 @@ const FriendRequestSent: React.FC = () => {
     const renderRequestSentItem = (requestSent: FriendItem) => (
         <div key={requestSent.id} className="flex items-center justify-between bg-white -mx-10 px-5 py-5 border-b border-gray-200 min-h-[80px] w-auto">
             {/* Left - Avatar + Text */}
-            <div className="flex items-center gap-4 min-w-0">
+            <div
+                className="flex items-center gap-4 min-w-0 cursor-pointer"
+                onClick={() => requestSent.userId && history.push(`/profile/${requestSent.userId}`)}
+            >
                 <div className="relative flex-shrink-0">
                     <img
                         src={requestSent?.avatar || avatarFallback}

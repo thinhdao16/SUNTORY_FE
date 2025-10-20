@@ -32,7 +32,7 @@ const config: CapacitorConfig = {
       forceCodeForRefreshToken: true,
     },
     Keyboard: {
-      resize: KeyboardResize.Body,
+      resize: KeyboardResize.Native,
       resizeOnFullScreen: true,
     },
     EdgeToEdge: {
@@ -53,7 +53,7 @@ const config: CapacitorConfig = {
   android: {
     adjustMarginsForEdgeToEdge: "force",
     allowMixedContent: true,
-    captureInput: true,
+    captureInput: false,
     webContentsDebuggingEnabled: true,
   },
   ios: {

@@ -183,7 +183,10 @@ const FriendList: React.FC = () => {
     const renderFriendItem = (friend: FriendItem) => (
         <div key={friend.id} className="flex items-center justify-between bg-white -mx-10 px-5 py-5 border-b border-gray-200 min-h-[80px] w-auto">
             {/* Left - Avatar + Text */}
-            <div className="flex items-center gap-4 min-w-0">
+            <div
+                className="flex items-center gap-4 min-w-0 cursor-pointer"
+                onClick={() => history.push(`/profile/${friend.id}`)}
+            >
                 <div className="relative flex-shrink-0">
                     <img
                         src={friend?.avatar || avatarFallback}

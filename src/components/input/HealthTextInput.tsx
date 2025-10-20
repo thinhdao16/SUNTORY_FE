@@ -1,4 +1,5 @@
 import React from "react";
+import NormalizedInput from "@/components/common/NormalizedInput";
 import { FieldError, UseFormRegister } from "react-hook-form";
 
 interface HealthTextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -33,7 +34,7 @@ const HealthTextInput: React.FC<HealthTextInputProps> = ({
             {required && <span className="text-red-500 ml-1">*</span>}
         </label>
         <div className="relative">
-            <input
+            <NormalizedInput
                 {...register(name, { required })}
                 ref={el => {
                     register(name).ref(el);

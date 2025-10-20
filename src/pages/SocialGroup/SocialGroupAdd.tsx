@@ -192,7 +192,7 @@ function SocialGroupAdd( { isProfile }: { isProfile?: boolean } ) {
         )}
       </div>
       <div className={`px-4 mt-4 overflow-y-auto pb-36 ${isNative
-        ? "max-h-[75vh]"
+        ? "max-h-[85vh]"
         : " max-h-[75vh]"
         }`}>
         {displayUsers.length > 0 && !search && (

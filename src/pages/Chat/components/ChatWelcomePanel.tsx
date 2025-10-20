@@ -2,7 +2,7 @@ import PendingImages from "./PendingImages";
 import PendingFiles from "./PendingFiles";
 import { t } from "@/lib/globalT";
 import { quickActions } from "../data";
-import React from "react";
+import React, { useRef } from "react";
 import { useChatHistoryLastModule } from "../hooks/useChatHistorylastModule";
 
 // Import SVG as React component
@@ -52,6 +52,7 @@ const ChatWelcomePanel: React.FC<{
     isDesktop,
     uploadLoading
 }) => {
+        const composingRef = useRef(false);
         return (
             <div className="flex flex-col items-center justify-center h-full text-center">
                 <div className="flex items-center gap-2 mb-4 ">
@@ -82,11 +83,19 @@ const ChatWelcomePanel: React.FC<{
                         className="focus:outline-none resize-none max-h-[230px] overflow-y-auto"
                         rows={1}
                         onFocus={() => {
-                            setTimeout(() => {
-                                window.dispatchEvent(new Event("resize"));
-                            }, 200);
+                            if (!isNative) {
+                                setTimeout(() => {
+                                    window.dispatchEvent(new Event("resize"));
+                                }, 200);
+                            }
                         }}
+                        onCompositionStart={() => { composingRef.current = true; }}
+                        onCompositionEnd={() => { composingRef.current = false; }}
                         onKeyDown={(e) => {
+                            // Block Enter during IME composition
+                            if (composingRef.current || (e.nativeEvent as any)?.isComposing) {
+                                return;
+                            }
                             if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
                                 handleSendMessage(e, true);

@@ -180,7 +180,7 @@ const CreateFeed: React.FC = () => {
                 allMediaFilenames.push(audioFilename);
             }
 
-            const hashtags = postText.match(/#\w+/g)?.map(tag => tag.substring(1)) || [];
+            const hashtags = [...new Set(postText.match(/#\w+/g)?.map(tag => tag.substring(1)) || [])];
 
             await createPostMutation.mutateAsync({
                 content: postText.trim(),
@@ -254,6 +254,23 @@ const CreateFeed: React.FC = () => {
                         rows={1}
                         autoFocus
                         style={{ color: 'transparent' }}
+                        onPaste={(e) => {
+                            const cd = e.clipboardData; if (!cd) return;
+                            const txt = cd.getData('text/plain');
+                            if (txt) {
+                                e.preventDefault();
+                                let s = txt; try { s = s.normalize('NFKC'); } catch {}
+                                s = s.replace(/\u00A0/g, ' ');
+                                s = s.replace(/[\u200B-\u200D\u2060\uFEFF\uFE0E\uFE0F]/g, '');
+                                s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+                                const ta = textareaRef.current;
+                                const start = (ta?.selectionStart ?? postText.length);
+                                const end = (ta?.selectionEnd ?? start);
+                                const next = postText.slice(0, start) + s + postText.slice(end);
+                                setPostText(next);
+                                setTimeout(() => { if (ta) { try { ta.setSelectionRange(start + s.length, start + s.length); } catch {} } }, 0);
+                            }
+                        }}
                     />
                     <div 
                         className="absolute top-0 left-0 w-full min-h-[2.5rem] py-3 pointer-events-none text-gray-700 leading-relaxed whitespace-pre-wrap z-0"

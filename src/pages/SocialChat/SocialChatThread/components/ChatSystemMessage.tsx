@@ -61,8 +61,8 @@ const ChatSystemMessage: React.FC<ChatSystemMessageProps> = ({
         }
         return (
             <Link
-                to={`/social-partner/profile/${userId}`}
-                className=""
+                to={`/profile/${userId}`}
+                className="font-semibold"
             >
                 {name}
             </Link>

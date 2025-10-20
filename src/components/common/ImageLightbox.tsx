@@ -5,8 +5,11 @@ import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/re
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, EffectCoverflow } from 'swiper/modules';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { Capacitor } from '@capacitor/core';
 import { saveImage } from '@/utils/save-image';
 import httpClient from '@/config/http-client';
+import { useTranslation } from 'react-i18next';
+import { useToastStore } from '@/store/zustand/toast-store';
 import DownloadIcon from "@/icons/logo/download-white.png"
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -69,6 +72,8 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
     onDownloadAll,
     onSlideChange
 }) => {
+    const { t } = useTranslation();
+    const showToast = useToastStore((state) => state.showToast);
     const {
         showDownload = true,
         showPageIndicator = true,
@@ -173,12 +178,10 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
             fileName = seg || `media_${Date.now()}`;
         }
 
-        // Convert blob to base64 and use saveImage utility
-        const b64 = await blobToBase64(blob);
-        await saveImage({
-            dataUrlOrBase64: b64,
-            fileName: fileName
-        });
+        // Unified: convert to data URL then use saveImage (gallery on native, proper web handling)
+        const dataUrl = await blobToBase64(blob);
+        await saveImage({ dataUrlOrBase64: dataUrl, fileName, albumIdentifier: 'WayJet' });
+        try { showToast(t('Image saved to gallery'), 2000, 'success'); } catch {}
     };
 
     const downloadFromUrlDirect = async (item: MediaItem, idx: number) => {
@@ -197,16 +200,28 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
         })();
         const filename = item.fileName || `media_${idx + 1}_${Date.now()}.${extFromUrl}`;
 
-        // Fetch and convert to base64
-        const resp = await fetch(item.url);
-        const blob = await resp.blob();
-        const b64 = await blobToBase64(blob);
-
-        // Use saveImage utility
-        await saveImage({
-            dataUrlOrBase64: b64,
-            fileName: filename
-        });
+        // Try to fetch then use unified saver
+        try {
+            const resp = await fetch(item.url, { mode: 'cors' });
+            const blob = await resp.blob();
+            const dataUrl = await blobToBase64(blob);
+            await saveImage({ dataUrlOrBase64: dataUrl, fileName: filename, albumIdentifier: 'WayJet' });
+            try { showToast(t('Image saved to gallery'), 2000, 'success'); } catch {}
+        } catch (e) {
+            // CORS or network failure: fallback to opening in a new tab (web only)
+            if (!Capacitor.isNativePlatform()) {
+                const a = document.createElement('a');
+                a.href = item.url;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                // On native, show error toast instead of opening browser
+                try { showToast(t('Failed to save image'), 2000, 'error'); } catch {}
+            }
+        }
     };
 
     const handleDownloadCurrent = async (e: React.MouseEvent) => {

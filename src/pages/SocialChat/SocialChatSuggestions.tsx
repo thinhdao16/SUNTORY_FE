@@ -6,11 +6,13 @@ import { useFriendshipRecommendedInfinite, useSendFriendRequest } from '@/pages/
 import UserRowSkeleton from '@/components/skeletons/UserRowSkeleton';
 import { useSocialChatStore } from '@/store/zustand/social-chat-store';
 import { useHistory } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 
 const SocialChatSuggestions: React.FC = () => {
     const { t } = useTranslation();
     const showToast = useToastStore((s) => s.showToast);
     const history = useHistory();
+    const isNative = Capacitor.isNativePlatform();
 
     const {
         data,
@@ -113,7 +115,8 @@ const SocialChatSuggestions: React.FC = () => {
 
     return (
         <div className="h-screen bg-white">
-            <div ref={listRef} className="overflow-y-auto px-4 pt-4 pb-28 max-h-[75vh] lg:max-h-[75vh] xl:max-h-[85vh]">
+            <div ref={listRef} className={`overflow-y-auto px-4 pt-4 pb-28 ${isNative ? "max-h-[85vh]" : "max-h-[65vh] lg:max-h-[75vh] xl:max-h-[85vh]"
+          }`}>
                 {isLoading && (
                     <>
                         {Array.from({ length: 6 }).map((_, i) => (
