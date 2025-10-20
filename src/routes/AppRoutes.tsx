@@ -12,6 +12,7 @@ import { useAuthStore } from "@/store/zustand/auth-store";
 import ChatSidebarLayout from "@/components/layout/ChatSidebarLayout";
 import useAppInit from "@/hooks/useAppInit";
 import TranslateHistory from "@/pages/Translate/TranslateHistory";
+import { usePlatform } from "@/hooks/usePlatform";
 
 const routes = {
   Chat: lazy(() => import("@/pages/ChatStream/ChatStream")),
@@ -67,6 +68,7 @@ const ignoreRoutes = ["/forgot-password", "/otp", "/new-password", "/change-pass
 const AppRoutes: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
+  const {isIOS}= usePlatform()
   const showTabBar =
     !authRoutes.some(path => location.pathname.startsWith(path)) &&
     !ignoreRoutes.some(path => location.pathname.startsWith(path)) &&
@@ -79,7 +81,7 @@ const AppRoutes: React.FC = () => {
   }
   return (
     <>  
-      <div className = "pb-[var(--safe-area-inset-bottom)] pt-[var(--safe-area-inset-top)]">
+      <div className = {isIOS ? "pb-[var(--safe-area-inset-bottom)px] pt-[var(--safe-area-inset-top)px]" : ""}>
         <Suspense fallback={<RouteLoading />}>
           <Switch>
             <Route path="/login" component={routes.Login} exact />

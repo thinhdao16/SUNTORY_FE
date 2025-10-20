@@ -12,6 +12,30 @@ const toDataUrl = (s: string) =>
 
 const stripExt = (name: string) => name.replace(/\.[^/.]+$/, '');
 
+// Helpers for filename/extensions
+const hasExt = (name: string) => /\.[^/.]+$/.test(name);
+function extFromDataUrl(dataUrlOrBase64: string): string | null {
+    try {
+        if (!dataUrlOrBase64.startsWith('data:')) return null;
+        const m = /^data:([^;]+);base64,/.exec(dataUrlOrBase64);
+        const mime = m?.[1] || '';
+        if (!mime) return null;
+        if (mime.includes('png')) return 'png';
+        if (mime.includes('jpeg') || mime.includes('jpg')) return 'jpg';
+        if (mime.includes('webp')) return 'webp';
+        if (mime.includes('gif')) return 'gif';
+        return null;
+    } catch {
+        return null;
+    }
+}
+function ensureFileNameWithExt(fileName: string, dataUrlOrBase64: string): string {
+    if (hasExt(fileName)) return fileName;
+    const ext = extFromDataUrl(dataUrlOrBase64) || 'png';
+    const base = stripExt(fileName);
+    return `${base}.${ext}`;
+}
+
 // Resolve album identifier by name; create album if missing. Returns identifier or null.
 async function resolveAlbumIdentifierByName(name: string): Promise<string | null> {
     try {
@@ -152,24 +176,41 @@ export async function saveImage(params: SaveImageParams) {
 
     // Native platform: Save to Photo Gallery
     try {
-        // The plugin expects a real album identifier, not a name
+        const platform = Capacitor.getPlatform();
+        const path = toDataUrl(dataUrlOrBase64);
         let identifier: any = await resolveAlbumIdentifierByName(albumIdentifier);
         if (identifier === null || identifier === undefined) {
             identifier = await findFallbackAlbumIdentifier();
         }
-        if (identifier === null || identifier === undefined) {
-            throw new Error('NO_ALBUM');
+
+        // Build base options; on Android, keep extension to help MediaStore MIME
+        const baseOpts: any = {
+            path,
+            fileName: platform === 'android' ? ensureFileNameWithExt(fileName, dataUrlOrBase64) : stripExt(fileName),
+        };
+
+        // Try with album identifier first if available
+        if (identifier !== null && identifier !== undefined) {
+            try {
+                await (Media as any).savePhoto({ ...baseOpts, albumIdentifier: identifier });
+                console.log(`[saveImage] Saved to Photo Gallery (album=${String(identifier)})`);
+                return { ok: true, platform: 'native' as const, via: 'gallery' as const };
+            } catch (err) {
+                // On Android, some devices may fail with album; fall back to no album
+                if (platform !== 'android') throw err;
+                console.warn('[saveImage] Android save with album failed, retrying without albumIdentifier');
+            }
         }
 
-        // Always pass a valid identifier on Android
-        await (Media as any).savePhoto({
-            path: toDataUrl(dataUrlOrBase64),
-            fileName: stripExt(fileName),
-            albumIdentifier: identifier,
-        });
+        // If no identifier or failed, attempt Android save without album
+        if (platform === 'android') {
+            await (Media as any).savePhoto(baseOpts);
+            console.log('[saveImage] Saved to Photo Gallery (Android, no albumIdentifier)');
+            return { ok: true, platform: 'native' as const, via: 'gallery' as const };
+        }
 
-        console.log(`[saveImage] Saved to Photo Gallery (album=${String(identifier)})`);
-        return { ok: true, platform: 'native' as const, via: 'gallery' as const };
+        // iOS requires a valid album identifier to categorize; if none, error
+        throw new Error('NO_ALBUM');
     } catch (e: any) {
         console.error('[saveImage] Failed to save to gallery:', e);
 
