@@ -1,0 +1,16 @@
+{
+    "This OTP is not valid": "此OTP无效。",
+    "Please wait before resending OTP.": "请等待后再重新发送OTP。",
+    "OTP has been resent.": "OTP已重新发送。",
+    "OTP has been sent to your email.": "OTP已发送到您的邮箱。",
+    "Home": "家",
+    "Please check input fields": "请检查输入字段",
+    "Please check your email": "请检查您的电子邮件",
+    "Please check your email for the OTP": "请检查您的电子邮件以获取OTP",
+    "Please check your email for the verification link": "请检查您的电子邮件以获取验证链接",
+    "Please check your email for the reset password link": "请检查您的电子邮件以获取重置密码链接",
+    "Please check your email for the verification code": "请检查您的电子邮件以获取验证码",
+    "Current password is not correct": "当前密码不正确。",
+    "Username or password did not match.": "用户名或密码不匹配。",
+    "You have already reposted this post": "您已经分享过这个帖子。"
+}

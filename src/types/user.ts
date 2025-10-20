@@ -1,0 +1,96 @@
+export interface Organization {
+    id: number;
+    name: string;
+    description: string | null;
+    email: string;
+    phone: string;
+    address: string;
+    logo: string | null;
+    logoLink: string | null;
+    status: number;
+    code: string;
+    organizationId: number | null;
+    orderView: number;
+    createDate: string;
+    createUser: number;
+    createUserFirstName: string | null;
+    createUserLastName: string | null;
+    createUserName: string;
+    updateDate: string | null;
+    updateUser: number;
+    updateUserFirstName: string | null;
+    updateUserLastName: string | null;
+    updateUserName: string;
+    deleteDate: string | null;
+    deleteUser: number;
+    deleteUserFirstName: string | null;
+    deleteUserLastName: string | null;
+    deleteUserName: string;
+}
+
+export interface MeasurementUnit {
+    id: number;
+    categoryId: number;
+    unitName: string;
+    symbol: string;
+    category: any | null;
+}
+
+export interface CurrentMeasurementItem {
+    id: number;
+    weightUnitId: number | null;
+    heightUnitId: number | null;
+    weightUnit: MeasurementUnit | null;
+    heightUnit: MeasurementUnit | null;
+}
+
+export interface User {
+    id: number;
+    code: string;
+    firstname: string;
+    lastname: string;
+    name: string;
+    email: string;
+    phone: string;
+    gender: number;
+    dateOfBirth: string | null;
+    avatar: string | null;
+    avatarLink: string;
+    organizationId: number;
+    organizationRole: number;
+    token: string;
+    refreshToken: string;
+    userType: number;
+    height: number | null;
+    weight: number | null;
+    bloodPressure?: string;
+    bloodType?: string;
+    healthDocuments: any[];
+    organizations: Organization[];
+    healthConditions: any[];
+    lifestyles: any[];
+    medications: any[];
+    allergies: any[];
+    groupedHealthConditions: any;
+    groupedLifestyles: any;
+    groupedMedications: any;
+    groupedAllergies: any;
+    birthDay: string | null;
+    firebaseToken: string | null;
+    devices: {
+        deviceId: string | null;
+        firebaseToken: string | null;
+    }[],
+    friendNumber: number;
+    country: {
+        id: number;
+        code: string;
+        name: string;
+    };
+    language: {
+        code: string;
+        name: string;
+        id?:number
+    };
+    currentMeasurement: CurrentMeasurementItem[];
+}

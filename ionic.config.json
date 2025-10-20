@@ -1,0 +1,8 @@
+{
+  "name": "WayJet",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite",
+  "id": "8b926f47"
+}

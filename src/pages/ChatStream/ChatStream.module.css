@@ -1,0 +1,44 @@
+/* Thêm vào file css global hoặc module */
+.loader {
+  border-width: 2px;
+  border-style: solid;
+  border-color: #fff #fff #fff transparent;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* GPT-like typing cursor animation */
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Wave animation for thinking dots */
+@keyframes wave {
+  0%,
+  40%,
+  100% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(-3px);
+  }
+}
+
+/* :global(.prose) table {
+  width: 150px !important;
+} */

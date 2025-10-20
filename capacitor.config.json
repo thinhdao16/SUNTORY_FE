@@ -1,0 +1,9 @@
+{
+    "plugins": {
+        "Keyboard": {
+            "resize": "body",
+            "style": "DEFAULT",
+            "resizeOnFullScreen": true
+        }
+    }
+}

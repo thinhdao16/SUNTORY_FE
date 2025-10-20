@@ -1,0 +1,19 @@
+services:
+  wayjet_app:
+    build: .
+    container_name: wayjet_app
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    networks:
+      - public-network
+      - private-network
+
+
+networks:
+  public-network:
+     external: true
+     name: ${PUBLIC_NETWORK_NAME}
+  private-network:
+     external: true
+     name: ${PRIVATE_NETWORK_NAME}

@@ -1,29 +1,15 @@
-# README #
+npm install -g @ionic/cli
 
-This README would normally document whatever steps are necessary to get your application up and running.
+ionic serve --host=0.0.0.0
+npm run build
+npx cap add android
 
-### What is this repository for? ###
+npx cap sync android
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+# build icon
+pnpm remove @codetrix-studio/capacitor-google-auth
+rm -rf node_modules pnpm-lock.yaml
+npm install sharp --legacy-peer-deps --force
 
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+# Test
+npx @capacitor/assets generate

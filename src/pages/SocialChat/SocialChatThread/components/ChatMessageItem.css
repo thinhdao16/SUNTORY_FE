@@ -1,0 +1,25 @@
+.longpress-safe {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+/* Đảm bảo không thể tương tác với bất kỳ phần tử nào khi portal mở */
+body.portal-open > *:not(#portal-root) {
+    pointer-events: none !important;
+    touch-action: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+/* Cho phép tương tác trong portal */
+#portal-root * {
+    pointer-events: auto;
+}
+
+/* Chặn overscroll */
+html.portal-open, 
+body.portal-open {
+    overscroll-behavior: none;
+    overflow: hidden !important;
+}
